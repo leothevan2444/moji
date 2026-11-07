@@ -88,6 +88,13 @@ type IngestScene struct {
 	ImageURL       string
 	PerformerCount int
 	Paths          []string
+	Details        string
+	Director       string
+	URLs           []string
+	Organized      bool
+	PerformerIDs   []string
+	TagIDs         []string
+	StashIDs       []*stashgraphql.StashIDInput
 }
 
 func (s *Service) ingestClient() (IngestClient, error) {
@@ -158,6 +165,19 @@ func (s *Service) FindIngestScenes(ctx context.Context, path string, ids []strin
 			continue
 		}
 		item := IngestScene{ID: scene.ID, PerformerCount: len(scene.Performers)}
+		item.Details = valueOrEmpty(scene.Details)
+		item.Director = valueOrEmpty(scene.Director)
+		item.URLs, item.Organized = scene.Urls, scene.Organized
+		for _, tag := range scene.Tags {
+			if tag != nil {
+				item.TagIDs = append(item.TagIDs, tag.ID)
+			}
+		}
+		for _, ref := range scene.StashIds {
+			if ref != nil {
+				item.StashIDs = append(item.StashIDs, &stashgraphql.StashIDInput{Endpoint: ref.Endpoint, StashID: ref.StashID, UpdatedAt: &ref.UpdatedAt})
+			}
+		}
 		if scene.Title != nil {
 			item.Title = *scene.Title
 		}
@@ -175,6 +195,9 @@ func (s *Service) FindIngestScenes(ctx context.Context, path string, ids []strin
 			item.ImageURL = *scene.Paths.Screenshot
 		}
 		for _, performer := range scene.Performers {
+			if performer != nil {
+				item.PerformerIDs = append(item.PerformerIDs, performer.ID)
+			}
 			if performer != nil && strings.TrimSpace(performer.Name) != "" {
 				item.PerformerNames = append(item.PerformerNames, performer.Name)
 			}
@@ -195,4 +218,11 @@ func (s *Service) FindIngestScenes(ctx context.Context, path string, ids []strin
 		}
 	}
 	return result, nil
+}
+
+func valueOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

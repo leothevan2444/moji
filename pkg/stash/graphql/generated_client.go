@@ -25,6 +25,20 @@ type StashGraphQLClient interface {
 	IngestDefaults(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestDefaults, error)
 	IngestScenes(ctx context.Context, sceneFilter *SceneFilterType, filter *FindFilterType, ids []string, interceptors ...clientv2.RequestInterceptor) (*IngestScenes, error)
 	RemoveIngestScene(ctx context.Context, input SceneDestroyInput, interceptors ...clientv2.RequestInterceptor) (*RemoveIngestScene, error)
+	IngestLogs(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestLogs, error)
+	ScrapeIngestScene(ctx context.Context, source ScraperSourceInput, input ScrapeSingleSceneInput, images bool, interceptors ...clientv2.RequestInterceptor) (*ScrapeIngestScene, error)
+	IngestIdentifyCapabilities(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestIdentifyCapabilities, error)
+	IngestDefaultsNative(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestDefaultsNative, error)
+	ScrapeIngestSceneLegacy(ctx context.Context, source ScraperSourceInput, input ScrapeSingleSceneInput, images bool, interceptors ...clientv2.RequestInterceptor) (*ScrapeIngestSceneLegacy, error)
+	FindIngestStudios(ctx context.Context, criterion StashIDCriterionInput, interceptors ...clientv2.RequestInterceptor) (*FindIngestStudios, error)
+	FindIngestPerformers(ctx context.Context, criterion StashIDCriterionInput, interceptors ...clientv2.RequestInterceptor) (*FindIngestPerformers, error)
+	FindIngestTags(ctx context.Context, criterion StashIDCriterionInput, interceptors ...clientv2.RequestInterceptor) (*FindIngestTags, error)
+	IngestStudio(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*IngestStudio, error)
+	CreateIngestStudio(ctx context.Context, input StudioCreateInput, interceptors ...clientv2.RequestInterceptor) (*CreateIngestStudio, error)
+	UpdateIngestStudio(ctx context.Context, input StudioUpdateInput, interceptors ...clientv2.RequestInterceptor) (*UpdateIngestStudio, error)
+	CreateIngestPerformer(ctx context.Context, input PerformerCreateInput, interceptors ...clientv2.RequestInterceptor) (*CreateIngestPerformer, error)
+	CreateIngestTag(ctx context.Context, input TagCreateInput, interceptors ...clientv2.RequestInterceptor) (*CreateIngestTag, error)
+	SaveIngestScene(ctx context.Context, input SceneUpdateInput, interceptors ...clientv2.RequestInterceptor) (*SaveIngestScene, error)
 }
 
 type Client struct {
@@ -367,6 +381,319 @@ func (t *IdentifyOptionsFragment) GetSkipSingleNamePerformerTag() *string {
 	return t.SkipSingleNamePerformerTag
 }
 
+type IngestScrapedStudio struct {
+	StoredID     *string                     "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+	Name         string                      "json:\"name\" graphql:\"name\""
+	URL          *string                     "json:\"url,omitempty\" graphql:\"url\""
+	Urls         []string                    "json:\"urls,omitempty\" graphql:\"urls\""
+	Image        *string                     "json:\"image,omitempty\" graphql:\"image\""
+	Details      *string                     "json:\"details,omitempty\" graphql:\"details\""
+	Aliases      *string                     "json:\"aliases,omitempty\" graphql:\"aliases\""
+	RemoteSiteID *string                     "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	Parent       *IngestScrapedStudio_Parent "json:\"parent,omitempty\" graphql:\"parent\""
+}
+
+func (t *IngestScrapedStudio) GetStoredID() *string {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.StoredID
+}
+func (t *IngestScrapedStudio) GetName() string {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.Name
+}
+func (t *IngestScrapedStudio) GetURL() *string {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.URL
+}
+func (t *IngestScrapedStudio) GetUrls() []string {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.Urls
+}
+func (t *IngestScrapedStudio) GetImage() *string {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.Image
+}
+func (t *IngestScrapedStudio) GetDetails() *string {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.Details
+}
+func (t *IngestScrapedStudio) GetAliases() *string {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.Aliases
+}
+func (t *IngestScrapedStudio) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.RemoteSiteID
+}
+func (t *IngestScrapedStudio) GetParent() *IngestScrapedStudio_Parent {
+	if t == nil {
+		t = &IngestScrapedStudio{}
+	}
+	return t.Parent
+}
+
+type IngestScrapedPerformer struct {
+	StoredID       *string  "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+	Name           *string  "json:\"name,omitempty\" graphql:\"name\""
+	Disambiguation *string  "json:\"disambiguation,omitempty\" graphql:\"disambiguation\""
+	Gender         *string  "json:\"gender,omitempty\" graphql:\"gender\""
+	URL            *string  "json:\"url,omitempty\" graphql:\"url\""
+	Urls           []string "json:\"urls,omitempty\" graphql:\"urls\""
+	Twitter        *string  "json:\"twitter,omitempty\" graphql:\"twitter\""
+	Instagram      *string  "json:\"instagram,omitempty\" graphql:\"instagram\""
+	Birthdate      *string  "json:\"birthdate,omitempty\" graphql:\"birthdate\""
+	Ethnicity      *string  "json:\"ethnicity,omitempty\" graphql:\"ethnicity\""
+	Country        *string  "json:\"country,omitempty\" graphql:\"country\""
+	EyeColor       *string  "json:\"eye_color,omitempty\" graphql:\"eye_color\""
+	Height         *string  "json:\"height,omitempty\" graphql:\"height\""
+	Measurements   *string  "json:\"measurements,omitempty\" graphql:\"measurements\""
+	FakeTits       *string  "json:\"fake_tits,omitempty\" graphql:\"fake_tits\""
+	PenisLength    *string  "json:\"penis_length,omitempty\" graphql:\"penis_length\""
+	Circumcised    *string  "json:\"circumcised,omitempty\" graphql:\"circumcised\""
+	CareerStart    *string  "json:\"career_start,omitempty\" graphql:\"career_start\""
+	CareerEnd      *string  "json:\"career_end,omitempty\" graphql:\"career_end\""
+	Tattoos        *string  "json:\"tattoos,omitempty\" graphql:\"tattoos\""
+	Piercings      *string  "json:\"piercings,omitempty\" graphql:\"piercings\""
+	Aliases        *string  "json:\"aliases,omitempty\" graphql:\"aliases\""
+	Images         []string "json:\"images,omitempty\" graphql:\"images\""
+	Details        *string  "json:\"details,omitempty\" graphql:\"details\""
+	DeathDate      *string  "json:\"death_date,omitempty\" graphql:\"death_date\""
+	HairColor      *string  "json:\"hair_color,omitempty\" graphql:\"hair_color\""
+	Weight         *string  "json:\"weight,omitempty\" graphql:\"weight\""
+	RemoteSiteID   *string  "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+}
+
+func (t *IngestScrapedPerformer) GetStoredID() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.StoredID
+}
+func (t *IngestScrapedPerformer) GetName() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Name
+}
+func (t *IngestScrapedPerformer) GetDisambiguation() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Disambiguation
+}
+func (t *IngestScrapedPerformer) GetGender() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Gender
+}
+func (t *IngestScrapedPerformer) GetURL() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.URL
+}
+func (t *IngestScrapedPerformer) GetUrls() []string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Urls
+}
+func (t *IngestScrapedPerformer) GetTwitter() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Twitter
+}
+func (t *IngestScrapedPerformer) GetInstagram() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Instagram
+}
+func (t *IngestScrapedPerformer) GetBirthdate() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Birthdate
+}
+func (t *IngestScrapedPerformer) GetEthnicity() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Ethnicity
+}
+func (t *IngestScrapedPerformer) GetCountry() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Country
+}
+func (t *IngestScrapedPerformer) GetEyeColor() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.EyeColor
+}
+func (t *IngestScrapedPerformer) GetHeight() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Height
+}
+func (t *IngestScrapedPerformer) GetMeasurements() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Measurements
+}
+func (t *IngestScrapedPerformer) GetFakeTits() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.FakeTits
+}
+func (t *IngestScrapedPerformer) GetPenisLength() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.PenisLength
+}
+func (t *IngestScrapedPerformer) GetCircumcised() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Circumcised
+}
+func (t *IngestScrapedPerformer) GetCareerStart() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.CareerStart
+}
+func (t *IngestScrapedPerformer) GetCareerEnd() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.CareerEnd
+}
+func (t *IngestScrapedPerformer) GetTattoos() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Tattoos
+}
+func (t *IngestScrapedPerformer) GetPiercings() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Piercings
+}
+func (t *IngestScrapedPerformer) GetAliases() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Aliases
+}
+func (t *IngestScrapedPerformer) GetImages() []string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Images
+}
+func (t *IngestScrapedPerformer) GetDetails() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Details
+}
+func (t *IngestScrapedPerformer) GetDeathDate() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.DeathDate
+}
+func (t *IngestScrapedPerformer) GetHairColor() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.HairColor
+}
+func (t *IngestScrapedPerformer) GetWeight() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.Weight
+}
+func (t *IngestScrapedPerformer) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &IngestScrapedPerformer{}
+	}
+	return t.RemoteSiteID
+}
+
+type IngestScrapedTag struct {
+	StoredID     *string                  "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+	Name         string                   "json:\"name\" graphql:\"name\""
+	RemoteSiteID *string                  "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	Description  *string                  "json:\"description,omitempty\" graphql:\"description\""
+	AliasList    []string                 "json:\"alias_list,omitempty\" graphql:\"alias_list\""
+	Parent       *IngestScrapedTag_Parent "json:\"parent,omitempty\" graphql:\"parent\""
+}
+
+func (t *IngestScrapedTag) GetStoredID() *string {
+	if t == nil {
+		t = &IngestScrapedTag{}
+	}
+	return t.StoredID
+}
+func (t *IngestScrapedTag) GetName() string {
+	if t == nil {
+		t = &IngestScrapedTag{}
+	}
+	return t.Name
+}
+func (t *IngestScrapedTag) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &IngestScrapedTag{}
+	}
+	return t.RemoteSiteID
+}
+func (t *IngestScrapedTag) GetDescription() *string {
+	if t == nil {
+		t = &IngestScrapedTag{}
+	}
+	return t.Description
+}
+func (t *IngestScrapedTag) GetAliasList() []string {
+	if t == nil {
+		t = &IngestScrapedTag{}
+	}
+	return t.AliasList
+}
+func (t *IngestScrapedTag) GetParent() *IngestScrapedTag_Parent {
+	if t == nil {
+		t = &IngestScrapedTag{}
+	}
+	return t.Parent
+}
+
 type SceneFragment_Paths struct {
 	Screenshot *string "json:\"screenshot,omitempty\" graphql:\"screenshot\""
 }
@@ -437,6 +764,123 @@ func (t *IdentifyOptionsFragment_FieldOptions) GetStrategy() *IdentifyFieldStrat
 		t = &IdentifyOptionsFragment_FieldOptions{}
 	}
 	return &t.Strategy
+}
+
+type IngestScrapedStudio_Parent_Parent struct {
+	Name         string  "json:\"name\" graphql:\"name\""
+	RemoteSiteID *string "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+}
+
+func (t *IngestScrapedStudio_Parent_Parent) GetName() string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.Name
+}
+func (t *IngestScrapedStudio_Parent_Parent) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.RemoteSiteID
+}
+func (t *IngestScrapedStudio_Parent_Parent) GetStoredID() *string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.StoredID
+}
+
+type IngestScrapedStudio_Parent struct {
+	Aliases      *string                            "json:\"aliases,omitempty\" graphql:\"aliases\""
+	Details      *string                            "json:\"details,omitempty\" graphql:\"details\""
+	Image        *string                            "json:\"image,omitempty\" graphql:\"image\""
+	Name         string                             "json:\"name\" graphql:\"name\""
+	Parent       *IngestScrapedStudio_Parent_Parent "json:\"parent,omitempty\" graphql:\"parent\""
+	RemoteSiteID *string                            "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string                            "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+	URL          *string                            "json:\"url,omitempty\" graphql:\"url\""
+	Urls         []string                           "json:\"urls,omitempty\" graphql:\"urls\""
+}
+
+func (t *IngestScrapedStudio_Parent) GetAliases() *string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.Aliases
+}
+func (t *IngestScrapedStudio_Parent) GetDetails() *string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.Details
+}
+func (t *IngestScrapedStudio_Parent) GetImage() *string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.Image
+}
+func (t *IngestScrapedStudio_Parent) GetName() string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.Name
+}
+func (t *IngestScrapedStudio_Parent) GetParent() *IngestScrapedStudio_Parent_Parent {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.Parent
+}
+func (t *IngestScrapedStudio_Parent) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.RemoteSiteID
+}
+func (t *IngestScrapedStudio_Parent) GetStoredID() *string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.StoredID
+}
+func (t *IngestScrapedStudio_Parent) GetURL() *string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.URL
+}
+func (t *IngestScrapedStudio_Parent) GetUrls() []string {
+	if t == nil {
+		t = &IngestScrapedStudio_Parent{}
+	}
+	return t.Urls
+}
+
+type IngestScrapedTag_Parent struct {
+	Name         string  "json:\"name\" graphql:\"name\""
+	RemoteSiteID *string "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+}
+
+func (t *IngestScrapedTag_Parent) GetName() string {
+	if t == nil {
+		t = &IngestScrapedTag_Parent{}
+	}
+	return t.Name
+}
+func (t *IngestScrapedTag_Parent) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &IngestScrapedTag_Parent{}
+	}
+	return t.RemoteSiteID
+}
+func (t *IngestScrapedTag_Parent) GetStoredID() *string {
+	if t == nil {
+		t = &IngestScrapedTag_Parent{}
+	}
+	return t.StoredID
 }
 
 type FindPerformers_FindPerformers struct {
@@ -798,6 +1242,42 @@ func (t *IngestDefaults_Configuration) GetDefaults() *IngestDefaults_Configurati
 	return &t.Defaults
 }
 
+type IngestScenes_FindScenes_Scenes_StashIds struct {
+	Endpoint  string    "json:\"endpoint\" graphql:\"endpoint\""
+	StashID   string    "json:\"stash_id\" graphql:\"stash_id\""
+	UpdatedAt time.Time "json:\"updated_at\" graphql:\"updated_at\""
+}
+
+func (t *IngestScenes_FindScenes_Scenes_StashIds) GetEndpoint() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_StashIds{}
+	}
+	return t.Endpoint
+}
+func (t *IngestScenes_FindScenes_Scenes_StashIds) GetStashID() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_StashIds{}
+	}
+	return t.StashID
+}
+func (t *IngestScenes_FindScenes_Scenes_StashIds) GetUpdatedAt() *time.Time {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_StashIds{}
+	}
+	return &t.UpdatedAt
+}
+
+type IngestScenes_FindScenes_Scenes_Tags struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *IngestScenes_FindScenes_Scenes_Tags) GetID() string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes_Tags{}
+	}
+	return t.ID
+}
+
 type IngestScenes_FindScenes_Scenes_Studio struct {
 	ID   string "json:\"id\" graphql:\"id\""
 	Name string "json:\"name\" graphql:\"name\""
@@ -859,12 +1339,18 @@ func (t *IngestScenes_FindScenes_Scenes_Files) GetPath() string {
 type IngestScenes_FindScenes_Scenes struct {
 	Code       *string                                      "json:\"code,omitempty\" graphql:\"code\""
 	Date       *string                                      "json:\"date,omitempty\" graphql:\"date\""
+	Details    *string                                      "json:\"details,omitempty\" graphql:\"details\""
+	Director   *string                                      "json:\"director,omitempty\" graphql:\"director\""
 	Files      []*IngestScenes_FindScenes_Scenes_Files      "json:\"files\" graphql:\"files\""
 	ID         string                                       "json:\"id\" graphql:\"id\""
+	Organized  bool                                         "json:\"organized\" graphql:\"organized\""
 	Paths      IngestScenes_FindScenes_Scenes_Paths         "json:\"paths\" graphql:\"paths\""
 	Performers []*IngestScenes_FindScenes_Scenes_Performers "json:\"performers\" graphql:\"performers\""
+	StashIds   []*IngestScenes_FindScenes_Scenes_StashIds   "json:\"stash_ids\" graphql:\"stash_ids\""
 	Studio     *IngestScenes_FindScenes_Scenes_Studio       "json:\"studio,omitempty\" graphql:\"studio\""
+	Tags       []*IngestScenes_FindScenes_Scenes_Tags       "json:\"tags\" graphql:\"tags\""
 	Title      *string                                      "json:\"title,omitempty\" graphql:\"title\""
+	Urls       []string                                     "json:\"urls\" graphql:\"urls\""
 }
 
 func (t *IngestScenes_FindScenes_Scenes) GetCode() *string {
@@ -879,6 +1365,18 @@ func (t *IngestScenes_FindScenes_Scenes) GetDate() *string {
 	}
 	return t.Date
 }
+func (t *IngestScenes_FindScenes_Scenes) GetDetails() *string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Details
+}
+func (t *IngestScenes_FindScenes_Scenes) GetDirector() *string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Director
+}
 func (t *IngestScenes_FindScenes_Scenes) GetFiles() []*IngestScenes_FindScenes_Scenes_Files {
 	if t == nil {
 		t = &IngestScenes_FindScenes_Scenes{}
@@ -890,6 +1388,12 @@ func (t *IngestScenes_FindScenes_Scenes) GetID() string {
 		t = &IngestScenes_FindScenes_Scenes{}
 	}
 	return t.ID
+}
+func (t *IngestScenes_FindScenes_Scenes) GetOrganized() bool {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Organized
 }
 func (t *IngestScenes_FindScenes_Scenes) GetPaths() *IngestScenes_FindScenes_Scenes_Paths {
 	if t == nil {
@@ -903,17 +1407,35 @@ func (t *IngestScenes_FindScenes_Scenes) GetPerformers() []*IngestScenes_FindSce
 	}
 	return t.Performers
 }
+func (t *IngestScenes_FindScenes_Scenes) GetStashIds() []*IngestScenes_FindScenes_Scenes_StashIds {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.StashIds
+}
 func (t *IngestScenes_FindScenes_Scenes) GetStudio() *IngestScenes_FindScenes_Scenes_Studio {
 	if t == nil {
 		t = &IngestScenes_FindScenes_Scenes{}
 	}
 	return t.Studio
 }
+func (t *IngestScenes_FindScenes_Scenes) GetTags() []*IngestScenes_FindScenes_Scenes_Tags {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Tags
+}
 func (t *IngestScenes_FindScenes_Scenes) GetTitle() *string {
 	if t == nil {
 		t = &IngestScenes_FindScenes_Scenes{}
 	}
 	return t.Title
+}
+func (t *IngestScenes_FindScenes_Scenes) GetUrls() []string {
+	if t == nil {
+		t = &IngestScenes_FindScenes_Scenes{}
+	}
+	return t.Urls
 }
 
 type IngestScenes_FindScenes struct {
@@ -925,6 +1447,1073 @@ func (t *IngestScenes_FindScenes) GetScenes() []*IngestScenes_FindScenes_Scenes 
 		t = &IngestScenes_FindScenes{}
 	}
 	return t.Scenes
+}
+
+type IngestLogs_Logs struct {
+	Level   LogLevel  "json:\"level\" graphql:\"level\""
+	Message string    "json:\"message\" graphql:\"message\""
+	Time    time.Time "json:\"time\" graphql:\"time\""
+}
+
+func (t *IngestLogs_Logs) GetLevel() *LogLevel {
+	if t == nil {
+		t = &IngestLogs_Logs{}
+	}
+	return &t.Level
+}
+func (t *IngestLogs_Logs) GetMessage() string {
+	if t == nil {
+		t = &IngestLogs_Logs{}
+	}
+	return t.Message
+}
+func (t *IngestLogs_Logs) GetTime() *time.Time {
+	if t == nil {
+		t = &IngestLogs_Logs{}
+	}
+	return &t.Time
+}
+
+type ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent struct {
+	Name         string  "json:\"name\" graphql:\"name\""
+	RemoteSiteID *string "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+}
+
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent) GetName() string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.Name
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent) GetStoredID() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.StoredID
+}
+
+type ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent struct {
+	Aliases      *string                                                                       "json:\"aliases,omitempty\" graphql:\"aliases\""
+	Details      *string                                                                       "json:\"details,omitempty\" graphql:\"details\""
+	Image        *string                                                                       "json:\"image,omitempty\" graphql:\"image\""
+	Name         string                                                                        "json:\"name\" graphql:\"name\""
+	Parent       *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent "json:\"parent,omitempty\" graphql:\"parent\""
+	RemoteSiteID *string                                                                       "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string                                                                       "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+	URL          *string                                                                       "json:\"url,omitempty\" graphql:\"url\""
+	Urls         []string                                                                      "json:\"urls,omitempty\" graphql:\"urls\""
+}
+
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetAliases() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Aliases
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetDetails() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Details
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetImage() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Image
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetName() string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Name
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetParent() *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Parent
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetStoredID() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.StoredID
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetURL() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.URL
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetUrls() []string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Urls
+}
+
+type ScrapeIngestScene_ScrapeSingleScene_Tags_IngestScrapedTag_Parent struct {
+	Name         string  "json:\"name\" graphql:\"name\""
+	RemoteSiteID *string "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+}
+
+func (t *ScrapeIngestScene_ScrapeSingleScene_Tags_IngestScrapedTag_Parent) GetName() string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Tags_IngestScrapedTag_Parent{}
+	}
+	return t.Name
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Tags_IngestScrapedTag_Parent) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Tags_IngestScrapedTag_Parent{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene_Tags_IngestScrapedTag_Parent) GetStoredID() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene_Tags_IngestScrapedTag_Parent{}
+	}
+	return t.StoredID
+}
+
+type ScrapeIngestScene_ScrapeSingleScene struct {
+	Code         *string                   "json:\"code,omitempty\" graphql:\"code\""
+	Date         *string                   "json:\"date,omitempty\" graphql:\"date\""
+	Details      *string                   "json:\"details,omitempty\" graphql:\"details\""
+	Director     *string                   "json:\"director,omitempty\" graphql:\"director\""
+	Image        *string                   "json:\"image,omitempty\" graphql:\"image\""
+	Performers   []*IngestScrapedPerformer "json:\"performers,omitempty\" graphql:\"performers\""
+	RemoteSiteID *string                   "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	Studio       *IngestScrapedStudio      "json:\"studio,omitempty\" graphql:\"studio\""
+	Tags         []*IngestScrapedTag       "json:\"tags,omitempty\" graphql:\"tags\""
+	Title        *string                   "json:\"title,omitempty\" graphql:\"title\""
+	Urls         []string                  "json:\"urls,omitempty\" graphql:\"urls\""
+}
+
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetCode() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Code
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetDate() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Date
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetDetails() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Details
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetDirector() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Director
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetImage() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Image
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetPerformers() []*IngestScrapedPerformer {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Performers
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetStudio() *IngestScrapedStudio {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Studio
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetTags() []*IngestScrapedTag {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Tags
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetTitle() *string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Title
+}
+func (t *ScrapeIngestScene_ScrapeSingleScene) GetUrls() []string {
+	if t == nil {
+		t = &ScrapeIngestScene_ScrapeSingleScene{}
+	}
+	return t.Urls
+}
+
+type IngestIdentifyCapabilities_Type_Fields struct {
+	Name string "json:\"name\" graphql:\"name\""
+}
+
+func (t *IngestIdentifyCapabilities_Type_Fields) GetName() string {
+	if t == nil {
+		t = &IngestIdentifyCapabilities_Type_Fields{}
+	}
+	return t.Name
+}
+
+type IngestIdentifyCapabilities_Type struct {
+	Fields []*IngestIdentifyCapabilities_Type_Fields "json:\"fields,omitempty\" graphql:\"fields\""
+}
+
+func (t *IngestIdentifyCapabilities_Type) GetFields() []*IngestIdentifyCapabilities_Type_Fields {
+	if t == nil {
+		t = &IngestIdentifyCapabilities_Type{}
+	}
+	return t.Fields
+}
+
+type IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source struct {
+	ScraperID        *string "json:\"scraper_id,omitempty\" graphql:\"scraper_id\""
+	StashBoxEndpoint *string "json:\"stash_box_endpoint,omitempty\" graphql:\"stash_box_endpoint\""
+	StashBoxIndex    *int    "json:\"stash_box_index,omitempty\" graphql:\"stash_box_index\""
+}
+
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source) GetScraperID() *string {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source{}
+	}
+	return t.ScraperID
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source) GetStashBoxEndpoint() *string {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source{}
+	}
+	return t.StashBoxEndpoint
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source) GetStashBoxIndex() *int {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source{}
+	}
+	return t.StashBoxIndex
+}
+
+type IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions struct {
+	CreateMissing *bool                 "json:\"createMissing,omitempty\" graphql:\"createMissing\""
+	Field         string                "json:\"field\" graphql:\"field\""
+	Strategy      IdentifyFieldStrategy "json:\"strategy\" graphql:\"strategy\""
+}
+
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions) GetCreateMissing() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.CreateMissing
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions) GetField() string {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.Field
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions) GetStrategy() *IdentifyFieldStrategy {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return &t.Strategy
+}
+
+type IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options struct {
+	FieldOptions               []*IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions "json:\"fieldOptions,omitempty\" graphql:\"fieldOptions\""
+	IncludeMalePerformers      *bool                                                                                                        "json:\"includeMalePerformers,omitempty\" graphql:\"includeMalePerformers\""
+	PerformerGenders           []GenderEnum                                                                                                 "json:\"performerGenders,omitempty\" graphql:\"performerGenders\""
+	SetCoverImage              *bool                                                                                                        "json:\"setCoverImage,omitempty\" graphql:\"setCoverImage\""
+	SetOrganized               *bool                                                                                                        "json:\"setOrganized,omitempty\" graphql:\"setOrganized\""
+	SkipMultipleMatchTag       *string                                                                                                      "json:\"skipMultipleMatchTag,omitempty\" graphql:\"skipMultipleMatchTag\""
+	SkipMultipleMatches        *bool                                                                                                        "json:\"skipMultipleMatches,omitempty\" graphql:\"skipMultipleMatches\""
+	SkipSingleNamePerformerTag *string                                                                                                      "json:\"skipSingleNamePerformerTag,omitempty\" graphql:\"skipSingleNamePerformerTag\""
+	SkipSingleNamePerformers   *bool                                                                                                        "json:\"skipSingleNamePerformers,omitempty\" graphql:\"skipSingleNamePerformers\""
+}
+
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetFieldOptions() []*IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options_IdentifyOptionsFragment_FieldOptions {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.FieldOptions
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetIncludeMalePerformers() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.IncludeMalePerformers
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetPerformerGenders() []GenderEnum {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.PerformerGenders
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetSetCoverImage() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.SetCoverImage
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetSetOrganized() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.SetOrganized
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetSkipMultipleMatchTag() *string {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.SkipMultipleMatchTag
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetSkipMultipleMatches() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.SkipMultipleMatches
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetSkipSingleNamePerformerTag() *string {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.SkipSingleNamePerformerTag
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options) GetSkipSingleNamePerformers() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options{}
+	}
+	return t.SkipSingleNamePerformers
+}
+
+type IngestDefaultsNative_Configuration_Defaults_Identify_Sources struct {
+	Options *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options "json:\"options,omitempty\" graphql:\"options\""
+	Source  IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source   "json:\"source\" graphql:\"source\""
+}
+
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources) GetOptions() *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Options {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources{}
+	}
+	return t.Options
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Sources) GetSource() *IngestDefaultsNative_Configuration_Defaults_Identify_Sources_Source {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Sources{}
+	}
+	return &t.Source
+}
+
+type IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions struct {
+	CreateMissing *bool                 "json:\"createMissing,omitempty\" graphql:\"createMissing\""
+	Field         string                "json:\"field\" graphql:\"field\""
+	Strategy      IdentifyFieldStrategy "json:\"strategy\" graphql:\"strategy\""
+}
+
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions) GetCreateMissing() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.CreateMissing
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions) GetField() string {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return t.Field
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions) GetStrategy() *IdentifyFieldStrategy {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions{}
+	}
+	return &t.Strategy
+}
+
+type IngestDefaultsNative_Configuration_Defaults_Identify_Options struct {
+	FieldOptions               []*IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions "json:\"fieldOptions,omitempty\" graphql:\"fieldOptions\""
+	IncludeMalePerformers      *bool                                                                                                "json:\"includeMalePerformers,omitempty\" graphql:\"includeMalePerformers\""
+	PerformerGenders           []GenderEnum                                                                                         "json:\"performerGenders,omitempty\" graphql:\"performerGenders\""
+	SetCoverImage              *bool                                                                                                "json:\"setCoverImage,omitempty\" graphql:\"setCoverImage\""
+	SetOrganized               *bool                                                                                                "json:\"setOrganized,omitempty\" graphql:\"setOrganized\""
+	SkipMultipleMatchTag       *string                                                                                              "json:\"skipMultipleMatchTag,omitempty\" graphql:\"skipMultipleMatchTag\""
+	SkipMultipleMatches        *bool                                                                                                "json:\"skipMultipleMatches,omitempty\" graphql:\"skipMultipleMatches\""
+	SkipSingleNamePerformerTag *string                                                                                              "json:\"skipSingleNamePerformerTag,omitempty\" graphql:\"skipSingleNamePerformerTag\""
+	SkipSingleNamePerformers   *bool                                                                                                "json:\"skipSingleNamePerformers,omitempty\" graphql:\"skipSingleNamePerformers\""
+}
+
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetFieldOptions() []*IngestDefaultsNative_Configuration_Defaults_Identify_Options_IdentifyOptionsFragment_FieldOptions {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.FieldOptions
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetIncludeMalePerformers() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.IncludeMalePerformers
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetPerformerGenders() []GenderEnum {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.PerformerGenders
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetSetCoverImage() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.SetCoverImage
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetSetOrganized() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.SetOrganized
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetSkipMultipleMatchTag() *string {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.SkipMultipleMatchTag
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetSkipMultipleMatches() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.SkipMultipleMatches
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetSkipSingleNamePerformerTag() *string {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.SkipSingleNamePerformerTag
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify_Options) GetSkipSingleNamePerformers() *bool {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify_Options{}
+	}
+	return t.SkipSingleNamePerformers
+}
+
+type IngestDefaultsNative_Configuration_Defaults_Identify struct {
+	Options *IngestDefaultsNative_Configuration_Defaults_Identify_Options   "json:\"options,omitempty\" graphql:\"options\""
+	Sources []*IngestDefaultsNative_Configuration_Defaults_Identify_Sources "json:\"sources\" graphql:\"sources\""
+}
+
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify) GetOptions() *IngestDefaultsNative_Configuration_Defaults_Identify_Options {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify{}
+	}
+	return t.Options
+}
+func (t *IngestDefaultsNative_Configuration_Defaults_Identify) GetSources() []*IngestDefaultsNative_Configuration_Defaults_Identify_Sources {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults_Identify{}
+	}
+	return t.Sources
+}
+
+type IngestDefaultsNative_Configuration_Defaults struct {
+	Identify *IngestDefaultsNative_Configuration_Defaults_Identify "json:\"identify,omitempty\" graphql:\"identify\""
+}
+
+func (t *IngestDefaultsNative_Configuration_Defaults) GetIdentify() *IngestDefaultsNative_Configuration_Defaults_Identify {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration_Defaults{}
+	}
+	return t.Identify
+}
+
+type IngestDefaultsNative_Configuration struct {
+	Defaults IngestDefaultsNative_Configuration_Defaults "json:\"defaults\" graphql:\"defaults\""
+}
+
+func (t *IngestDefaultsNative_Configuration) GetDefaults() *IngestDefaultsNative_Configuration_Defaults {
+	if t == nil {
+		t = &IngestDefaultsNative_Configuration{}
+	}
+	return &t.Defaults
+}
+
+type ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent struct {
+	Name         string  "json:\"name\" graphql:\"name\""
+	RemoteSiteID *string "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+}
+
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent) GetName() string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.Name
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent) GetStoredID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent{}
+	}
+	return t.StoredID
+}
+
+type ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent struct {
+	Aliases      *string                                                                             "json:\"aliases,omitempty\" graphql:\"aliases\""
+	Details      *string                                                                             "json:\"details,omitempty\" graphql:\"details\""
+	Image        *string                                                                             "json:\"image,omitempty\" graphql:\"image\""
+	Name         string                                                                              "json:\"name\" graphql:\"name\""
+	Parent       *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent "json:\"parent,omitempty\" graphql:\"parent\""
+	RemoteSiteID *string                                                                             "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string                                                                             "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+	URL          *string                                                                             "json:\"url,omitempty\" graphql:\"url\""
+	Urls         []string                                                                            "json:\"urls,omitempty\" graphql:\"urls\""
+}
+
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetAliases() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Aliases
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetDetails() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Details
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetImage() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Image
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetName() string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Name
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetParent() *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent_Parent {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Parent
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetStoredID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.StoredID
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetURL() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.URL
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent) GetUrls() []string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Studio_IngestScrapedStudio_Parent{}
+	}
+	return t.Urls
+}
+
+type ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers struct {
+	Aliases        *string  "json:\"aliases,omitempty\" graphql:\"aliases\""
+	Birthdate      *string  "json:\"birthdate,omitempty\" graphql:\"birthdate\""
+	CareerLength   *string  "json:\"career_length,omitempty\" graphql:\"career_length\""
+	Circumcised    *string  "json:\"circumcised,omitempty\" graphql:\"circumcised\""
+	Country        *string  "json:\"country,omitempty\" graphql:\"country\""
+	DeathDate      *string  "json:\"death_date,omitempty\" graphql:\"death_date\""
+	Details        *string  "json:\"details,omitempty\" graphql:\"details\""
+	Disambiguation *string  "json:\"disambiguation,omitempty\" graphql:\"disambiguation\""
+	Ethnicity      *string  "json:\"ethnicity,omitempty\" graphql:\"ethnicity\""
+	EyeColor       *string  "json:\"eye_color,omitempty\" graphql:\"eye_color\""
+	FakeTits       *string  "json:\"fake_tits,omitempty\" graphql:\"fake_tits\""
+	Gender         *string  "json:\"gender,omitempty\" graphql:\"gender\""
+	HairColor      *string  "json:\"hair_color,omitempty\" graphql:\"hair_color\""
+	Height         *string  "json:\"height,omitempty\" graphql:\"height\""
+	Images         []string "json:\"images,omitempty\" graphql:\"images\""
+	Instagram      *string  "json:\"instagram,omitempty\" graphql:\"instagram\""
+	Measurements   *string  "json:\"measurements,omitempty\" graphql:\"measurements\""
+	Name           *string  "json:\"name,omitempty\" graphql:\"name\""
+	PenisLength    *string  "json:\"penis_length,omitempty\" graphql:\"penis_length\""
+	Piercings      *string  "json:\"piercings,omitempty\" graphql:\"piercings\""
+	RemoteSiteID   *string  "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID       *string  "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+	Tattoos        *string  "json:\"tattoos,omitempty\" graphql:\"tattoos\""
+	Twitter        *string  "json:\"twitter,omitempty\" graphql:\"twitter\""
+	URL            *string  "json:\"url,omitempty\" graphql:\"url\""
+	Urls           []string "json:\"urls,omitempty\" graphql:\"urls\""
+	Weight         *string  "json:\"weight,omitempty\" graphql:\"weight\""
+}
+
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetAliases() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Aliases
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetBirthdate() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Birthdate
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetCareerLength() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.CareerLength
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetCircumcised() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Circumcised
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetCountry() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Country
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetDeathDate() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.DeathDate
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetDetails() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Details
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetDisambiguation() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Disambiguation
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetEthnicity() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Ethnicity
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetEyeColor() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.EyeColor
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetFakeTits() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.FakeTits
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetGender() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Gender
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetHairColor() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.HairColor
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetHeight() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Height
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetImages() []string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Images
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetInstagram() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Instagram
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetMeasurements() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Measurements
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetName() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Name
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetPenisLength() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.PenisLength
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetPiercings() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Piercings
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetStoredID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.StoredID
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetTattoos() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Tattoos
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetTwitter() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Twitter
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetURL() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.URL
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetUrls() []string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Urls
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers) GetWeight() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers{}
+	}
+	return t.Weight
+}
+
+type ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags struct {
+	Name         string  "json:\"name\" graphql:\"name\""
+	RemoteSiteID *string "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	StoredID     *string "json:\"stored_id,omitempty\" graphql:\"stored_id\""
+}
+
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags) GetName() string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags{}
+	}
+	return t.Name
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags) GetStoredID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags{}
+	}
+	return t.StoredID
+}
+
+type ScrapeIngestSceneLegacy_ScrapeSingleScene struct {
+	Code         *string                                                 "json:\"code,omitempty\" graphql:\"code\""
+	Date         *string                                                 "json:\"date,omitempty\" graphql:\"date\""
+	Details      *string                                                 "json:\"details,omitempty\" graphql:\"details\""
+	Director     *string                                                 "json:\"director,omitempty\" graphql:\"director\""
+	Image        *string                                                 "json:\"image,omitempty\" graphql:\"image\""
+	Performers   []*ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers "json:\"performers,omitempty\" graphql:\"performers\""
+	RemoteSiteID *string                                                 "json:\"remote_site_id,omitempty\" graphql:\"remote_site_id\""
+	Studio       *IngestScrapedStudio                                    "json:\"studio,omitempty\" graphql:\"studio\""
+	Tags         []*ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags       "json:\"tags,omitempty\" graphql:\"tags\""
+	Title        *string                                                 "json:\"title,omitempty\" graphql:\"title\""
+	Urls         []string                                                "json:\"urls,omitempty\" graphql:\"urls\""
+}
+
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetCode() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Code
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetDate() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Date
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetDetails() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Details
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetDirector() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Director
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetImage() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Image
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetPerformers() []*ScrapeIngestSceneLegacy_ScrapeSingleScene_Performers {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Performers
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetRemoteSiteID() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.RemoteSiteID
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetStudio() *IngestScrapedStudio {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Studio
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetTags() []*ScrapeIngestSceneLegacy_ScrapeSingleScene_Tags {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Tags
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetTitle() *string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Title
+}
+func (t *ScrapeIngestSceneLegacy_ScrapeSingleScene) GetUrls() []string {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy_ScrapeSingleScene{}
+	}
+	return t.Urls
+}
+
+type FindIngestStudios_FindStudios_Studios struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *FindIngestStudios_FindStudios_Studios) GetID() string {
+	if t == nil {
+		t = &FindIngestStudios_FindStudios_Studios{}
+	}
+	return t.ID
+}
+
+type FindIngestStudios_FindStudios struct {
+	Studios []*FindIngestStudios_FindStudios_Studios "json:\"studios\" graphql:\"studios\""
+}
+
+func (t *FindIngestStudios_FindStudios) GetStudios() []*FindIngestStudios_FindStudios_Studios {
+	if t == nil {
+		t = &FindIngestStudios_FindStudios{}
+	}
+	return t.Studios
+}
+
+type FindIngestPerformers_FindPerformers_Performers struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *FindIngestPerformers_FindPerformers_Performers) GetID() string {
+	if t == nil {
+		t = &FindIngestPerformers_FindPerformers_Performers{}
+	}
+	return t.ID
+}
+
+type FindIngestPerformers_FindPerformers struct {
+	Performers []*FindIngestPerformers_FindPerformers_Performers "json:\"performers\" graphql:\"performers\""
+}
+
+func (t *FindIngestPerformers_FindPerformers) GetPerformers() []*FindIngestPerformers_FindPerformers_Performers {
+	if t == nil {
+		t = &FindIngestPerformers_FindPerformers{}
+	}
+	return t.Performers
+}
+
+type FindIngestTags_FindTags_Tags struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *FindIngestTags_FindTags_Tags) GetID() string {
+	if t == nil {
+		t = &FindIngestTags_FindTags_Tags{}
+	}
+	return t.ID
+}
+
+type FindIngestTags_FindTags struct {
+	Tags []*FindIngestTags_FindTags_Tags "json:\"tags\" graphql:\"tags\""
+}
+
+func (t *FindIngestTags_FindTags) GetTags() []*FindIngestTags_FindTags_Tags {
+	if t == nil {
+		t = &FindIngestTags_FindTags{}
+	}
+	return t.Tags
+}
+
+type IngestStudio_FindStudio_StashIds struct {
+	Endpoint  string    "json:\"endpoint\" graphql:\"endpoint\""
+	StashID   string    "json:\"stash_id\" graphql:\"stash_id\""
+	UpdatedAt time.Time "json:\"updated_at\" graphql:\"updated_at\""
+}
+
+func (t *IngestStudio_FindStudio_StashIds) GetEndpoint() string {
+	if t == nil {
+		t = &IngestStudio_FindStudio_StashIds{}
+	}
+	return t.Endpoint
+}
+func (t *IngestStudio_FindStudio_StashIds) GetStashID() string {
+	if t == nil {
+		t = &IngestStudio_FindStudio_StashIds{}
+	}
+	return t.StashID
+}
+func (t *IngestStudio_FindStudio_StashIds) GetUpdatedAt() *time.Time {
+	if t == nil {
+		t = &IngestStudio_FindStudio_StashIds{}
+	}
+	return &t.UpdatedAt
+}
+
+type IngestStudio_FindStudio struct {
+	ID       string                              "json:\"id\" graphql:\"id\""
+	StashIds []*IngestStudio_FindStudio_StashIds "json:\"stash_ids\" graphql:\"stash_ids\""
+}
+
+func (t *IngestStudio_FindStudio) GetID() string {
+	if t == nil {
+		t = &IngestStudio_FindStudio{}
+	}
+	return t.ID
+}
+func (t *IngestStudio_FindStudio) GetStashIds() []*IngestStudio_FindStudio_StashIds {
+	if t == nil {
+		t = &IngestStudio_FindStudio{}
+	}
+	return t.StashIds
+}
+
+type CreateIngestStudio_StudioCreate struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateIngestStudio_StudioCreate) GetID() string {
+	if t == nil {
+		t = &CreateIngestStudio_StudioCreate{}
+	}
+	return t.ID
+}
+
+type UpdateIngestStudio_StudioUpdate struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *UpdateIngestStudio_StudioUpdate) GetID() string {
+	if t == nil {
+		t = &UpdateIngestStudio_StudioUpdate{}
+	}
+	return t.ID
+}
+
+type CreateIngestPerformer_PerformerCreate struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateIngestPerformer_PerformerCreate) GetID() string {
+	if t == nil {
+		t = &CreateIngestPerformer_PerformerCreate{}
+	}
+	return t.ID
+}
+
+type CreateIngestTag_TagCreate struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *CreateIngestTag_TagCreate) GetID() string {
+	if t == nil {
+		t = &CreateIngestTag_TagCreate{}
+	}
+	return t.ID
+}
+
+type SaveIngestScene_SceneUpdate struct {
+	ID string "json:\"id\" graphql:\"id\""
+}
+
+func (t *SaveIngestScene_SceneUpdate) GetID() string {
+	if t == nil {
+		t = &SaveIngestScene_SceneUpdate{}
+	}
+	return t.ID
 }
 
 type FindPerformerByID struct {
@@ -1090,6 +2679,160 @@ func (t *RemoveIngestScene) GetSceneDestroy() bool {
 		t = &RemoveIngestScene{}
 	}
 	return t.SceneDestroy
+}
+
+type IngestLogs struct {
+	Logs []*IngestLogs_Logs "json:\"logs\" graphql:\"logs\""
+}
+
+func (t *IngestLogs) GetLogs() []*IngestLogs_Logs {
+	if t == nil {
+		t = &IngestLogs{}
+	}
+	return t.Logs
+}
+
+type ScrapeIngestScene struct {
+	ScrapeSingleScene []*ScrapeIngestScene_ScrapeSingleScene "json:\"scrapeSingleScene\" graphql:\"scrapeSingleScene\""
+}
+
+func (t *ScrapeIngestScene) GetScrapeSingleScene() []*ScrapeIngestScene_ScrapeSingleScene {
+	if t == nil {
+		t = &ScrapeIngestScene{}
+	}
+	return t.ScrapeSingleScene
+}
+
+type IngestIdentifyCapabilities struct {
+	Type *IngestIdentifyCapabilities_Type "json:\"__type,omitempty\" graphql:\"__type\""
+}
+
+func (t *IngestIdentifyCapabilities) GetType() *IngestIdentifyCapabilities_Type {
+	if t == nil {
+		t = &IngestIdentifyCapabilities{}
+	}
+	return t.Type
+}
+
+type IngestDefaultsNative struct {
+	Configuration IngestDefaultsNative_Configuration "json:\"configuration\" graphql:\"configuration\""
+}
+
+func (t *IngestDefaultsNative) GetConfiguration() *IngestDefaultsNative_Configuration {
+	if t == nil {
+		t = &IngestDefaultsNative{}
+	}
+	return &t.Configuration
+}
+
+type ScrapeIngestSceneLegacy struct {
+	ScrapeSingleScene []*ScrapeIngestSceneLegacy_ScrapeSingleScene "json:\"scrapeSingleScene\" graphql:\"scrapeSingleScene\""
+}
+
+func (t *ScrapeIngestSceneLegacy) GetScrapeSingleScene() []*ScrapeIngestSceneLegacy_ScrapeSingleScene {
+	if t == nil {
+		t = &ScrapeIngestSceneLegacy{}
+	}
+	return t.ScrapeSingleScene
+}
+
+type FindIngestStudios struct {
+	FindStudios FindIngestStudios_FindStudios "json:\"findStudios\" graphql:\"findStudios\""
+}
+
+func (t *FindIngestStudios) GetFindStudios() *FindIngestStudios_FindStudios {
+	if t == nil {
+		t = &FindIngestStudios{}
+	}
+	return &t.FindStudios
+}
+
+type FindIngestPerformers struct {
+	FindPerformers FindIngestPerformers_FindPerformers "json:\"findPerformers\" graphql:\"findPerformers\""
+}
+
+func (t *FindIngestPerformers) GetFindPerformers() *FindIngestPerformers_FindPerformers {
+	if t == nil {
+		t = &FindIngestPerformers{}
+	}
+	return &t.FindPerformers
+}
+
+type FindIngestTags struct {
+	FindTags FindIngestTags_FindTags "json:\"findTags\" graphql:\"findTags\""
+}
+
+func (t *FindIngestTags) GetFindTags() *FindIngestTags_FindTags {
+	if t == nil {
+		t = &FindIngestTags{}
+	}
+	return &t.FindTags
+}
+
+type IngestStudio struct {
+	FindStudio *IngestStudio_FindStudio "json:\"findStudio,omitempty\" graphql:\"findStudio\""
+}
+
+func (t *IngestStudio) GetFindStudio() *IngestStudio_FindStudio {
+	if t == nil {
+		t = &IngestStudio{}
+	}
+	return t.FindStudio
+}
+
+type CreateIngestStudio struct {
+	StudioCreate *CreateIngestStudio_StudioCreate "json:\"studioCreate,omitempty\" graphql:\"studioCreate\""
+}
+
+func (t *CreateIngestStudio) GetStudioCreate() *CreateIngestStudio_StudioCreate {
+	if t == nil {
+		t = &CreateIngestStudio{}
+	}
+	return t.StudioCreate
+}
+
+type UpdateIngestStudio struct {
+	StudioUpdate *UpdateIngestStudio_StudioUpdate "json:\"studioUpdate,omitempty\" graphql:\"studioUpdate\""
+}
+
+func (t *UpdateIngestStudio) GetStudioUpdate() *UpdateIngestStudio_StudioUpdate {
+	if t == nil {
+		t = &UpdateIngestStudio{}
+	}
+	return t.StudioUpdate
+}
+
+type CreateIngestPerformer struct {
+	PerformerCreate *CreateIngestPerformer_PerformerCreate "json:\"performerCreate,omitempty\" graphql:\"performerCreate\""
+}
+
+func (t *CreateIngestPerformer) GetPerformerCreate() *CreateIngestPerformer_PerformerCreate {
+	if t == nil {
+		t = &CreateIngestPerformer{}
+	}
+	return t.PerformerCreate
+}
+
+type CreateIngestTag struct {
+	TagCreate *CreateIngestTag_TagCreate "json:\"tagCreate,omitempty\" graphql:\"tagCreate\""
+}
+
+func (t *CreateIngestTag) GetTagCreate() *CreateIngestTag_TagCreate {
+	if t == nil {
+		t = &CreateIngestTag{}
+	}
+	return t.TagCreate
+}
+
+type SaveIngestScene struct {
+	SceneUpdate *SaveIngestScene_SceneUpdate "json:\"sceneUpdate,omitempty\" graphql:\"sceneUpdate\""
+}
+
+func (t *SaveIngestScene) GetSceneUpdate() *SaveIngestScene_SceneUpdate {
+	if t == nil {
+		t = &SaveIngestScene{}
+	}
+	return t.SceneUpdate
 }
 
 const FindPerformerByIDDocument = `query FindPerformerByID ($id: ID!) {
@@ -1595,6 +3338,18 @@ const IngestScenesDocument = `query IngestScenes ($scene_filter: SceneFilterType
 			title
 			code
 			date
+			details
+			director
+			urls
+			organized
+			stash_ids {
+				endpoint
+				stash_id
+				updated_at
+			}
+			tags {
+				id
+			}
 			studio {
 				id
 				name
@@ -1655,6 +3410,539 @@ func (c *Client) RemoveIngestScene(ctx context.Context, input SceneDestroyInput,
 	return &res, nil
 }
 
+const IngestLogsDocument = `query IngestLogs {
+	logs {
+		time
+		level
+		message
+	}
+}
+`
+
+func (c *Client) IngestLogs(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestLogs, error) {
+	vars := map[string]any{}
+
+	var res IngestLogs
+	if err := c.Client.Post(ctx, "IngestLogs", IngestLogsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ScrapeIngestSceneDocument = `query ScrapeIngestScene ($source: ScraperSourceInput!, $input: ScrapeSingleSceneInput!, $images: Boolean!) {
+	scrapeSingleScene(source: $source, input: $input) {
+		title
+		code
+		date
+		details
+		director
+		urls
+		remote_site_id
+		image @include(if: $images)
+		studio {
+			... IngestScrapedStudio
+		}
+		performers {
+			... IngestScrapedPerformer
+		}
+		tags {
+			... IngestScrapedTag
+		}
+	}
+}
+fragment IngestScrapedStudio on ScrapedStudio {
+	stored_id
+	name
+	url
+	urls
+	image
+	details
+	aliases
+	remote_site_id
+	parent {
+		stored_id
+		name
+		url
+		urls
+		image
+		details
+		aliases
+		remote_site_id
+		parent {
+			stored_id
+			name
+			remote_site_id
+		}
+	}
+}
+fragment IngestScrapedPerformer on ScrapedPerformer {
+	stored_id
+	name
+	disambiguation
+	gender
+	url
+	urls
+	twitter
+	instagram
+	birthdate
+	ethnicity
+	country
+	eye_color
+	height
+	measurements
+	fake_tits
+	penis_length
+	circumcised
+	career_start
+	career_end
+	tattoos
+	piercings
+	aliases
+	images
+	details
+	death_date
+	hair_color
+	weight
+	remote_site_id
+}
+fragment IngestScrapedTag on ScrapedTag {
+	stored_id
+	name
+	remote_site_id
+	description
+	alias_list
+	parent {
+		stored_id
+		name
+		remote_site_id
+	}
+}
+`
+
+func (c *Client) ScrapeIngestScene(ctx context.Context, source ScraperSourceInput, input ScrapeSingleSceneInput, images bool, interceptors ...clientv2.RequestInterceptor) (*ScrapeIngestScene, error) {
+	vars := map[string]any{
+		"source": source,
+		"input":  input,
+		"images": images,
+	}
+
+	var res ScrapeIngestScene
+	if err := c.Client.Post(ctx, "ScrapeIngestScene", ScrapeIngestSceneDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const IngestIdentifyCapabilitiesDocument = `query IngestIdentifyCapabilities {
+	__type(name: "IdentifyMetadataOptions") {
+		fields {
+			name
+		}
+	}
+}
+`
+
+func (c *Client) IngestIdentifyCapabilities(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestIdentifyCapabilities, error) {
+	vars := map[string]any{}
+
+	var res IngestIdentifyCapabilities
+	if err := c.Client.Post(ctx, "IngestIdentifyCapabilities", IngestIdentifyCapabilitiesDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const IngestDefaultsNativeDocument = `query IngestDefaultsNative {
+	configuration {
+		defaults {
+			identify {
+				sources {
+					source {
+						stash_box_index
+						stash_box_endpoint
+						scraper_id
+					}
+					options {
+						... IdentifyOptionsFragment
+						performerGenders
+					}
+				}
+				options {
+					... IdentifyOptionsFragment
+					performerGenders
+				}
+			}
+		}
+	}
+}
+fragment IdentifyOptionsFragment on IdentifyMetadataOptions {
+	fieldOptions {
+		field
+		strategy
+		createMissing
+	}
+	setCoverImage
+	setOrganized
+	includeMalePerformers
+	skipMultipleMatches
+	skipMultipleMatchTag
+	skipSingleNamePerformers
+	skipSingleNamePerformerTag
+}
+`
+
+func (c *Client) IngestDefaultsNative(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*IngestDefaultsNative, error) {
+	vars := map[string]any{}
+
+	var res IngestDefaultsNative
+	if err := c.Client.Post(ctx, "IngestDefaultsNative", IngestDefaultsNativeDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const ScrapeIngestSceneLegacyDocument = `query ScrapeIngestSceneLegacy ($source: ScraperSourceInput!, $input: ScrapeSingleSceneInput!, $images: Boolean!) {
+	scrapeSingleScene(source: $source, input: $input) {
+		title
+		code
+		date
+		details
+		director
+		urls
+		remote_site_id
+		image @include(if: $images)
+		studio {
+			... IngestScrapedStudio
+		}
+		performers {
+			stored_id
+			name
+			disambiguation
+			gender
+			url
+			urls
+			twitter
+			instagram
+			birthdate
+			ethnicity
+			country
+			eye_color
+			height
+			measurements
+			fake_tits
+			penis_length
+			circumcised
+			career_length
+			tattoos
+			piercings
+			aliases
+			images
+			details
+			death_date
+			hair_color
+			weight
+			remote_site_id
+		}
+		tags {
+			stored_id
+			name
+			remote_site_id
+		}
+	}
+}
+fragment IngestScrapedStudio on ScrapedStudio {
+	stored_id
+	name
+	url
+	urls
+	image
+	details
+	aliases
+	remote_site_id
+	parent {
+		stored_id
+		name
+		url
+		urls
+		image
+		details
+		aliases
+		remote_site_id
+		parent {
+			stored_id
+			name
+			remote_site_id
+		}
+	}
+}
+`
+
+func (c *Client) ScrapeIngestSceneLegacy(ctx context.Context, source ScraperSourceInput, input ScrapeSingleSceneInput, images bool, interceptors ...clientv2.RequestInterceptor) (*ScrapeIngestSceneLegacy, error) {
+	vars := map[string]any{
+		"source": source,
+		"input":  input,
+		"images": images,
+	}
+
+	var res ScrapeIngestSceneLegacy
+	if err := c.Client.Post(ctx, "ScrapeIngestSceneLegacy", ScrapeIngestSceneLegacyDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const FindIngestStudiosDocument = `query FindIngestStudios ($criterion: StashIDCriterionInput!) {
+	findStudios(studio_filter: {stash_id_endpoint:$criterion}, filter: {per_page:2}) {
+		studios {
+			id
+		}
+	}
+}
+`
+
+func (c *Client) FindIngestStudios(ctx context.Context, criterion StashIDCriterionInput, interceptors ...clientv2.RequestInterceptor) (*FindIngestStudios, error) {
+	vars := map[string]any{
+		"criterion": criterion,
+	}
+
+	var res FindIngestStudios
+	if err := c.Client.Post(ctx, "FindIngestStudios", FindIngestStudiosDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const FindIngestPerformersDocument = `query FindIngestPerformers ($criterion: StashIDCriterionInput!) {
+	findPerformers(performer_filter: {stash_id_endpoint:$criterion}, filter: {per_page:2}) {
+		performers {
+			id
+		}
+	}
+}
+`
+
+func (c *Client) FindIngestPerformers(ctx context.Context, criterion StashIDCriterionInput, interceptors ...clientv2.RequestInterceptor) (*FindIngestPerformers, error) {
+	vars := map[string]any{
+		"criterion": criterion,
+	}
+
+	var res FindIngestPerformers
+	if err := c.Client.Post(ctx, "FindIngestPerformers", FindIngestPerformersDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const FindIngestTagsDocument = `query FindIngestTags ($criterion: StashIDCriterionInput!) {
+	findTags(tag_filter: {stash_id_endpoint:$criterion}, filter: {per_page:2}) {
+		tags {
+			id
+		}
+	}
+}
+`
+
+func (c *Client) FindIngestTags(ctx context.Context, criterion StashIDCriterionInput, interceptors ...clientv2.RequestInterceptor) (*FindIngestTags, error) {
+	vars := map[string]any{
+		"criterion": criterion,
+	}
+
+	var res FindIngestTags
+	if err := c.Client.Post(ctx, "FindIngestTags", FindIngestTagsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const IngestStudioDocument = `query IngestStudio ($id: ID!) {
+	findStudio(id: $id) {
+		id
+		stash_ids {
+			endpoint
+			stash_id
+			updated_at
+		}
+	}
+}
+`
+
+func (c *Client) IngestStudio(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*IngestStudio, error) {
+	vars := map[string]any{
+		"id": id,
+	}
+
+	var res IngestStudio
+	if err := c.Client.Post(ctx, "IngestStudio", IngestStudioDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateIngestStudioDocument = `mutation CreateIngestStudio ($input: StudioCreateInput!) {
+	studioCreate(input: $input) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateIngestStudio(ctx context.Context, input StudioCreateInput, interceptors ...clientv2.RequestInterceptor) (*CreateIngestStudio, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res CreateIngestStudio
+	if err := c.Client.Post(ctx, "CreateIngestStudio", CreateIngestStudioDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const UpdateIngestStudioDocument = `mutation UpdateIngestStudio ($input: StudioUpdateInput!) {
+	studioUpdate(input: $input) {
+		id
+	}
+}
+`
+
+func (c *Client) UpdateIngestStudio(ctx context.Context, input StudioUpdateInput, interceptors ...clientv2.RequestInterceptor) (*UpdateIngestStudio, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res UpdateIngestStudio
+	if err := c.Client.Post(ctx, "UpdateIngestStudio", UpdateIngestStudioDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateIngestPerformerDocument = `mutation CreateIngestPerformer ($input: PerformerCreateInput!) {
+	performerCreate(input: $input) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateIngestPerformer(ctx context.Context, input PerformerCreateInput, interceptors ...clientv2.RequestInterceptor) (*CreateIngestPerformer, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res CreateIngestPerformer
+	if err := c.Client.Post(ctx, "CreateIngestPerformer", CreateIngestPerformerDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const CreateIngestTagDocument = `mutation CreateIngestTag ($input: TagCreateInput!) {
+	tagCreate(input: $input) {
+		id
+	}
+}
+`
+
+func (c *Client) CreateIngestTag(ctx context.Context, input TagCreateInput, interceptors ...clientv2.RequestInterceptor) (*CreateIngestTag, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res CreateIngestTag
+	if err := c.Client.Post(ctx, "CreateIngestTag", CreateIngestTagDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+const SaveIngestSceneDocument = `mutation SaveIngestScene ($input: SceneUpdateInput!) {
+	sceneUpdate(input: $input) {
+		id
+	}
+}
+`
+
+func (c *Client) SaveIngestScene(ctx context.Context, input SceneUpdateInput, interceptors ...clientv2.RequestInterceptor) (*SaveIngestScene, error) {
+	vars := map[string]any{
+		"input": input,
+	}
+
+	var res SaveIngestScene
+	if err := c.Client.Post(ctx, "SaveIngestScene", SaveIngestSceneDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 var DocumentOperationNames = map[string]string{
 	FindPerformerByIDDocument:           "FindPerformerByID",
 	FindPerformersDocument:              "FindPerformers",
@@ -1671,4 +3959,18 @@ var DocumentOperationNames = map[string]string{
 	IngestDefaultsDocument:              "IngestDefaults",
 	IngestScenesDocument:                "IngestScenes",
 	RemoveIngestSceneDocument:           "RemoveIngestScene",
+	IngestLogsDocument:                  "IngestLogs",
+	ScrapeIngestSceneDocument:           "ScrapeIngestScene",
+	IngestIdentifyCapabilitiesDocument:  "IngestIdentifyCapabilities",
+	IngestDefaultsNativeDocument:        "IngestDefaultsNative",
+	ScrapeIngestSceneLegacyDocument:     "ScrapeIngestSceneLegacy",
+	FindIngestStudiosDocument:           "FindIngestStudios",
+	FindIngestPerformersDocument:        "FindIngestPerformers",
+	FindIngestTagsDocument:              "FindIngestTags",
+	IngestStudioDocument:                "IngestStudio",
+	CreateIngestStudioDocument:          "CreateIngestStudio",
+	UpdateIngestStudioDocument:          "UpdateIngestStudio",
+	CreateIngestPerformerDocument:       "CreateIngestPerformer",
+	CreateIngestTagDocument:             "CreateIngestTag",
+	SaveIngestSceneDocument:             "SaveIngestScene",
 }

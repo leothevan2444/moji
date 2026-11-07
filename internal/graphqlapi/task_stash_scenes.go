@@ -39,7 +39,13 @@ func (r *Resolver) loadTaskStashScenes(ctx context.Context, id string) ([]*model
 	if !ok {
 		return nil, errors.New("Stash scene information is unavailable")
 	}
-	scenes, err := reader.FindIngestScenes(ctx, task.StashScanPath, ids)
+	// Stash rejects an entire ID query when any linked scene was deleted.
+	// Query the delivered path, then retain only the persisted scene identities.
+	lookupIDs := ids
+	if strings.TrimSpace(task.StashScanPath) != "" {
+		lookupIDs = nil
+	}
+	scenes, err := reader.FindIngestScenes(ctx, task.StashScanPath, lookupIDs)
 	if err != nil {
 		return nil, err
 	}

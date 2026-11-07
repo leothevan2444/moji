@@ -869,6 +869,12 @@
     "handledTitle": "{{task}} 已处理",
     "handledDetail": "已退出待处理队列，任务会继续执行。",
     "issues": {
+      "STASH_CODE_NOT_FOUND": "番号挖掘未匹配",
+      "STASH_CODE_AMBIGUOUS": "番号挖掘需要选择",
+      "STASH_CODE_RELATIONS_REQUIRED": "Stash 关联信息需要处理",
+      "STASH_CODE_PLAN_CHANGED": "番号识别需要核对",
+      "STASH_CODE_IDENTIFY_FAILED": "番号挖掘或保存失败",
+      "STASH_STUDIO_CONFLICT": "Stash 片商关联冲突",
       "STASH_IDENTIFY_FAILED": "Stash 识别失败",
       "STASH_GENERATE_FAILED": "Stash 资源生成失败",
       "STASH_INGEST_INCOMPLETE": "入库校验未通过",
@@ -1022,6 +1028,7 @@
     "diagnosticsCopied": "诊断信息已复制"
   },
   "taskStash": {
+    "notFound": "未找到关联的 Stash 影片。如果已主动删除，可移除对应的 Moji 任务。",
     "title": "Stash 影片信息",
     "pending": "入库后显示影片信息",
     "empty": "未找到关联的 Stash 影片",
@@ -1563,7 +1570,23 @@
   },
   "taskModel": {
     "ingest": {
-      "sceneMissing": "Stash 中未找到交付路径下的影片。请检查文件和扫描结果，然后重试。",
+      "codeNotFound": "指纹未匹配，按番号挖掘也未找到完全一致的结果。请在 Stash 手动挖掘。",
+      "codeAmbiguous": "指纹未匹配，按番号挖掘得到多个一致结果。请在 Stash 核对并选择。",
+      "codeRelations": "Stash 未能关联或创建片商、演员或标签。请在 Stash 检查相应记录后重试。",
+      "codeChanged": "Stash 配置或影片信息已变更，已停止自动保存。请在 Stash 核对后完成识别。",
+      "codeFailed": "番号挖掘或保存未能确认完成。请检查 Stash 连接和错误日志后重试。",
+      "fieldSeparator": "、",
+      "fields": {
+        "media_file": "视频文件",
+        "title": "标题",
+        "code": "番号",
+        "date": "发行日期",
+        "studio": "片商",
+        "performers": "演员"
+      },
+      "missingFields": "Stash 识别结果缺少：{{fields}}。请在 Stash 补齐后重试。",
+      "studioConflict": "Stash 保存识别结果失败：片商名称与已有记录冲突。请在 Stash 关联已有片商后重试。",
+      "sceneMissing": "Stash 中未找到关联影片。如果已主动删除，可移除 Moji 任务；如需保留，请检查文件和扫描结果。",
       "sceneChanged": "Stash 影片记录持续变化，自动恢复已停止。请等待库整理完成后重试。",
       "sourcesMissing": "Stash 尚未保存可用的 Identify 来源。请在 Stash 识别弹窗中配置来源并设为默认，然后重试。",
       "verifyingDetail": "检查 Stash 中的影片文件和识别结果。",
@@ -1576,8 +1599,8 @@
       "generate": "Stash 生成中",
       "identify": "Stash 识别中",
       "verify": "Stash 入库验证中",
-      "incomplete": "Stash 中尚未收录目标影片，或番号、标题、日期、片商、演员信息不完整。请在 Stash 检查识别结果和 Identify 来源，调整后重试。",
-      "failed": "Stash 入库步骤失败。请检查 Stash 后台任务日志及 Identify 来源配置，然后重试。"
+      "incomplete": "Stash 识别作业已结束，但影片元数据不完整。请在任务详情查看缺失字段，并检查 Stash 识别日志。",
+      "failed": "Stash 入库步骤失败。请查看 Stash 对应任务的错误日志，处理后重试。"
     },
     "manualMagnet": "手动磁链任务",
     "sources": {

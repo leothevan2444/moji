@@ -211,16 +211,27 @@ export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
   const qbtState = normalizeStatus(task.qbittorrentState || "");
 
   const ingestErrors: Record<string, string> = {
+    STASH_CODE_NOT_FOUND: "codeNotFound",
+    STASH_CODE_AMBIGUOUS: "codeAmbiguous",
+    STASH_CODE_RELATIONS_REQUIRED: "codeRelations",
+    STASH_CODE_PLAN_CHANGED: "codeChanged",
+    STASH_CODE_IDENTIFY_FAILED: "codeFailed",
+    STASH_STUDIO_CONFLICT: "studioConflict",
     STASH_SCENE_MISSING: "sceneMissing",
     STASH_SCENE_CHANGED: "sceneChanged",
     STASH_IDENTIFY_SOURCES_MISSING: "sourcesMissing",
   };
   const ingestError = ingestErrors[task.stageErrorCode || ""];
   if (ingestError) {
-    return { title: stashIngestLabel(task), detail: tr(`taskModel.ingest.${ingestError}`), tone: "tone-danger" };
+    return { title: tr(`workbench.issues.${task.stageErrorCode}`), detail: tr(`taskModel.ingest.${ingestError}`), tone: "tone-danger" };
   }
   if (["STASH_GENERATE_FAILED", "STASH_IDENTIFY_FAILED", "STASH_INGEST_INCOMPLETE"].includes(task.stageErrorCode || "")) {
-    return { title: stashIngestLabel(task), detail: tr(task.stageErrorCode === "STASH_INGEST_INCOMPLETE" ? "taskModel.ingest.incomplete" : "taskModel.ingest.failed"), tone: "tone-danger" };
+    const fields = task.stageErrorMessage?.match(/; missing fields: ([a-z_, ]+)$/)?.[1].split(", ");
+    const known = ["media_file", "title", "code", "date", "studio", "performers"];
+    const detail = task.stageErrorCode === "STASH_INGEST_INCOMPLETE" && fields?.length && fields.every(field => known.includes(field))
+      ? tr("taskModel.ingest.missingFields", { fields: fields.map(field => tr(`taskModel.ingest.fields.${field}`)).join(tr("taskModel.ingest.fieldSeparator")) })
+      : tr(task.stageErrorCode === "STASH_INGEST_INCOMPLETE" ? "taskModel.ingest.incomplete" : "taskModel.ingest.failed");
+    return { title: tr(`workbench.issues.${task.stageErrorCode}`), detail, tone: "tone-danger" };
   }
 
   const transferFailure = describeTransferFailure(transferError);

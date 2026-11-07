@@ -872,6 +872,12 @@
     "handledTitle": "{{task}} handled",
     "handledDetail": "This item has left the attention queue. Processing can continue.",
     "issues": {
+      "STASH_CODE_NOT_FOUND": "No exact code match",
+      "STASH_CODE_AMBIGUOUS": "Choose an identification result",
+      "STASH_CODE_RELATIONS_REQUIRED": "Stash relationships need attention",
+      "STASH_CODE_PLAN_CHANGED": "Review code identification",
+      "STASH_CODE_IDENTIFY_FAILED": "Code scraping or saving failed",
+      "STASH_STUDIO_CONFLICT": "Stash studio association conflict",
       "STASH_IDENTIFY_FAILED": "Stash identification failed",
       "STASH_GENERATE_FAILED": "Stash resource generation failed",
       "STASH_INGEST_INCOMPLETE": "Ingest verification did not pass",
@@ -1025,6 +1031,7 @@
     "diagnosticsCopied": "Diagnostic information copied"
   },
   "taskStash": {
+    "notFound": "Linked movies were not found in Stash. If you deleted them intentionally, remove the corresponding Moji task.",
     "title": "Stash movie information",
     "pending": "Movie information appears after ingest",
     "empty": "No linked Stash movies found",
@@ -1573,7 +1580,23 @@
   },
   "taskModel": {
     "ingest": {
-      "sceneMissing": "No Stash scenes exist under the delivered path. Check the files and scan results, then retry.",
+      "codeNotFound": "Fingerprints did not match, and keyword scraping found no exact code match. Scrape manually in Stash.",
+      "codeAmbiguous": "Fingerprints did not match, and keyword scraping found multiple exact code matches. Review and select a result in Stash.",
+      "codeRelations": "Stash could not link or create the scraped studio, performers, or tags. Review the affected records in Stash, then retry.",
+      "codeChanged": "Stash settings or movie information changed. Automatic saving stopped; review and complete identification in Stash.",
+      "codeFailed": "Keyword scraping or saving could not be confirmed. Check the Stash connection and error logs, then retry.",
+      "fieldSeparator": ", ",
+      "fields": {
+        "media_file": "media file",
+        "title": "title",
+        "code": "code",
+        "date": "release date",
+        "studio": "studio",
+        "performers": "performers"
+      },
+      "missingFields": "Stash identification is missing: {{fields}}. Complete these fields in Stash, then retry.",
+      "studioConflict": "Stash could not save identification: a studio name conflicts with an existing record. Link the existing studio in Stash, then retry.",
+      "sceneMissing": "No Stash scenes were found. If deleted intentionally, remove the Moji task; otherwise check the files and scan results.",
       "sceneChanged": "Stash scene records keep changing. Automatic recovery stopped; wait for library changes to finish, then retry.",
       "sourcesMissing": "Stash has no saved Identify sources. Configure sources in the Stash Identify dialog, set them as default, then retry.",
       "verifyingDetail": "Checking media files and identification results in Stash.",
@@ -1586,8 +1609,8 @@
       "generate": "Stash generating",
       "identify": "Stash identifying",
       "verify": "Verifying Stash ingest",
-      "incomplete": "The target scene is missing or its code, title, date, studio, or performers are incomplete. Review Identify sources and results in Stash, then retry.",
-      "failed": "A Stash ingest step failed. Check Stash job logs and Identify sources, then retry."
+      "incomplete": "Stash identification finished, but movie metadata is incomplete. Open task details for missing fields and check Stash identification logs.",
+      "failed": "A Stash ingest step failed. Check its error in Stash job logs, resolve it, then retry."
     },
     "manualMagnet": "Manual magnet task",
     "sources": {

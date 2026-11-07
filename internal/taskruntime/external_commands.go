@@ -2,13 +2,48 @@ package taskruntime
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
+
+type taskCommandReader interface {
+	TaskCommandPayload(context.Context, *Task, string) (json.RawMessage, error)
+}
+
+func taskCommandTarget(task *Task, kind string) string {
+	return fmt.Sprintf("%s:%s:%d", kind, task.ID, task.Generation)
+}
+
+func (s *EventingTaskStore) TaskCommandPayload(ctx context.Context, task *Task, kind string) (json.RawMessage, error) {
+	if reader, ok := s.store.(taskCommandReader); ok {
+		return reader.TaskCommandPayload(ctx, task, kind)
+	}
+	return nil, nil
+}
+
+func (s *RelationalTaskStore) TaskCommandPayload(ctx context.Context, task *Task, kind string) (json.RawMessage, error) {
+	var row struct {
+		Version int    `db:"payload_version"`
+		Payload string `db:"payload_json"`
+	}
+	err := s.core.Reader.GetContext(ctx, &row, `SELECT payload_version,payload_json FROM external_commands WHERE target_hash=? AND task_id=? AND kind=? AND coalesce(json_extract(payload_json,'$.generation'),0)=? ORDER BY created_at DESC,id DESC LIMIT 1`, taskCommandTarget(task, kind), task.ID, kind, task.Generation)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if row.Version != 1 {
+		return nil, errors.New("taskruntime: unsupported external command payload version")
+	}
+	return json.RawMessage(row.Payload), nil
+}
 
 type taskCommandJournal interface {
 	RunTaskCommand(context.Context, *Task, string, string, map[string]any, func() error) error

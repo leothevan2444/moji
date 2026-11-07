@@ -5,6 +5,7 @@ import (
 	"errors"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,14 +14,19 @@ import (
 
 type fakeIngestScanner struct {
 	fakeStashScanner
-	calls       []string
-	expectedIDs []string
-	onGenerate  func()
-	submitted   [][]string
-	generateErr error
-	identifyErr error
-	scenes      []stashsync.IngestScene
-	jobs        map[string]*stashsync.Job
+	calls         []string
+	expectedIDs   []string
+	onGenerate    func()
+	submitted     [][]string
+	generateErr   error
+	identifyErr   error
+	scenes        []stashsync.IngestScene
+	jobs          map[string]*stashsync.Job
+	diagnosticErr error
+}
+
+func (f *fakeIngestScanner) IdentifyFailure(context.Context, string, []stashsync.IngestScene) error {
+	return f.diagnosticErr
 }
 
 func (f *fakeIngestScanner) MetadataGenerate(_ context.Context, ids []string) (string, error) {
@@ -236,6 +242,33 @@ func TestFinishedIdentifyJobDoesNotHideMissingOrWrongMetadata(t *testing.T) {
 	}
 	if err := verifyIngestScenes(&Task{}, []string{"missing"}, nil); err == nil {
 		t.Fatal("missing scenes must fail")
+	}
+}
+
+func TestIngestVerificationListsActualMissingFields(t *testing.T) {
+	scene := readyIngestScanner().scenes[0]
+	scene.Date, scene.Code = "", ""
+	scene.PerformerCount = 0
+	err := verifyIngestScenes(&Task{Code: "ABCD-123"}, []string{scene.ID}, []stashsync.IngestScene{scene})
+	if err == nil || !strings.HasSuffix(err.Error(), "missing fields: code, date, performers") {
+		t.Fatalf("missing fields were not preserved: %v", err)
+	}
+}
+
+func TestFinishedIdentifyStudioConflictRemainsBlockedAndRetryable(t *testing.T) {
+	store := NewMemoryTaskStore()
+	createIngestTask(t, store)
+	scanner := readyIngestScanner()
+	scanner.scenes[0].Title = ""
+	scanner.diagnosticErr = stashsync.ErrStudioConflict
+	service, _ := NewService(fakeTracker{}, &fakeTorrentAdder{}, store, WithFileOperator(&fakeFileOperator{}))
+	for range 3 {
+		advanceIngest(t, service, scanner)
+	}
+	_, err := service.TriggerStashScans(context.Background(), scanner)
+	task, _ := store.Find(context.Background(), "ingest")
+	if err == nil || task.StageErrorCode != TaskStageErrorStudioConflict || task.StashIngestPhase != StashIngestIdentify || task.StashIdentifyJobID != "" {
+		t.Fatalf("conflict was hidden or lost its retry checkpoint: %+v %v", task, err)
 	}
 }
 

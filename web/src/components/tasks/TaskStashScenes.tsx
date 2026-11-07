@@ -35,11 +35,16 @@ export function TaskStashScenes({ task, onCopy }: { task: DashboardTask; onCopy?
       {scenes.length ? <ul className="task-stash-scenes__list">
         {scenes.map(scene => {
           const title = scene.title || scene.code || t("taskStash.untitled");
+          const missingFields = [
+            !scene.title?.trim() && "title", !scene.code?.trim() && "code", !scene.date && "date",
+            !scene.studio && "studio", !scene.performers.length && "performers",
+          ].filter((field): field is string => Boolean(field));
           return <li key={scene.id} className="task-stash-scene">
             <ScenePoster key={scene.imageUrl} src={scene.imageUrl} />
             <div className="task-stash-scene__content">
               {scene.code && scene.code !== title ? <span className="task-stash-scene__code">{scene.code}</span> : null}
               <h4 title={title}>{title}</h4>
+              {task.stage !== "COMPLETED" && missingFields.length ? <p className="task-stash-scenes__message">{t("taskModel.ingest.missingFields", { fields: missingFields.map(field => t(`taskModel.ingest.fields.${field}`)).join(t("taskModel.ingest.fieldSeparator")) })}</p> : null}
               {scene.date || scene.studio ? <div className="task-stash-scene__meta">
                 {scene.date ? <time dateTime={scene.date} aria-label={t("taskStash.releaseDate")}>{scene.date}</time> : null}
                 {scene.studio ? <span title={scene.studio}>{scene.studio}</span> : null}
@@ -52,7 +57,7 @@ export function TaskStashScenes({ task, onCopy }: { task: DashboardTask; onCopy?
           </li>;
         })}
       </ul> : null}
-      {!result.fetching && !result.error && missing > 0 ? <p className="task-stash-scenes__message">{t(scenes.length ? "taskStash.missing" : "taskStash.empty", { count: missing })}</p> : null}
+      {!result.fetching && !result.error && missing > 0 ? <p className="task-stash-scenes__message">{t(scenes.length ? "taskStash.missing" : "taskStash.notFound", { count: missing })}</p> : null}
     </>}
     {task.stashScanPath?.trim() ? <dl className="task-stash-scenes__location">
       <TaskValue label={t("taskInfo.libraryLocation")} value={task.stashScanPath.trim()} onCopy={onCopy} />

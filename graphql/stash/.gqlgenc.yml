@@ -8,7 +8,7 @@ models:
   Date:
     model: github.com/99designs/gqlgen/graphql.String
 schema:
-- "./graphql/stash/schema/0.30.1.graphql"
+- "./graphql/stash/schema/0.31.1.graphql"
 query:
 - "./graphql/stash/*.graphql"
 generate:

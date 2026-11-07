@@ -60,4 +60,17 @@ describe("Stash movie information", () => {
     expect(screen.getByText("No linked Stash movies found")).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
   });
+
+  it("shows deleted linked scenes separately from service failures", () => {
+    mocks.result = { fetching: false, data: { taskStashScenes: [] } };
+    render(<TaskStashScenes task={task} />);
+    expect(screen.getByText(/Linked movies were not found in Stash/)).toBeTruthy();
+    expect(screen.queryByText(/temporarily unavailable/)).toBeNull();
+  });
+
+  it("shows the missing metadata on an incomplete Stash scene", () => {
+    mocks.result = { data: { taskStashScenes: [{ ...scene, title: "", code: "", date: "", studio: "", performers: [] }] } };
+    render(<TaskStashScenes task={{ ...task, stage: TaskStage.Scanning }} />);
+    expect(screen.getByText(/Stash identification is missing: title, code, release date, studio, performers/)).toBeTruthy();
+  });
 });

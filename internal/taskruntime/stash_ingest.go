@@ -25,6 +25,7 @@ const (
 	TaskStageErrorGenerate       = "STASH_GENERATE_FAILED"
 	TaskStageErrorIdentify       = "STASH_IDENTIFY_FAILED"
 	TaskStageErrorIngestVerify   = "STASH_INGEST_INCOMPLETE"
+	TaskStageErrorStudioConflict = "STASH_STUDIO_CONFLICT"
 )
 
 var (
@@ -32,7 +33,8 @@ var (
 	errStashSceneChanged = errors.New("Stash scenes changed repeatedly; review the library and retry")
 )
 
-// Stash owns metadata creation. Moji only schedules jobs and reads their results.
+// Stash owns metadata storage. Moji schedules jobs, verifies results and can
+// submit an exact, uniquely scraped code result through Stash's save API.
 type StashIngestor interface {
 	StashScanner
 	FindIngestScenes(context.Context, string, []string) ([]stashsync.IngestScene, error)
@@ -193,12 +195,42 @@ func (s *Service) startStashIngestStep(ctx context.Context, task *Task, scanner 
 		case StashIngestIdentify:
 			id, err = ingestor.MetadataIdentify(ctx, ids)
 		case StashIngestVerify:
-			if verifyErr := verifyIngestScenes(task, ids, scenes); verifyErr != nil {
-				// A FINISHED Identify job may have skipped or failed individual matches.
+			verifyErr := verifyIngestScenes(task, ids, scenes)
+			// A durable code save may still need cover/tag verification or a legacy
+			// plan upgrade even when its required scalar fields already look complete.
+			applied, fallbackErr := s.tryStashCodeIdentify(ctx, task, ingestor, verifyErr != nil)
+			if applied {
+				refreshed, err := s.resolveStashScenes(ctx, task, ingestor, false)
+				if err != nil {
+					return s.failStashIngest(task, err)
+				}
+				if task.StashIngestPhase != StashIngestVerify {
+					return s.startStashIngestStep(ctx, task, scanner)
+				}
+				verifyErr = verifyIngestScenes(task, task.StashSceneIDs(), refreshed)
+			}
+			if verifyErr != nil || fallbackErr != nil {
+				code := TaskStageErrorIngestVerify
+				if fallbackErr != nil {
+					code = stashCodeErrorCode(fallbackErr)
+					if verifyErr == nil {
+						verifyErr = fallbackErr
+					} else {
+						verifyErr = fmt.Errorf("%w; %v", fallbackErr, verifyErr)
+					}
+				}
+				if diagnostics, ok := ingestor.(interface {
+					IdentifyFailure(context.Context, string, []stashsync.IngestScene) error
+				}); ok && fallbackErr == nil {
+					if errors.Is(diagnostics.IdentifyFailure(ctx, task.StashIdentifyJobID, scenes), stashsync.ErrStudioConflict) {
+						code = TaskStageErrorStudioConflict
+						verifyErr = fmt.Errorf("%w; %v", stashsync.ErrStudioConflict, verifyErr)
+					}
+				}
 				task.StashIngestPhase = StashIngestIdentify
 				task.StashIdentifyJobID = ""
 				task.StashScanError = verifyErr.Error()
-				blockTask(task, TaskStageErrorIngestVerify, verifyErr.Error(), s.now().UTC())
+				blockTask(task, code, verifyErr.Error(), s.now().UTC())
 				return task, verifyErr
 			}
 			setTaskStage(task, TaskStageCompleted, TaskStageStatusDone)
@@ -234,14 +266,35 @@ func verifyIngestScenes(task *Task, ids []string, scenes []stashsync.IngestScene
 		if !ok {
 			return fmt.Errorf("Stash scene %s is missing", id)
 		}
-		if len(scene.Paths) == 0 || strings.TrimSpace(scene.Title) == "" || scene.StudioID == "" || scene.PerformerCount == 0 || scene.Date == "" {
-			return fmt.Errorf("Stash scene %s has incomplete metadata (title, date, studio, performers, or media file); configure Stash Identify sources and retry", id)
+		missing := missingIngestFields(scene)
+		if len(missing) > 0 {
+			return fmt.Errorf("Stash scene %s has incomplete metadata; missing fields: %s", id, strings.Join(missing, ", "))
 		}
 		if task.Code != "" && extractCode(scene.Code) != normalizeCode(task.Code) {
 			return fmt.Errorf("Stash scene %s code does not match task %s; review the identification in Stash and retry", id, task.Code)
 		}
 	}
 	return nil
+}
+
+func missingIngestFields(scene stashsync.IngestScene) []string {
+	missing := []string{}
+	for _, field := range []struct {
+		name   string
+		absent bool
+	}{
+		{"media_file", len(scene.Paths) == 0},
+		{"title", strings.TrimSpace(scene.Title) == ""},
+		{"code", strings.TrimSpace(scene.Code) == ""},
+		{"date", strings.TrimSpace(scene.Date) == ""},
+		{"studio", scene.StudioID == ""},
+		{"performers", scene.PerformerCount == 0},
+	} {
+		if field.absent {
+			missing = append(missing, field.name)
+		}
+	}
+	return missing
 }
 
 // Query by path rather than by cached IDs: Stash rejects a whole ID query if

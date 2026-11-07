@@ -184,6 +184,12 @@ query IngestScenes($scene_filter: SceneFilterType, $filter: FindFilterType, $ids
       title
       code
       date
+      details
+      director
+      urls
+      organized
+      stash_ids { endpoint stash_id updated_at }
+      tags { id }
       studio { id name }
       performers { id name }
       paths { screenshot }
@@ -194,4 +200,71 @@ query IngestScenes($scene_filter: SceneFilterType, $filter: FindFilterType, $ids
 
 mutation RemoveIngestScene($input: SceneDestroyInput!) {
   sceneDestroy(input: $input)
+}
+
+query IngestLogs {
+  logs { time level message }
+}
+
+query ScrapeIngestScene($source: ScraperSourceInput!, $input: ScrapeSingleSceneInput!, $images: Boolean!) {
+  scrapeSingleScene(source: $source, input: $input) {
+    title code date details director urls remote_site_id
+    image @include(if: $images)
+    studio { ...IngestScrapedStudio }
+    performers { ...IngestScrapedPerformer }
+    tags { ...IngestScrapedTag }
+  }
+}
+fragment IngestScrapedStudio on ScrapedStudio {
+  stored_id name url urls image details aliases remote_site_id
+  parent { stored_id name url urls image details aliases remote_site_id parent { stored_id name remote_site_id } }
+}
+fragment IngestScrapedPerformer on ScrapedPerformer {
+  stored_id name disambiguation gender url urls twitter instagram birthdate ethnicity country
+  eye_color height measurements fake_tits penis_length circumcised career_start career_end
+  tattoos piercings aliases images details death_date hair_color weight remote_site_id
+}
+fragment IngestScrapedTag on ScrapedTag {
+  stored_id name remote_site_id description alias_list parent { stored_id name remote_site_id }
+}
+
+query IngestIdentifyCapabilities {
+  __type(name: "IdentifyMetadataOptions") { fields { name } }
+}
+query IngestDefaultsNative {
+  configuration { defaults { identify {
+    sources { source { stash_box_index stash_box_endpoint scraper_id } options { ...IdentifyOptionsFragment performerGenders } }
+    options { ...IdentifyOptionsFragment performerGenders }
+  } } }
+}
+query ScrapeIngestSceneLegacy($source: ScraperSourceInput!, $input: ScrapeSingleSceneInput!, $images: Boolean!) {
+  scrapeSingleScene(source: $source, input: $input) {
+    title code date details director urls remote_site_id image @include(if: $images)
+    studio { ...IngestScrapedStudio }
+    performers {
+      stored_id name disambiguation gender url urls twitter instagram birthdate ethnicity country
+      eye_color height measurements fake_tits penis_length circumcised career_length
+      tattoos piercings aliases images details death_date hair_color weight remote_site_id
+    }
+    tags { stored_id name remote_site_id }
+  }
+}
+
+query FindIngestStudios($criterion: StashIDCriterionInput!) {
+  findStudios(studio_filter: { stash_id_endpoint: $criterion }, filter: { per_page: 2 }) { studios { id } }
+}
+query FindIngestPerformers($criterion: StashIDCriterionInput!) {
+  findPerformers(performer_filter: { stash_id_endpoint: $criterion }, filter: { per_page: 2 }) { performers { id } }
+}
+query FindIngestTags($criterion: StashIDCriterionInput!) {
+  findTags(tag_filter: { stash_id_endpoint: $criterion }, filter: { per_page: 2 }) { tags { id } }
+}
+query IngestStudio($id: ID!) { findStudio(id: $id) { id stash_ids { endpoint stash_id updated_at } } }
+mutation CreateIngestStudio($input: StudioCreateInput!) { studioCreate(input: $input) { id } }
+mutation UpdateIngestStudio($input: StudioUpdateInput!) { studioUpdate(input: $input) { id } }
+mutation CreateIngestPerformer($input: PerformerCreateInput!) { performerCreate(input: $input) { id } }
+mutation CreateIngestTag($input: TagCreateInput!) { tagCreate(input: $input) { id } }
+
+mutation SaveIngestScene($input: SceneUpdateInput!) {
+  sceneUpdate(input: $input) { id }
 }

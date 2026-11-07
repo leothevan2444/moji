@@ -32,16 +32,29 @@ describe("Stash ingest task presentation", () => {
   it("keeps incomplete metadata blocked with a localized action", () => {
     const presentation = taskPresentation({ ...task("IDENTIFY", "BLOCKED"), stageErrorCode: "STASH_INGEST_INCOMPLETE", stashScanError: "diagnostic failure" });
     expect(presentation.phase).toBe("failed");
-    expect(presentation.detail).toContain("Review Identify sources");
+    expect(presentation.detail).toContain("movie metadata is incomplete");
     expect(presentation.lifecycle.find(step => step.key === "identifying")?.state).toBe("error");
     expect(presentation.lifecycle.find(step => step.key === "completed")?.state).toBe("upcoming");
   });
+});
+
+it("lists only verified missing fields without exposing server diagnostics", async () => {
+  await i18n.changeLanguage("en");
+  const presentation = taskPresentation({ ...task("IDENTIFY", "BLOCKED"), stageErrorCode: "STASH_INGEST_INCOMPLETE", stageErrorMessage: "Stash scene 1 has incomplete metadata; missing fields: date, performers" });
+  expect(presentation.detail).toContain("release date, performers");
+  expect(presentation.detail).not.toContain("sources");
 });
 
 it.each([
   ["STASH_SCENE_MISSING", "No Stash scenes"],
   ["STASH_SCENE_CHANGED", "Automatic recovery stopped"],
   ["STASH_IDENTIFY_SOURCES_MISSING", "no saved Identify sources"],
+  ["STASH_STUDIO_CONFLICT", "studio name conflicts"],
+  ["STASH_CODE_NOT_FOUND", "no exact code match"],
+  ["STASH_CODE_AMBIGUOUS", "multiple exact code matches"],
+  ["STASH_CODE_RELATIONS_REQUIRED", "link or create the scraped studio"],
+  ["STASH_CODE_PLAN_CHANGED", "Automatic saving stopped"],
+  ["STASH_CODE_IDENTIFY_FAILED", "could not be confirmed"],
 ])("explains %s without exposing backend diagnostics", async (code, expected) => {
   await i18n.changeLanguage("en");
   const presentation = taskPresentation({ ...task("IDENTIFY", "BLOCKED"), stageErrorCode: code, stashScanError: "raw server diagnostic" });

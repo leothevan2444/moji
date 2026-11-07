@@ -13,16 +13,20 @@ import (
 
 type taskScenesStash struct {
 	fakeStashService
-	scenes []stashsync.IngestScene
-	path   string
-	ids    []string
-	calls  int
-	err    error
+	scenes    []stashsync.IngestScene
+	path      string
+	ids       []string
+	calls     int
+	err       error
+	rejectIDs bool
 }
 
 func (s *taskScenesStash) FindIngestScenes(_ context.Context, path string, ids []string) ([]stashsync.IngestScene, error) {
 	s.path, s.ids = path, ids
 	s.calls++
+	if s.rejectIDs && len(ids) > 0 {
+		return nil, errors.New("scene with id missing not found")
+	}
 	return s.scenes, s.err
 }
 
@@ -41,7 +45,7 @@ func (*taskScenesImageCache) Clear(context.Context) (imagecache.Status, error) {
 func (*taskScenesImageCache) Cleanup(context.Context) error { return nil }
 
 func TestTaskStashScenesReturnsOnlyLinkedMoviesWithProxiedImages(t *testing.T) {
-	stash := &taskScenesStash{scenes: []stashsync.IngestScene{
+	stash := &taskScenesStash{rejectIDs: true, scenes: []stashsync.IngestScene{
 		{ID: "1", Title: "First", Code: "ABCD-123", StudioName: "Studio", Date: "2026-10-18", PerformerNames: []string{"Actor"}, ImageURL: "http://internal/cover?apikey=private"},
 		{ID: "2", Title: "Second"}, {ID: "unrelated", Title: "Unrelated"},
 	}}
@@ -74,7 +78,7 @@ func TestTaskStashScenesReturnsOnlyLinkedMoviesWithProxiedImages(t *testing.T) {
 	if cache.descriptor.APIKey != "secret" || cache.descriptor.Kind != imagecache.SourceStash {
 		t.Fatal("image authentication was not passed to proxy")
 	}
-	if stash.path != "/library/movie" || !reflect.DeepEqual(stash.ids, []string{"2", "1", "missing", "1"}) {
+	if stash.path != "/library/movie" || len(stash.ids) != 0 {
 		t.Fatal("scene lookup was not scoped to task")
 	}
 }

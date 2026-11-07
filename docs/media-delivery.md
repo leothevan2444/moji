@@ -112,6 +112,23 @@ artifact set, and then removes only selected sources; recovery tolerates already
 removed sources. Completed delivery checkpoints proceed through the existing
 Stash scan/generate/identify workflow without repeating preparation.
 
+## Stash identification settings
+
+When fingerprints return no match, Moji can search the configured StashBox
+sources by the task's exact code and save one unique result through Stash.
+This path follows Stash's saved Identify defaults and source overrides,
+including cover images, field strategies, entity creation, performer gender
+filters, skip markers, and the organized flag. Ambiguous identities are kept
+for manual review even if Stash's general multiple-match option is disabled.
+
+If cover replacement is enabled and scraping supplies an image, Moji verifies
+the image saved in Stash before completing the identification plan. Disabling
+cover replacement preserves the current image. Missing source images do not
+cause an invented replacement. Name conflicts and changed settings remain
+visible for review. An interrupted save resumes its recorded selection;
+it does not switch to another search result. Already completed tasks are not
+automatically scraped again when the application is updated.
+
 ## Validation
 
 Tool-independent tests cover original-format single-file COPY/MOVE, subtitles,

@@ -195,6 +195,11 @@ func (s *RelationalTaskStore) update(ctx context.Context, task *Task, indexedCho
 		if err := writeRelationalTask(ctx, tx, task, true); err != nil {
 			return err
 		}
+		if task.Stage == TaskStageCompleted && previous.Stage != TaskStageCompleted {
+			if _, err := tx.ExecContext(ctx, `UPDATE external_commands SET state='CONFIRMED',last_error='',updated_at=? WHERE target_hash=? AND task_id=? AND kind=? AND payload_version=1`, formatDurableTime(task.UpdatedAt), taskCommandTarget(task, stashCodeIdentifyCommand), task.ID, stashCodeIdentifyCommand); err != nil {
+				return err
+			}
+		}
 		kind := "updated"
 		if !reflect.DeepEqual(task.FilePlan(), previous.FilePlan()) {
 			kind = "file-selection"

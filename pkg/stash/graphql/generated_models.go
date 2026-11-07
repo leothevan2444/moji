@@ -75,6 +75,8 @@ type AutoTagMetadataOptions struct {
 
 type BackupDatabaseInput struct {
 	Download *bool `json:"download,omitempty"`
+	// If true, blob files will be included in the backup. This can significantly increase the size of the backup and the time it takes to create it, but allows for a complete backup of the system that can be restored without needing access to the original media files.
+	IncludeBlobs *bool `json:"includeBlobs,omitempty"`
 }
 
 type BasicFile struct {
@@ -132,18 +134,22 @@ type BulkGalleryUpdateInput struct {
 	StudioID         *string            `json:"studio_id,omitempty"`
 	TagIds           *BulkUpdateIds     `json:"tag_ids,omitempty"`
 	PerformerIds     *BulkUpdateIds     `json:"performer_ids,omitempty"`
+	CustomFields     *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type BulkGroupUpdateInput struct {
 	ClientMutationID *string                           `json:"clientMutationId,omitempty"`
 	Ids              []string                          `json:"ids,omitempty"`
 	Rating100        *int                              `json:"rating100,omitempty"`
+	Date             *string                           `json:"date,omitempty"`
+	Synopsis         *string                           `json:"synopsis,omitempty"`
 	StudioID         *string                           `json:"studio_id,omitempty"`
 	Director         *string                           `json:"director,omitempty"`
 	Urls             *BulkUpdateStrings                `json:"urls,omitempty"`
 	TagIds           *BulkUpdateIds                    `json:"tag_ids,omitempty"`
 	ContainingGroups *BulkUpdateGroupDescriptionsInput `json:"containing_groups,omitempty"`
 	SubGroups        *BulkUpdateGroupDescriptionsInput `json:"sub_groups,omitempty"`
+	CustomFields     *CustomFieldsInput                `json:"custom_fields,omitempty"`
 }
 
 type BulkImageUpdateInput struct {
@@ -162,6 +168,7 @@ type BulkImageUpdateInput struct {
 	PerformerIds     *BulkUpdateIds     `json:"performer_ids,omitempty"`
 	TagIds           *BulkUpdateIds     `json:"tag_ids,omitempty"`
 	GalleryIds       *BulkUpdateIds     `json:"gallery_ids,omitempty"`
+	CustomFields     *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type BulkMovieUpdateInput struct {
@@ -189,22 +196,25 @@ type BulkPerformerUpdateInput struct {
 	Measurements     *string            `json:"measurements,omitempty"`
 	FakeTits         *string            `json:"fake_tits,omitempty"`
 	PenisLength      *float64           `json:"penis_length,omitempty"`
-	Circumcised      *CircumisedEnum    `json:"circumcised,omitempty"`
+	Circumcised      *CircumcisedEnum   `json:"circumcised,omitempty"`
 	CareerLength     *string            `json:"career_length,omitempty"`
+	CareerStart      *string            `json:"career_start,omitempty"`
+	CareerEnd        *string            `json:"career_end,omitempty"`
 	Tattoos          *string            `json:"tattoos,omitempty"`
 	Piercings        *string            `json:"piercings,omitempty"`
-	AliasList        *BulkUpdateStrings `json:"alias_list,omitempty"`
-	Twitter          *string            `json:"twitter,omitempty"`
-	Instagram        *string            `json:"instagram,omitempty"`
-	Favorite         *bool              `json:"favorite,omitempty"`
-	TagIds           *BulkUpdateIds     `json:"tag_ids,omitempty"`
-	Rating100        *int               `json:"rating100,omitempty"`
-	Details          *string            `json:"details,omitempty"`
-	DeathDate        *string            `json:"death_date,omitempty"`
-	HairColor        *string            `json:"hair_color,omitempty"`
-	Weight           *int               `json:"weight,omitempty"`
-	IgnoreAutoTag    *bool              `json:"ignore_auto_tag,omitempty"`
-	CustomFields     *CustomFieldsInput `json:"custom_fields,omitempty"`
+	// Duplicate aliases and those equal to name will result in an error (case-insensitive)
+	AliasList     *BulkUpdateStrings `json:"alias_list,omitempty"`
+	Twitter       *string            `json:"twitter,omitempty"`
+	Instagram     *string            `json:"instagram,omitempty"`
+	Favorite      *bool              `json:"favorite,omitempty"`
+	TagIds        *BulkUpdateIds     `json:"tag_ids,omitempty"`
+	Rating100     *int               `json:"rating100,omitempty"`
+	Details       *string            `json:"details,omitempty"`
+	DeathDate     *string            `json:"death_date,omitempty"`
+	HairColor     *string            `json:"hair_color,omitempty"`
+	Weight        *int               `json:"weight,omitempty"`
+	IgnoreAutoTag *bool              `json:"ignore_auto_tag,omitempty"`
+	CustomFields  *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type BulkSceneMarkerUpdateInput struct {
@@ -232,6 +242,7 @@ type BulkSceneUpdateInput struct {
 	TagIds           *BulkUpdateIds     `json:"tag_ids,omitempty"`
 	GroupIds         *BulkUpdateIds     `json:"group_ids,omitempty"`
 	MovieIds         *BulkUpdateIds     `json:"movie_ids,omitempty"`
+	CustomFields     *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type BulkStudioUpdateInput struct {
@@ -244,11 +255,13 @@ type BulkStudioUpdateInput struct {
 	Details       *string            `json:"details,omitempty"`
 	TagIds        *BulkUpdateIds     `json:"tag_ids,omitempty"`
 	IgnoreAutoTag *bool              `json:"ignore_auto_tag,omitempty"`
+	Organized     *bool              `json:"organized,omitempty"`
 }
 
 type BulkTagUpdateInput struct {
-	Ids           []string           `json:"ids,omitempty"`
-	Description   *string            `json:"description,omitempty"`
+	Ids         []string `json:"ids,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	// Duplicate aliases and those equal to name will result in an error (case-insensitive)
 	Aliases       *BulkUpdateStrings `json:"aliases,omitempty"`
 	IgnoreAutoTag *bool              `json:"ignore_auto_tag,omitempty"`
 	Favorite      *bool              `json:"favorite,omitempty"`
@@ -272,7 +285,7 @@ type BulkUpdateStrings struct {
 }
 
 type CircumcisionCriterionInput struct {
-	Value    []CircumisedEnum  `json:"value,omitempty"`
+	Value    []CircumcisedEnum `json:"value,omitempty"`
 	Modifier CriterionModifier `json:"modifier"`
 }
 
@@ -295,6 +308,11 @@ type CleanGeneratedInput struct {
 
 type CleanMetadataInput struct {
 	Paths []string `json:"paths,omitempty"`
+	// Don't check zip file contents when determining whether to clean a file.
+	// This can significantly speed up the clean process, but will potentially miss removed files within zip files.
+	// Where users do not modify zip files contents directly, this should be safe to use.
+	// Defaults to false.
+	IgnoreZipFileContents *bool `json:"ignoreZipFileContents,omitempty"`
 	// Do a dry run. Don't delete any files
 	DryRun bool `json:"dryRun"`
 }
@@ -474,6 +492,16 @@ type ConfigGeneralInput struct {
 	ScraperPackageSources []*PackageSourceInput `json:"scraperPackageSources,omitempty"`
 	// Source of plugin packages
 	PluginPackageSources []*PackageSourceInput `json:"pluginPackageSources,omitempty"`
+	// Size of the longest dimension for each sprite in pixels
+	SpriteScreenshotSize *int `json:"spriteScreenshotSize,omitempty"`
+	// True if sprite generation should use the sprite interval and min/max sprites settings instead of the default
+	UseCustomSpriteInterval *bool `json:"useCustomSpriteInterval,omitempty"`
+	// Time between two different scrubber sprites in seconds - only used if useCustomSpriteInterval is true
+	SpriteInterval *float64 `json:"spriteInterval,omitempty"`
+	// Minimum number of sprites to be generated - only used if useCustomSpriteInterval is true
+	MinimumSprites *int `json:"minimumSprites,omitempty"`
+	// Minimum number of sprites to be generated - only used if useCustomSpriteInterval is true
+	MaximumSprites *int `json:"maximumSprites,omitempty"`
 }
 
 type ConfigGeneralResult struct {
@@ -565,6 +593,16 @@ type ConfigGeneralResult struct {
 	LogAccess bool `json:"logAccess"`
 	// Maximum log size
 	LogFileMaxSize int `json:"logFileMaxSize"`
+	// True if sprite generation should use the sprite interval and min/max sprites settings instead of the default
+	UseCustomSpriteInterval bool `json:"useCustomSpriteInterval"`
+	// Time between two different scrubber sprites in seconds - only used if useCustomSpriteInterval is true
+	SpriteInterval float64 `json:"spriteInterval"`
+	// Minimum number of sprites to be generated - only used if useCustomSpriteInterval is true
+	MinimumSprites int `json:"minimumSprites"`
+	// Maximum number of sprites to be generated - only used if useCustomSpriteInterval is true
+	MaximumSprites int `json:"maximumSprites"`
+	// Size of the longest dimension for each sprite in pixels
+	SpriteScreenshotSize int `json:"spriteScreenshotSize"`
 	// Array of video file extensions
 	VideoExtensions []string `json:"videoExtensions"`
 	// Array of image file extensions
@@ -643,6 +681,8 @@ type ConfigInterfaceInput struct {
 	// Custom Locales
 	CustomLocales        *string `json:"customLocales,omitempty"`
 	CustomLocalesEnabled *bool   `json:"customLocalesEnabled,omitempty"`
+	// When true, disables all customizations (plugins, CSS, JavaScript, locales) for troubleshooting
+	DisableCustomizations *bool `json:"disableCustomizations,omitempty"`
 	// Interface language
 	Language      *string                   `json:"language,omitempty"`
 	ImageLightbox *ConfigImageLightboxInput `json:"imageLightbox,omitempty"`
@@ -696,6 +736,8 @@ type ConfigInterfaceResult struct {
 	// Custom Locales
 	CustomLocales        *string `json:"customLocales,omitempty"`
 	CustomLocalesEnabled *bool   `json:"customLocalesEnabled,omitempty"`
+	// When true, disables all customizations (plugins, CSS, JavaScript, locales) for troubleshooting
+	DisableCustomizations *bool `json:"disableCustomizations,omitempty"`
 	// Interface language
 	Language      *string                    `json:"language,omitempty"`
 	ImageLightbox *ConfigImageLightboxResult `json:"imageLightbox"`
@@ -793,6 +835,20 @@ type DisableDLNAInput struct {
 	Duration *int `json:"duration,omitempty"`
 }
 
+type DuplicationCriterionInput struct {
+	Duplicated *bool `json:"duplicated,omitempty"`
+	// Currently unimplemented. Intended for phash distance matching.
+	Distance *int `json:"distance,omitempty"`
+	// Filter by phash duplication
+	Phash *bool `json:"phash,omitempty"`
+	// Filter by URL duplication
+	URL *bool `json:"url,omitempty"`
+	// Filter by Stash ID duplication
+	StashID *bool `json:"stash_id,omitempty"`
+	// Filter by title duplication
+	Title *bool `json:"title,omitempty"`
+}
+
 type EnableDLNAInput struct {
 	// Duration to enable, in minutes. 0 or null for indefinite.
 	Duration *int `json:"duration,omitempty"`
@@ -815,6 +871,14 @@ type ExportObjectsInput struct {
 	IncludeDependencies *bool                  `json:"includeDependencies,omitempty"`
 }
 
+type FileDuplicationCriterionInput struct {
+	Duplicated *bool `json:"duplicated,omitempty"`
+	// Currently unimplemented. Intended for phash distance matching.
+	Distance *int `json:"distance,omitempty"`
+	// Filter by phash duplication
+	Phash *bool `json:"phash,omitempty"`
+}
+
 type FileFilterType struct {
 	And          *FileFilterType                  `json:"AND,omitempty"`
 	Or           *FileFilterType                  `json:"OR,omitempty"`
@@ -826,8 +890,8 @@ type FileFilterType struct {
 	ZipFile      *MultiCriterionInput             `json:"zip_file,omitempty"`
 	// Filter by modification time
 	ModTime *TimestampCriterionInput `json:"mod_time,omitempty"`
-	// Filter files that have an exact match available
-	Duplicated *PHashDuplicationCriterionInput `json:"duplicated,omitempty"`
+	// Filter files by duplication criteria (only phash applies to files)
+	Duplicated *FileDuplicationCriterionInput `json:"duplicated,omitempty"`
 	// find files based on hash
 	Hashes          []*FingerprintFilterInput `json:"hashes,omitempty"`
 	VideoFileFilter *VideoFileFilterInput     `json:"video_file_filter,omitempty"`
@@ -959,15 +1023,20 @@ type FloatCriterionInput struct {
 }
 
 type Folder struct {
-	ID             string     `json:"id"`
-	Path           string     `json:"path"`
-	ParentFolderID *string    `json:"parent_folder_id,omitempty"`
-	ZipFileID      *string    `json:"zip_file_id,omitempty"`
-	ParentFolder   *Folder    `json:"parent_folder,omitempty"`
-	ZipFile        *BasicFile `json:"zip_file,omitempty"`
-	ModTime        time.Time  `json:"mod_time"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
+	ID             string  `json:"id"`
+	Path           string  `json:"path"`
+	Basename       string  `json:"basename"`
+	ParentFolderID *string `json:"parent_folder_id,omitempty"`
+	ZipFileID      *string `json:"zip_file_id,omitempty"`
+	ParentFolder   *Folder `json:"parent_folder,omitempty"`
+	// Returns all parent folders in order from immediate parent to top-level
+	ParentFolders []*Folder  `json:"parent_folders"`
+	ZipFile       *BasicFile `json:"zip_file,omitempty"`
+	// Returns direct sub-folders
+	SubFolders []*Folder `json:"sub_folders"`
+	ModTime    time.Time `json:"mod_time"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type FolderFilterType struct {
@@ -975,6 +1044,7 @@ type FolderFilterType struct {
 	Or           *FolderFilterType                `json:"OR,omitempty"`
 	Not          *FolderFilterType                `json:"NOT,omitempty"`
 	Path         *StringCriterionInput            `json:"path,omitempty"`
+	Basename     *StringCriterionInput            `json:"basename,omitempty"`
 	ParentFolder *HierarchicalMultiCriterionInput `json:"parent_folder,omitempty"`
 	ZipFile      *MultiCriterionInput             `json:"zip_file,omitempty"`
 	// Filter by modification time
@@ -1014,6 +1084,7 @@ type Gallery struct {
 	Performers   []*Performer      `json:"performers"`
 	Cover        *Image            `json:"cover,omitempty"`
 	Paths        *GalleryPathsType `json:"paths"`
+	CustomFields map[string]any    `json:"custom_fields"`
 	Image        *Image            `json:"image"`
 }
 
@@ -1045,19 +1116,20 @@ type GalleryChapterUpdateInput struct {
 }
 
 type GalleryCreateInput struct {
-	Title        string   `json:"title"`
-	Code         *string  `json:"code,omitempty"`
-	URL          *string  `json:"url,omitempty"`
-	Urls         []string `json:"urls,omitempty"`
-	Date         *string  `json:"date,omitempty"`
-	Details      *string  `json:"details,omitempty"`
-	Photographer *string  `json:"photographer,omitempty"`
-	Rating100    *int     `json:"rating100,omitempty"`
-	Organized    *bool    `json:"organized,omitempty"`
-	SceneIds     []string `json:"scene_ids,omitempty"`
-	StudioID     *string  `json:"studio_id,omitempty"`
-	TagIds       []string `json:"tag_ids,omitempty"`
-	PerformerIds []string `json:"performer_ids,omitempty"`
+	Title        string         `json:"title"`
+	Code         *string        `json:"code,omitempty"`
+	URL          *string        `json:"url,omitempty"`
+	Urls         []string       `json:"urls,omitempty"`
+	Date         *string        `json:"date,omitempty"`
+	Details      *string        `json:"details,omitempty"`
+	Photographer *string        `json:"photographer,omitempty"`
+	Rating100    *int           `json:"rating100,omitempty"`
+	Organized    *bool          `json:"organized,omitempty"`
+	SceneIds     []string       `json:"scene_ids,omitempty"`
+	StudioID     *string        `json:"studio_id,omitempty"`
+	TagIds       []string       `json:"tag_ids,omitempty"`
+	PerformerIds []string       `json:"performer_ids,omitempty"`
+	CustomFields map[string]any `json:"custom_fields,omitempty"`
 }
 
 type GalleryDestroyInput struct {
@@ -1067,6 +1139,8 @@ type GalleryDestroyInput struct {
 	// galleries will be deleted, along with the folder, if it is not empty.
 	DeleteFile      *bool `json:"delete_file,omitempty"`
 	DeleteGenerated *bool `json:"delete_generated,omitempty"`
+	// If true, delete the file entry from the database if the file is not assigned to any other objects
+	DestroyFileEntry *bool `json:"destroy_file_entry,omitempty"`
 }
 
 type GalleryFile struct {
@@ -1179,6 +1253,9 @@ type GalleryFilterType struct {
 	FilesFilter *FileFilterType `json:"files_filter,omitempty"`
 	// Filter by related folders that meet this criteria
 	FoldersFilter *FolderFilterType `json:"folders_filter,omitempty"`
+	// Filter by parent folder of the zip or folder the gallery is in
+	ParentFolder *HierarchicalMultiCriterionInput `json:"parent_folder,omitempty"`
+	CustomFields []*CustomFieldCriterionInput     `json:"custom_fields,omitempty"`
 }
 
 type GalleryPathsType struct {
@@ -1201,22 +1278,23 @@ type GallerySetCoverInput struct {
 }
 
 type GalleryUpdateInput struct {
-	ClientMutationID *string  `json:"clientMutationId,omitempty"`
-	ID               string   `json:"id"`
-	Title            *string  `json:"title,omitempty"`
-	Code             *string  `json:"code,omitempty"`
-	URL              *string  `json:"url,omitempty"`
-	Urls             []string `json:"urls,omitempty"`
-	Date             *string  `json:"date,omitempty"`
-	Details          *string  `json:"details,omitempty"`
-	Photographer     *string  `json:"photographer,omitempty"`
-	Rating100        *int     `json:"rating100,omitempty"`
-	Organized        *bool    `json:"organized,omitempty"`
-	SceneIds         []string `json:"scene_ids,omitempty"`
-	StudioID         *string  `json:"studio_id,omitempty"`
-	TagIds           []string `json:"tag_ids,omitempty"`
-	PerformerIds     []string `json:"performer_ids,omitempty"`
-	PrimaryFileID    *string  `json:"primary_file_id,omitempty"`
+	ClientMutationID *string            `json:"clientMutationId,omitempty"`
+	ID               string             `json:"id"`
+	Title            *string            `json:"title,omitempty"`
+	Code             *string            `json:"code,omitempty"`
+	URL              *string            `json:"url,omitempty"`
+	Urls             []string           `json:"urls,omitempty"`
+	Date             *string            `json:"date,omitempty"`
+	Details          *string            `json:"details,omitempty"`
+	Photographer     *string            `json:"photographer,omitempty"`
+	Rating100        *int               `json:"rating100,omitempty"`
+	Organized        *bool              `json:"organized,omitempty"`
+	SceneIds         []string           `json:"scene_ids,omitempty"`
+	StudioID         *string            `json:"studio_id,omitempty"`
+	TagIds           []string           `json:"tag_ids,omitempty"`
+	PerformerIds     []string           `json:"performer_ids,omitempty"`
+	PrimaryFileID    *string            `json:"primary_file_id,omitempty"`
+	CustomFields     *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type GenderCriterionInput struct {
@@ -1240,15 +1318,24 @@ type GenerateMetadataInput struct {
 	MarkerScreenshots   *bool                        `json:"markerScreenshots,omitempty"`
 	Transcodes          *bool                        `json:"transcodes,omitempty"`
 	// Generate transcodes even if not required
-	ForceTranscodes           *bool `json:"forceTranscodes,omitempty"`
+	ForceTranscodes *bool `json:"forceTranscodes,omitempty"`
+	// Generate video phashes during scan
 	Phashes                   *bool `json:"phashes,omitempty"`
 	InteractiveHeatmapsSpeeds *bool `json:"interactiveHeatmapsSpeeds,omitempty"`
-	ImageThumbnails           *bool `json:"imageThumbnails,omitempty"`
-	ClipPreviews              *bool `json:"clipPreviews,omitempty"`
+	// Generate image phashes during scan
+	ImagePhashes    *bool `json:"imagePhashes,omitempty"`
+	ImageThumbnails *bool `json:"imageThumbnails,omitempty"`
+	ClipPreviews    *bool `json:"clipPreviews,omitempty"`
 	// scene ids to generate for
 	SceneIDs []string `json:"sceneIDs,omitempty"`
 	// marker ids to generate for
 	MarkerIDs []string `json:"markerIDs,omitempty"`
+	// image ids to generate for
+	ImageIDs []string `json:"imageIDs,omitempty"`
+	// gallery ids to generate for
+	GalleryIDs []string `json:"galleryIDs,omitempty"`
+	// paths to run generate on, in addition to the other ID lists
+	Paths []string `json:"paths,omitempty"`
 	// overwrite existing media
 	Overwrite *bool `json:"overwrite,omitempty"`
 }
@@ -1319,6 +1406,7 @@ type Group struct {
 	SubGroupCount    int                 `json:"sub_group_count"`
 	Scenes           []*Scene            `json:"scenes"`
 	OCounter         *int                `json:"o_counter,omitempty"`
+	CustomFields     map[string]any      `json:"custom_fields"`
 }
 
 type GroupCreateInput struct {
@@ -1338,7 +1426,8 @@ type GroupCreateInput struct {
 	// This should be a URL or a base64 encoded data URL
 	FrontImage *string `json:"front_image,omitempty"`
 	// This should be a URL or a base64 encoded data URL
-	BackImage *string `json:"back_image,omitempty"`
+	BackImage    *string        `json:"back_image,omitempty"`
+	CustomFields map[string]any `json:"custom_fields,omitempty"`
 }
 
 // GroupDescription represents a relationship to a group with a description of the relationship
@@ -1394,10 +1483,14 @@ type GroupFilterType struct {
 	ContainingGroupCount *IntCriterionInput `json:"containing_group_count,omitempty"`
 	// Filter by number of sub-groups the group has
 	SubGroupCount *IntCriterionInput `json:"sub_group_count,omitempty"`
+	// Filter by number of scenes the group has
+	SceneCount *IntCriterionInput `json:"scene_count,omitempty"`
 	// Filter by related scenes that meet this criteria
 	ScenesFilter *SceneFilterType `json:"scenes_filter,omitempty"`
 	// Filter by related studios that meet this criteria
 	StudiosFilter *StudioFilterType `json:"studios_filter,omitempty"`
+	// Filter by custom fields
+	CustomFields []*CustomFieldCriterionInput `json:"custom_fields,omitempty"`
 }
 
 type GroupSubGroupAddInput struct {
@@ -1429,7 +1522,8 @@ type GroupUpdateInput struct {
 	// This should be a URL or a base64 encoded data URL
 	FrontImage *string `json:"front_image,omitempty"`
 	// This should be a URL or a base64 encoded data URL
-	BackImage *string `json:"back_image,omitempty"`
+	BackImage    *string            `json:"back_image,omitempty"`
+	CustomFields *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type HierarchicalMultiCriterionInput struct {
@@ -1477,6 +1571,8 @@ type IdentifyMetadataOptions struct {
 	SetOrganized  *bool `json:"setOrganized,omitempty"`
 	// defaults to true if not provided
 	IncludeMalePerformers *bool `json:"includeMalePerformers,omitempty"`
+	// Filter to only include performers with these genders. If not provided, all genders are included.
+	PerformerGenders []GenderEnum `json:"performerGenders,omitempty"`
 	// defaults to true if not provided
 	SkipMultipleMatches *bool `json:"skipMultipleMatches,omitempty"`
 	// tag to tag skipped multiple matches with
@@ -1495,6 +1591,8 @@ type IdentifyMetadataOptionsInput struct {
 	SetOrganized  *bool `json:"setOrganized,omitempty"`
 	// defaults to true if not provided
 	IncludeMalePerformers *bool `json:"includeMalePerformers,omitempty"`
+	// Filter to only include performers with these genders. If not provided, all genders are included.
+	PerformerGenders []GenderEnum `json:"performerGenders,omitempty"`
 	// defaults to true if not provided
 	SkipMultipleMatches *bool `json:"skipMultipleMatches,omitempty"`
 	// tag to tag skipped multiple matches with
@@ -1545,12 +1643,15 @@ type Image struct {
 	Studio       *Studio         `json:"studio,omitempty"`
 	Tags         []*Tag          `json:"tags"`
 	Performers   []*Performer    `json:"performers"`
+	CustomFields map[string]any  `json:"custom_fields"`
 }
 
 type ImageDestroyInput struct {
 	ID              string `json:"id"`
 	DeleteFile      *bool  `json:"delete_file,omitempty"`
 	DeleteGenerated *bool  `json:"delete_generated,omitempty"`
+	// If true, delete the file entry from the database if the file is not assigned to any other objects
+	DestroyFileEntry *bool `json:"destroy_file_entry,omitempty"`
 }
 
 type ImageFile struct {
@@ -1617,10 +1718,12 @@ type ImageFilterType struct {
 	Not     *ImageFilterType      `json:"NOT,omitempty"`
 	Title   *StringCriterionInput `json:"title,omitempty"`
 	Details *StringCriterionInput `json:"details,omitempty"`
-	// Filter by image id
+	//  Filter by image id
 	ID *IntCriterionInput `json:"id,omitempty"`
 	// Filter by file checksum
 	Checksum *StringCriterionInput `json:"checksum,omitempty"`
+	// Filter by file phash distance
+	PhashDistance *PhashDistanceCriterionInput `json:"phash_distance,omitempty"`
 	// Filter by path
 	Path *StringCriterionInput `json:"path,omitempty"`
 	// Filter by file count
@@ -1676,6 +1779,8 @@ type ImageFilterType struct {
 	TagsFilter *TagFilterType `json:"tags_filter,omitempty"`
 	// Filter by related files that meet this criteria
 	FilesFilter *FileFilterType `json:"files_filter,omitempty"`
+	// Filter by custom fields
+	CustomFields []*CustomFieldCriterionInput `json:"custom_fields,omitempty"`
 }
 
 type ImagePathsType struct {
@@ -1685,28 +1790,31 @@ type ImagePathsType struct {
 }
 
 type ImageUpdateInput struct {
-	ClientMutationID *string  `json:"clientMutationId,omitempty"`
-	ID               string   `json:"id"`
-	Title            *string  `json:"title,omitempty"`
-	Code             *string  `json:"code,omitempty"`
-	Rating100        *int     `json:"rating100,omitempty"`
-	Organized        *bool    `json:"organized,omitempty"`
-	URL              *string  `json:"url,omitempty"`
-	Urls             []string `json:"urls,omitempty"`
-	Date             *string  `json:"date,omitempty"`
-	Details          *string  `json:"details,omitempty"`
-	Photographer     *string  `json:"photographer,omitempty"`
-	StudioID         *string  `json:"studio_id,omitempty"`
-	PerformerIds     []string `json:"performer_ids,omitempty"`
-	TagIds           []string `json:"tag_ids,omitempty"`
-	GalleryIds       []string `json:"gallery_ids,omitempty"`
-	PrimaryFileID    *string  `json:"primary_file_id,omitempty"`
+	ClientMutationID *string            `json:"clientMutationId,omitempty"`
+	ID               string             `json:"id"`
+	Title            *string            `json:"title,omitempty"`
+	Code             *string            `json:"code,omitempty"`
+	Rating100        *int               `json:"rating100,omitempty"`
+	Organized        *bool              `json:"organized,omitempty"`
+	URL              *string            `json:"url,omitempty"`
+	Urls             []string           `json:"urls,omitempty"`
+	Date             *string            `json:"date,omitempty"`
+	Details          *string            `json:"details,omitempty"`
+	Photographer     *string            `json:"photographer,omitempty"`
+	StudioID         *string            `json:"studio_id,omitempty"`
+	PerformerIds     []string           `json:"performer_ids,omitempty"`
+	TagIds           []string           `json:"tag_ids,omitempty"`
+	GalleryIds       []string           `json:"gallery_ids,omitempty"`
+	PrimaryFileID    *string            `json:"primary_file_id,omitempty"`
+	CustomFields     *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type ImagesDestroyInput struct {
 	Ids             []string `json:"ids"`
 	DeleteFile      *bool    `json:"delete_file,omitempty"`
 	DeleteGenerated *bool    `json:"delete_generated,omitempty"`
+	// If true, delete the file entry from the database if the file is not assigned to any other objects
+	DestroyFileEntry *bool `json:"destroy_file_entry,omitempty"`
 }
 
 type ImportObjectsInput struct {
@@ -1891,12 +1999,6 @@ type OrientationCriterionInput struct {
 	Value []OrientationEnum `json:"value"`
 }
 
-type PHashDuplicationCriterionInput struct {
-	Duplicated *bool `json:"duplicated,omitempty"`
-	// Currently unimplemented
-	Distance *int `json:"distance,omitempty"`
-}
-
 type Package struct {
 	PackageID string     `json:"package_id"`
 	Name      string     `json:"name"`
@@ -1927,75 +2029,80 @@ type PackageSpecInput struct {
 }
 
 type Performer struct {
-	ID             string          `json:"id"`
-	Name           string          `json:"name"`
-	Disambiguation *string         `json:"disambiguation,omitempty"`
-	URL            *string         `json:"url,omitempty"`
-	Urls           []string        `json:"urls,omitempty"`
-	Gender         *GenderEnum     `json:"gender,omitempty"`
-	Twitter        *string         `json:"twitter,omitempty"`
-	Instagram      *string         `json:"instagram,omitempty"`
-	Birthdate      *string         `json:"birthdate,omitempty"`
-	Ethnicity      *string         `json:"ethnicity,omitempty"`
-	Country        *string         `json:"country,omitempty"`
-	EyeColor       *string         `json:"eye_color,omitempty"`
-	HeightCm       *int            `json:"height_cm,omitempty"`
-	Measurements   *string         `json:"measurements,omitempty"`
-	FakeTits       *string         `json:"fake_tits,omitempty"`
-	PenisLength    *float64        `json:"penis_length,omitempty"`
-	Circumcised    *CircumisedEnum `json:"circumcised,omitempty"`
-	CareerLength   *string         `json:"career_length,omitempty"`
-	Tattoos        *string         `json:"tattoos,omitempty"`
-	Piercings      *string         `json:"piercings,omitempty"`
-	AliasList      []string        `json:"alias_list"`
-	Favorite       bool            `json:"favorite"`
-	Tags           []*Tag          `json:"tags"`
-	IgnoreAutoTag  bool            `json:"ignore_auto_tag"`
-	ImagePath      *string         `json:"image_path,omitempty"`
-	SceneCount     int             `json:"scene_count"`
-	ImageCount     int             `json:"image_count"`
-	GalleryCount   int             `json:"gallery_count"`
-	GroupCount     int             `json:"group_count"`
-	MovieCount     int             `json:"movie_count"`
-	PerformerCount int             `json:"performer_count"`
-	OCounter       *int            `json:"o_counter,omitempty"`
-	Scenes         []*Scene        `json:"scenes"`
-	StashIds       []*StashID      `json:"stash_ids"`
-	Rating100      *int            `json:"rating100,omitempty"`
-	Details        *string         `json:"details,omitempty"`
-	DeathDate      *string         `json:"death_date,omitempty"`
-	HairColor      *string         `json:"hair_color,omitempty"`
-	Weight         *int            `json:"weight,omitempty"`
-	CreatedAt      time.Time       `json:"created_at"`
-	UpdatedAt      time.Time       `json:"updated_at"`
-	Groups         []*Group        `json:"groups"`
-	Movies         []*Movie        `json:"movies"`
-	CustomFields   map[string]any  `json:"custom_fields"`
+	ID             string           `json:"id"`
+	Name           string           `json:"name"`
+	Disambiguation *string          `json:"disambiguation,omitempty"`
+	URL            *string          `json:"url,omitempty"`
+	Urls           []string         `json:"urls,omitempty"`
+	Gender         *GenderEnum      `json:"gender,omitempty"`
+	Twitter        *string          `json:"twitter,omitempty"`
+	Instagram      *string          `json:"instagram,omitempty"`
+	Birthdate      *string          `json:"birthdate,omitempty"`
+	Ethnicity      *string          `json:"ethnicity,omitempty"`
+	Country        *string          `json:"country,omitempty"`
+	EyeColor       *string          `json:"eye_color,omitempty"`
+	HeightCm       *int             `json:"height_cm,omitempty"`
+	Measurements   *string          `json:"measurements,omitempty"`
+	FakeTits       *string          `json:"fake_tits,omitempty"`
+	PenisLength    *float64         `json:"penis_length,omitempty"`
+	Circumcised    *CircumcisedEnum `json:"circumcised,omitempty"`
+	CareerLength   *string          `json:"career_length,omitempty"`
+	CareerStart    *string          `json:"career_start,omitempty"`
+	CareerEnd      *string          `json:"career_end,omitempty"`
+	Tattoos        *string          `json:"tattoos,omitempty"`
+	Piercings      *string          `json:"piercings,omitempty"`
+	AliasList      []string         `json:"alias_list"`
+	Favorite       bool             `json:"favorite"`
+	Tags           []*Tag           `json:"tags"`
+	IgnoreAutoTag  bool             `json:"ignore_auto_tag"`
+	ImagePath      *string          `json:"image_path,omitempty"`
+	SceneCount     int              `json:"scene_count"`
+	ImageCount     int              `json:"image_count"`
+	GalleryCount   int              `json:"gallery_count"`
+	GroupCount     int              `json:"group_count"`
+	MovieCount     int              `json:"movie_count"`
+	PerformerCount int              `json:"performer_count"`
+	OCounter       *int             `json:"o_counter,omitempty"`
+	Scenes         []*Scene         `json:"scenes"`
+	StashIds       []*StashID       `json:"stash_ids"`
+	Rating100      *int             `json:"rating100,omitempty"`
+	Details        *string          `json:"details,omitempty"`
+	DeathDate      *string          `json:"death_date,omitempty"`
+	HairColor      *string          `json:"hair_color,omitempty"`
+	Weight         *int             `json:"weight,omitempty"`
+	CreatedAt      time.Time        `json:"created_at"`
+	UpdatedAt      time.Time        `json:"updated_at"`
+	Groups         []*Group         `json:"groups"`
+	Movies         []*Movie         `json:"movies"`
+	CustomFields   map[string]any   `json:"custom_fields"`
 }
 
 type PerformerCreateInput struct {
-	Name           string          `json:"name"`
-	Disambiguation *string         `json:"disambiguation,omitempty"`
-	URL            *string         `json:"url,omitempty"`
-	Urls           []string        `json:"urls,omitempty"`
-	Gender         *GenderEnum     `json:"gender,omitempty"`
-	Birthdate      *string         `json:"birthdate,omitempty"`
-	Ethnicity      *string         `json:"ethnicity,omitempty"`
-	Country        *string         `json:"country,omitempty"`
-	EyeColor       *string         `json:"eye_color,omitempty"`
-	HeightCm       *int            `json:"height_cm,omitempty"`
-	Measurements   *string         `json:"measurements,omitempty"`
-	FakeTits       *string         `json:"fake_tits,omitempty"`
-	PenisLength    *float64        `json:"penis_length,omitempty"`
-	Circumcised    *CircumisedEnum `json:"circumcised,omitempty"`
-	CareerLength   *string         `json:"career_length,omitempty"`
-	Tattoos        *string         `json:"tattoos,omitempty"`
-	Piercings      *string         `json:"piercings,omitempty"`
-	AliasList      []string        `json:"alias_list,omitempty"`
-	Twitter        *string         `json:"twitter,omitempty"`
-	Instagram      *string         `json:"instagram,omitempty"`
-	Favorite       *bool           `json:"favorite,omitempty"`
-	TagIds         []string        `json:"tag_ids,omitempty"`
+	Name           string           `json:"name"`
+	Disambiguation *string          `json:"disambiguation,omitempty"`
+	URL            *string          `json:"url,omitempty"`
+	Urls           []string         `json:"urls,omitempty"`
+	Gender         *GenderEnum      `json:"gender,omitempty"`
+	Birthdate      *string          `json:"birthdate,omitempty"`
+	Ethnicity      *string          `json:"ethnicity,omitempty"`
+	Country        *string          `json:"country,omitempty"`
+	EyeColor       *string          `json:"eye_color,omitempty"`
+	HeightCm       *int             `json:"height_cm,omitempty"`
+	Measurements   *string          `json:"measurements,omitempty"`
+	FakeTits       *string          `json:"fake_tits,omitempty"`
+	PenisLength    *float64         `json:"penis_length,omitempty"`
+	Circumcised    *CircumcisedEnum `json:"circumcised,omitempty"`
+	CareerLength   *string          `json:"career_length,omitempty"`
+	CareerStart    *string          `json:"career_start,omitempty"`
+	CareerEnd      *string          `json:"career_end,omitempty"`
+	Tattoos        *string          `json:"tattoos,omitempty"`
+	Piercings      *string          `json:"piercings,omitempty"`
+	// Duplicate aliases and those equal to name will be ignored (case-insensitive)
+	AliasList []string `json:"alias_list,omitempty"`
+	Twitter   *string  `json:"twitter,omitempty"`
+	Instagram *string  `json:"instagram,omitempty"`
+	Favorite  *bool    `json:"favorite,omitempty"`
+	TagIds    []string `json:"tag_ids,omitempty"`
 	// This should be a URL or a base64 encoded data URL
 	Image         *string         `json:"image,omitempty"`
 	StashIds      []*StashIDInput `json:"stash_ids,omitempty"`
@@ -2039,10 +2146,14 @@ type PerformerFilterType struct {
 	FakeTits *StringCriterionInput `json:"fake_tits,omitempty"`
 	// Filter by penis length value
 	PenisLength *FloatCriterionInput `json:"penis_length,omitempty"`
-	// Filter by ciricumcision
+	// Filter by circumcision
 	Circumcised *CircumcisionCriterionInput `json:"circumcised,omitempty"`
-	// Filter by career length
+	// Deprecated: use career_start and career_end. This filter is non-functional.
 	CareerLength *StringCriterionInput `json:"career_length,omitempty"`
+	// Filter by career start
+	CareerStart *DateCriterionInput `json:"career_start,omitempty"`
+	// Filter by career end
+	CareerEnd *DateCriterionInput `json:"career_end,omitempty"`
 	// Filter by tattoos
 	Tattoos *StringCriterionInput `json:"tattoos,omitempty"`
 	// Filter by piercings
@@ -2059,6 +2170,8 @@ type PerformerFilterType struct {
 	TagCount *IntCriterionInput `json:"tag_count,omitempty"`
 	// Filter by scene count
 	SceneCount *IntCriterionInput `json:"scene_count,omitempty"`
+	// Filter by marker count (via scene)
+	MarkerCount *IntCriterionInput `json:"marker_count,omitempty"`
 	// Filter by image count
 	ImageCount *IntCriterionInput `json:"image_count,omitempty"`
 	// Filter by gallery count
@@ -2069,7 +2182,9 @@ type PerformerFilterType struct {
 	OCounter *IntCriterionInput `json:"o_counter,omitempty"`
 	// Filter by StashID
 	StashIDEndpoint *StashIDCriterionInput `json:"stash_id_endpoint,omitempty"`
-	Rating100       *IntCriterionInput     `json:"rating100,omitempty"`
+	// Filter by StashIDs
+	StashIdsEndpoint *StashIDsCriterionInput `json:"stash_ids_endpoint,omitempty"`
+	Rating100        *IntCriterionInput      `json:"rating100,omitempty"`
 	// Filter by url
 	URL *StringCriterionInput `json:"url,omitempty"`
 	// Filter by hair color
@@ -2098,6 +2213,8 @@ type PerformerFilterType struct {
 	GalleriesFilter *GalleryFilterType `json:"galleries_filter,omitempty"`
 	// Filter by related tags that meet this criteria
 	TagsFilter *TagFilterType `json:"tags_filter,omitempty"`
+	// Filter by related scene markers (via scene) that meet this criteria
+	MarkersFilter *SceneMarkerFilterType `json:"markers_filter,omitempty"`
 	// Filter by creation time
 	CreatedAt *TimestampCriterionInput `json:"created_at,omitempty"`
 	// Filter by last update time
@@ -2105,30 +2222,39 @@ type PerformerFilterType struct {
 	CustomFields []*CustomFieldCriterionInput `json:"custom_fields,omitempty"`
 }
 
+type PerformerMergeInput struct {
+	Source      []string              `json:"source"`
+	Destination string                `json:"destination"`
+	Values      *PerformerUpdateInput `json:"values,omitempty"`
+}
+
 type PerformerUpdateInput struct {
-	ID             string          `json:"id"`
-	Name           *string         `json:"name,omitempty"`
-	Disambiguation *string         `json:"disambiguation,omitempty"`
-	URL            *string         `json:"url,omitempty"`
-	Urls           []string        `json:"urls,omitempty"`
-	Gender         *GenderEnum     `json:"gender,omitempty"`
-	Birthdate      *string         `json:"birthdate,omitempty"`
-	Ethnicity      *string         `json:"ethnicity,omitempty"`
-	Country        *string         `json:"country,omitempty"`
-	EyeColor       *string         `json:"eye_color,omitempty"`
-	HeightCm       *int            `json:"height_cm,omitempty"`
-	Measurements   *string         `json:"measurements,omitempty"`
-	FakeTits       *string         `json:"fake_tits,omitempty"`
-	PenisLength    *float64        `json:"penis_length,omitempty"`
-	Circumcised    *CircumisedEnum `json:"circumcised,omitempty"`
-	CareerLength   *string         `json:"career_length,omitempty"`
-	Tattoos        *string         `json:"tattoos,omitempty"`
-	Piercings      *string         `json:"piercings,omitempty"`
-	AliasList      []string        `json:"alias_list,omitempty"`
-	Twitter        *string         `json:"twitter,omitempty"`
-	Instagram      *string         `json:"instagram,omitempty"`
-	Favorite       *bool           `json:"favorite,omitempty"`
-	TagIds         []string        `json:"tag_ids,omitempty"`
+	ID             string           `json:"id"`
+	Name           *string          `json:"name,omitempty"`
+	Disambiguation *string          `json:"disambiguation,omitempty"`
+	URL            *string          `json:"url,omitempty"`
+	Urls           []string         `json:"urls,omitempty"`
+	Gender         *GenderEnum      `json:"gender,omitempty"`
+	Birthdate      *string          `json:"birthdate,omitempty"`
+	Ethnicity      *string          `json:"ethnicity,omitempty"`
+	Country        *string          `json:"country,omitempty"`
+	EyeColor       *string          `json:"eye_color,omitempty"`
+	HeightCm       *int             `json:"height_cm,omitempty"`
+	Measurements   *string          `json:"measurements,omitempty"`
+	FakeTits       *string          `json:"fake_tits,omitempty"`
+	PenisLength    *float64         `json:"penis_length,omitempty"`
+	Circumcised    *CircumcisedEnum `json:"circumcised,omitempty"`
+	CareerLength   *string          `json:"career_length,omitempty"`
+	CareerStart    *string          `json:"career_start,omitempty"`
+	CareerEnd      *string          `json:"career_end,omitempty"`
+	Tattoos        *string          `json:"tattoos,omitempty"`
+	Piercings      *string          `json:"piercings,omitempty"`
+	// Duplicate aliases and those equal to name will be ignored (case-insensitive)
+	AliasList []string `json:"alias_list,omitempty"`
+	Twitter   *string  `json:"twitter,omitempty"`
+	Instagram *string  `json:"instagram,omitempty"`
+	Favorite  *bool    `json:"favorite,omitempty"`
+	TagIds    []string `json:"tag_ids,omitempty"`
 	// This should be a URL or a base64 encoded data URL
 	Image         *string            `json:"image,omitempty"`
 	StashIds      []*StashIDInput    `json:"stash_ids,omitempty"`
@@ -2297,8 +2423,10 @@ type ScanMetadataInput struct {
 	ScanGenerateImagePreviews *bool `json:"scanGenerateImagePreviews,omitempty"`
 	// Generate sprites during scan
 	ScanGenerateSprites *bool `json:"scanGenerateSprites,omitempty"`
-	// Generate phashes during scan
+	// Generate video phashes during scan
 	ScanGeneratePhashes *bool `json:"scanGeneratePhashes,omitempty"`
+	// Generate image phashes during scan
+	ScanGenerateImagePhashes *bool `json:"scanGenerateImagePhashes,omitempty"`
 	// Generate image thumbnails during scan
 	ScanGenerateThumbnails *bool `json:"scanGenerateThumbnails,omitempty"`
 	// Generate image clip previews during scan
@@ -2318,8 +2446,10 @@ type ScanMetadataOptions struct {
 	ScanGenerateImagePreviews bool `json:"scanGenerateImagePreviews"`
 	// Generate sprites during scan
 	ScanGenerateSprites bool `json:"scanGenerateSprites"`
-	// Generate phashes during scan
+	// Generate video phashes during scan
 	ScanGeneratePhashes bool `json:"scanGeneratePhashes"`
+	// Generate image phashes during scan
+	ScanGenerateImagePhashes *bool `json:"scanGenerateImagePhashes,omitempty"`
 	// Generate image thumbnails during scan
 	ScanGenerateThumbnails bool `json:"scanGenerateThumbnails"`
 	// Generate image clip previews during scan
@@ -2365,6 +2495,7 @@ type Scene struct {
 	Tags         []*Tag          `json:"tags"`
 	Performers   []*Performer    `json:"performers"`
 	StashIds     []*StashID      `json:"stash_ids"`
+	CustomFields map[string]any  `json:"custom_fields"`
 	// Return valid stream paths
 	SceneStreams []*SceneStreamEndpoint `json:"sceneStreams"`
 }
@@ -2391,13 +2522,16 @@ type SceneCreateInput struct {
 	// The first id will be assigned as primary.
 	// Files will be reassigned from existing scenes if applicable.
 	// Files must not already be primary for another scene.
-	FileIds []string `json:"file_ids,omitempty"`
+	FileIds      []string       `json:"file_ids,omitempty"`
+	CustomFields map[string]any `json:"custom_fields,omitempty"`
 }
 
 type SceneDestroyInput struct {
 	ID              string `json:"id"`
 	DeleteFile      *bool  `json:"delete_file,omitempty"`
 	DeleteGenerated *bool  `json:"delete_generated,omitempty"`
+	// If true, delete the file entry from the database if the file is not assigned to any other objects
+	DestroyFileEntry *bool `json:"destroy_file_entry,omitempty"`
 }
 
 type SceneFileType struct {
@@ -2437,8 +2571,8 @@ type SceneFilterType struct {
 	Organized *bool `json:"organized,omitempty"`
 	// Filter by o-counter
 	OCounter *IntCriterionInput `json:"o_counter,omitempty"`
-	// Filter Scenes that have an exact phash match available
-	Duplicated *PHashDuplicationCriterionInput `json:"duplicated,omitempty"`
+	// Filter Scenes by duplication criteria
+	Duplicated *DuplicationCriterionInput `json:"duplicated,omitempty"`
 	// Filter by resolution
 	Resolution *ResolutionCriterionInput `json:"resolution,omitempty"`
 	// Filter by orientation
@@ -2481,6 +2615,10 @@ type SceneFilterType struct {
 	PerformerCount *IntCriterionInput `json:"performer_count,omitempty"`
 	// Filter by StashID
 	StashIDEndpoint *StashIDCriterionInput `json:"stash_id_endpoint,omitempty"`
+	// Filter by StashIDs
+	StashIdsEndpoint *StashIDsCriterionInput `json:"stash_ids_endpoint,omitempty"`
+	// Filter by StashID count
+	StashIDCount *IntCriterionInput `json:"stash_id_count,omitempty"`
 	// Filter by url
 	URL *StringCriterionInput `json:"url,omitempty"`
 	// Filter by interactive
@@ -2518,7 +2656,8 @@ type SceneFilterType struct {
 	// Filter by related markers that meet this criteria
 	MarkersFilter *SceneMarkerFilterType `json:"markers_filter,omitempty"`
 	// Filter by related files that meet this criteria
-	FilesFilter *FileFilterType `json:"files_filter,omitempty"`
+	FilesFilter  *FileFilterType              `json:"files_filter,omitempty"`
+	CustomFields []*CustomFieldCriterionInput `json:"custom_fields,omitempty"`
 }
 
 type SceneGroup struct {
@@ -2584,9 +2723,9 @@ type SceneMarkerFilterType struct {
 	UpdatedAt *TimestampCriterionInput `json:"updated_at,omitempty"`
 	// Filter by scene date
 	SceneDate *DateCriterionInput `json:"scene_date,omitempty"`
-	// Filter by cscene reation time
+	// Filter by scene creation time
 	SceneCreatedAt *TimestampCriterionInput `json:"scene_created_at,omitempty"`
-	// Filter by lscene ast update time
+	// Filter by scene last update time
 	SceneUpdatedAt *TimestampCriterionInput `json:"scene_updated_at,omitempty"`
 	// Filter by related scenes that meet this criteria
 	SceneFilter *SceneFilterType `json:"scene_filter,omitempty"`
@@ -2708,14 +2847,17 @@ type SceneUpdateInput struct {
 	// The total time a scene has spent playing
 	PlayDuration *float64 `json:"play_duration,omitempty"`
 	// The number ot times a scene has been played
-	PlayCount     *int    `json:"play_count,omitempty"`
-	PrimaryFileID *string `json:"primary_file_id,omitempty"`
+	PlayCount     *int               `json:"play_count,omitempty"`
+	PrimaryFileID *string            `json:"primary_file_id,omitempty"`
+	CustomFields  *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type ScenesDestroyInput struct {
 	Ids             []string `json:"ids"`
 	DeleteFile      *bool    `json:"delete_file,omitempty"`
 	DeleteGenerated *bool    `json:"delete_generated,omitempty"`
+	// If true, delete the file entry from the database if the file is not assigned to any other objects
+	DestroyFileEntry *bool `json:"destroy_file_entry,omitempty"`
 }
 
 type ScrapeMultiPerformersInput struct {
@@ -2926,6 +3068,8 @@ type ScrapedPerformer struct {
 	PenisLength    *string       `json:"penis_length,omitempty"`
 	Circumcised    *string       `json:"circumcised,omitempty"`
 	CareerLength   *string       `json:"career_length,omitempty"`
+	CareerStart    *string       `json:"career_start,omitempty"`
+	CareerEnd      *string       `json:"career_end,omitempty"`
 	Tattoos        *string       `json:"tattoos,omitempty"`
 	Piercings      *string       `json:"piercings,omitempty"`
 	Aliases        *string       `json:"aliases,omitempty"`
@@ -2962,6 +3106,8 @@ type ScrapedPerformerInput struct {
 	PenisLength    *string  `json:"penis_length,omitempty"`
 	Circumcised    *string  `json:"circumcised,omitempty"`
 	CareerLength   *string  `json:"career_length,omitempty"`
+	CareerStart    *string  `json:"career_start,omitempty"`
+	CareerEnd      *string  `json:"career_end,omitempty"`
 	Tattoos        *string  `json:"tattoos,omitempty"`
 	Piercings      *string  `json:"piercings,omitempty"`
 	Aliases        *string  `json:"aliases,omitempty"`
@@ -3025,8 +3171,11 @@ func (ScrapedStudio) IsScrapedContent() {}
 
 type ScrapedTag struct {
 	// Set if tag matched
-	StoredID *string `json:"stored_id,omitempty"`
-	Name     string  `json:"name"`
+	StoredID    *string     `json:"stored_id,omitempty"`
+	Name        string      `json:"name"`
+	Description *string     `json:"description,omitempty"`
+	AliasList   []string    `json:"alias_list,omitempty"`
+	Parent      *ScrapedTag `json:"parent,omitempty"`
 	// Remote site ID, if applicable
 	RemoteSiteID *string `json:"remote_site_id,omitempty"`
 }
@@ -3084,7 +3233,7 @@ type SetDefaultFilterInput struct {
 
 type SetFingerprintsInput struct {
 	Type string `json:"type"`
-	// an null value will remove the fingerprint
+	// a null value will remove the fingerprint
 	Value *string `json:"value,omitempty"`
 }
 
@@ -3216,7 +3365,7 @@ type StashID struct {
 
 type StashIDCriterionInput struct {
 	// If present, this value is treated as a predicate.
-	// That is, it will filter based on stash_ids with the matching endpoint
+	// That is, it will filter based on stash_id with the matching endpoint
 	Endpoint *string           `json:"endpoint,omitempty"`
 	StashID  *string           `json:"stash_id,omitempty"`
 	Modifier CriterionModifier `json:"modifier"`
@@ -3226,6 +3375,14 @@ type StashIDInput struct {
 	Endpoint  string     `json:"endpoint"`
 	StashID   string     `json:"stash_id"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+type StashIDsCriterionInput struct {
+	// If present, this value is treated as a predicate.
+	// That is, it will filter based on stash_ids with the matching endpoint
+	Endpoint *string           `json:"endpoint,omitempty"`
+	StashIds []*string         `json:"stash_ids,omitempty"`
+	Modifier CriterionModifier `json:"modifier"`
 }
 
 type StatsResultType struct {
@@ -3252,31 +3409,33 @@ type StringCriterionInput struct {
 }
 
 type Studio struct {
-	ID             string     `json:"id"`
-	Name           string     `json:"name"`
-	URL            *string    `json:"url,omitempty"`
-	Urls           []string   `json:"urls"`
-	ParentStudio   *Studio    `json:"parent_studio,omitempty"`
-	ChildStudios   []*Studio  `json:"child_studios"`
-	Aliases        []string   `json:"aliases"`
-	Tags           []*Tag     `json:"tags"`
-	IgnoreAutoTag  bool       `json:"ignore_auto_tag"`
-	ImagePath      *string    `json:"image_path,omitempty"`
-	SceneCount     int        `json:"scene_count"`
-	ImageCount     int        `json:"image_count"`
-	GalleryCount   int        `json:"gallery_count"`
-	PerformerCount int        `json:"performer_count"`
-	GroupCount     int        `json:"group_count"`
-	MovieCount     int        `json:"movie_count"`
-	StashIds       []*StashID `json:"stash_ids"`
-	Rating100      *int       `json:"rating100,omitempty"`
-	Favorite       bool       `json:"favorite"`
-	Details        *string    `json:"details,omitempty"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-	Groups         []*Group   `json:"groups"`
-	Movies         []*Movie   `json:"movies"`
-	OCounter       *int       `json:"o_counter,omitempty"`
+	ID             string         `json:"id"`
+	Name           string         `json:"name"`
+	URL            *string        `json:"url,omitempty"`
+	Urls           []string       `json:"urls"`
+	ParentStudio   *Studio        `json:"parent_studio,omitempty"`
+	ChildStudios   []*Studio      `json:"child_studios"`
+	Aliases        []string       `json:"aliases"`
+	Tags           []*Tag         `json:"tags"`
+	IgnoreAutoTag  bool           `json:"ignore_auto_tag"`
+	Organized      bool           `json:"organized"`
+	ImagePath      *string        `json:"image_path,omitempty"`
+	SceneCount     int            `json:"scene_count"`
+	ImageCount     int            `json:"image_count"`
+	GalleryCount   int            `json:"gallery_count"`
+	PerformerCount int            `json:"performer_count"`
+	GroupCount     int            `json:"group_count"`
+	MovieCount     int            `json:"movie_count"`
+	StashIds       []*StashID     `json:"stash_ids"`
+	Rating100      *int           `json:"rating100,omitempty"`
+	Favorite       bool           `json:"favorite"`
+	Details        *string        `json:"details,omitempty"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	Groups         []*Group       `json:"groups"`
+	Movies         []*Movie       `json:"movies"`
+	OCounter       *int           `json:"o_counter,omitempty"`
+	CustomFields   map[string]any `json:"custom_fields"`
 }
 
 type StudioCreateInput struct {
@@ -3285,14 +3444,17 @@ type StudioCreateInput struct {
 	Urls     []string `json:"urls,omitempty"`
 	ParentID *string  `json:"parent_id,omitempty"`
 	// This should be a URL or a base64 encoded data URL
-	Image         *string         `json:"image,omitempty"`
-	StashIds      []*StashIDInput `json:"stash_ids,omitempty"`
-	Rating100     *int            `json:"rating100,omitempty"`
-	Favorite      *bool           `json:"favorite,omitempty"`
-	Details       *string         `json:"details,omitempty"`
-	Aliases       []string        `json:"aliases,omitempty"`
-	TagIds        []string        `json:"tag_ids,omitempty"`
-	IgnoreAutoTag *bool           `json:"ignore_auto_tag,omitempty"`
+	Image     *string         `json:"image,omitempty"`
+	StashIds  []*StashIDInput `json:"stash_ids,omitempty"`
+	Rating100 *int            `json:"rating100,omitempty"`
+	Favorite  *bool           `json:"favorite,omitempty"`
+	Details   *string         `json:"details,omitempty"`
+	// Duplicate aliases and those equal to name will be ignored (case-insensitive)
+	Aliases       []string       `json:"aliases,omitempty"`
+	TagIds        []string       `json:"tag_ids,omitempty"`
+	IgnoreAutoTag *bool          `json:"ignore_auto_tag,omitempty"`
+	Organized     *bool          `json:"organized,omitempty"`
+	CustomFields  map[string]any `json:"custom_fields,omitempty"`
 }
 
 type StudioDestroyInput struct {
@@ -3309,6 +3471,8 @@ type StudioFilterType struct {
 	Parents *MultiCriterionInput `json:"parents,omitempty"`
 	// Filter by StashID
 	StashIDEndpoint *StashIDCriterionInput `json:"stash_id_endpoint,omitempty"`
+	// Filter by StashIDs
+	StashIdsEndpoint *StashIDsCriterionInput `json:"stash_ids_endpoint,omitempty"`
 	// Filter to only include studios with these tags
 	Tags *HierarchicalMultiCriterionInput `json:"tags,omitempty"`
 	// Filter to only include studios missing this property
@@ -3322,6 +3486,8 @@ type StudioFilterType struct {
 	ImageCount *IntCriterionInput `json:"image_count,omitempty"`
 	// Filter by gallery count
 	GalleryCount *IntCriterionInput `json:"gallery_count,omitempty"`
+	// Filter by group count
+	GroupCount *IntCriterionInput `json:"group_count,omitempty"`
 	// Filter by tag count
 	TagCount *IntCriterionInput `json:"tag_count,omitempty"`
 	// Filter by url
@@ -3332,16 +3498,21 @@ type StudioFilterType struct {
 	ChildCount *IntCriterionInput `json:"child_count,omitempty"`
 	// Filter by autotag ignore value
 	IgnoreAutoTag *bool `json:"ignore_auto_tag,omitempty"`
+	// Filter by organized
+	Organized *bool `json:"organized,omitempty"`
 	// Filter by related scenes that meet this criteria
 	ScenesFilter *SceneFilterType `json:"scenes_filter,omitempty"`
 	// Filter by related images that meet this criteria
 	ImagesFilter *ImageFilterType `json:"images_filter,omitempty"`
 	// Filter by related galleries that meet this criteria
 	GalleriesFilter *GalleryFilterType `json:"galleries_filter,omitempty"`
+	// Filter by related groups that meet this criteria
+	GroupsFilter *GroupFilterType `json:"groups_filter,omitempty"`
 	// Filter by creation time
 	CreatedAt *TimestampCriterionInput `json:"created_at,omitempty"`
 	// Filter by last update time
-	UpdatedAt *TimestampCriterionInput `json:"updated_at,omitempty"`
+	UpdatedAt    *TimestampCriterionInput     `json:"updated_at,omitempty"`
+	CustomFields []*CustomFieldCriterionInput `json:"custom_fields,omitempty"`
 }
 
 type StudioUpdateInput struct {
@@ -3351,14 +3522,17 @@ type StudioUpdateInput struct {
 	Urls     []string `json:"urls,omitempty"`
 	ParentID *string  `json:"parent_id,omitempty"`
 	// This should be a URL or a base64 encoded data URL
-	Image         *string         `json:"image,omitempty"`
-	StashIds      []*StashIDInput `json:"stash_ids,omitempty"`
-	Rating100     *int            `json:"rating100,omitempty"`
-	Favorite      *bool           `json:"favorite,omitempty"`
-	Details       *string         `json:"details,omitempty"`
-	Aliases       []string        `json:"aliases,omitempty"`
-	TagIds        []string        `json:"tag_ids,omitempty"`
-	IgnoreAutoTag *bool           `json:"ignore_auto_tag,omitempty"`
+	Image     *string         `json:"image,omitempty"`
+	StashIds  []*StashIDInput `json:"stash_ids,omitempty"`
+	Rating100 *int            `json:"rating100,omitempty"`
+	Favorite  *bool           `json:"favorite,omitempty"`
+	Details   *string         `json:"details,omitempty"`
+	// Duplicate aliases and those equal to name will be ignored (case-insensitive)
+	Aliases       []string           `json:"aliases,omitempty"`
+	TagIds        []string           `json:"tag_ids,omitempty"`
+	IgnoreAutoTag *bool              `json:"ignore_auto_tag,omitempty"`
+	Organized     *bool              `json:"organized,omitempty"`
+	CustomFields  *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type Subscription struct {
@@ -3381,42 +3555,45 @@ type Tag struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 	// Value that does not appear in the UI but overrides name for sorting
-	SortName         *string    `json:"sort_name,omitempty"`
-	Description      *string    `json:"description,omitempty"`
-	Aliases          []string   `json:"aliases"`
-	IgnoreAutoTag    bool       `json:"ignore_auto_tag"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
-	Favorite         bool       `json:"favorite"`
-	StashIds         []*StashID `json:"stash_ids"`
-	ImagePath        *string    `json:"image_path,omitempty"`
-	SceneCount       int        `json:"scene_count"`
-	SceneMarkerCount int        `json:"scene_marker_count"`
-	ImageCount       int        `json:"image_count"`
-	GalleryCount     int        `json:"gallery_count"`
-	PerformerCount   int        `json:"performer_count"`
-	StudioCount      int        `json:"studio_count"`
-	GroupCount       int        `json:"group_count"`
-	MovieCount       int        `json:"movie_count"`
-	Parents          []*Tag     `json:"parents"`
-	Children         []*Tag     `json:"children"`
-	ParentCount      int        `json:"parent_count"`
-	ChildCount       int        `json:"child_count"`
+	SortName         *string        `json:"sort_name,omitempty"`
+	Description      *string        `json:"description,omitempty"`
+	Aliases          []string       `json:"aliases"`
+	IgnoreAutoTag    bool           `json:"ignore_auto_tag"`
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
+	Favorite         bool           `json:"favorite"`
+	StashIds         []*StashID     `json:"stash_ids"`
+	ImagePath        *string        `json:"image_path,omitempty"`
+	SceneCount       int            `json:"scene_count"`
+	SceneMarkerCount int            `json:"scene_marker_count"`
+	ImageCount       int            `json:"image_count"`
+	GalleryCount     int            `json:"gallery_count"`
+	PerformerCount   int            `json:"performer_count"`
+	StudioCount      int            `json:"studio_count"`
+	GroupCount       int            `json:"group_count"`
+	MovieCount       int            `json:"movie_count"`
+	Parents          []*Tag         `json:"parents"`
+	Children         []*Tag         `json:"children"`
+	ParentCount      int            `json:"parent_count"`
+	ChildCount       int            `json:"child_count"`
+	CustomFields     map[string]any `json:"custom_fields"`
 }
 
 type TagCreateInput struct {
 	Name string `json:"name"`
 	// Value that does not appear in the UI but overrides name for sorting
-	SortName      *string  `json:"sort_name,omitempty"`
-	Description   *string  `json:"description,omitempty"`
+	SortName    *string `json:"sort_name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	// Duplicate aliases and those equal to name will be ignored (case-insensitive)
 	Aliases       []string `json:"aliases,omitempty"`
 	IgnoreAutoTag *bool    `json:"ignore_auto_tag,omitempty"`
 	Favorite      *bool    `json:"favorite,omitempty"`
 	// This should be a URL or a base64 encoded data URL
-	Image     *string         `json:"image,omitempty"`
-	StashIds  []*StashIDInput `json:"stash_ids,omitempty"`
-	ParentIds []string        `json:"parent_ids,omitempty"`
-	ChildIds  []string        `json:"child_ids,omitempty"`
+	Image        *string         `json:"image,omitempty"`
+	StashIds     []*StashIDInput `json:"stash_ids,omitempty"`
+	ParentIds    []string        `json:"parent_ids,omitempty"`
+	ChildIds     []string        `json:"child_ids,omitempty"`
+	CustomFields map[string]any  `json:"custom_fields,omitempty"`
 }
 
 type TagDestroyInput struct {
@@ -3461,43 +3638,57 @@ type TagFilterType struct {
 	Children *HierarchicalMultiCriterionInput `json:"children,omitempty"`
 	// Filter by number of parent tags the tag has
 	ParentCount *IntCriterionInput `json:"parent_count,omitempty"`
-	// Filter by number f child tags the tag has
+	// Filter by number of child tags the tag has
 	ChildCount *IntCriterionInput `json:"child_count,omitempty"`
 	// Filter by autotag ignore value
 	IgnoreAutoTag *bool `json:"ignore_auto_tag,omitempty"`
 	// Filter by StashID
 	StashIDEndpoint *StashIDCriterionInput `json:"stash_id_endpoint,omitempty"`
+	// Filter by StashID
+	StashIdsEndpoint *StashIDsCriterionInput `json:"stash_ids_endpoint,omitempty"`
 	// Filter by related scenes that meet this criteria
 	ScenesFilter *SceneFilterType `json:"scenes_filter,omitempty"`
 	// Filter by related images that meet this criteria
 	ImagesFilter *ImageFilterType `json:"images_filter,omitempty"`
 	// Filter by related galleries that meet this criteria
 	GalleriesFilter *GalleryFilterType `json:"galleries_filter,omitempty"`
+	// Filter by related groups that meet this criteria
+	GroupsFilter *GroupFilterType `json:"groups_filter,omitempty"`
+	// Filter by related performers that meet this criteria
+	PerformersFilter *PerformerFilterType `json:"performers_filter,omitempty"`
+	// Filter by related studios that meet this criteria
+	StudiosFilter *StudioFilterType `json:"studios_filter,omitempty"`
+	// Filter by related scene markers that meet this criteria
+	MarkersFilter *SceneMarkerFilterType `json:"markers_filter,omitempty"`
 	// Filter by creation time
 	CreatedAt *TimestampCriterionInput `json:"created_at,omitempty"`
 	// Filter by last update time
-	UpdatedAt *TimestampCriterionInput `json:"updated_at,omitempty"`
+	UpdatedAt    *TimestampCriterionInput     `json:"updated_at,omitempty"`
+	CustomFields []*CustomFieldCriterionInput `json:"custom_fields,omitempty"`
 }
 
 type TagUpdateInput struct {
 	ID   string  `json:"id"`
 	Name *string `json:"name,omitempty"`
 	// Value that does not appear in the UI but overrides name for sorting
-	SortName      *string  `json:"sort_name,omitempty"`
-	Description   *string  `json:"description,omitempty"`
+	SortName    *string `json:"sort_name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	// Duplicate aliases and those equal to name will be ignored (case-insensitive)
 	Aliases       []string `json:"aliases,omitempty"`
 	IgnoreAutoTag *bool    `json:"ignore_auto_tag,omitempty"`
 	Favorite      *bool    `json:"favorite,omitempty"`
 	// This should be a URL or a base64 encoded data URL
-	Image     *string         `json:"image,omitempty"`
-	StashIds  []*StashIDInput `json:"stash_ids,omitempty"`
-	ParentIds []string        `json:"parent_ids,omitempty"`
-	ChildIds  []string        `json:"child_ids,omitempty"`
+	Image        *string            `json:"image,omitempty"`
+	StashIds     []*StashIDInput    `json:"stash_ids,omitempty"`
+	ParentIds    []string           `json:"parent_ids,omitempty"`
+	ChildIds     []string           `json:"child_ids,omitempty"`
+	CustomFields *CustomFieldsInput `json:"custom_fields,omitempty"`
 }
 
 type TagsMergeInput struct {
-	Source      []string `json:"source"`
-	Destination string   `json:"destination"`
+	Source      []string        `json:"source"`
+	Destination string          `json:"destination"`
+	Values      *TagUpdateInput `json:"values,omitempty"`
 }
 
 type TimestampCriterionInput struct {
@@ -3696,48 +3887,48 @@ func (e BulkUpdateIDMode) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type CircumisedEnum string
+type CircumcisedEnum string
 
 const (
-	CircumisedEnumCut   CircumisedEnum = "CUT"
-	CircumisedEnumUncut CircumisedEnum = "UNCUT"
+	CircumcisedEnumCut   CircumcisedEnum = "CUT"
+	CircumcisedEnumUncut CircumcisedEnum = "UNCUT"
 )
 
-var AllCircumisedEnum = []CircumisedEnum{
-	CircumisedEnumCut,
-	CircumisedEnumUncut,
+var AllCircumcisedEnum = []CircumcisedEnum{
+	CircumcisedEnumCut,
+	CircumcisedEnumUncut,
 }
 
-func (e CircumisedEnum) IsValid() bool {
+func (e CircumcisedEnum) IsValid() bool {
 	switch e {
-	case CircumisedEnumCut, CircumisedEnumUncut:
+	case CircumcisedEnumCut, CircumcisedEnumUncut:
 		return true
 	}
 	return false
 }
 
-func (e CircumisedEnum) String() string {
+func (e CircumcisedEnum) String() string {
 	return string(e)
 }
 
-func (e *CircumisedEnum) UnmarshalGQL(v any) error {
+func (e *CircumcisedEnum) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
 	}
 
-	*e = CircumisedEnum(str)
+	*e = CircumcisedEnum(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid CircumisedEnum", str)
+		return fmt.Errorf("%s is not a valid CircumcisedEnum", str)
 	}
 	return nil
 }
 
-func (e CircumisedEnum) MarshalGQL(w io.Writer) {
+func (e CircumcisedEnum) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-func (e *CircumisedEnum) UnmarshalJSON(b []byte) error {
+func (e *CircumcisedEnum) UnmarshalJSON(b []byte) error {
 	s, err := strconv.Unquote(string(b))
 	if err != nil {
 		return err
@@ -3745,7 +3936,7 @@ func (e *CircumisedEnum) UnmarshalJSON(b []byte) error {
 	return e.UnmarshalGQL(s)
 }
 
-func (e CircumisedEnum) MarshalJSON() ([]byte, error) {
+func (e CircumcisedEnum) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
