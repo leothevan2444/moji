@@ -17,7 +17,7 @@ function Example() {
       <button onClick={() => setNested(true)}>Delete task</button>
     </Drawer> : null}
     {nested ? <Drawer visibleDrawer="confirm" closing={false} title="Confirm deletion" onClose={() => setNested(false)}>
-      <ConfirmDeleteDrawer onConfigure={() => setNested(false)} taskLabel="Example movie" deletePolicy="KEEP_ONLY" pending={false}
+      <ConfirmDeleteDrawer hasStashScenes={false} onConfigure={() => setNested(false)} taskLabel="Example movie" deletePolicy="KEEP_ONLY" pending={false}
         onConfirm={() => setNested(false)} onCancel={() => setNested(false)} />
     </Drawer> : null}
   </>;

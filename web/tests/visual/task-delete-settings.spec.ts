@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { homeOverview, settingsSnapshot, test } from "./fixtures";
 
-const task = homeOverview.attentionTasks[0];
+const task = { ...homeOverview.attentionTasks[0], stashSceneId: "101", stashSceneIds: ["101"] };
 test.use({ graphqlOverrides: {
   tasks: [task], task: () => task,
   settings: { ...settingsSnapshot, system: { ...settingsSnapshot.system, taskDeletePolicy: "REMOVE_TORRENT_AND_FILES" } }

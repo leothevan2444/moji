@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { homeOverview, test } from "./fixtures";
 
-const task = homeOverview.attentionTasks[0];
+const task = { ...homeOverview.attentionTasks[0], stashSceneId: "101", stashSceneIds: ["101"] };
 let deleted = false;
 test.beforeEach(async ({ page }) => {
   deleted = false;

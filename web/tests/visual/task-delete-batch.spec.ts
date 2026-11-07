@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { homeOverview, test } from "./fixtures";
 
-const tasks = homeOverview.attentionTasks.slice(0, 2);
+const tasks = homeOverview.attentionTasks.slice(0, 2).map((task, index) => ({ ...task, stashSceneId: index === 1 ? "101" : null, stashSceneIds: index === 1 ? ["101"] : [] }));
 const deleted = new Set<string>();
 let received: boolean | undefined;
 let failLast = false;

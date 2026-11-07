@@ -56,7 +56,7 @@ func (s *Service) DeleteTaskScenes(ctx context.Context, identity, path string, i
 			return fmt.Errorf("Stash scene %s has no verifiable task files", id)
 		}
 		for _, file := range scene.Files {
-			if file == nil || !strings.HasPrefix(filepath.Clean(file.Path), root+string(filepath.Separator)) {
+			if file == nil || (filepath.Clean(file.Path) != root && !strings.HasPrefix(filepath.Clean(file.Path), root+string(filepath.Separator))) {
 				return fmt.Errorf("Stash scene %s contains files outside this task's delivery directory", id)
 			}
 		}

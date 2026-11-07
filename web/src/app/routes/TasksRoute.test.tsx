@@ -29,7 +29,7 @@ beforeEach(async () => {
   await i18n.changeLanguage("en");
   const task = { id: "task-184", code: "SNOS-184", stage: "SCANNING", stageStatus: "BLOCKED" };
   mocks.overview = { taskSelection:{items:[],sequence:0,streamId:""}, taskPage: {items:[task],page:1,pageSize:24,totalPages:1,totalCount:1,sequence:0,streamId:"",stats:{}}, settingsStatus: { automation: {} }, settings: { system: { taskDeletePolicy: "REMOVE_TORRENT_AND_FILES" } } };
-  mocks.detail = { taskDetailSnapshot: { task: { ...task, revision: 1, version: "1" }, sequence:0,streamId:"" } };
+  mocks.detail = { taskDetailSnapshot: { task: { ...task, revision: 1, version: "1", stashSceneIds: [] }, sequence:0,streamId:"" } };
 });
 afterEach(cleanup);
 

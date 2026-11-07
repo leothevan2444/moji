@@ -174,7 +174,7 @@ export function Component() {
         {task ? <LinkToTask id={task.id} /> : null}
       </Suspense>
     </Drawer> : null}
-    {deleteId ? <Drawer className="drawer--task-delete" visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!deletingTask) setDeleteId(null); }} closeDisabled={deletingTask}><Suspense fallback={null}><ConfirmDeleteDrawer onConfigure={() => navigate("/settings/tasks?panel=deletion")} key={deleteId} taskLabel={task ? taskSummary(task) : deleteId} deletePolicy={data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly} pending={deletingTask} onConfirm={deleteStashScene => void confirmDelete(deleteStashScene)} onCancel={() => { if (!deletingTask) setDeleteId(null); }} /></Suspense></Drawer> : null}
+    {deleteId ? <Drawer className="drawer--task-delete" visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!deletingTask) setDeleteId(null); }} closeDisabled={deletingTask}><Suspense fallback={null}><ConfirmDeleteDrawer hasStashScenes={Boolean(task?.id === deleteId && task.stashSceneIds.length)} onConfigure={() => navigate("/settings/tasks?panel=deletion")} key={deleteId} taskLabel={task ? taskSummary(task) : deleteId} deletePolicy={data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly} pending={deletingTask} onConfirm={deleteStashScene => void confirmDelete(deleteStashScene)} onCancel={() => { if (!deletingTask) setDeleteId(null); }} /></Suspense></Drawer> : null}
   </>;
 }
 

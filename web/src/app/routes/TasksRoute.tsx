@@ -75,6 +75,8 @@ export function Component() {
   const tasks = useMemo(() => (data?.taskPage.items ?? []).map(taskSummaryToDashboard).filter(task => latestTaskEvent(task.id)?.type !== "DELETED"), [data?.taskPage.items, deleteGeneration]);
   const activeTask = detailData?.task ?? null;
   const deleteTarget = confirmDeleteIds.length === 1 ? tasks.find((task) => task.id === confirmDeleteIds[0]) ?? null : null;
+  const deleteTasksByID = new Map([...tasks, ...selectedTasks, ...(activeTask ? [activeTask] : [])].map(task => [task.id, task]));
+  const deleteHasStashScenes = confirmDeleteIds.some(id => Boolean(deleteTasksByID.get(id)?.stashSceneIds.length));
   const deletePolicy = data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly;
   const isResolution = Boolean(taskId && location.pathname.endsWith("/resolve"));
 
@@ -236,7 +238,7 @@ export function Component() {
         </div>
       </div>
     </Drawer> : null}
-    {confirmDeleteIds.length ? <Drawer className="drawer--task-delete" visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }}><Suspense fallback={null}><ConfirmDeleteDrawer onConfigure={() => navigate("/settings/tasks?panel=deletion")} key={confirmDeleteIds.join(",")} taskLabel={deleteTarget ? taskSummary(deleteTarget) : undefined} count={confirmDeleteIds.length > 1 ? confirmDeleteIds.length : undefined} deletePolicy={deletePolicy} pending={Boolean(pendingDelete) || deletingTasks} onConfirm={deleteStashScene => confirmDeleteIds.length === 1 ? void runDelete(confirmDeleteIds[0], deleteStashScene) : void runBatchDelete(confirmDeleteIds, deleteStashScene)} onCancel={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }} /></Suspense></Drawer> : null}
+    {confirmDeleteIds.length ? <Drawer className="drawer--task-delete" visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }}><Suspense fallback={null}><ConfirmDeleteDrawer hasStashScenes={deleteHasStashScenes} onConfigure={() => navigate("/settings/tasks?panel=deletion")} key={confirmDeleteIds.join(",")} taskLabel={deleteTarget ? taskSummary(deleteTarget) : undefined} count={confirmDeleteIds.length > 1 ? confirmDeleteIds.length : undefined} deletePolicy={deletePolicy} pending={Boolean(pendingDelete) || deletingTasks} onConfirm={deleteStashScene => confirmDeleteIds.length === 1 ? void runDelete(confirmDeleteIds[0], deleteStashScene) : void runBatchDelete(confirmDeleteIds, deleteStashScene)} onCancel={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }} /></Suspense></Drawer> : null}
     {batchResult ? <Drawer visibleDrawer="task-batch-result" closing={false} title={t("taskBatch.resultTitle")} onClose={() => setBatchResult(null)}><Suspense fallback={null}><TaskBatchResultDrawer payload={batchResult} onOpenTask={(id) => { setBatchResult(null); openTask(id); }} /></Suspense></Drawer> : null}
   </>;
 }

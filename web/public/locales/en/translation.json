@@ -1477,6 +1477,7 @@
     "noneBlocked": "There are no blocked tasks to retry.",
     "retrySummary": "Blocked-task retry complete: {{succeeded}} succeeded and {{failed}} failed.",
     "deleteNoResult": "Deletion failed because the server returned no deleted task record.",
+    "noStashScene": "No Stash scene linked yet",
     "configureDeletion": "Change deletion settings",
     "deleteTaskRecord": "Delete the Moji task records.",
     "deleteStashScene": "Also delete linked Stash scenes, files (including funscripts), and generated files. This cannot be undone.",

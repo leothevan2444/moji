@@ -143,6 +143,11 @@ for review and retry; a batch reports each failed task separately. No linked
 scene IDs means there is nothing to delete in Stash. Retrying reconciles missing
 scenes rather than repeating a directory-wide cleanup.
 
+The Stash option is disabled when no selected task has a linked scene ID, with
+a tooltip explaining the missing association. A failed identification does not
+disable it if scanning already created and linked the scene; deletion uses the
+saved scene ID without requiring scraped titles, codes, or performer metadata.
+
 ## Validation
 
 Tool-independent tests cover original-format single-file COPY/MOVE, subtitles,

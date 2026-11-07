@@ -83,3 +83,13 @@ func TestTaskSceneDeletionReconcilesLostResponse(t *testing.T) {
 		t.Fatal("retry repeated deletion or missed remaining scene", err, c.deleted)
 	}
 }
+
+func TestTaskSceneDeletionAcceptsExactFileScanPath(t *testing.T) {
+	c := &taskDeleteClient{byID: map[string]*gql.IngestScenes_FindScenes_Scenes{
+		"1": ownedDeleteScene("1", "/library/DEMO-123.mp4"),
+	}}
+	s, _ := NewService(c, nil)
+	if err := s.DeleteTaskScenes(context.Background(), "account", "/library/DEMO-123.mp4", []string{"1"}); err != nil || !reflect.DeepEqual(c.deleted, []string{"1"}) {
+		t.Fatal("exact task file could not be deleted", err, c.deleted)
+	}
+}
