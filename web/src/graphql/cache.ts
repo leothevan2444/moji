@@ -42,11 +42,16 @@ function linkTask(cache: Cache, task: Entity | null | undefined, prepend = false
   cache.link("Query", "tasks", prepend ? [taskKey, ...next] : links.includes(taskKey) ? links : [taskKey, ...links]);
 }
 
-function unlinkTask(cache: Cache, id: string) {
+function unlinkTask(cache: Cache, id: string, preserveReceipt = false) {
   const taskKey = cache.keyOfEntity({ __typename: "Task", id });
   const links = existingLinks(cache, "tasks");
   if (taskKey && links) cache.link("Query", "tasks", links.filter((key) => key !== taskKey));
-  if (taskKey) cache.invalidate(taskKey);
+  cache.link("Query", "task", { id }, null);
+  const detail = cache.resolve("Query", "taskDetailSnapshot", { id });
+  if (typeof detail === "string") cache.link(detail, "task", null);
+  // Mutation results share this normalized entity. Invalidating it here would
+  // also erase the successful deletion receipt before the caller can read it.
+  if (taskKey && !preserveReceipt) cache.invalidate(taskKey);
 }
 
 function updatePerformerSceneTask(cache: Cache, task: any) {
@@ -143,7 +148,7 @@ function linkQueuedSceneTasks(cache: Cache, payload: any) {
 function applyTaskBatch(cache: Cache, payload: any, deleting = false) {
   for (const item of payload?.results ?? []) {
     if (item?.status !== "SUCCEEDED") continue;
-    if (deleting) unlinkTask(cache, item.taskId);
+    if (deleting) unlinkTask(cache, item.taskId, true);
     else linkTask(cache, item.task);
   }
 }
@@ -286,7 +291,7 @@ export const graphcacheUpdates: UpdatesConfig = {
     retryTask(result: any, _args, cache) { linkTask(cache, result.retryTask); },
     resolveTaskFiles(result: any, _args, cache) { linkTask(cache, result.resolveTaskFiles); },
     resolveBlockedSourcingTask(result: any, _args, cache) { linkTask(cache, result.resolveBlockedSourcingTask); },
-    deleteTask(result: any, args: any, cache) { unlinkTask(cache, result.deleteTask?.id ?? args.id); },
+    deleteTask(result: any, _args, cache) { if (result.deleteTask?.id) unlinkTask(cache, result.deleteTask.id, true); },
     retryTasks(result: any, _args, cache) { applyTaskBatch(cache, result.retryTasks); },
     processTaskIngest(result: any, _args, cache) { applyTaskBatch(cache, result.processTaskIngest); },
     deleteTasks(result: any, _args, cache) { applyTaskBatch(cache, result.deleteTasks, true); },

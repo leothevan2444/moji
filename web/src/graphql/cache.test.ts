@@ -1,5 +1,48 @@
 import { describe, expect, it, vi } from "vitest";
 import { graphcacheKeys, graphcacheUpdates } from "./cache";
+import { createClient, fetchExchange, gql } from "@urql/core";
+import { cacheExchange } from "@urql/exchange-graphcache";
+
+it.each(["single", "batch"])("preserves the %s deletion receipt while removing the task from cached reads", async (mode) => {
+  const task = { __typename: "Task", id: "deleted", code: "DEMO-123" };
+  const client = createClient({
+    url: "http://moji.test/graphql",
+    preferGetMethod: false,
+    exchanges: [cacheExchange({ keys: graphcacheKeys, updates: graphcacheUpdates }), fetchExchange],
+    fetch: vi.fn(async (_url, options) => {
+      const { query } = JSON.parse(options!.body as string);
+      const receipt = mode === "single" ? { deleteTask: task } : {
+        deleteTasks: { __typename: "TaskBatchPayload", batchId: "batch", results: [
+          { __typename: "TaskBatchResult", taskId: task.id, status: "SUCCEEDED", task }
+        ] }
+      };
+      return new Response(JSON.stringify({ data: query.includes("mutation") ? receipt : {
+        tasks: [task], task, taskDetailSnapshot: { __typename: "TaskDetailSnapshot", sequence: 1, streamId: "test", task }
+      } }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    })
+  });
+  const query = gql`query CachedTasks {
+    tasks { id code } task(id: "deleted") { id code }
+    taskDetailSnapshot(id: "deleted") { sequence streamId task { id code } }
+  }`;
+  expect((await client.query(query, {}).toPromise()).error).toBeUndefined();
+  const mutation = mode === "single"
+    ? gql`mutation DeleteTask { deleteTask(id: "deleted") { id code } }`
+    : gql`mutation DeleteTasks { deleteTasks(ids: ["deleted"]) { batchId results { taskId status task { id code } } } }`;
+  const result = await client.mutation(mutation, {}).toPromise();
+  expect(result.error).toBeUndefined();
+  const deleted = mode === "single" ? result.data?.deleteTask : result.data?.deleteTasks.results[0].task;
+  expect(deleted).toMatchObject({ id: "deleted", code: "DEMO-123" });
+  const cached = await client.query(gql`query RemainingTasks { tasks { id code } }`, {}, { requestPolicy: "cache-only" }).toPromise();
+  expect(cached.data?.tasks).toEqual([]);
+  // Without a schema, Graphcache may require revalidation when a field that
+  // was non-null becomes null. It must never return the deleted detail.
+  const detail = await client.query(query, {}, { requestPolicy: "cache-only" }).toPromise();
+  expect(detail.data?.task ?? null).toBeNull();
+  expect(detail.data?.taskDetailSnapshot.task ?? null).toBeNull();
+});
 
 function fakeCache(initial: Record<string, unknown> = {}, inspectedFields: Array<{ fieldName: string; arguments?: Record<string, unknown>; }> = []) {
   const fields = new Map(Object.entries(initial));
@@ -23,6 +66,14 @@ function fakeCache(initial: Record<string, unknown> = {}, inspectedFields: Array
 const updates = graphcacheUpdates as any;
 
 describe("graphcache configuration", () => {
+  it("keeps cached tasks when the deletion returns no success receipt", () => {
+    const { cache, fields } = fakeCache({ "Query.tasks": ["Task:task-1"] });
+    updates.Mutation.deleteTask({ deleteTask: null }, { id: "task-1" }, cache);
+    updates.Mutation.deleteTasks({ deleteTasks: { results: [{ status: "FAILED", taskId: "task-1" }] } }, {}, cache);
+    expect(fields.get("Query.tasks")).toEqual(["Task:task-1"]);
+    expect(cache.invalidate).not.toHaveBeenCalled();
+    expect(cache.link).not.toHaveBeenCalled();
+  });
   it("keeps the restarted task in the list and invalidates cached Stash scenes", () => {
     const { cache, fields } = fakeCache({ "Query.tasks": ["Task:task-1"] }, [
       { fieldName: "taskStashScenes", arguments: { id: "task-1" } }
