@@ -44,7 +44,7 @@ type Mutation {
   resolveTaskFiles(id: ID!, videoIndices: [Int!]!): Task!
 
   "Delete a persisted Moji task record"
-  deleteTask(id: ID!): Task!
+  deleteTask(id: ID!, deleteStashScene: Boolean! = false): Task!
 
   "Retry blocked tasks or check waiting resources with per-task results"
   retryTasks(ids: [ID!]!): TaskBatchPayload!
@@ -53,7 +53,7 @@ type Mutation {
   processTaskIngest(ids: [ID!]!): TaskBatchPayload!
 
   "Delete selected tasks using the configured deletion policy"
-  deleteTasks(ids: [ID!]!): TaskBatchPayload!
+  deleteTasks(ids: [ID!]!, deleteStashScene: Boolean! = false): TaskBatchPayload!
 }
 
 type QBTorrent {

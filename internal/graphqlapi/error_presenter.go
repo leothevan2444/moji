@@ -158,6 +158,8 @@ func classifyError(err error) string {
 		return ErrorTaskCodeRequired
 	case errors.Is(err, taskruntime.ErrRestartUnavailable):
 		return "TASK_RESTART_UNAVAILABLE"
+	case errors.Is(err, taskruntime.ErrStashTaskDeletion):
+		return "STASH_DELETE_FAILED"
 	case errors.Is(err, taskruntime.ErrRestartCleanup):
 		return "TASK_RESTART_CLEANUP_PENDING"
 	case errors.Is(err, taskruntime.ErrTaskBatchEmpty):

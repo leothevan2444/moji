@@ -614,8 +614,8 @@ type ComplexityRoot struct {
 		ClearIndexerSearchCache       func(childComplexity int, instanceID *string) int
 		ClearStashBoxDataCache        func(childComplexity int) int
 		ControlTorrent                func(childComplexity int, hash string, action model.TorrentAction) int
-		DeleteTask                    func(childComplexity int, id string) int
-		DeleteTasks                   func(childComplexity int, ids []string) int
+		DeleteTask                    func(childComplexity int, id string, deleteStashScene bool) int
+		DeleteTasks                   func(childComplexity int, ids []string, deleteStashScene bool) int
 		DownloadMedia                 func(childComplexity int, input model.DownloadMediaInput) int
 		InstallIndexerDefinitions     func(childComplexity int, input model.IndexerDefinitionChangeInput) int
 		PatchSettings                 func(childComplexity int, input model.SettingsPatchInput) int
@@ -1488,10 +1488,10 @@ type MutationResolver interface {
 	RestartTaskSourcing(ctx context.Context, id string) (*model.Task, error)
 	ResolveBlockedSourcingTask(ctx context.Context, id string, input model.ResolveBlockedSourcingTaskInput) (*model.Task, error)
 	ResolveTaskFiles(ctx context.Context, id string, videoIndices []int) (*model.Task, error)
-	DeleteTask(ctx context.Context, id string) (*model.Task, error)
+	DeleteTask(ctx context.Context, id string, deleteStashScene bool) (*model.Task, error)
 	RetryTasks(ctx context.Context, ids []string) (*model.TaskBatchPayload, error)
 	ProcessTaskIngest(ctx context.Context, ids []string) (*model.TaskBatchPayload, error)
-	DeleteTasks(ctx context.Context, ids []string) (*model.TaskBatchPayload, error)
+	DeleteTasks(ctx context.Context, ids []string, deleteStashScene bool) (*model.TaskBatchPayload, error)
 	RefreshDownloader(ctx context.Context) (bool, error)
 	UpdateDownloaderPolicy(ctx context.Context, input model.DownloaderPolicyInput) (*model.DownloaderPolicy, error)
 	ControlTorrent(ctx context.Context, hash string, action model.TorrentAction) (bool, error)
@@ -4430,7 +4430,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteTask(childComplexity, args["id"].(string)), true
+		return e.complexity.Mutation.DeleteTask(childComplexity, args["id"].(string), args["deleteStashScene"].(bool)), true
 
 	case "Mutation.deleteTasks":
 		if e.complexity.Mutation.DeleteTasks == nil {
@@ -4442,7 +4442,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteTasks(childComplexity, args["ids"].([]string)), true
+		return e.complexity.Mutation.DeleteTasks(childComplexity, args["ids"].([]string), args["deleteStashScene"].(bool)), true
 
 	case "Mutation.downloadMedia":
 		if e.complexity.Mutation.DownloadMedia == nil {
@@ -11344,7 +11344,7 @@ type Mutation {
   resolveTaskFiles(id: ID!, videoIndices: [Int!]!): Task!
 
   "Delete a persisted Moji task record"
-  deleteTask(id: ID!): Task!
+  deleteTask(id: ID!, deleteStashScene: Boolean! = false): Task!
 
   "Retry blocked tasks or check waiting resources with per-task results"
   retryTasks(ids: [ID!]!): TaskBatchPayload!
@@ -11353,7 +11353,7 @@ type Mutation {
   processTaskIngest(ids: [ID!]!): TaskBatchPayload!
 
   "Delete selected tasks using the configured deletion policy"
-  deleteTasks(ids: [ID!]!): TaskBatchPayload!
+  deleteTasks(ids: [ID!]!, deleteStashScene: Boolean! = false): TaskBatchPayload!
 }
 
 type QBTorrent {
@@ -12194,6 +12194,11 @@ func (ec *executionContext) field_Mutation_deleteTask_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
+	arg1, err := ec.field_Mutation_deleteTask_argsDeleteStashScene(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["deleteStashScene"] = arg1
 	return args, nil
 }
 func (ec *executionContext) field_Mutation_deleteTask_argsID(
@@ -12214,6 +12219,24 @@ func (ec *executionContext) field_Mutation_deleteTask_argsID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteTask_argsDeleteStashScene(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (bool, error) {
+	if _, ok := rawArgs["deleteStashScene"]; !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("deleteStashScene"))
+	if tmp, ok := rawArgs["deleteStashScene"]; ok {
+		return ec.unmarshalNBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteTasks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -12222,6 +12245,11 @@ func (ec *executionContext) field_Mutation_deleteTasks_args(ctx context.Context,
 		return nil, err
 	}
 	args["ids"] = arg0
+	arg1, err := ec.field_Mutation_deleteTasks_argsDeleteStashScene(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["deleteStashScene"] = arg1
 	return args, nil
 }
 func (ec *executionContext) field_Mutation_deleteTasks_argsIds(
@@ -12239,6 +12267,24 @@ func (ec *executionContext) field_Mutation_deleteTasks_argsIds(
 	}
 
 	var zeroVal []string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteTasks_argsDeleteStashScene(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (bool, error) {
+	if _, ok := rawArgs["deleteStashScene"]; !ok {
+		var zeroVal bool
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("deleteStashScene"))
+	if tmp, ok := rawArgs["deleteStashScene"]; ok {
+		return ec.unmarshalNBoolean2bool(ctx, tmp)
+	}
+
+	var zeroVal bool
 	return zeroVal, nil
 }
 
@@ -34199,7 +34245,7 @@ func (ec *executionContext) _Mutation_deleteTask(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteTask(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Mutation().DeleteTask(rctx, fc.Args["id"].(string), fc.Args["deleteStashScene"].(bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -34468,7 +34514,7 @@ func (ec *executionContext) _Mutation_deleteTasks(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteTasks(rctx, fc.Args["ids"].([]string))
+		return ec.resolvers.Mutation().DeleteTasks(rctx, fc.Args["ids"].([]string), fc.Args["deleteStashScene"].(bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

@@ -229,12 +229,25 @@ func (r *mutationResolver) ResolveTaskFiles(ctx context.Context, id string, vide
 }
 
 // DeleteTask is the resolver for the deleteTask field.
-func (r *mutationResolver) DeleteTask(ctx context.Context, id string) (*model.Task, error) {
+func (r *mutationResolver) DeleteTask(ctx context.Context, id string, deleteStashScene bool) (*model.Task, error) {
 	if r.TaskRuntime == nil {
 		return nil, errors.New("task runtime is not configured")
 	}
 
-	task, err := r.TaskRuntime.DeleteTask(ctx, id)
+	var task *taskruntime.Task
+	var err error
+	if deleteStashScene {
+		runtime, ok := r.TaskRuntime.(interface {
+			DeleteTaskWithOptions(context.Context, string, taskruntime.DeleteTaskOptions, taskruntime.StashSceneDeleter) (*taskruntime.Task, error)
+		})
+		if !ok {
+			return nil, taskruntime.ErrStashTaskDeletion
+		}
+		stash, _ := r.Stash.(taskruntime.StashSceneDeleter)
+		task, err = runtime.DeleteTaskWithOptions(ctx, id, taskruntime.DeleteTaskOptions{DeleteStashScene: true}, stash)
+	} else {
+		task, err = r.TaskRuntime.DeleteTask(ctx, id)
+	}
 	if task != nil {
 		return taskToModel(task), err
 	}
@@ -269,11 +282,24 @@ func (r *mutationResolver) ProcessTaskIngest(ctx context.Context, ids []string) 
 }
 
 // DeleteTasks is the resolver for the deleteTasks field.
-func (r *mutationResolver) DeleteTasks(ctx context.Context, ids []string) (*model.TaskBatchPayload, error) {
+func (r *mutationResolver) DeleteTasks(ctx context.Context, ids []string, deleteStashScene bool) (*model.TaskBatchPayload, error) {
 	if r.TaskRuntime == nil {
 		return nil, errors.New("task runtime is not configured")
 	}
-	payload, err := r.TaskRuntime.DeleteTasks(ctx, ids)
+	var payload taskruntime.TaskBatchPayload
+	var err error
+	if deleteStashScene {
+		runtime, ok := r.TaskRuntime.(interface {
+			DeleteTasksWithOptions(context.Context, []string, taskruntime.DeleteTaskOptions, taskruntime.StashSceneDeleter) (taskruntime.TaskBatchPayload, error)
+		})
+		if !ok {
+			return nil, taskruntime.ErrStashTaskDeletion
+		}
+		stash, _ := r.Stash.(taskruntime.StashSceneDeleter)
+		payload, err = runtime.DeleteTasksWithOptions(ctx, ids, taskruntime.DeleteTaskOptions{DeleteStashScene: true}, stash)
+	} else {
+		payload, err = r.TaskRuntime.DeleteTasks(ctx, ids)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -152,10 +152,10 @@ export function Component() {
     pushToast("tone-success", t("taskRestart.ready", { task: taskSummary(restartedTask) }));
     navigate(`/tasks/${encodeURIComponent(id)}/resolve${location.search}`, { replace: true, state: location.state });
   };
-  const runDelete = async (id: string) => {
+  const runDelete = async (id: string, deleteStashScene: boolean) => {
     setPendingDelete(id);
     try {
-      const result = await deleteTask({ id });
+      const result = await deleteTask({ id, deleteStashScene });
       if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
       if (!result.data?.deleteTask?.id) { pushToast("tone-danger", t("taskRoute.deleteNoResult")); return; }
       pushToast("tone-success", t("taskRoute.deleted", { task: deleteTarget ? taskSummary(deleteTarget) : id }));
@@ -169,8 +169,8 @@ export function Component() {
     else pushToast("tone-success", t("taskBatch.batchComplete", { count: payload.summary.succeededCount }));
   };
   const runBatchRetry = async (ids: string[]) => { const result = await retryTasks({ ids }); if (result.error) pushToast("tone-danger", describeQueryError(result.error)); else { showBatchResult(result.data?.retryTasks); requery(); refreshSelection({requestPolicy:"network-only"}); } };
-  const runBatchDelete = async (ids: string[]) => {
-    const result = await deleteTasks({ ids });
+  const runBatchDelete = async (ids: string[], deleteStashScene: boolean) => {
+    const result = await deleteTasks({ ids, deleteStashScene });
     if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
     const payload = result.data?.deleteTasks;
     if (payload) {
@@ -236,7 +236,7 @@ export function Component() {
         </div>
       </div>
     </Drawer> : null}
-    {confirmDeleteIds.length ? <Drawer visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }}><Suspense fallback={null}><ConfirmDeleteDrawer taskLabel={deleteTarget ? taskSummary(deleteTarget) : undefined} count={confirmDeleteIds.length > 1 ? confirmDeleteIds.length : undefined} deletePolicy={deletePolicy} pending={Boolean(pendingDelete) || deletingTasks} onConfirm={() => confirmDeleteIds.length === 1 ? void runDelete(confirmDeleteIds[0]) : void runBatchDelete(confirmDeleteIds)} onCancel={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }} /></Suspense></Drawer> : null}
+    {confirmDeleteIds.length ? <Drawer className="drawer--task-delete" visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }}><Suspense fallback={null}><ConfirmDeleteDrawer onConfigure={() => navigate("/settings/tasks?panel=deletion")} key={confirmDeleteIds.join(",")} taskLabel={deleteTarget ? taskSummary(deleteTarget) : undefined} count={confirmDeleteIds.length > 1 ? confirmDeleteIds.length : undefined} deletePolicy={deletePolicy} pending={Boolean(pendingDelete) || deletingTasks} onConfirm={deleteStashScene => confirmDeleteIds.length === 1 ? void runDelete(confirmDeleteIds[0], deleteStashScene) : void runBatchDelete(confirmDeleteIds, deleteStashScene)} onCancel={() => { if (!pendingDelete && !deletingTasks) setConfirmDeleteIds([]); }} /></Suspense></Drawer> : null}
     {batchResult ? <Drawer visibleDrawer="task-batch-result" closing={false} title={t("taskBatch.resultTitle")} onClose={() => setBatchResult(null)}><Suspense fallback={null}><TaskBatchResultDrawer payload={batchResult} onOpenTask={(id) => { setBatchResult(null); openTask(id); }} /></Suspense></Drawer> : null}
   </>;
 }

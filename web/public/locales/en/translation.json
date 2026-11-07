@@ -1332,6 +1332,7 @@
   },
   "errorCorrelation": "Correlation ID: {{id}}",
   "errorExtra": {
+    "STASH_DELETE_FAILED": "Stash deletion is incomplete. The Moji task was kept. Check the Stash connection and scene files, then retry.",
     "RELEASE_NOT_AVAILABLE": "This film has not been released. No task was created.",
     "SETTINGS_INVALID": "Invalid settings. Check the fields, match conditions and regular expressions, then retry.",
     "TORRENT_COMMAND_UNCONFIRMED": "qB accepted the command, but its latest state could not be confirmed. Refresh to check.",
@@ -1476,6 +1477,9 @@
     "noneBlocked": "There are no blocked tasks to retry.",
     "retrySummary": "Blocked-task retry complete: {{succeeded}} succeeded and {{failed}} failed.",
     "deleteNoResult": "Deletion failed because the server returned no deleted task record.",
+    "configureDeletion": "Change deletion settings",
+    "deleteTaskRecord": "Delete the Moji task records.",
+    "deleteStashScene": "Also delete linked Stash scenes, files (including funscripts), and generated files. This cannot be undone.",
     "deleted": "Deleted task: {{task}}.",
     "loadFailed": "Tasks failed to load",
     "resolutionTitle": "Select seed manually · {{task}}",
@@ -1537,6 +1541,7 @@
       "RETRY_FAILED": "Retry failed",
       "INGEST_FAILED": "Ingest processing failed",
       "DELETE_FAILED": "Deletion failed",
+      "STASH_DELETE_FAILED": "Stash deletion incomplete; task kept",
       "CANCELLED": "Operation cancelled",
       "UNKNOWN": "Unknown operation result"
     }

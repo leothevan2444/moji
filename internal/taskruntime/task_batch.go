@@ -107,10 +107,21 @@ func (s *Service) ProcessTaskIngest(ctx context.Context, ids []string, scanner S
 }
 
 func (s *Service) DeleteTasks(ctx context.Context, ids []string) (TaskBatchPayload, error) {
+	return s.DeleteTasksWithOptions(ctx, ids, DeleteTaskOptions{}, nil)
+}
+
+func (s *Service) DeleteTasksWithOptions(ctx context.Context, ids []string, options DeleteTaskOptions, stash StashSceneDeleter) (TaskBatchPayload, error) {
 	return s.runTaskBatch(ctx, "delete", ids, func(ctx context.Context, id string) TaskBatchResult {
-		task, err := s.DeleteTask(ctx, id)
-		if err != nil {
+		if task, err := s.FindTask(ctx, id); err != nil || task == nil {
 			return missingOrFailedBatchResult(id, err, TaskBatchReasonDeleteFailed)
+		}
+		task, err := s.DeleteTaskWithOptions(ctx, id, options, stash)
+		if err != nil {
+			reason := TaskBatchReasonDeleteFailed
+			if errors.Is(err, ErrStashTaskDeletion) {
+				reason = "STASH_DELETE_FAILED"
+			}
+			return TaskBatchResult{TaskID: id, Status: TaskBatchStatusFailed, ReasonCode: reason}
 		}
 		return TaskBatchResult{TaskID: id, Status: TaskBatchStatusSucceeded, ReasonCode: TaskBatchReasonDeleted, Task: task}
 	})

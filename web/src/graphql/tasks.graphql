@@ -116,8 +116,8 @@ mutation TriggerTaskStashScanDocument($id: ID!) {
   }
 }
 
-mutation DeleteTaskDocument($id: ID!) {
-  deleteTask(id: $id) {
+mutation DeleteTaskDocument($id: ID!, $deleteStashScene: Boolean! = false) {
+  deleteTask(id: $id, deleteStashScene: $deleteStashScene) {
     id
     source
     stage
@@ -175,8 +175,8 @@ mutation ProcessTaskIngestDocument($ids: [ID!]!) {
   }
 }
 
-mutation DeleteTasksDocument($ids: [ID!]!) {
-  deleteTasks(ids: $ids) {
+mutation DeleteTasksDocument($ids: [ID!]!, $deleteStashScene: Boolean! = false) {
+  deleteTasks(ids: $ids, deleteStashScene: $deleteStashScene) {
     batchId
     summary { requestedCount succeededCount skippedCount failedCount }
     results { taskId status reasonCode task { id code stage stageStatus updatedAt lastProgressAt sourcingLastCheckedAt sourcingNextCheckAt } }

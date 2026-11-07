@@ -417,6 +417,10 @@ func (s *Service) ListTasks(ctx context.Context) ([]*Task, error) {
 }
 
 func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
+	return s.DeleteTaskWithOptions(ctx, id, DeleteTaskOptions{}, nil)
+}
+
+func (s *Service) DeleteTaskWithOptions(ctx context.Context, id string, options DeleteTaskOptions, stash StashSceneDeleter) (*Task, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return nil, errors.New("taskruntime: task id is required")
@@ -428,10 +432,18 @@ func (s *Service) DeleteTask(ctx context.Context, id string) (*Task, error) {
 	if err != nil {
 		return nil, err
 	}
+	if task == nil {
+		return nil, errors.New("taskruntime: task not found")
+	}
 
 	policy := config.TaskDeletePolicyKeepOnly
 	if task.RestartStateJSON != "" {
 		return task, ErrRestartCleanup
+	}
+	if options.DeleteStashScene {
+		if err := s.deleteTaskStashScenes(ctx, task, stash); err != nil {
+			return nil, fmt.Errorf("%w: %w", ErrStashTaskDeletion, err)
+		}
 	}
 	if s.taskDeletePolicy != nil {
 		policy = config.NormalizeTaskDeletePolicy(string(s.taskDeletePolicy()))

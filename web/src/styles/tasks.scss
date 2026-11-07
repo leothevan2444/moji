@@ -1419,9 +1419,15 @@ button.profile-icon {
   }
 }
 
+.drawer.drawer--confirm.drawer--task-delete { width: max-content; max-width: calc(100vw - 32px); }
+
 .confirm-delete {
+  &__policy, &__stash { font-family: inherit; font-size: 13px; font-weight: 400; line-height: 1.6; }
+  &__stash { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); overflow-wrap: anywhere; cursor: pointer; }
+  &__stash input { flex-shrink: 0; margin: 0; }
   &__target { margin: 0 0 12px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
-  &__policy { display: flex; align-items: baseline; gap: 8px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+  &__policy { display: flex; align-items: center; gap: 8px; margin: 16px 0 0; color: var(--muted); overflow-wrap: anywhere; }
+  &__configure { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
   &__policy > svg { flex-shrink: 0; }
   &__policy.tone-danger { color: #c2412f; }
   &__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }

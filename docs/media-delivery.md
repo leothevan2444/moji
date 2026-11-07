@@ -129,6 +129,20 @@ visible for review. An interrupted save resumes its recorded selection;
 it does not switch to another search result. Already completed tasks are not
 automatically scraped again when the application is updated.
 
+## Optional Stash deletion when deleting a task
+
+The deletion confirmation has an unchecked option to also remove linked Stash
+scenes, their files (including funscripts), and generated files. It applies only
+to that confirmation and is never saved as a preference. The existing task
+deletion policy continues to control qBittorrent independently.
+
+Stash performs the deletion using its native API and rules, including its trash
+and shared-file protection behavior. Moji checks the stored scene IDs and task
+delivery directory first. If Stash cannot confirm deletion, Moji keeps the task
+for review and retry; a batch reports each failed task separately. No linked
+scene IDs means there is nothing to delete in Stash. Retrying reconciles missing
+scenes rather than repeating a directory-wide cleanup.
+
 ## Validation
 
 Tool-independent tests cover original-format single-file COPY/MOVE, subtitles,

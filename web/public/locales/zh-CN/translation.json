@@ -1326,6 +1326,7 @@
   },
   "errorCorrelation": "关联 ID：{{id}}",
   "errorExtra": {
+    "STASH_DELETE_FAILED": "Stash 删除未完成，Moji 任务已保留。请检查 Stash 连接及影片文件后重试。",
     "RELEASE_NOT_AVAILABLE": "影片尚未发行，暂不创建任务。",
     "SETTINGS_INVALID": "设置无效。请检查字段、匹配条件及正则表达式后重试。",
     "TORRENT_COMMAND_UNCONFIRMED": "qB 已接受命令，但暂时无法确认最新状态，请刷新查看。",
@@ -1467,6 +1468,9 @@
     "noneBlocked": "当前没有受阻任务需要重试。",
     "retrySummary": "受阻任务重试完成：成功 {{succeeded}} 个，失败 {{failed}} 个。",
     "deleteNoResult": "任务删除失败，后端没有返回已删除的任务记录。",
+    "configureDeletion": "前往修改配置",
+    "deleteTaskRecord": "删除 Moji 任务记录。",
+    "deleteStashScene": "同时删除 Stash 中关联的影片、文件（含 funscript）及生成的附加文件。此操作不可撤销。",
     "deleted": "已删除任务：{{task}}。",
     "loadFailed": "任务加载失败",
     "resolutionTitle": "手动选种 · {{task}}",
@@ -1509,7 +1513,7 @@
     "deletePolicies": {
       "KEEP_ONLY": "仅删除 Moji 任务记录。",
       "REMOVE_TORRENT": "同时删除 qBittorrent 下载任务，此操作不可撤销。",
-      "REMOVE_TORRENT_AND_FILES": "同时删除 qBittorrent 下载任务和已下载文件，此操作不可撤销。"
+      "REMOVE_TORRENT_AND_FILES": "将会同时删除 qBittorrent 下载任务和已下载文件，此操作不可撤销。"
     },
     "resultTitle": "批量操作结果",
     "batchId": "批次 {{id}}",
@@ -1528,6 +1532,7 @@
       "RETRY_FAILED": "重试失败",
       "INGEST_FAILED": "入库处理失败",
       "DELETE_FAILED": "删除失败",
+      "STASH_DELETE_FAILED": "Stash 删除未完成，任务已保留",
       "CANCELLED": "操作已取消",
       "UNKNOWN": "未识别的操作结果"
     }

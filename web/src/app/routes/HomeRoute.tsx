@@ -135,10 +135,10 @@ export function Component() {
     } catch { pushToast("tone-danger", t("home.retryNoResult")); }
     finally { setPendingRetry(null); }
   };
-  const confirmDelete = async () => {
+  const confirmDelete = async (deleteStashScene: boolean) => {
     if (!deleteId) return;
     try {
-      const result = await deleteTask({ id: deleteId });
+      const result = await deleteTask({ id: deleteId, deleteStashScene });
       if (result.error) pushToast("tone-danger", describeQueryError(result.error));
       else if (!result.data?.deleteTask?.id) pushToast("tone-danger", t("taskRoute.deleteNoResult"));
       else {
@@ -174,7 +174,7 @@ export function Component() {
         {task ? <LinkToTask id={task.id} /> : null}
       </Suspense>
     </Drawer> : null}
-    {deleteId ? <Drawer visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!deletingTask) setDeleteId(null); }} closeDisabled={deletingTask}><Suspense fallback={null}><ConfirmDeleteDrawer taskLabel={task ? taskSummary(task) : deleteId} deletePolicy={data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly} pending={deletingTask} onConfirm={() => void confirmDelete()} onCancel={() => { if (!deletingTask) setDeleteId(null); }} /></Suspense></Drawer> : null}
+    {deleteId ? <Drawer className="drawer--task-delete" visibleDrawer="confirm" closing={false} title={t("taskRoute.deleteTitle")} onClose={() => { if (!deletingTask) setDeleteId(null); }} closeDisabled={deletingTask}><Suspense fallback={null}><ConfirmDeleteDrawer onConfigure={() => navigate("/settings/tasks?panel=deletion")} key={deleteId} taskLabel={task ? taskSummary(task) : deleteId} deletePolicy={data?.settings.system.taskDeletePolicy ?? TaskDeletePolicy.KeepOnly} pending={deletingTask} onConfirm={deleteStashScene => void confirmDelete(deleteStashScene)} onCancel={() => { if (!deletingTask) setDeleteId(null); }} /></Suspense></Drawer> : null}
   </>;
 }
 
