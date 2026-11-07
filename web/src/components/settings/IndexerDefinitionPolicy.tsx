@@ -3,7 +3,8 @@ import {useTranslation} from "react-i18next";
 import {useIndexerDefinitionPolicy} from "../../hooks/useIndexerDefinitionPolicy";
 import type {IndexerDefinitionPolicyFieldsFragment,IndexerDefinitionPolicyPatchInput} from "../../graphql/generated/graphql";
 import {useSettingsAutosave} from "./useSettingsAutosave";
-import {SettingsSaveStatus} from "./SettingsTabCommon";
+import {FieldLabel,SettingsSaveStatus} from "./SettingsTabCommon";
+import {SettingsSwitch} from "./SettingsSwitch";
 import {Drawer} from "../layout/Drawer";
 import {describeQueryError} from "../../services/queryError";
 import type {SettingsObject} from "./settingsAutosave";
@@ -12,7 +13,7 @@ const encode=(value:ReturnType<typeof draft>)=>({checkIntervalHours:value.checkI
 type Policy=ReturnType<typeof useIndexerDefinitionPolicy>;
 export function IndexerDefinitionPolicy(){
  const policy=useIndexerDefinitionPolicy();const {t}=useTranslation();const heading=useId();
- return <section className="indexer-definition-policy" aria-labelledby={heading}><h3 id={heading}>{t("indexerPolicy.title")}</h3>
+ return <section className="indexer-definition-policy" aria-labelledby={heading}><h4 id={heading}>{t("indexerPolicy.title")}</h4>
   {policy.error?<p className="settings-feedback tone-danger" role="alert">{describeQueryError(policy.error)} <button type="button" onClick={policy.refresh}>{t("common.retry")}</button></p>:null}
   {policy.snapshot?<PolicyEditor snapshot={policy.snapshot} policy={policy}/>:policy.loading?<p role="status">{t("common.loading")}</p>:null}
  </section>;
@@ -28,9 +29,9 @@ function PolicyEditor({snapshot,policy}:{snapshot:IndexerDefinitionPolicyFieldsF
  const form=useSettingsAutosave("indexers:definition-policy",draft(snapshot),encode,{persist,sourceRevision:snapshot.revision,onSaved:policy.refresh});
  const reload=async()=>{setBusy(true);setError(null);try{const current=await policy.reload();if(form.discard(draft(current),current.revision))setReloadOpen(false)}catch(failure){setError(failure)}finally{setBusy(false)}};
  return <>
-  <div className="settings-form indexer-cache-settings"><label className="settings-field" htmlFor={inputId}><span>{t("indexerPolicy.interval")}</span><input id={inputId} type="number" min={1} max={168} step={1} value={form.value.checkIntervalHours} onChange={event=>{const value=event.target.value;form.setValue(previous=>({...previous,checkIntervalHours:value}))}}/></label>
-   <label className="settings-toggle"><input type="checkbox" checked={form.value.autoUpdate} onChange={event=>{const value=event.target.checked;form.setValue(previous=>({...previous,autoUpdate:value}))}}/><span>{t("indexerPolicy.autoUpdate")}</span></label>
-  </div><p className="settings-note">{t("indexerPolicy.scope")}</p>
+  <div className="settings-form indexer-policy-fields"><label className="settings-field" htmlFor={inputId}><span>{t("indexerPolicy.interval")}</span><input id={inputId} type="number" min={1} max={168} step={1} value={form.value.checkIntervalHours} onChange={event=>{const value=event.target.value;form.setValue(previous=>({...previous,checkIntervalHours:value}))}}/></label>
+   <label className="switch-row indexer-policy-switch"><FieldLabel text={t("indexerPolicy.autoUpdate")} info={t("indexerPolicy.scope")}/><SettingsSwitch checked={form.value.autoUpdate} label={t("indexerPolicy.autoUpdate")} onChange={autoUpdate=>form.setValue(previous=>({...previous,autoUpdate}))}/></label>
+  </div>
   <SettingsSaveStatus state={form.state} error={form.error} retry={form.retry}/>
   {form.state==="error"?<button type="button" onClick={()=>{setError(null);setReloadOpen(true)}}>{t("indexerCache.reload")}</button>:null}
   {reloadOpen?<Drawer visibleDrawer="confirm" closing={false} title={t("indexerCache.reload")} closeDisabled={busy} onClose={()=>{if(!busy)setReloadOpen(false)}}><p>{t("indexerCache.discard")}</p>{error?<p role="alert">{describeQueryError(error)}</p>:null}<div className="indexer-actions"><button type="button" disabled={busy||form.state==="saving"} onClick={()=>void reload()}>{t("indexerCache.reload")}</button><button type="button" disabled={busy} onClick={()=>setReloadOpen(false)}>{t("common.close")}</button></div></Drawer>:null}

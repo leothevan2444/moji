@@ -30,6 +30,7 @@ Home 规则作业入口使用 homeIndexerSummary.definitionJob/definitionErrorCo
 
 索引器第四页签“网络与缓存”沿用 ?panel=cache。缓存开关、成功/空结果保留时间及容量上限支持聚合状态、全部/指定站点清理及确认。IndexerNetworkPanel 直接展示代理和 FlareSolverr 两个全局区域，各有启用开关，所有内置站点共用；已删除网络档案 CRUD、编辑/删除 Drawer、站点网络选择及其 schema/hooks/样式/文案。代理 URL 含协议，用户名和密码单独编辑；密码只写，留空保留、显式清除。FlareSolverr 区域提供 Max Timeout (ms)，对应 network.flaresolverr.max_timeout_ms，默认 90000、范围 1000–300000，统一限制排队和完整调用，协议 maxTimeout 使用剩余毫秒数；不超过当前操作截止。关闭开关保留字段值；代理、solver 及两项连接超时共用 useSettingsAutosave 的 500ms 合并和串行队列，updateIndexerNetwork 一次原子保存，不再提供手动保存按钮或独立超时 mutation/组件。草稿沿用 SettingsAutosaveProvider 保留，失败显示 SettingsSaveStatus 并可重试；配置冲突只有明确确认载入当前设置才丢弃输入。用户名/密码有 placeholder 及留空语义 tooltip：空用户名清除，空密码不加入 patch 并保留原值，清除密码需明确操作。保存范围和外部浏览器信任边界保持不变。配置为 v4，删除的 YAML 档案字段明确拒绝，不提供自动迁移。修改后的全局网络影响新搜索与新来源准入，已接收任务保留冻结传输参数。CACHE 仅刷新缓存区，网络区响应 CONFIGURATION/重连，不新增轮询。独立 challenge_timeout_seconds 已移除并拒绝，不提供自动转换；请求/站点超时通过 FieldLabel 说明，FlareSolverr 字段沿用 settings-form 间距。缓存卡片标题复用 SettingsSwitch，三项参数并排，四项统计紧凑排列，清理范围与清理/刷新操作独立一行；代表性真实服务验收与未测环境限制见 [完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
 
+规则库沿用 SettingsCard：安装/检查/更新/修复/回滚操作置于标题栏，FontAwesome 图标搭配现有按钮文字；安装状态与上次检查时间紧凑排列，版本与规则格式继续通过 details 展开。更新作业以紧凑分隔区展示真实状态、下载量和取消操作，错误及关联标识仍可查看。更新策略使用同级 h4、settings-field、SettingsSwitch 和 SettingsSaveStatus；周期与自动应用开关在桌面并排、窄屏纵排，作用范围说明收进 FieldLabel 的统一 tooltip。保留原自动保存、冲突保护、安装流程、回滚确认和实时作业恢复行为。
 
 站点观测由 Home 的 components/indexers/IndexerObservationView 显示，搜索和取种分别保留上次结果、真实时间、稳定原因、等待时间及按需关联标识；设置站点项不再显示错误和运行记录。Home 成功计数只表示上次搜索成功，不代替取种/完整下载成功；无匹配配置/规则观测与观测存储不可读分别表达。观测组件独立加载样式，现有事件触发局部回读，不增加轮询。
 

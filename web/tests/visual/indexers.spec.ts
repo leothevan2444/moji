@@ -132,6 +132,7 @@ test("download progress survives reload and cancellation reports the durable out
   await page.reload();
   await expect(page.getByText("Downloading definitions", { exact: true })).toBeVisible();
   expect(installs).toBe(1);
+  await expect(page.locator(".indexer-job")).toHaveScreenshot("definition-job-downloading.png");
   await page.getByRole("button", { name: "Cancel update" }).click();
   await expect(page.getByText("Update cancelled", { exact: true })).toBeVisible();
   } finally { for(const key of Object.keys(graphqlOverrides))delete graphqlOverrides[key];Object.assign(graphqlOverrides,original); }
