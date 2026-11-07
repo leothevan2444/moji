@@ -47,6 +47,9 @@ test.describe("shared builtin indexer network autosave",()=>{
  for(const [locale,theme] of [["en","light"],["zh-CN","dark"]] as const)test(`${locale} ${theme} shared network autosave layout`,async({page},testInfo)=>{
   const errors:string[]=[];page.on("pageerror",error=>errors.push(error.message));await page.addInitScript(({locale,theme})=>{localStorage.setItem("moji:locale",locale);localStorage.setItem("moji:theme",theme);},{locale,theme});await page.goto(`/settings/indexers?panel=cache&__locale=${locale}`);await page.getByRole("tab",{name:locale==="en"?"Network & cache":"网络与缓存"}).click();
   await expect(page.getByLabel("Browser verification timeout (seconds)",{exact:true})).toHaveCount(0);
+  await expect(page.getByRole("switch",{name:locale==="en"?"Enable search cache":"启用搜索缓存",exact:true})).toBeVisible();
+  const cacheCard=page.locator("article.drawer-card").filter({has:page.getByRole("heading",{name:locale==="en"?"Search cache":"搜索缓存",exact:true})});
+  await cacheCard.scrollIntoViewIfNeeded();await expect(cacheCard).toHaveScreenshot(`${locale}-${theme}-search-cache.png`);
   const form=page.locator(".indexer-global-network-form");
   if(testInfo.project.name==="mobile"){
    for(const [index,name] of ["proxy","solver","timeouts"].entries()){const card=form.locator(":scope > .drawer-card").nth(index);await card.scrollIntoViewIfNeeded();await expect(card).toHaveScreenshot(`${locale}-${theme}-shared-network-${name}.png`);}

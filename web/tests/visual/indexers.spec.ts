@@ -22,15 +22,23 @@ test.describe("empty select default", () => {
 });
 
 test.describe("search cache management", () => {
-  let entries = 3;
+  let entries = 3;let enabled=true;let ttlSeconds=300;let revision=1;
   const scopes: Array<string | null> = [];
-  const status = () => ({ revision: "config-1", enabled: true, ttlSeconds: 300, emptyTtlSeconds: 30, maxSizeMb: 32, entries, usedBytes: entries ? 1024 : 0, activeRequests: 1, activeWaiters: 2 });
+  const status = () => ({ revision: `config-${revision}`, enabled, ttlSeconds, emptyTtlSeconds: 30, maxSizeMb: 32, entries, usedBytes: entries ? 1024 : 0, activeRequests: 1, activeWaiters: 2 });
   test.use({ graphqlOverrides: {
     indexerCacheStatus: status,
+    updateIndexerSearchCache: ({input}:{input:{enabled?:boolean;ttlSeconds?:number}})=>{if(input.enabled!==undefined)enabled=input.enabled;if(input.ttlSeconds!==undefined)ttlSeconds=input.ttlSeconds;revision++;return status();},
     clearIndexerSearchCache: ({ instanceId }: { instanceId: string | null }) => { scopes.push(instanceId); entries = 0; return status(); }
   } });
+  test("cache switch and retention fields autosave and survive refresh",async({page})=>{
+   enabled=true;ttlSeconds=300;revision=1;
+   await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto("/settings/indexers?panel=cache");
+   const toggle=page.getByRole("switch",{name:"Enable search cache",exact:true});await toggle.uncheck();await expect.poll(()=>enabled).toBe(false);
+   await page.getByLabel("Successful result retention (seconds)",{exact:true}).fill("600");await expect.poll(()=>ttlSeconds).toBe(600);
+   await page.reload();await expect(toggle).not.toBeChecked();await expect(page.getByLabel("Successful result retention (seconds)",{exact:true})).toHaveValue("600");
+  });
   test("cache clear confirms a captured site scope and rereads server counts", async ({ page }) => {
-    entries = 3; scopes.length = 0;
+    entries = 3; scopes.length = 0;enabled=true;ttlSeconds=300;revision=1;
     await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
     try {
       await page.goto("/settings/indexers?panel=cache");
@@ -50,7 +58,7 @@ test.describe("search cache management", () => {
       await expect(page.locator(".indexer-cache-metrics dd").nth(0)).toHaveText("0");
       await expect(page.locator(".indexer-cache-metrics dd").nth(2)).toHaveText("1");
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    } finally { entries = 3; scopes.length = 0; }
+    } finally { entries = 3; scopes.length = 0;enabled=true;ttlSeconds=300;revision=1; }
   });
 });
 test.describe("persisted site observations", () => {
