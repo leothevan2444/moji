@@ -289,12 +289,15 @@ func TestSavedNetworkChangesAffectNewRegistrySnapshotsAndKeepOldWorkFrozen(t *te
 	store := indexerTestStore(t)
 	ctx := context.Background()
 	proxy := "http://synthetic-user:old-secret@proxy.example:8080"
-	if _, _, err := store.SaveIndexerNetworkProfile(ctx, store.Revision(), "private", true, config.IndexerNetworkProfilePatch{ProxyURL: &proxy}); err != nil {
+	if _, _, err := store.UpdateIndexerNetwork(ctx, store.Revision(), acceptanceNetworkPatch(proxy, "")); err != nil {
 		t.Fatal(err)
 	}
-	definition, profile := "example", "private"
-	id, _, err := store.UpdateBuiltinInstance(ctx, "", store.Revision(), config.BuiltinInstancePatch{Definition: &definition, NetworkProfile: &profile})
+	definition := "example"
+	id, _, err := store.UpdateBuiltinInstance(ctx, "", store.Revision(), config.BuiltinInstancePatch{Definition: &definition})
 	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := store.UpdateBuiltinInstance(ctx, "", store.Revision(), config.BuiltinInstancePatch{Definition: &definition}); err != nil {
 		t.Fatal(err)
 	}
 	registry := &runtimeIndexerRegistry{configuration: indexerConfiguration{store: store}}
@@ -309,11 +312,11 @@ func TestSavedNetworkChangesAffectNewRegistrySnapshotsAndKeepOldWorkFrozen(t *te
 		}
 	}
 	proxy = "socks5h://synthetic-user:new-secret@proxy.example:1080"
-	if _, _, err = store.SaveIndexerNetworkProfile(ctx, store.Revision(), "private", false, config.IndexerNetworkProfilePatch{ProxyURL: &proxy}); err != nil {
+	if _, _, err = store.UpdateIndexerNetwork(ctx, store.Revision(), acceptanceNetworkPatch(proxy, "")); err != nil {
 		t.Fatal(err)
 	}
-	request, site := 45, 180
-	if _, _, err = store.UpdateIndexerNetworkTimeouts(ctx, store.Revision(), config.IndexerNetworkTimeoutPatch{RequestTimeoutSeconds: &request, SiteTimeoutSeconds: &site}); err != nil {
+	request, site, solverMax := 45, 180, 45000
+	if _, _, err = store.UpdateIndexerNetwork(ctx, store.Revision(), config.IndexerNetworkPatch{RequestTimeoutSeconds: &request, SiteTimeoutSeconds: &site, FlareSolverrMaxTimeoutMS: &solverMax}); err != nil {
 		t.Fatal(err)
 	}
 	next, err := registry.CachedSnapshot(ctx)
@@ -322,11 +325,14 @@ func TestSavedNetworkChangesAffectNewRegistrySnapshotsAndKeepOldWorkFrozen(t *te
 	}
 	var current indexer.InstanceSnapshot
 	for _, instance := range next.Instances {
+		if instance.Kind == indexer.Builtin && instance.Network.ProxyURL != proxy {
+			t.Fatal("builtin sites did not share the updated network")
+		}
 		if instance.ID == id {
 			current = instance
 		}
 	}
-	if current.Network.ProxyURL != proxy || current.Network.Revision == frozen.Network.Revision || current.ConfigRevision == frozen.ConfigRevision || current.RequestTimeout != 45*time.Second || current.SiteTimeout != 180*time.Second || frozen.RequestTimeout != 30*time.Second || frozen.Network.ProxyURL == proxy {
+	if current.Network.FlareSolverrMaxTimeout != 45*time.Second || frozen.Network.FlareSolverrMaxTimeout != 90*time.Second || current.Network.ProxyURL != proxy || current.Network.Revision == frozen.Network.Revision || current.ConfigRevision == frozen.ConfigRevision || current.RequestTimeout != 45*time.Second || current.SiteTimeout != 180*time.Second || frozen.RequestTimeout != 30*time.Second || frozen.Network.ProxyURL == proxy {
 		t.Fatal("network hot edit reused an old session namespace or changed frozen work")
 	}
 }

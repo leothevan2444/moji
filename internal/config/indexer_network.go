@@ -2,25 +2,20 @@ package config
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"gopkg.in/yaml.v3"
 )
 
-var ErrIndexerNetworkInUse = errors.New("INDEXER_NETWORK_PROFILE_IN_USE")
-
-type IndexerNetworkTimeoutPatch struct{ RequestTimeoutSeconds, SiteTimeoutSeconds, ChallengeTimeoutSeconds *int }
-type IndexerNetworkProfilePatch struct {
-	ProxyURL          *string
-	ClearProxy        bool
-	FlareSolverrURL   *string
-	ClearFlareSolverr bool
+type IndexerNetworkPatch struct {
+	FlareSolverrMaxTimeoutMS                                *int
+	RequestTimeoutSeconds, SiteTimeoutSeconds               *int
+	ProxyEnabled, FlareSolverrEnabled                       *bool
+	ProxyURL, ProxyUsername, ProxyPassword, FlareSolverrURL *string
+	ClearProxyPassword                                      bool
 }
 
-// Network changes share the config writer and return the revision of the exact
-// acknowledged write, rather than a later independent configuration snapshot.
-func (s *Store) UpdateIndexerNetworkTimeouts(ctx context.Context, expected string, patch IndexerNetworkTimeoutPatch) (*Config, string, error) {
+func (s *Store) UpdateIndexerNetwork(ctx context.Context, expected string, patch IndexerNetworkPatch) (*Config, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := ctx.Err(); err != nil {
@@ -28,6 +23,9 @@ func (s *Store) UpdateIndexerNetworkTimeouts(ctx context.Context, expected strin
 	}
 	if expected == "" || configDigest(s.saved) != expected {
 		return nil, "", ErrConfigRevision
+	}
+	if patch.ClearProxyPassword && patch.ProxyPassword != nil {
+		return nil, "", ErrInvalidSettings
 	}
 	cfg := s.cfg.Indexers.Clone()
 	if patch.RequestTimeoutSeconds != nil {
@@ -36,100 +34,43 @@ func (s *Store) UpdateIndexerNetworkTimeouts(ctx context.Context, expected strin
 	if patch.SiteTimeoutSeconds != nil {
 		cfg.Builtin.SiteTimeoutSeconds = *patch.SiteTimeoutSeconds
 	}
-	if patch.ChallengeTimeoutSeconds != nil {
-		cfg.Builtin.ChallengeTimeoutSeconds = *patch.ChallengeTimeoutSeconds
+	network := &cfg.Builtin.Network
+	if patch.FlareSolverrMaxTimeoutMS != nil {
+		network.FlareSolverr.MaxTimeoutMS = *patch.FlareSolverrMaxTimeoutMS
+	}
+	if patch.ProxyEnabled != nil {
+		network.Proxy.Enabled = *patch.ProxyEnabled
+	}
+	if patch.FlareSolverrEnabled != nil {
+		network.FlareSolverr.Enabled = *patch.FlareSolverrEnabled
+	}
+	if patch.ProxyURL != nil {
+		network.Proxy.URL = *patch.ProxyURL
+	}
+	if patch.ProxyUsername != nil {
+		network.Proxy.Username = *patch.ProxyUsername
+	}
+	if patch.ProxyPassword != nil && *patch.ProxyPassword != "" {
+		network.Proxy.Password = *patch.ProxyPassword
+	}
+	if patch.ClearProxyPassword {
+		network.Proxy.Password = ""
+	}
+	if patch.FlareSolverrURL != nil {
+		network.FlareSolverr.URL = *patch.FlareSolverrURL
 	}
 	if err := cfg.Validate(); err != nil {
-		return nil, "", fmt.Errorf("%w: invalid network timeout", ErrInvalidSettings)
+		return nil, "", fmt.Errorf("%w: invalid indexer network settings", ErrInvalidSettings)
 	}
 	next, err := s.mutateIndexerNodeLocked(func(indexers *yaml.Node) error {
 		builtin := ensureMapValue(mapValue(indexers, "builtin"))
+		setNodeValue(builtin, "network", network)
 		if patch.RequestTimeoutSeconds != nil {
 			setNodeValue(builtin, "request_timeout_seconds", *patch.RequestTimeoutSeconds)
 		}
 		if patch.SiteTimeoutSeconds != nil {
 			setNodeValue(builtin, "site_timeout_seconds", *patch.SiteTimeoutSeconds)
 		}
-		if patch.ChallengeTimeoutSeconds != nil {
-			setNodeValue(builtin, "challenge_timeout_seconds", *patch.ChallengeTimeoutSeconds)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, "", err
-	}
-	return next, configDigest(s.saved), nil
-}
-
-func (s *Store) SaveIndexerNetworkProfile(ctx context.Context, expected, id string, create bool, patch IndexerNetworkProfilePatch) (*Config, string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := ctx.Err(); err != nil {
-		return nil, "", err
-	}
-	if expected == "" || configDigest(s.saved) != expected {
-		return nil, "", ErrConfigRevision
-	}
-	if id == "direct" || !indexerName.MatchString(id) || patch.ClearProxy && patch.ProxyURL != nil || patch.ClearFlareSolverr && patch.FlareSolverrURL != nil {
-		return nil, "", ErrInvalidSettings
-	}
-	cfg := s.cfg.Indexers.Clone()
-	profile, exists := cfg.Builtin.NetworkProfiles[id]
-	if create == exists {
-		return nil, "", ErrInvalidSettings
-	}
-	if patch.ClearProxy {
-		profile.ProxyURL = ""
-	}
-	// Blank credential input retains the configured proxy; clearing is explicit.
-	if patch.ProxyURL != nil && *patch.ProxyURL != "" {
-		profile.ProxyURL = *patch.ProxyURL
-	}
-	if patch.ClearFlareSolverr {
-		profile.FlareSolverrURL = ""
-	}
-	if patch.FlareSolverrURL != nil && *patch.FlareSolverrURL != "" {
-		profile.FlareSolverrURL = *patch.FlareSolverrURL
-	}
-	if create && profile.ProxyURL == "" && profile.FlareSolverrURL == "" {
-		return nil, "", ErrInvalidSettings
-	}
-	cfg.Builtin.NetworkProfiles[id] = profile
-	if err := cfg.Validate(); err != nil {
-		return nil, "", fmt.Errorf("%w: invalid network profile", ErrInvalidSettings)
-	}
-	next, err := s.mutateIndexerNodeLocked(func(indexers *yaml.Node) error {
-		setNodeValue(ensureMapValue(mapValue(ensureMapValue(mapValue(indexers, "builtin")), "network_profiles")), id, profile)
-		return nil
-	})
-	if err != nil {
-		return nil, "", err
-	}
-	return next, configDigest(s.saved), nil
-}
-
-func (s *Store) RemoveIndexerNetworkProfile(ctx context.Context, expected, id string) (*Config, string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := ctx.Err(); err != nil {
-		return nil, "", err
-	}
-	if expected == "" || configDigest(s.saved) != expected {
-		return nil, "", ErrConfigRevision
-	}
-	if id == "direct" {
-		return nil, "", ErrInvalidSettings
-	}
-	if _, ok := s.cfg.Indexers.Builtin.NetworkProfiles[id]; !ok {
-		return nil, "", ErrInvalidSettings
-	}
-	for _, instance := range s.cfg.Indexers.Builtin.Instances {
-		if instance.NetworkProfile == id {
-			return nil, "", ErrIndexerNetworkInUse
-		}
-	}
-	next, err := s.mutateIndexerNodeLocked(func(indexers *yaml.Node) error {
-		deleteMapKey(ensureMapValue(mapValue(ensureMapValue(mapValue(indexers, "builtin")), "network_profiles")), id)
 		return nil
 	})
 	if err != nil {

@@ -432,7 +432,6 @@ type ComplexityRoot struct {
 		LoginSupported     func(childComplexity int) int
 		Modes              func(childComplexity int) int
 		Name               func(childComplexity int) int
-		NetworkProfile     func(childComplexity int) int
 		Privacy            func(childComplexity int) int
 		RuleDigest         func(childComplexity int) int
 		Settings           func(childComplexity int) int
@@ -445,7 +444,6 @@ type ComplexityRoot struct {
 		HealthErrorCode  func(childComplexity int) int
 		Items            func(childComplexity int) int
 		JackettEnabled   func(childComplexity int) int
-		NetworkProfiles  func(childComplexity int) int
 		Order            func(childComplexity int) int
 		Revision         func(childComplexity int) int
 		RuleErrorCode    func(childComplexity int) int
@@ -469,19 +467,17 @@ type ComplexityRoot struct {
 		State          func(childComplexity int) int
 	}
 
-	IndexerNetworkProfile struct {
-		FlareSolverrConfigured func(childComplexity int) int
-		ID                     func(childComplexity int) int
-		ProxyConfigured        func(childComplexity int) int
-		UsedBy                 func(childComplexity int) int
-	}
-
 	IndexerNetworkSettings struct {
-		ChallengeTimeoutSeconds func(childComplexity int) int
-		Profiles                func(childComplexity int) int
-		RequestTimeoutSeconds   func(childComplexity int) int
-		Revision                func(childComplexity int) int
-		SiteTimeoutSeconds      func(childComplexity int) int
+		FlareSolverrEnabled      func(childComplexity int) int
+		FlareSolverrMaxTimeoutMs func(childComplexity int) int
+		FlareSolverrURL          func(childComplexity int) int
+		ProxyEnabled             func(childComplexity int) int
+		ProxyPasswordConfigured  func(childComplexity int) int
+		ProxyURL                 func(childComplexity int) int
+		ProxyUsername            func(childComplexity int) int
+		RequestTimeoutSeconds    func(childComplexity int) int
+		Revision                 func(childComplexity int) int
+		SiteTimeoutSeconds       func(childComplexity int) int
 	}
 
 	IndexerObservation struct {
@@ -607,7 +603,6 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddBuiltinIndexer             func(childComplexity int, expectedRevision string, input model.BuiltinIndexerInput) int
-		AddIndexerNetworkProfile      func(childComplexity int, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) int
 		AddTorrent                    func(childComplexity int, input model.QBittorrentAddInput) int
 		AnswerIndexerChallenge        func(childComplexity int, id string, input model.IndexerLoginInput, answer string) int
 		BeginIndexerLogin             func(childComplexity int, input model.IndexerLoginInput) int
@@ -641,7 +636,6 @@ type ComplexityRoot struct {
 		RefreshSubscriptionsNow       func(childComplexity int) int
 		RefreshUpcomingRelease        func(childComplexity int, key string) int
 		RemoveBuiltinIndexer          func(childComplexity int, id string, expectedRevision string) int
-		RemoveIndexerNetworkProfile   func(childComplexity int, id string, expectedRevision string) int
 		ReorderIndexers               func(childComplexity int, expectedRevision string, ids []string) int
 		RepairIndexerDefinitions      func(childComplexity int, input model.IndexerDefinitionChangeInput) int
 		ResolveBlockedSourcingTask    func(childComplexity int, id string, input model.ResolveBlockedSourcingTaskInput) int
@@ -670,8 +664,7 @@ type ComplexityRoot struct {
 		UpdateDownloaderPolicy        func(childComplexity int, input model.DownloaderPolicyInput) int
 		UpdateIndexerDefinitionPolicy func(childComplexity int, expectedRevision string, input model.IndexerDefinitionPolicyPatchInput) int
 		UpdateIndexerDefinitions      func(childComplexity int, input model.IndexerDefinitionChangeInput) int
-		UpdateIndexerNetworkProfile   func(childComplexity int, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) int
-		UpdateIndexerNetworkTimeouts  func(childComplexity int, expectedRevision string, input model.IndexerNetworkTimeoutPatchInput) int
+		UpdateIndexerNetwork          func(childComplexity int, expectedRevision string, input model.IndexerNetworkPatchInput) int
 		UpdateIndexerSearchCache      func(childComplexity int, expectedRevision string, input model.IndexerSearchCachePatchInput) int
 		UpdateIngestSettings          func(childComplexity int, input model.UpdateIngestSettingsInput) int
 		UpdateJackettSettings         func(childComplexity int, input model.UpdateJackettSettingsInput) int
@@ -1523,10 +1516,7 @@ type MutationResolver interface {
 	SetIndexerEnabled(ctx context.Context, id string, expectedRevision string, enabled bool) (*model.IndexerInstances, error)
 	ReorderIndexers(ctx context.Context, expectedRevision string, ids []string) (*model.IndexerInstances, error)
 	RefreshJackettIndexers(ctx context.Context) (*model.IndexerInstances, error)
-	UpdateIndexerNetworkTimeouts(ctx context.Context, expectedRevision string, input model.IndexerNetworkTimeoutPatchInput) (*model.IndexerNetworkSettings, error)
-	AddIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) (*model.IndexerNetworkSettings, error)
-	UpdateIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) (*model.IndexerNetworkSettings, error)
-	RemoveIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string) (*model.IndexerNetworkSettings, error)
+	UpdateIndexerNetwork(ctx context.Context, expectedRevision string, input model.IndexerNetworkPatchInput) (*model.IndexerNetworkSettings, error)
 	ProcessReleaseReviews(ctx context.Context, input model.ProcessReleaseReviewsInput) (*model.ReleaseReviewPayload, error)
 	QueueDiscoveredScene(ctx context.Context, input model.QueueDiscoveredSceneInput) (*model.Task, error)
 	TestServiceConnection(ctx context.Context, input model.TestServiceConnectionInput) (*model.ServiceConnectionTestResult, error)
@@ -3510,13 +3500,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.IndexerInstance.Name(childComplexity), true
 
-	case "IndexerInstance.networkProfile":
-		if e.complexity.IndexerInstance.NetworkProfile == nil {
-			break
-		}
-
-		return e.complexity.IndexerInstance.NetworkProfile(childComplexity), true
-
 	case "IndexerInstance.privacy":
 		if e.complexity.IndexerInstance.Privacy == nil {
 			break
@@ -3579,13 +3562,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.IndexerInstances.JackettEnabled(childComplexity), true
-
-	case "IndexerInstances.networkProfiles":
-		if e.complexity.IndexerInstances.NetworkProfiles == nil {
-			break
-		}
-
-		return e.complexity.IndexerInstances.NetworkProfiles(childComplexity), true
 
 	case "IndexerInstances.order":
 		if e.complexity.IndexerInstances.Order == nil {
@@ -3692,47 +3668,54 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.IndexerLoginReport.State(childComplexity), true
 
-	case "IndexerNetworkProfile.flareSolverrConfigured":
-		if e.complexity.IndexerNetworkProfile.FlareSolverrConfigured == nil {
+	case "IndexerNetworkSettings.flareSolverrEnabled":
+		if e.complexity.IndexerNetworkSettings.FlareSolverrEnabled == nil {
 			break
 		}
 
-		return e.complexity.IndexerNetworkProfile.FlareSolverrConfigured(childComplexity), true
+		return e.complexity.IndexerNetworkSettings.FlareSolverrEnabled(childComplexity), true
 
-	case "IndexerNetworkProfile.id":
-		if e.complexity.IndexerNetworkProfile.ID == nil {
+	case "IndexerNetworkSettings.flareSolverrMaxTimeoutMs":
+		if e.complexity.IndexerNetworkSettings.FlareSolverrMaxTimeoutMs == nil {
 			break
 		}
 
-		return e.complexity.IndexerNetworkProfile.ID(childComplexity), true
+		return e.complexity.IndexerNetworkSettings.FlareSolverrMaxTimeoutMs(childComplexity), true
 
-	case "IndexerNetworkProfile.proxyConfigured":
-		if e.complexity.IndexerNetworkProfile.ProxyConfigured == nil {
+	case "IndexerNetworkSettings.flareSolverrUrl":
+		if e.complexity.IndexerNetworkSettings.FlareSolverrURL == nil {
 			break
 		}
 
-		return e.complexity.IndexerNetworkProfile.ProxyConfigured(childComplexity), true
+		return e.complexity.IndexerNetworkSettings.FlareSolverrURL(childComplexity), true
 
-	case "IndexerNetworkProfile.usedBy":
-		if e.complexity.IndexerNetworkProfile.UsedBy == nil {
+	case "IndexerNetworkSettings.proxyEnabled":
+		if e.complexity.IndexerNetworkSettings.ProxyEnabled == nil {
 			break
 		}
 
-		return e.complexity.IndexerNetworkProfile.UsedBy(childComplexity), true
+		return e.complexity.IndexerNetworkSettings.ProxyEnabled(childComplexity), true
 
-	case "IndexerNetworkSettings.challengeTimeoutSeconds":
-		if e.complexity.IndexerNetworkSettings.ChallengeTimeoutSeconds == nil {
+	case "IndexerNetworkSettings.proxyPasswordConfigured":
+		if e.complexity.IndexerNetworkSettings.ProxyPasswordConfigured == nil {
 			break
 		}
 
-		return e.complexity.IndexerNetworkSettings.ChallengeTimeoutSeconds(childComplexity), true
+		return e.complexity.IndexerNetworkSettings.ProxyPasswordConfigured(childComplexity), true
 
-	case "IndexerNetworkSettings.profiles":
-		if e.complexity.IndexerNetworkSettings.Profiles == nil {
+	case "IndexerNetworkSettings.proxyUrl":
+		if e.complexity.IndexerNetworkSettings.ProxyURL == nil {
 			break
 		}
 
-		return e.complexity.IndexerNetworkSettings.Profiles(childComplexity), true
+		return e.complexity.IndexerNetworkSettings.ProxyURL(childComplexity), true
+
+	case "IndexerNetworkSettings.proxyUsername":
+		if e.complexity.IndexerNetworkSettings.ProxyUsername == nil {
+			break
+		}
+
+		return e.complexity.IndexerNetworkSettings.ProxyUsername(childComplexity), true
 
 	case "IndexerNetworkSettings.requestTimeoutSeconds":
 		if e.complexity.IndexerNetworkSettings.RequestTimeoutSeconds == nil {
@@ -4320,18 +4303,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.AddBuiltinIndexer(childComplexity, args["expectedRevision"].(string), args["input"].(model.BuiltinIndexerInput)), true
 
-	case "Mutation.addIndexerNetworkProfile":
-		if e.complexity.Mutation.AddIndexerNetworkProfile == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_addIndexerNetworkProfile_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.AddIndexerNetworkProfile(childComplexity, args["id"].(string), args["expectedRevision"].(string), args["input"].(model.IndexerNetworkProfilePatchInput)), true
-
 	case "Mutation.addTorrent":
 		if e.complexity.Mutation.AddTorrent == nil {
 			break
@@ -4693,18 +4664,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.RemoveBuiltinIndexer(childComplexity, args["id"].(string), args["expectedRevision"].(string)), true
 
-	case "Mutation.removeIndexerNetworkProfile":
-		if e.complexity.Mutation.RemoveIndexerNetworkProfile == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_removeIndexerNetworkProfile_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RemoveIndexerNetworkProfile(childComplexity, args["id"].(string), args["expectedRevision"].(string)), true
-
 	case "Mutation.reorderIndexers":
 		if e.complexity.Mutation.ReorderIndexers == nil {
 			break
@@ -5031,29 +4990,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UpdateIndexerDefinitions(childComplexity, args["input"].(model.IndexerDefinitionChangeInput)), true
 
-	case "Mutation.updateIndexerNetworkProfile":
-		if e.complexity.Mutation.UpdateIndexerNetworkProfile == nil {
+	case "Mutation.updateIndexerNetwork":
+		if e.complexity.Mutation.UpdateIndexerNetwork == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_updateIndexerNetworkProfile_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_updateIndexerNetwork_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateIndexerNetworkProfile(childComplexity, args["id"].(string), args["expectedRevision"].(string), args["input"].(model.IndexerNetworkProfilePatchInput)), true
-
-	case "Mutation.updateIndexerNetworkTimeouts":
-		if e.complexity.Mutation.UpdateIndexerNetworkTimeouts == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateIndexerNetworkTimeouts_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateIndexerNetworkTimeouts(childComplexity, args["expectedRevision"].(string), args["input"].(model.IndexerNetworkTimeoutPatchInput)), true
+		return e.complexity.Mutation.UpdateIndexerNetwork(childComplexity, args["expectedRevision"].(string), args["input"].(model.IndexerNetworkPatchInput)), true
 
 	case "Mutation.updateIndexerSearchCache":
 		if e.complexity.Mutation.UpdateIndexerSearchCache == nil {
@@ -9295,8 +9242,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputIndexerDefinitionFilterInput,
 		ec.unmarshalInputIndexerDefinitionPolicyPatchInput,
 		ec.unmarshalInputIndexerLoginInput,
-		ec.unmarshalInputIndexerNetworkProfilePatchInput,
-		ec.unmarshalInputIndexerNetworkTimeoutPatchInput,
+		ec.unmarshalInputIndexerNetworkPatchInput,
 		ec.unmarshalInputIndexerPreferenceRuleInput,
 		ec.unmarshalInputIndexerSearchCachePatchInput,
 		ec.unmarshalInputIndexerSettingChangeInput,
@@ -9865,7 +9811,6 @@ input BuiltinIndexerInput {
   name: String
   enabled: Boolean
   baseUrl: String
-  networkProfile: String
   trustedOrigins: [String!]
   settings: [IndexerSettingChangeInput!]
 }
@@ -9873,7 +9818,6 @@ input BuiltinIndexerPatchInput {
   name: String
   enabled: Boolean
   baseUrl: String
-  networkProfile: String
   trustedOrigins: [String!]
   settings: [IndexerSettingChangeInput!]
 }
@@ -9922,7 +9866,6 @@ type IndexerInstance {
   enabled: Boolean!
   definitionId: String!
   baseUrl: String!
-  networkProfile: String!
   trustedOrigins: [String!]!
   ruleDigest: String!
   errorCode: String!
@@ -9937,7 +9880,6 @@ type IndexerInstances {
   catalogErrorCode: String!
   jackettEnabled: Boolean!
   order: [ID!]!
-  networkProfiles: [String!]!
   items: [IndexerInstance!]!
 }
 type BuiltinIndexerResult { revision: String! instance: IndexerInstance! }
@@ -9957,21 +9899,32 @@ type IndexerObservation {
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/indexer_network.graphql", Input: `extend type Query { indexerNetworkSettings: IndexerNetworkSettings! }
 extend type Mutation {
-  updateIndexerNetworkTimeouts(expectedRevision: String!, input: IndexerNetworkTimeoutPatchInput!): IndexerNetworkSettings!
-  addIndexerNetworkProfile(id: ID!, expectedRevision: String!, input: IndexerNetworkProfilePatchInput!): IndexerNetworkSettings!
-  updateIndexerNetworkProfile(id: ID!, expectedRevision: String!, input: IndexerNetworkProfilePatchInput!): IndexerNetworkSettings!
-  removeIndexerNetworkProfile(id: ID!, expectedRevision: String!): IndexerNetworkSettings!
+ updateIndexerNetwork(expectedRevision: String!, input: IndexerNetworkPatchInput!): IndexerNetworkSettings!
 }
-input IndexerNetworkTimeoutPatchInput { requestTimeoutSeconds: Int siteTimeoutSeconds: Int challengeTimeoutSeconds: Int }
-input IndexerNetworkProfilePatchInput { proxyUrl: String clearProxy: Boolean = false flareSolverrUrl: String clearFlareSolverr: Boolean = false }
+input IndexerNetworkPatchInput {
+ flareSolverrMaxTimeoutMs: Int
+ requestTimeoutSeconds: Int
+ siteTimeoutSeconds: Int
+ proxyEnabled: Boolean
+ proxyUrl: String
+ proxyUsername: String
+ proxyPassword: String
+ clearProxyPassword: Boolean = false
+ flareSolverrEnabled: Boolean
+ flareSolverrUrl: String
+}
 type IndexerNetworkSettings {
+ flareSolverrMaxTimeoutMs: Int!
  revision: String!
  requestTimeoutSeconds: Int!
  siteTimeoutSeconds: Int!
- challengeTimeoutSeconds: Int!
- profiles: [IndexerNetworkProfile!]!
+ proxyEnabled: Boolean!
+ proxyUrl: String!
+ proxyUsername: String!
+ proxyPasswordConfigured: Boolean!
+ flareSolverrEnabled: Boolean!
+ flareSolverrUrl: String!
 }
-type IndexerNetworkProfile { id: ID! proxyConfigured: Boolean! flareSolverrConfigured: Boolean! usedBy: Int! }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/logging.graphql", Input: `extend type Query {
   "Retrieve recent Moji logs for troubleshooting"
@@ -11917,80 +11870,6 @@ func (ec *executionContext) field_Mutation_addBuiltinIndexer_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_addIndexerNetworkProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_addIndexerNetworkProfile_argsID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := ec.field_Mutation_addIndexerNetworkProfile_argsExpectedRevision(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["expectedRevision"] = arg1
-	arg2, err := ec.field_Mutation_addIndexerNetworkProfile_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg2
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_addIndexerNetworkProfile_argsID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["id"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_addIndexerNetworkProfile_argsExpectedRevision(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["expectedRevision"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
-	if tmp, ok := rawArgs["expectedRevision"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_addIndexerNetworkProfile_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.IndexerNetworkProfilePatchInput, error) {
-	if _, ok := rawArgs["input"]; !ok {
-		var zeroVal model.IndexerNetworkProfilePatchInput
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNIndexerNetworkProfilePatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfilePatchInput(ctx, tmp)
-	}
-
-	var zeroVal model.IndexerNetworkProfilePatchInput
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Mutation_addTorrent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -12840,57 +12719,6 @@ func (ec *executionContext) field_Mutation_removeBuiltinIndexer_argsID(
 }
 
 func (ec *executionContext) field_Mutation_removeBuiltinIndexer_argsExpectedRevision(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["expectedRevision"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
-	if tmp, ok := rawArgs["expectedRevision"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_removeIndexerNetworkProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_removeIndexerNetworkProfile_argsID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := ec.field_Mutation_removeIndexerNetworkProfile_argsExpectedRevision(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["expectedRevision"] = arg1
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_removeIndexerNetworkProfile_argsID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["id"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_removeIndexerNetworkProfile_argsExpectedRevision(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
@@ -13843,96 +13671,22 @@ func (ec *executionContext) field_Mutation_updateIndexerDefinitions_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_updateIndexerNetworkProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_updateIndexerNetwork_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateIndexerNetworkProfile_argsID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := ec.field_Mutation_updateIndexerNetworkProfile_argsExpectedRevision(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["expectedRevision"] = arg1
-	arg2, err := ec.field_Mutation_updateIndexerNetworkProfile_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg2
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_updateIndexerNetworkProfile_argsID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["id"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_updateIndexerNetworkProfile_argsExpectedRevision(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	if _, ok := rawArgs["expectedRevision"]; !ok {
-		var zeroVal string
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("expectedRevision"))
-	if tmp, ok := rawArgs["expectedRevision"]; ok {
-		return ec.unmarshalNString2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_updateIndexerNetworkProfile_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.IndexerNetworkProfilePatchInput, error) {
-	if _, ok := rawArgs["input"]; !ok {
-		var zeroVal model.IndexerNetworkProfilePatchInput
-		return zeroVal, nil
-	}
-
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNIndexerNetworkProfilePatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfilePatchInput(ctx, tmp)
-	}
-
-	var zeroVal model.IndexerNetworkProfilePatchInput
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_updateIndexerNetworkTimeouts_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateIndexerNetworkTimeouts_argsExpectedRevision(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_updateIndexerNetwork_argsExpectedRevision(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["expectedRevision"] = arg0
-	arg1, err := ec.field_Mutation_updateIndexerNetworkTimeouts_argsInput(ctx, rawArgs)
+	arg1, err := ec.field_Mutation_updateIndexerNetwork_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_updateIndexerNetworkTimeouts_argsExpectedRevision(
+func (ec *executionContext) field_Mutation_updateIndexerNetwork_argsExpectedRevision(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
@@ -13950,21 +13704,21 @@ func (ec *executionContext) field_Mutation_updateIndexerNetworkTimeouts_argsExpe
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_updateIndexerNetworkTimeouts_argsInput(
+func (ec *executionContext) field_Mutation_updateIndexerNetwork_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (model.IndexerNetworkTimeoutPatchInput, error) {
+) (model.IndexerNetworkPatchInput, error) {
 	if _, ok := rawArgs["input"]; !ok {
-		var zeroVal model.IndexerNetworkTimeoutPatchInput
+		var zeroVal model.IndexerNetworkPatchInput
 		return zeroVal, nil
 	}
 
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNIndexerNetworkTimeoutPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkTimeoutPatchInput(ctx, tmp)
+		return ec.unmarshalNIndexerNetworkPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkPatchInput(ctx, tmp)
 	}
 
-	var zeroVal model.IndexerNetworkTimeoutPatchInput
+	var zeroVal model.IndexerNetworkPatchInput
 	return zeroVal, nil
 }
 
@@ -16048,8 +15802,6 @@ func (ec *executionContext) fieldContext_BuiltinIndexerResult_instance(_ context
 				return ec.fieldContext_IndexerInstance_definitionId(ctx, field)
 			case "baseUrl":
 				return ec.fieldContext_IndexerInstance_baseUrl(ctx, field)
-			case "networkProfile":
-				return ec.fieldContext_IndexerInstance_networkProfile(ctx, field)
 			case "trustedOrigins":
 				return ec.fieldContext_IndexerInstance_trustedOrigins(ctx, field)
 			case "ruleDigest":
@@ -28063,50 +27815,6 @@ func (ec *executionContext) fieldContext_IndexerInstance_baseUrl(_ context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _IndexerInstance_networkProfile(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IndexerInstance_networkProfile(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.NetworkProfile, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_IndexerInstance_networkProfile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "IndexerInstance",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _IndexerInstance_trustedOrigins(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstance) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IndexerInstance_trustedOrigins(ctx, field)
 	if err != nil {
@@ -28653,50 +28361,6 @@ func (ec *executionContext) fieldContext_IndexerInstances_order(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _IndexerInstances_networkProfiles(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.NetworkProfiles, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]string)
-	fc.Result = res
-	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_IndexerInstances_networkProfiles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "IndexerInstances",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _IndexerInstances_items(ctx context.Context, field graphql.CollectedField, obj *model.IndexerInstances) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_IndexerInstances_items(ctx, field)
 	if err != nil {
@@ -28762,8 +28426,6 @@ func (ec *executionContext) fieldContext_IndexerInstances_items(_ context.Contex
 				return ec.fieldContext_IndexerInstance_definitionId(ctx, field)
 			case "baseUrl":
 				return ec.fieldContext_IndexerInstance_baseUrl(ctx, field)
-			case "networkProfile":
-				return ec.fieldContext_IndexerInstance_networkProfile(ctx, field)
 			case "trustedOrigins":
 				return ec.fieldContext_IndexerInstance_trustedOrigins(ctx, field)
 			case "ruleDigest":
@@ -29269,8 +28931,8 @@ func (ec *executionContext) fieldContext_IndexerLoginReport_challenge(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _IndexerNetworkProfile_id(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkProfile) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IndexerNetworkProfile_id(ctx, field)
+func (ec *executionContext) _IndexerNetworkSettings_flareSolverrMaxTimeoutMs(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_flareSolverrMaxTimeoutMs(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -29283,139 +28945,7 @@ func (ec *executionContext) _IndexerNetworkProfile_id(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_IndexerNetworkProfile_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "IndexerNetworkProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _IndexerNetworkProfile_proxyConfigured(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkProfile) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IndexerNetworkProfile_proxyConfigured(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ProxyConfigured, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_IndexerNetworkProfile_proxyConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "IndexerNetworkProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _IndexerNetworkProfile_flareSolverrConfigured(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkProfile) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IndexerNetworkProfile_flareSolverrConfigured(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.FlareSolverrConfigured, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_IndexerNetworkProfile_flareSolverrConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "IndexerNetworkProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _IndexerNetworkProfile_usedBy(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkProfile) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IndexerNetworkProfile_usedBy(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UsedBy, nil
+		return obj.FlareSolverrMaxTimeoutMs, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -29432,9 +28962,9 @@ func (ec *executionContext) _IndexerNetworkProfile_usedBy(ctx context.Context, f
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_IndexerNetworkProfile_usedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_flareSolverrMaxTimeoutMs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "IndexerNetworkProfile",
+		Object:     "IndexerNetworkSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -29577,8 +29107,8 @@ func (ec *executionContext) fieldContext_IndexerNetworkSettings_siteTimeoutSecon
 	return fc, nil
 }
 
-func (ec *executionContext) _IndexerNetworkSettings_challengeTimeoutSeconds(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
+func (ec *executionContext) _IndexerNetworkSettings_proxyEnabled(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_proxyEnabled(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -29591,7 +29121,7 @@ func (ec *executionContext) _IndexerNetworkSettings_challengeTimeoutSeconds(ctx 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ChallengeTimeoutSeconds, nil
+		return obj.ProxyEnabled, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -29603,26 +29133,26 @@ func (ec *executionContext) _IndexerNetworkSettings_challengeTimeoutSeconds(ctx 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_proxyEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "IndexerNetworkSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _IndexerNetworkSettings_profiles(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+func (ec *executionContext) _IndexerNetworkSettings_proxyUrl(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_proxyUrl(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -29635,7 +29165,7 @@ func (ec *executionContext) _IndexerNetworkSettings_profiles(ctx context.Context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Profiles, nil
+		return obj.ProxyURL, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -29647,29 +29177,195 @@ func (ec *executionContext) _IndexerNetworkSettings_profiles(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.IndexerNetworkProfile)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNIndexerNetworkProfile2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfileᚄ(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_IndexerNetworkSettings_profiles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_proxyUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "IndexerNetworkSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_IndexerNetworkProfile_id(ctx, field)
-			case "proxyConfigured":
-				return ec.fieldContext_IndexerNetworkProfile_proxyConfigured(ctx, field)
-			case "flareSolverrConfigured":
-				return ec.fieldContext_IndexerNetworkProfile_flareSolverrConfigured(ctx, field)
-			case "usedBy":
-				return ec.fieldContext_IndexerNetworkProfile_usedBy(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkProfile", field.Name)
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_proxyUsername(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_proxyUsername(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProxyUsername, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_proxyUsername(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_proxyPasswordConfigured(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_proxyPasswordConfigured(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProxyPasswordConfigured, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_proxyPasswordConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_flareSolverrEnabled(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_flareSolverrEnabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FlareSolverrEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_flareSolverrEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IndexerNetworkSettings_flareSolverrUrl(ctx context.Context, field graphql.CollectedField, obj *model.IndexerNetworkSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_IndexerNetworkSettings_flareSolverrUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FlareSolverrURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_IndexerNetworkSettings_flareSolverrUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IndexerNetworkSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -36238,8 +35934,6 @@ func (ec *executionContext) fieldContext_Mutation_removeBuiltinIndexer(ctx conte
 				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
 			case "order":
 				return ec.fieldContext_IndexerInstances_order(ctx, field)
-			case "networkProfiles":
-				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
 			case "items":
 				return ec.fieldContext_IndexerInstances_items(ctx, field)
 			}
@@ -36313,8 +36007,6 @@ func (ec *executionContext) fieldContext_Mutation_setIndexerEnabled(ctx context.
 				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
 			case "order":
 				return ec.fieldContext_IndexerInstances_order(ctx, field)
-			case "networkProfiles":
-				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
 			case "items":
 				return ec.fieldContext_IndexerInstances_items(ctx, field)
 			}
@@ -36388,8 +36080,6 @@ func (ec *executionContext) fieldContext_Mutation_reorderIndexers(ctx context.Co
 				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
 			case "order":
 				return ec.fieldContext_IndexerInstances_order(ctx, field)
-			case "networkProfiles":
-				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
 			case "items":
 				return ec.fieldContext_IndexerInstances_items(ctx, field)
 			}
@@ -36463,8 +36153,6 @@ func (ec *executionContext) fieldContext_Mutation_refreshJackettIndexers(_ conte
 				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
 			case "order":
 				return ec.fieldContext_IndexerInstances_order(ctx, field)
-			case "networkProfiles":
-				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
 			case "items":
 				return ec.fieldContext_IndexerInstances_items(ctx, field)
 			}
@@ -36474,8 +36162,8 @@ func (ec *executionContext) fieldContext_Mutation_refreshJackettIndexers(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_updateIndexerNetworkTimeouts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateIndexerNetworkTimeouts(ctx, field)
+func (ec *executionContext) _Mutation_updateIndexerNetwork(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateIndexerNetwork(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -36488,7 +36176,7 @@ func (ec *executionContext) _Mutation_updateIndexerNetworkTimeouts(ctx context.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateIndexerNetworkTimeouts(rctx, fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerNetworkTimeoutPatchInput))
+		return ec.resolvers.Mutation().UpdateIndexerNetwork(rctx, fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerNetworkPatchInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -36505,7 +36193,7 @@ func (ec *executionContext) _Mutation_updateIndexerNetworkTimeouts(ctx context.C
 	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_updateIndexerNetworkTimeouts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_updateIndexerNetwork(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -36513,16 +36201,26 @@ func (ec *executionContext) fieldContext_Mutation_updateIndexerNetworkTimeouts(c
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "flareSolverrMaxTimeoutMs":
+				return ec.fieldContext_IndexerNetworkSettings_flareSolverrMaxTimeoutMs(ctx, field)
 			case "revision":
 				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
 			case "requestTimeoutSeconds":
 				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
 			case "siteTimeoutSeconds":
 				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
-			case "challengeTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
-			case "profiles":
-				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+			case "proxyEnabled":
+				return ec.fieldContext_IndexerNetworkSettings_proxyEnabled(ctx, field)
+			case "proxyUrl":
+				return ec.fieldContext_IndexerNetworkSettings_proxyUrl(ctx, field)
+			case "proxyUsername":
+				return ec.fieldContext_IndexerNetworkSettings_proxyUsername(ctx, field)
+			case "proxyPasswordConfigured":
+				return ec.fieldContext_IndexerNetworkSettings_proxyPasswordConfigured(ctx, field)
+			case "flareSolverrEnabled":
+				return ec.fieldContext_IndexerNetworkSettings_flareSolverrEnabled(ctx, field)
+			case "flareSolverrUrl":
+				return ec.fieldContext_IndexerNetworkSettings_flareSolverrUrl(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
 		},
@@ -36534,208 +36232,7 @@ func (ec *executionContext) fieldContext_Mutation_updateIndexerNetworkTimeouts(c
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateIndexerNetworkTimeouts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_addIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_addIndexerNetworkProfile(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AddIndexerNetworkProfile(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerNetworkProfilePatchInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.IndexerNetworkSettings)
-	fc.Result = res
-	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_addIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "revision":
-				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
-			case "requestTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
-			case "siteTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
-			case "challengeTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
-			case "profiles":
-				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_addIndexerNetworkProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateIndexerNetworkProfile(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateIndexerNetworkProfile(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string), fc.Args["input"].(model.IndexerNetworkProfilePatchInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.IndexerNetworkSettings)
-	fc.Result = res
-	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "revision":
-				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
-			case "requestTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
-			case "siteTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
-			case "challengeTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
-			case "profiles":
-				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateIndexerNetworkProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_removeIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_removeIndexerNetworkProfile(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RemoveIndexerNetworkProfile(rctx, fc.Args["id"].(string), fc.Args["expectedRevision"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.IndexerNetworkSettings)
-	fc.Result = res
-	return ec.marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkSettings(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_removeIndexerNetworkProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "revision":
-				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
-			case "requestTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
-			case "siteTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
-			case "challengeTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
-			case "profiles":
-				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_removeIndexerNetworkProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_updateIndexerNetwork_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -42826,8 +42323,6 @@ func (ec *executionContext) fieldContext_Query_indexerInstances(_ context.Contex
 				return ec.fieldContext_IndexerInstances_jackettEnabled(ctx, field)
 			case "order":
 				return ec.fieldContext_IndexerInstances_order(ctx, field)
-			case "networkProfiles":
-				return ec.fieldContext_IndexerInstances_networkProfiles(ctx, field)
 			case "items":
 				return ec.fieldContext_IndexerInstances_items(ctx, field)
 			}
@@ -42876,16 +42371,26 @@ func (ec *executionContext) fieldContext_Query_indexerNetworkSettings(_ context.
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "flareSolverrMaxTimeoutMs":
+				return ec.fieldContext_IndexerNetworkSettings_flareSolverrMaxTimeoutMs(ctx, field)
 			case "revision":
 				return ec.fieldContext_IndexerNetworkSettings_revision(ctx, field)
 			case "requestTimeoutSeconds":
 				return ec.fieldContext_IndexerNetworkSettings_requestTimeoutSeconds(ctx, field)
 			case "siteTimeoutSeconds":
 				return ec.fieldContext_IndexerNetworkSettings_siteTimeoutSeconds(ctx, field)
-			case "challengeTimeoutSeconds":
-				return ec.fieldContext_IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field)
-			case "profiles":
-				return ec.fieldContext_IndexerNetworkSettings_profiles(ctx, field)
+			case "proxyEnabled":
+				return ec.fieldContext_IndexerNetworkSettings_proxyEnabled(ctx, field)
+			case "proxyUrl":
+				return ec.fieldContext_IndexerNetworkSettings_proxyUrl(ctx, field)
+			case "proxyUsername":
+				return ec.fieldContext_IndexerNetworkSettings_proxyUsername(ctx, field)
+			case "proxyPasswordConfigured":
+				return ec.fieldContext_IndexerNetworkSettings_proxyPasswordConfigured(ctx, field)
+			case "flareSolverrEnabled":
+				return ec.fieldContext_IndexerNetworkSettings_flareSolverrEnabled(ctx, field)
+			case "flareSolverrUrl":
+				return ec.fieldContext_IndexerNetworkSettings_flareSolverrUrl(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type IndexerNetworkSettings", field.Name)
 		},
@@ -68892,7 +68397,7 @@ func (ec *executionContext) unmarshalInputBuiltinIndexerInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"definitionId", "name", "enabled", "baseUrl", "networkProfile", "trustedOrigins", "settings"}
+	fieldsInOrder := [...]string{"definitionId", "name", "enabled", "baseUrl", "trustedOrigins", "settings"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -68927,13 +68432,6 @@ func (ec *executionContext) unmarshalInputBuiltinIndexerInput(ctx context.Contex
 				return it, err
 			}
 			it.BaseURL = data
-		case "networkProfile":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("networkProfile"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NetworkProfile = data
 		case "trustedOrigins":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trustedOrigins"))
 			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
@@ -68961,7 +68459,7 @@ func (ec *executionContext) unmarshalInputBuiltinIndexerPatchInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "enabled", "baseUrl", "networkProfile", "trustedOrigins", "settings"}
+	fieldsInOrder := [...]string{"name", "enabled", "baseUrl", "trustedOrigins", "settings"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -68989,13 +68487,6 @@ func (ec *executionContext) unmarshalInputBuiltinIndexerPatchInput(ctx context.C
 				return it, err
 			}
 			it.BaseURL = data
-		case "networkProfile":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("networkProfile"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.NetworkProfile = data
 		case "trustedOrigins":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trustedOrigins"))
 			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
@@ -69830,75 +69321,31 @@ func (ec *executionContext) unmarshalInputIndexerLoginInput(ctx context.Context,
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputIndexerNetworkProfilePatchInput(ctx context.Context, obj any) (model.IndexerNetworkProfilePatchInput, error) {
-	var it model.IndexerNetworkProfilePatchInput
+func (ec *executionContext) unmarshalInputIndexerNetworkPatchInput(ctx context.Context, obj any) (model.IndexerNetworkPatchInput, error) {
+	var it model.IndexerNetworkPatchInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	if _, present := asMap["clearProxy"]; !present {
-		asMap["clearProxy"] = false
-	}
-	if _, present := asMap["clearFlareSolverr"]; !present {
-		asMap["clearFlareSolverr"] = false
+	if _, present := asMap["clearProxyPassword"]; !present {
+		asMap["clearProxyPassword"] = false
 	}
 
-	fieldsInOrder := [...]string{"proxyUrl", "clearProxy", "flareSolverrUrl", "clearFlareSolverr"}
+	fieldsInOrder := [...]string{"flareSolverrMaxTimeoutMs", "requestTimeoutSeconds", "siteTimeoutSeconds", "proxyEnabled", "proxyUrl", "proxyUsername", "proxyPassword", "clearProxyPassword", "flareSolverrEnabled", "flareSolverrUrl"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "proxyUrl":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("proxyUrl"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+		case "flareSolverrMaxTimeoutMs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("flareSolverrMaxTimeoutMs"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.ProxyURL = data
-		case "clearProxy":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearProxy"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ClearProxy = data
-		case "flareSolverrUrl":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("flareSolverrUrl"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.FlareSolverrURL = data
-		case "clearFlareSolverr":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearFlareSolverr"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ClearFlareSolverr = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputIndexerNetworkTimeoutPatchInput(ctx context.Context, obj any) (model.IndexerNetworkTimeoutPatchInput, error) {
-	var it model.IndexerNetworkTimeoutPatchInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"requestTimeoutSeconds", "siteTimeoutSeconds", "challengeTimeoutSeconds"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
+			it.FlareSolverrMaxTimeoutMs = data
 		case "requestTimeoutSeconds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requestTimeoutSeconds"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -69913,13 +69360,55 @@ func (ec *executionContext) unmarshalInputIndexerNetworkTimeoutPatchInput(ctx co
 				return it, err
 			}
 			it.SiteTimeoutSeconds = data
-		case "challengeTimeoutSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("challengeTimeoutSeconds"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+		case "proxyEnabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("proxyEnabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.ChallengeTimeoutSeconds = data
+			it.ProxyEnabled = data
+		case "proxyUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("proxyUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProxyURL = data
+		case "proxyUsername":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("proxyUsername"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProxyUsername = data
+		case "proxyPassword":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("proxyPassword"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProxyPassword = data
+		case "clearProxyPassword":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clearProxyPassword"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClearProxyPassword = data
+		case "flareSolverrEnabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("flareSolverrEnabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FlareSolverrEnabled = data
+		case "flareSolverrUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("flareSolverrUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FlareSolverrURL = data
 		}
 	}
 
@@ -75388,11 +74877,6 @@ func (ec *executionContext) _IndexerInstance(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "networkProfile":
-			out.Values[i] = ec._IndexerInstance_networkProfile(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "trustedOrigins":
 			out.Values[i] = ec._IndexerInstance_trustedOrigins(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -75484,11 +74968,6 @@ func (ec *executionContext) _IndexerInstances(ctx context.Context, sel ast.Selec
 			}
 		case "order":
 			out.Values[i] = ec._IndexerInstances_order(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "networkProfiles":
-			out.Values[i] = ec._IndexerInstances_networkProfiles(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -75637,60 +75116,6 @@ func (ec *executionContext) _IndexerLoginReport(ctx context.Context, sel ast.Sel
 	return out
 }
 
-var indexerNetworkProfileImplementors = []string{"IndexerNetworkProfile"}
-
-func (ec *executionContext) _IndexerNetworkProfile(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerNetworkProfile) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, indexerNetworkProfileImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("IndexerNetworkProfile")
-		case "id":
-			out.Values[i] = ec._IndexerNetworkProfile_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "proxyConfigured":
-			out.Values[i] = ec._IndexerNetworkProfile_proxyConfigured(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "flareSolverrConfigured":
-			out.Values[i] = ec._IndexerNetworkProfile_flareSolverrConfigured(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "usedBy":
-			out.Values[i] = ec._IndexerNetworkProfile_usedBy(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var indexerNetworkSettingsImplementors = []string{"IndexerNetworkSettings"}
 
 func (ec *executionContext) _IndexerNetworkSettings(ctx context.Context, sel ast.SelectionSet, obj *model.IndexerNetworkSettings) graphql.Marshaler {
@@ -75702,6 +75127,11 @@ func (ec *executionContext) _IndexerNetworkSettings(ctx context.Context, sel ast
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("IndexerNetworkSettings")
+		case "flareSolverrMaxTimeoutMs":
+			out.Values[i] = ec._IndexerNetworkSettings_flareSolverrMaxTimeoutMs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "revision":
 			out.Values[i] = ec._IndexerNetworkSettings_revision(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -75717,13 +75147,33 @@ func (ec *executionContext) _IndexerNetworkSettings(ctx context.Context, sel ast
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "challengeTimeoutSeconds":
-			out.Values[i] = ec._IndexerNetworkSettings_challengeTimeoutSeconds(ctx, field, obj)
+		case "proxyEnabled":
+			out.Values[i] = ec._IndexerNetworkSettings_proxyEnabled(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "profiles":
-			out.Values[i] = ec._IndexerNetworkSettings_profiles(ctx, field, obj)
+		case "proxyUrl":
+			out.Values[i] = ec._IndexerNetworkSettings_proxyUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "proxyUsername":
+			out.Values[i] = ec._IndexerNetworkSettings_proxyUsername(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "proxyPasswordConfigured":
+			out.Values[i] = ec._IndexerNetworkSettings_proxyPasswordConfigured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "flareSolverrEnabled":
+			out.Values[i] = ec._IndexerNetworkSettings_flareSolverrEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "flareSolverrUrl":
+			out.Values[i] = ec._IndexerNetworkSettings_flareSolverrUrl(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -76876,30 +76326,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "updateIndexerNetworkTimeouts":
+		case "updateIndexerNetwork":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateIndexerNetworkTimeouts(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "addIndexerNetworkProfile":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_addIndexerNetworkProfile(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updateIndexerNetworkProfile":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateIndexerNetworkProfile(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "removeIndexerNetworkProfile":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_removeIndexerNetworkProfile(ctx, field)
+				return ec._Mutation_updateIndexerNetwork(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -84417,62 +83846,8 @@ func (ec *executionContext) marshalNIndexerLoginState2githubᚗcomᚋleothevan24
 	return v
 }
 
-func (ec *executionContext) marshalNIndexerNetworkProfile2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfileᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.IndexerNetworkProfile) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNIndexerNetworkProfile2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfile(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNIndexerNetworkProfile2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfile(ctx context.Context, sel ast.SelectionSet, v *model.IndexerNetworkProfile) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._IndexerNetworkProfile(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNIndexerNetworkProfilePatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkProfilePatchInput(ctx context.Context, v any) (model.IndexerNetworkProfilePatchInput, error) {
-	res, err := ec.unmarshalInputIndexerNetworkProfilePatchInput(ctx, v)
+func (ec *executionContext) unmarshalNIndexerNetworkPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkPatchInput(ctx context.Context, v any) (model.IndexerNetworkPatchInput, error) {
+	res, err := ec.unmarshalInputIndexerNetworkPatchInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -84488,11 +83863,6 @@ func (ec *executionContext) marshalNIndexerNetworkSettings2ᚖgithubᚗcomᚋleo
 		return graphql.Null
 	}
 	return ec._IndexerNetworkSettings(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNIndexerNetworkTimeoutPatchInput2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerNetworkTimeoutPatchInput(ctx context.Context, v any) (model.IndexerNetworkTimeoutPatchInput, error) {
-	res, err := ec.unmarshalInputIndexerNetworkTimeoutPatchInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNIndexerPreferenceRule2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐIndexerPreferenceRule(ctx context.Context, sel ast.SelectionSet, v *model.IndexerPreferenceRule) graphql.Marshaler {

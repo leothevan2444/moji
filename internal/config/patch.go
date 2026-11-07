@@ -13,7 +13,7 @@ import (
 // while holding the same lock used by all other settings writers. Lists replace.
 // It publishes neither memory nor disk state until validation and durable write succeed.
 func (s *Store) ApplyPatch(patch map[string]any) (*Config, error) {
-	for _, section := range []string{"instances", "network_profiles"} {
+	for _, section := range []string{"instances", "network"} {
 		if _, present := patchValue(patch, "indexers", "builtin", section); present {
 			return nil, fmt.Errorf("%w: use scoped indexer commands", ErrInvalidSettings)
 		}
@@ -30,9 +30,13 @@ func (s *Store) applyPatchLocked(patch map[string]any) (*Config, error) {
 	}
 	top := documentNode(&root)
 	if existingMapValue(top, "config_version") == nil {
-		canonicalizeConfigNode(top)
+		if err := canonicalizeConfigNode(top); err != nil {
+			return nil, err
+		}
 	}
-	normalizeIndexerV3Node(top)
+	if err := normalizeIndexerNode(top); err != nil {
+		return nil, err
+	}
 	raw, err := yaml.Marshal(patch)
 	if err != nil {
 		return nil, err
@@ -42,7 +46,9 @@ func (s *Store) applyPatchLocked(patch map[string]any) (*Config, error) {
 		return nil, err
 	}
 	mergePatchNode(top, documentNode(&delta))
-	normalizeIndexerV3Node(top)
+	if err := normalizeIndexerNode(top); err != nil {
+		return nil, err
+	}
 	data, err := yaml.Marshal(&root)
 	if err != nil {
 		return nil, err

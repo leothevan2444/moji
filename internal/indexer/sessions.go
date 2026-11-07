@@ -104,7 +104,7 @@ func sessionKey(instance InstanceSnapshot, plan *cardigann.Plan) (string, error)
 	value := struct {
 		InstanceID, Revision, BaseURL string
 		Settings                      map[string]SettingValue
-		Network                       NetworkProfile
+		Network                       NetworkSnapshot
 		Login                         *cardigann.Login
 		Headers                       map[string][]string
 		Certificates                  []string

@@ -29,7 +29,7 @@ func persistentTestNetwork(t *testing.T, manager *storage.Manager, respond func(
 }
 func cooldownSession(t *testing.T, n *Network, base, proxy string) *HTTPSession {
 	t.Helper()
-	s, e := n.NewSession(InstanceSnapshot{BaseURL: base, Network: NetworkProfile{ProxyURL: proxy}}, nil)
+	s, e := n.NewSession(InstanceSnapshot{BaseURL: base, Network: NetworkSnapshot{ProxyURL: proxy}}, nil)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -230,7 +230,7 @@ func TestSolvedChallengeRemovesOnlyItsPersistedPenalty(t *testing.T) {
 		}
 		return httpResponse(200, nil, "ok"), nil
 	}, nil)
-	s, e := n.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkProfile{FlareSolverrURL: "http://solver.internal"}}, nil)
+	s, e := n.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkSnapshot{FlareSolverrURL: "http://solver.internal"}}, nil)
 	if e != nil {
 		t.Fatal(e)
 	}

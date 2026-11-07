@@ -119,13 +119,11 @@ func TestOptInLiveIndexerSearchAndFetch(t *testing.T) {
 	if result := awaitRuntimeRuleJob(t, ctx, runtime.definitions, job.ID); result.State != indexerdefs.Completed {
 		t.Fatal("pinned local rule installation failed")
 	}
-	networkProfile := "direct"
 	solver := os.Getenv("MOJI_INDEXER_LIVE_SOLVER")
 	proxy := os.Getenv("MOJI_INDEXER_LIVE_PROXY")
 	if solver != "" || proxy != "" {
-		networkProfile = "live-network"
-		if _, err := store.SetIndexerNetworkProfile(ctx, store.Revision(), networkProfile, &config.IndexerNetworkProfile{ProxyURL: proxy, FlareSolverrURL: solver}); err != nil {
-			t.Fatal("cannot prepare network profile in isolated configuration")
+		if _, _, err := store.UpdateIndexerNetwork(ctx, store.Revision(), acceptanceNetworkPatch(proxy, solver)); err != nil {
+			t.Fatal("cannot prepare global network in isolated configuration")
 		}
 	}
 	type sitePair struct{ site, builtin, external string }
@@ -136,7 +134,7 @@ func TestOptInLiveIndexerSearchAndFetch(t *testing.T) {
 		}
 		site := strings.TrimPrefix(id, "jackett/")
 		enabled := true
-		builtin, _, err := store.UpdateBuiltinInstance(ctx, "", store.Revision(), config.BuiltinInstancePatch{Definition: &site, Name: &site, Enabled: &enabled, NetworkProfile: &networkProfile})
+		builtin, _, err := store.UpdateBuiltinInstance(ctx, "", store.Revision(), config.BuiltinInstancePatch{Definition: &site, Name: &site, Enabled: &enabled})
 		if err != nil {
 			t.Fatal("cannot prepare isolated builtin site")
 		}

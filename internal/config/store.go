@@ -337,7 +337,9 @@ func (s *Store) updateConfigNode() (resultErr error) {
 		deleteMapKey(jackett, "candidate_selection")
 	}
 
-	canonicalizeConfigNode(top)
+	if err := canonicalizeConfigNode(top); err != nil {
+		return err
+	}
 	indexers := ensureMapValue(mapValue(top, "indexers"))
 	// Decanonicalized preference values no longer carry source qualification.
 	// Preserve the identities resolved from the original version on every save.

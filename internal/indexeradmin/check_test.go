@@ -63,9 +63,9 @@ func TestPrepareCheckRejectsStaleDraftsAndRemoteOverrides(t *testing.T) {
 	if err != nil || prepared.Instance.Kind != indexer.Jackett || prepared.Release != nil || registry.refreshes != 0 {
 		t.Fatal("external test changed remote catalog or claimed local rule ownership", err)
 	}
-	network := "missing"
-	if _, err = service.PrepareCheck(ctx, indexercheck.Input{ExpectedRevision: store.Revision(), Draft: &config.BuiltinInstancePatch{Definition: &definition, NetworkProfile: &network}}); !errors.Is(err, config.ErrInvalidSettings) {
-		t.Fatal("invalid draft network profile accepted", err)
+	base := "not-a-url"
+	if _, err = service.PrepareCheck(ctx, indexercheck.Input{ExpectedRevision: store.Revision(), Draft: &config.BuiltinInstancePatch{Definition: &definition, BaseURL: &base}}); !errors.Is(err, config.ErrInvalidSettings) {
+		t.Fatal("invalid draft base URL accepted", err)
 	}
 }
 

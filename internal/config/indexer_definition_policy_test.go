@@ -13,8 +13,8 @@ import (
 func TestDefinitionPolicyPartialUpdatesKeepOtherConfigurationAndPersistExplicitFalse(t *testing.T) {
 	s := patchStore(t)
 	ctx := context.Background()
-	proxy := "http://synthetic-user:synthetic-password@proxy.example:8080"
-	if _, _, err := s.SaveIndexerNetworkProfile(ctx, s.Revision(), "private", true, IndexerNetworkProfilePatch{ProxyURL: &proxy}); err != nil {
+	proxy := "http://proxy.example:8080"
+	if _, _, err := s.UpdateIndexerNetwork(ctx, s.Revision(), IndexerNetworkPatch{ProxyURL: &proxy}); err != nil {
 		t.Fatal(err)
 	}
 	before := s.Config()
@@ -38,7 +38,7 @@ func TestDefinitionPolicyPartialUpdatesKeepOtherConfigurationAndPersistExplicitF
 	if err != nil || reopened.Revision() != ack || reopened.Config().Indexers.Builtin.Definitions.AutoUpdate || reopened.Config().Indexers.Builtin.Definitions.CheckIntervalHours != 48 {
 		t.Fatal("omission/false/reopen changed policy semantics", err)
 	}
-	if reopened.Config().Indexers.Builtin.Definitions.Source != "prowlarr" || reopened.Config().Indexers.Builtin.Definitions.SchemaVersion != 11 || reopened.Config().Indexers.Builtin.NetworkProfiles["private"].ProxyURL != proxy {
+	if reopened.Config().Indexers.Builtin.Definitions.Source != "prowlarr" || reopened.Config().Indexers.Builtin.Definitions.SchemaVersion != 11 || reopened.Config().Indexers.Builtin.Network.Proxy.URL != proxy {
 		t.Fatal("fixed source/schema or credentials changed")
 	}
 }

@@ -144,7 +144,7 @@ test("catalog selection saves only explicit source fields and hides saved creden
   await page.getByLabel("Name", { exact: true }).fill("Another site");
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  expect(sent).toMatchObject({ definitionId: "sukebei", name: "Another site", enabled: false, networkProfile: "direct" });
+  expect(sent).toMatchObject({ definitionId: "sukebei", name: "Another site", enabled: false });
   expect(sent).not.toHaveProperty("settings");
 });
 

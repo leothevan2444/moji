@@ -200,3 +200,29 @@ func TestTransportErrorDetailsDoNotEscape(t *testing.T) {
 		t.Fatal("transport details exposed or retried", err)
 	}
 }
+
+func TestMaxTimeoutCapsSolverWithoutExtendingCallerBudget(t *testing.T) {
+	for _, scenario := range []struct {
+		name        string
+		cap, budget time.Duration
+		want        int64
+	}{
+		{"configured cap", 4500 * time.Millisecond, time.Minute, 4500},
+		{"remaining parent budget", time.Minute, 2 * time.Second, 2000},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			client, _ := New(CallFunc(func(ctx context.Context, body []byte) (int, []byte, error) {
+				wire := decode(t, body)
+				if wire.MaxTimeout <= 0 || wire.MaxTimeout > scenario.want || wire.MaxTimeout < scenario.want-100 {
+					t.Fatalf("maxTimeout=%d exceeds configured/remaining limit %d", wire.MaxTimeout, scenario.want)
+				}
+				return 200, success(), nil
+			}))
+			ctx, cancel := context.WithTimeout(context.Background(), scenario.budget)
+			defer cancel()
+			if _, err := client.Solve(ctx, Request{URL: "https://site.example/search", Timeout: scenario.cap}); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}

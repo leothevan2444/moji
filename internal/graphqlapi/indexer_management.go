@@ -40,10 +40,10 @@ func indexerSettingModels(settings []indexeradmin.Setting) []*model.IndexerSetti
 	return result
 }
 func indexerInstanceModel(instance indexeradmin.Instance) *model.IndexerInstance {
-	return &model.IndexerInstance{ConnectionRevision: instance.ConnectionRevision, Description: instance.Description, LoginSupported: instance.LoginSupported, Health: &model.IndexerHealth{Search: indexerObservationModel(instance.Health.Search), Fetch: indexerObservationModel(instance.Health.Fetch)}, SiteURL: instance.SiteURL, Privacy: instance.Privacy, Language: instance.Language, ID: instance.ID, Kind: model.IndexerSourceKind(instance.Kind), Name: instance.Name, Enabled: instance.Enabled, DefinitionID: instance.DefinitionID, BaseURL: instance.BaseURL, NetworkProfile: instance.NetworkProfile, TrustedOrigins: instance.TrustedOrigins, RuleDigest: instance.RuleDigest, ErrorCode: instance.ErrorCode, Modes: instance.Modes, Settings: indexerSettingModels(instance.Settings)}
+	return &model.IndexerInstance{ConnectionRevision: instance.ConnectionRevision, Description: instance.Description, LoginSupported: instance.LoginSupported, Health: &model.IndexerHealth{Search: indexerObservationModel(instance.Health.Search), Fetch: indexerObservationModel(instance.Health.Fetch)}, SiteURL: instance.SiteURL, Privacy: instance.Privacy, Language: instance.Language, ID: instance.ID, Kind: model.IndexerSourceKind(instance.Kind), Name: instance.Name, Enabled: instance.Enabled, DefinitionID: instance.DefinitionID, BaseURL: instance.BaseURL, TrustedOrigins: instance.TrustedOrigins, RuleDigest: instance.RuleDigest, ErrorCode: instance.ErrorCode, Modes: instance.Modes, Settings: indexerSettingModels(instance.Settings)}
 }
 func indexerInstancesModel(page indexeradmin.InstancePage) *model.IndexerInstances {
-	result := &model.IndexerInstances{HealthErrorCode: page.HealthErrorCode, Revision: page.Revision, RuleRevision: page.RuleRevision, RuleErrorCode: page.RuleErrorCode, CatalogErrorCode: page.CatalogErrorCode, JackettEnabled: page.JackettEnabled, Order: page.Order, NetworkProfiles: page.NetworkProfiles, Items: make([]*model.IndexerInstance, 0, len(page.Items))}
+	result := &model.IndexerInstances{HealthErrorCode: page.HealthErrorCode, Revision: page.Revision, RuleRevision: page.RuleRevision, RuleErrorCode: page.RuleErrorCode, CatalogErrorCode: page.CatalogErrorCode, JackettEnabled: page.JackettEnabled, Order: page.Order, Items: make([]*model.IndexerInstance, 0, len(page.Items))}
 	for _, instance := range page.Items {
 		result.Items = append(result.Items, indexerInstanceModel(instance))
 	}
@@ -57,7 +57,7 @@ func indexerDefinitionsModel(page indexeradmin.DefinitionPage) *model.IndexerDef
 	return result
 }
 func builtinPatchInput(input model.BuiltinIndexerPatchInput) (indexeradmin.BuiltinPatch, error) {
-	patch := indexeradmin.BuiltinPatch{Name: input.Name, Enabled: input.Enabled, BaseURL: input.BaseURL, NetworkProfile: input.NetworkProfile}
+	patch := indexeradmin.BuiltinPatch{Name: input.Name, Enabled: input.Enabled, BaseURL: input.BaseURL}
 	if input.TrustedOrigins != nil {
 		patch.TrustedOrigins = &input.TrustedOrigins
 	}

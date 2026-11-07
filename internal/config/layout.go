@@ -41,7 +41,7 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 		}
 		return validateSystemCalendar(c.System)
 	}
-	if version.Version != 2 && version.Version != 3 {
+	if version.Version != 2 && version.Version != 3 && version.Version != 4 {
 		return fmt.Errorf("unsupported config_version: %d", version.Version)
 	}
 	for _, key := range []string{"connection", "automation", "ingest"} {
@@ -75,6 +75,9 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 	top := documentNode(&root)
+	if err := validateIndexerNetworkLayout(top); err != nil {
+		return err
+	}
 	if idx := existingMapValue(top, "indexers"); idx != nil {
 		if err := idx.Decode(&c.Indexers); err != nil {
 			return err
@@ -112,7 +115,7 @@ func moveConfigNode(from *yaml.Node, key string, to *yaml.Node, target string) {
 
 // canonicalizeConfigNode converts an already normalized legacy-shaped tree.
 // Moving nodes preserves unmodeled fields and YAML comments within sections.
-func canonicalizeConfigNode(top *yaml.Node) {
+func canonicalizeConfigNode(top *yaml.Node) error {
 	// Log files have a fixed location; drop the retired override on save.
 	if logs := existingMapValue(top, "logging"); logs != nil {
 		deleteMapKey(logs, "file_path")
@@ -150,12 +153,15 @@ func canonicalizeConfigNode(top *yaml.Node) {
 		*mapValue(top, "legacy_connection") = *conn
 	}
 	deleteMapKey(top, "connection")
-	normalizeIndexerV3Node(top)
+	return normalizeIndexerNode(top)
 }
 
-func normalizeIndexerV3Node(top *yaml.Node) {
+func normalizeIndexerNode(top *yaml.Node) error {
+	if err := validateIndexerNetworkLayout(top); err != nil {
+		return err
+	}
 	version := existingMapValue(top, "config_version")
-	legacyIDs := version == nil || version.Value != "3"
+	legacyIDs := version == nil || version.Value == "2"
 	indexers := ensureMapValue(mapValue(top, "indexers"))
 	jackett := ensureMapValue(mapValue(indexers, "jackett"))
 	if existingMapValue(jackett, "enabled") == nil {
@@ -171,7 +177,8 @@ func normalizeIndexerV3Node(top *yaml.Node) {
 			}
 		}
 	}
-	setIntScalar(top, "config_version", 3)
+	setIntScalar(top, "config_version", 4)
+	return nil
 }
 
 // legacyConfigNode is used solely by Store's existing atomic update machinery.
@@ -224,4 +231,31 @@ func validateSystemCalendar(system SystemConfig) error {
 		return fmt.Errorf("invalid release timezone: %w", err)
 	}
 	return ValidateLanguage(system.Language)
+}
+
+// Removed profile keys are rejected rather than silently ignored.
+func validateIndexerNetworkLayout(top *yaml.Node) error {
+	idx := existingMapValue(top, "indexers")
+	if idx == nil {
+		return nil
+	}
+	builtin := existingMapValue(idx, "builtin")
+	if builtin == nil {
+		return nil
+	}
+	if existingMapValue(builtin, "challenge_timeout_seconds") != nil {
+		return fmt.Errorf("challenge_timeout_seconds was removed; use builtin.network.flaresolverr.max_timeout_ms")
+	}
+	if existingMapValue(builtin, "network_profiles") != nil {
+		return fmt.Errorf("network_profiles was removed; use builtin.network")
+	}
+	instances := existingMapValue(builtin, "instances")
+	if instances != nil {
+		for i := 1; i < len(instances.Content); i += 2 {
+			if existingMapValue(instances.Content[i], "network_profile") != nil {
+				return fmt.Errorf("network_profile was removed; all builtin sites use builtin.network")
+			}
+		}
+	}
+	return nil
 }

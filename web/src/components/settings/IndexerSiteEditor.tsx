@@ -13,21 +13,20 @@ import { SecretInput } from "./SettingsTabCommon";
 import { describeQueryError } from "../../services/queryError";
 
 export interface SiteEditorDefinition { id: string; name: string; links: string[]; settings: SiteSetting[] }
-export function IndexerSiteEditor({ site, definition, revision, profiles, busy, error, onSave, onClose, connectionPending = false }: {
-  connectionPending?: boolean; site?: IndexerSite; definition: SiteEditorDefinition; revision: string; profiles: string[]; busy: boolean; error: unknown;
+export function IndexerSiteEditor({ site, definition, revision, busy, error, onSave, onClose, connectionPending = false }: {
+  connectionPending?: boolean; site?: IndexerSite; definition: SiteEditorDefinition; revision: string; busy: boolean; error: unknown;
   onSave: (id: string | null, revision: string, input: BuiltinIndexerInput | BuiltinIndexerPatchInput) => Promise<boolean>; onClose: () => void;
 }) {
   const { t } = useTranslation();
   const [name, setName] = useState(site?.name ?? definition.name);
   const [baseUrl, setBaseUrl] = useState(site?.baseUrl ?? "");
-  const [profile, setProfile] = useState(site?.networkProfile || "direct");
   const [enabled, setEnabled] = useState(site?.enabled ?? false);
   const initialOrigins = (site?.trustedOrigins ?? []).join("\n");
   const [originsText, setOriginsText] = useState(initialOrigins);
   const origins = parseIndexerTrustedOrigins(originsText);
   const [changes, setChanges] = useState<Record<string, IndexerSettingChangeInput>>({});
   const [discard, setDiscard] = useState(false);
-  const dirty = originsText !== initialOrigins || Object.keys(changes).length > 0 || name !== (site?.name ?? definition.name) || baseUrl !== (site?.baseUrl ?? "") || profile !== (site?.networkProfile || "direct") || enabled !== (site?.enabled ?? false);
+  const dirty = originsText !== initialOrigins || Object.keys(changes).length > 0 || name !== (site?.name ?? definition.name) || baseUrl !== (site?.baseUrl ?? "") || enabled !== (site?.enabled ?? false);
   const blocker = useBlocker(dirty || busy);
   useBeforeUnload(event => { if (dirty || busy) { event.preventDefault(); event.returnValue = ""; } });
   const keepEditing = () => { setDiscard(false); if (blocker.state === "blocked") blocker.reset(); };
@@ -38,7 +37,6 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
     const patch: BuiltinIndexerPatchInput = {};
     if (!site || name !== site.name) patch.name = name;
     if (!site || baseUrl !== site.baseUrl) patch.baseUrl = baseUrl;
-    if (!site || profile !== site.networkProfile) patch.networkProfile = profile;
     if (!site || enabled !== site.enabled) patch.enabled = enabled;
     if (originsText !== initialOrigins) patch.trustedOrigins = origins.origins;
     if (Object.keys(changes).length) patch.settings = Object.values(changes);
@@ -56,7 +54,6 @@ export function IndexerSiteEditor({ site, definition, revision, profiles, busy, 
         {error ? <p role="alert" className="settings-feedback tone-danger">{describeQueryError(error)}</p> : null}
         <label className="settings-field"><span>{t("indexers.name")}</span><input value={name} disabled={busy} maxLength={256} onChange={event => setName(event.target.value)} /></label>
         <label className="settings-field"><span>{t("indexers.baseUrl")}</span><input type="url" value={baseUrl} disabled={busy} placeholder={definition.links[0] ?? "https://"} onChange={event => setBaseUrl(event.target.value)} /></label>
-        <label className="settings-field"><span>{t("indexers.network")}</span><select value={profile} disabled={busy} onChange={event => setProfile(event.target.value)}>{profiles.map(value => <option key={value} value={value}>{value === "direct" ? t("indexers.direct") : value}</option>)}</select></label>
         {definition.settings.map(setting => {
           const edit = changes[setting.name]; const value = edit?.clear && setting.type === "select" ? setting.defaultValue : edit?.value ?? setting.value ?? setting.defaultValue;
           const text = edit?.clear && setting.type !== "select" ? "" : value?.string ?? (value?.number === null || value?.number === undefined ? "" : String(value.number));

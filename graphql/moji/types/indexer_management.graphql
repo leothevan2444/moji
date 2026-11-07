@@ -34,7 +34,6 @@ input BuiltinIndexerInput {
   name: String
   enabled: Boolean
   baseUrl: String
-  networkProfile: String
   trustedOrigins: [String!]
   settings: [IndexerSettingChangeInput!]
 }
@@ -42,7 +41,6 @@ input BuiltinIndexerPatchInput {
   name: String
   enabled: Boolean
   baseUrl: String
-  networkProfile: String
   trustedOrigins: [String!]
   settings: [IndexerSettingChangeInput!]
 }
@@ -91,7 +89,6 @@ type IndexerInstance {
   enabled: Boolean!
   definitionId: String!
   baseUrl: String!
-  networkProfile: String!
   trustedOrigins: [String!]!
   ruleDigest: String!
   errorCode: String!
@@ -106,7 +103,6 @@ type IndexerInstances {
   catalogErrorCode: String!
   jackettEnabled: Boolean!
   order: [ID!]!
-  networkProfiles: [String!]!
   items: [IndexerInstance!]!
 }
 type BuiltinIndexerResult { revision: String! instance: IndexerInstance! }

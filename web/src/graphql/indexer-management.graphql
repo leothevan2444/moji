@@ -7,13 +7,13 @@ fragment IndexerSettingFields on IndexerSetting {
 fragment IndexerInstanceFields on IndexerInstance {
   health { search { ...IndexerObservationFields } fetch { ...IndexerObservationFields } }
   connectionRevision siteUrl description privacy language loginSupported
-  id kind name enabled definitionId baseUrl networkProfile trustedOrigins
+  id kind name enabled definitionId baseUrl trustedOrigins
   ruleDigest errorCode modes settings { ...IndexerSettingFields }
 }
 fragment IndexerInstancesFields on IndexerInstances {
   healthErrorCode
   revision ruleRevision ruleErrorCode catalogErrorCode jackettEnabled
-  order networkProfiles items { ...IndexerInstanceFields }
+  order items { ...IndexerInstanceFields }
 }
 query IndexerDefinitions($input: IndexerDefinitionFilterInput) {
   indexerDefinitions(input: $input) {

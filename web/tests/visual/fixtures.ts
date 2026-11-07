@@ -54,13 +54,13 @@ export const indexerLibrary = {
   installed: [{ revision: "a".repeat(40), schemaVersion: 11, engineVersion: "cardigann-v11-1", definitionCount: 579, installedAt: now }]
 };
 export const indexerInstances = {
-  healthErrorCode: "", revision: "config-1", ruleRevision: "a".repeat(40), ruleErrorCode: "", catalogErrorCode: "", jackettEnabled: true, order: ["builtin-one", "jackett/onejav"], networkProfiles: ["direct"],
+  healthErrorCode: "", revision: "config-1", ruleRevision: "a".repeat(40), ruleErrorCode: "", catalogErrorCode: "", jackettEnabled: true, order: ["builtin-one", "jackett/onejav"],
   items: [
-    {connectionRevision:"site-version-1",description:"",loginSupported:false,health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", networkProfile: "direct", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
+    {connectionRevision:"site-version-1",description:"",loginSupported:false,health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
       { name: "filter", type: "select", label: "Filter", secret: false, configured: false, value: null, defaultValue: { string: "0", boolean: null, number: null }, options: [{ value: "0", label: "All" }, { value: "1", label: "Trusted only" }] },
       { name: "cookie", type: "text", label: "Cookie", secret: true, configured: true, value: null, defaultValue: null, options: [] }
     ] },
-    {connectionRevision:"site-version-1",description:"",loginSupported:false,health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", networkProfile: "", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
+    {connectionRevision:"site-version-1",description:"",loginSupported:false,health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
   ]
 };
 export const searchCandidate = { id:"candidate-one",instanceId:"builtin-one",instanceName:"Sukebei",kind:"BUILTIN",title:"MOJI-102 Long resource title with release and encoding information",detailsUrl:"https://example.test/details?id=1",infoHash:null,size:null,seeders:null,peers:null,publishedAt:null,categories:[] };
@@ -81,7 +81,7 @@ const rootValue = {
   queueTorrentCandidate: homeTask("queued-candidate","SOURCING","PENDING"),
   torrentSearchEvents: ({id}:{id:string})=>({streamId:"search-stream",sequence:0,searchId:id}),
 
-  indexerNetworkSettings: {revision:"config-1",requestTimeoutSeconds:30,siteTimeoutSeconds:120,challengeTimeoutSeconds:90,profiles:[{id:"direct",proxyConfigured:false,flareSolverrConfigured:false,usedBy:1}]},
+  indexerNetworkSettings: {flareSolverrMaxTimeoutMs:90000,revision:"config-1",requestTimeoutSeconds:30,siteTimeoutSeconds:120,proxyEnabled:false,proxyUrl:"",proxyUsername:"",proxyPasswordConfigured:false,flareSolverrEnabled:false,flareSolverrUrl:""},
   indexerCacheStatus: {revision:"config-1",enabled:true,ttlSeconds:300,emptyTtlSeconds:30,maxSizeMb:32,entries:0,usedBytes:0,activeRequests:0,activeWaiters:0},
   clearIndexerSearchCache: {revision:"config-1",enabled:true,ttlSeconds:300,emptyTtlSeconds:30,maxSizeMb:32,entries:0,usedBytes:0,activeRequests:0,activeWaiters:0},
   indexerEvents: {streamId:"visual-indexers",sequence:0,kind:"READY"},

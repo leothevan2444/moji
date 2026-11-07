@@ -18,7 +18,7 @@ func artifactFixture(t *testing.T) (*ArtifactCache, InstanceSnapshot, ResourceRe
 		t.Fatal(err)
 	}
 	t.Cleanup(cache.Close)
-	instance := InstanceSnapshot{ID: "one", Kind: Jackett, ConfigRevision: "account", Network: NetworkProfile{Revision: "private", ProxyURL: "http://synthetic-user:synthetic-password@proxy.example"}}
+	instance := InstanceSnapshot{ID: "one", Kind: Jackett, ConfigRevision: "account", Network: NetworkSnapshot{Revision: "private", ProxyURL: "http://synthetic-user:synthetic-password@proxy.example"}}
 	return cache, instance, ResourceRef{Version: 1, ID: "first", InstanceID: instance.ID, Kind: Jackett, ConfigRevision: instance.ConfigRevision, Locator: Locator{DownloadURL: "https://site.example/grab?ticket=synthetic-ticket", Title: "ABCD-123"}}
 }
 func artifactBytes(announce string) []byte {

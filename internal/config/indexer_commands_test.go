@@ -43,7 +43,7 @@ func TestIndexerMigrationRetainsLegacyConnectionOrderAndUnrelatedSettings(t *tes
 			t.Fatal("order changed")
 		}
 		data, _ := os.ReadFile(path)
-		if !strings.Contains(string(data), "retained: yes") || !strings.Contains(string(data), "config_version: 3") {
+		if !strings.Contains(string(data), "retained: yes") || !strings.Contains(string(data), "config_version: 4") {
 			t.Fatal("migration lost unrelated fields")
 		}
 	}
@@ -100,23 +100,16 @@ func TestIndexerScopedEditsPreserveSecretsAndRejectStaleWrites(t *testing.T) {
 	}
 }
 
-func TestIndexerProfileAndInvalidChangesAreAtomic(t *testing.T) {
+func TestIndexerInvalidChangesAreAtomic(t *testing.T) {
 	s := patchStore(t)
 	ctx := context.Background()
-	profile := IndexerNetworkProfile{ProxyURL: "http://proxy.example:8080"}
-	if _, err := s.SetIndexerNetworkProfile(ctx, s.Revision(), "proxy", &profile); err != nil {
-		t.Fatal(err)
-	}
-	definition, network := "example", "proxy"
-	id, _, err := s.UpdateBuiltinInstance(ctx, "", s.Revision(), BuiltinInstancePatch{Definition: &definition, NetworkProfile: &network})
+	definition := "example"
+	id, _, err := s.UpdateBuiltinInstance(ctx, "", s.Revision(), BuiltinInstancePatch{Definition: &definition})
 	if err != nil {
 		t.Fatal(err)
 	}
 	before, _ := os.ReadFile(s.Path())
 	revision := s.Revision()
-	if _, err = s.SetIndexerNetworkProfile(ctx, revision, "proxy", nil); err == nil {
-		t.Fatal("removed a referenced profile")
-	}
 	if _, err = s.ApplyPatch(map[string]any{"indexers": map[string]any{"builtin": map[string]any{"instances": map[string]any{}}}}); !errors.Is(err, ErrInvalidSettings) {
 		t.Fatalf("generic instance replacement: %v", err)
 	}

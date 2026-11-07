@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestPackagedExampleUsesV3AndLeavesIndexerSourcesDisabled(t *testing.T) {
+func TestPackagedExampleUsesV4AndLeavesIndexerSourcesDisabled(t *testing.T) {
 	source := filepath.Join("..", "..", "docker", "config.example.yaml")
 	raw, err := os.ReadFile(source)
 	if err != nil {
@@ -19,7 +19,7 @@ func TestPackagedExampleUsesV3AndLeavesIndexerSourcesDisabled(t *testing.T) {
 	var header struct {
 		Version int `yaml:"config_version"`
 	}
-	if err := yaml.Unmarshal(raw, &header); err != nil || header.Version != 3 {
+	if err := yaml.Unmarshal(raw, &header); err != nil || header.Version != 4 {
 		t.Fatal("packaged example does not use the current configuration layout", err)
 	}
 	cfg, err := config.LoadFromPath(source)
@@ -56,7 +56,7 @@ func TestMigrationCopyPreservesSourceAndRejectsOverwrite(t *testing.T) {
 		t.Fatal("modified source")
 	}
 	migrated, _ := os.ReadFile(output)
-	if !strings.Contains(string(migrated), "config_version: 3") {
+	if !strings.Contains(string(migrated), "config_version: 4") {
 		t.Fatal("missing version")
 	}
 	if err := run(source, source); err == nil {

@@ -9,11 +9,11 @@ import { IndexerSiteEditor } from "./IndexerSiteEditor";
 import type { IndexerSite } from "../../hooks/useIndexerManagement";
 import { IndexerSourceKind } from "../../graphql/generated/graphql";
 
-const site: IndexerSite = {connectionRevision:"site-version-1",description: "", loginSupported:true,health:{search:null,fetch:null}, id: "source", name: "Example", definitionId: "example", kind: IndexerSourceKind.Builtin, enabled: true, baseUrl: "", siteUrl: "https://example.invalid/", language: "en-US", privacy: "private", networkProfile: "direct", trustedOrigins: [], modes: ["search"], ruleDigest: "digest", errorCode: "", settings: [{ name: "password", label: "Password", type: "password", secret: true, configured: true, value: null, defaultValue: null, options: [] }] };
+const site: IndexerSite = {connectionRevision:"site-version-1",description: "", loginSupported:true,health:{search:null,fetch:null}, id: "source", name: "Example", definitionId: "example", kind: IndexerSourceKind.Builtin, enabled: true, baseUrl: "", siteUrl: "https://example.invalid/", language: "en-US", privacy: "private", trustedOrigins: [], modes: ["search"], ruleDigest: "digest", errorCode: "", settings: [{ name: "password", label: "Password", type: "password", secret: true, configured: true, value: null, defaultValue: null, options: [] }] };
 beforeEach(async () => { await i18n.changeLanguage("en"); });
 afterEach(cleanup);
 function mount(save = vi.fn().mockResolvedValue(false), initial = site) {
-  const close = vi.fn(); const router = createMemoryRouter([{ path: "/", element: <IndexerSiteEditor site={initial} definition={{ id: "example", name: "Example", links: [], settings: initial.settings }} revision="config-1" profiles={["direct"]} busy={false} error={null} onSave={save} onClose={close} /> }, { path: "/away", element: <p>Away</p> }], { initialEntries: ["/"] });
+  const close = vi.fn(); const router = createMemoryRouter([{ path: "/", element: <IndexerSiteEditor site={initial} definition={{ id: "example", name: "Example", links: [], settings: initial.settings }} revision="config-1" busy={false} error={null} onSave={save} onClose={close} /> }, { path: "/away", element: <p>Away</p> }], { initialEntries: ["/"] });
   render(<Provider value={createClient({ url: "http://synthetic.invalid/graphql", exchanges: [] })}><RouterProvider router={router} /></Provider>); return { save, close, router };
 }
 describe("built-in site editor", () => {
@@ -72,7 +72,7 @@ it("sends explicit origin replacement and empty-list revocation without changing
   // A non-empty initial list must be explicitly replaced by [] when cleared.
   cleanup();
   const initial = { ...site, trustedOrigins: ["https://download.example"] };
-  const router = createMemoryRouter([{ path: "/", element: <IndexerSiteEditor site={initial} definition={{id:"example",name:"Example",links:[],settings:site.settings}} revision="config-2" profiles={["direct"]} busy={false} error={null} onSave={save} onClose={()=>{}} /> }]);
+  const router = createMemoryRouter([{ path: "/", element: <IndexerSiteEditor site={initial} definition={{id:"example",name:"Example",links:[],settings:site.settings}} revision="config-2" busy={false} error={null} onSave={save} onClose={()=>{}} /> }]);
   render(<Provider value={createClient({ url: "http://synthetic.invalid/graphql", exchanges: [] })}><RouterProvider router={router} /></Provider>);
   await user.click(screen.getByText("Advanced settings"));
   await user.clear(screen.getByLabelText("Additional trusted origins"));

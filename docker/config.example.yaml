@@ -8,11 +8,19 @@ indexers:
             check_interval_hours: 24
             auto_update: false
         instances: {}
-        network_profiles:
-            direct: {}
+        # Shared by every built-in site. Disabling keeps saved values.
+        network:
+            proxy:
+                enabled: false
+                url: ""
+                username: ""
+                password: ""
+            flaresolverr:
+                max_timeout_ms: 90000
+                enabled: false
+                url: ""
         request_timeout_seconds: 30
         site_timeout_seconds: 120
-        challenge_timeout_seconds: 90
     jackett:
         # Optional alternative or additional source. Enable after configuring it.
         enabled: false
@@ -110,4 +118,4 @@ tasks:
                 enabled: true
                 clauses: []
     task_delete_policy: KEEP_ONLY
-config_version: 3
+config_version: 4

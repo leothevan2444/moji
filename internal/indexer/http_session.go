@@ -84,7 +84,7 @@ func (n *Network) newSession(instance InstanceSnapshot, certificates []string, e
 	}
 	session := &HTTPSession{transport: &pinnedTransport{network: n, proxy: proxy, delay: instance.RequestDelay, baseOrigin: originOf(base), certificates: append([]string(nil), certificates...), byOrigin: map[string]*http.Transport{}}, jar: jar, base: base, timeout: timeout, userAgent: "Moji/Indexer", trusted: trusted}
 	session.solverURL = instance.Network.FlareSolverrURL
-	session.solverTimeout = instance.ChallengeTimeout
+	session.solverTimeout = instance.Network.FlareSolverrMaxTimeout
 	if session.solverTimeout <= 0 {
 		session.solverTimeout = 90 * time.Second
 	}

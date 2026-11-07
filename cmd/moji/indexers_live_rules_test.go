@@ -172,15 +172,13 @@ func TestOptInLiveOfficialRuleUpdate(t *testing.T) {
 			t.Fatal("updated site is outside authorized scope")
 		}
 		definition, enabled := "52bt", true
-		profile := "direct"
 		if solver := os.Getenv("MOJI_INDEXER_LIVE_SOLVER"); solver != "" {
 			output.SolverConfigured = true
-			profile = "live-solver"
-			if _, err := store.SetIndexerNetworkProfile(ctx, store.Revision(), profile, &config.IndexerNetworkProfile{FlareSolverrURL: solver}); err != nil {
+			if _, _, err := store.UpdateIndexerNetwork(ctx, store.Revision(), acceptanceNetworkPatch("", solver)); err != nil {
 				t.Fatal("cannot prepare solver in isolated configuration")
 			}
 		}
-		id, _, err := store.UpdateBuiltinInstance(ctx, "", store.Revision(), config.BuiltinInstancePatch{Definition: &definition, Enabled: &enabled, NetworkProfile: &profile})
+		id, _, err := store.UpdateBuiltinInstance(ctx, "", store.Revision(), config.BuiltinInstancePatch{Definition: &definition, Enabled: &enabled})
 		if err != nil {
 			t.Fatal("cannot configure updated site in isolated copy")
 		}

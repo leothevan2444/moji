@@ -41,13 +41,17 @@ Open a built-in site editor and expand **Advanced settings** only when authentic
 
 These origins may receive site credentials and form submissions, and their cookies may update the site session. Cookie domain and secure rules still apply; listing an unrelated host does not copy account cookies to it. Unlisted origins do not receive session cookies and cannot update them, including subdomains covered by an account's domain cookie. Trusting an origin does not permit private-network access or HTTPS downgrades. Connectivity checks do not change the saved trust list or verify cross-origin authentication and retrieval.
 
-## Browser verification and network profiles
+## Proxy and browser verification
 
-Under **Indexers > Network & cache**, add a profile with a proxy, a FlareSolverr URL, or both, then select it in the site editor. Enter the service base URL (for example `http://flaresolverr:8191`) without `/v1`. URLs are not returned to the editor: leave blank to keep them, or select the explicit clear option and save. Saving does not test connectivity.
+Under **Indexers > Network & cache**, configure the shared **Proxy** and **FlareSolverr** settings. Every built-in site uses these settings; there are no per-site network profiles. The proxy URL includes its protocol (HTTP, HTTPS, SOCKS5 or SOCKS5H); enter authentication in the separate username and password fields. Enter the FlareSolverr service base URL (for example `http://flaresolverr:8191`) without `/v1`.
 
-FlareSolverr is an optional trusted external browser service. For recognized login or search challenges, Moji sends the site's cookies and the selected proxy credentials, then verifies the original request with the returned cookies and browser User-Agent. Moji does not automatically replay torrent acquisition or its preceding pages; a remaining challenge needs attention. Moji checks the delegated destination and returned origin but cannot constrain every navigation inside the external browser.
+Each service has its own enable switch. Disabling keeps its saved values. Changes save automatically, just like connection timeouts, without testing connectivity. A blank username clears the saved username. Passwords are not returned: a blank password keeps the saved password; use **Clear password** to remove it. Clear both fields if your proxy needs no authentication.
 
-**Browser verification timeout** defaults to 90 seconds and accepts 10–300 seconds. The remaining login, search or test deadline can shorten it; this setting does not extend the whole operation. Changes apply to subsequent new operations; tasks with frozen sources retain their original parameters.
+FlareSolverr is an optional trusted external browser service. For recognized login or search challenges, Moji sends the site's cookies and the shared proxy credentials, then verifies the original request with the returned cookies and browser User-Agent. Moji does not automatically replay torrent acquisition or its preceding pages; a remaining challenge needs attention. Moji checks the delegated destination and returned origin but cannot constrain every navigation inside the external browser.
+
+**FlareSolverr Max Timeout (ms)** is the only browser verification timeout (default 90000 ms, range 1000–300000). It bounds queueing and the complete FlareSolverr call. The `maxTimeout` sent to the service cannot exceed the remaining budget or extend the current operation’s deadline. Changes save automatically and apply to new operations; tasks with frozen sources retain their original parameters.
+
+**Request timeout** bounds one HTTP request, including connection, redirects and response reading, for built-in sites and Moji calls to Jackett. FlareSolverr uses its separate Max Timeout. **Site search timeout** bounds a complete per-site search, including login, pagination and browser verification, and also bounds shared torrent acquisition. It applies to built-in and Jackett sources without changing Jackett’s own timeouts.
 
 ## Ingest
 

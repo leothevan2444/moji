@@ -60,7 +60,9 @@ type Request struct {
 	URL, Method, PostData string
 	Cookies               []Cookie
 	Proxy                 *Proxy
-	Timeout               time.Duration
+	// Timeout bounds queueing and the complete call. The remaining budget is
+	// sent to FlareSolverr as maxTimeout in milliseconds.
+	Timeout time.Duration
 }
 type Solution struct {
 	URL       string            `json:"url"`

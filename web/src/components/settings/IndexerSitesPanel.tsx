@@ -67,7 +67,7 @@ export function IndexerSitesPanel() {
     </div>
     {loginId && sites.some(site=>site.id===loginId)?<IndexerLoginDialog input={{instanceId:loginId,expectedRevision:snapshot.revision}} name={sites.find(site=>site.id===loginId)!.name} onClose={()=>setLoginId(null)}/>:null}
     {adding ? <IndexerCatalog sites={sites} busy={busy} mutationError={management.error} onQuickAdd={definition => management.save(null, snapshot.revision, { definitionId: definition.id, name: definition.name, enabled: true })} onClose={() => setAdding(false)} onSelect={definition => { setAdding(false); setEditor({ definition, revision: snapshot.revision }); }} /> : null}
-    {editor ? <IndexerSiteEditor connectionPending={Boolean(editor.site && checks.isTesting(editor.site.id))} key={editor.site?.id ?? editor.definition.id} {...editor} profiles={snapshot.networkProfiles} busy={busy} error={management.error} onSave={management.save} onClose={() => setEditor(null)} /> : null}
+    {editor ? <IndexerSiteEditor connectionPending={Boolean(editor.site && checks.isTesting(editor.site.id))} key={editor.site?.id ?? editor.definition.id} {...editor} busy={busy} error={management.error} onSave={management.save} onClose={() => setEditor(null)} /> : null}
     {removing ? createPortal(<Drawer visibleDrawer="confirm" closing={false} title={t("indexers.remove")} onClose={() => { if (!busy) setRemoving(null); }} footer={<button disabled={busy} onClick={async () => { if (await management.remove(removing.id)) setRemoving(null); }}>{t("indexers.remove")}</button>}><p>{t("indexers.removeHelp", { name: removing.name })}</p>{management.error ? <p role="alert">{describeQueryError(management.error)}</p> : null}</Drawer>, document.body) : null}
   </SettingsCard>;
 }

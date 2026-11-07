@@ -1,17 +1,28 @@
 extend type Query { indexerNetworkSettings: IndexerNetworkSettings! }
 extend type Mutation {
-  updateIndexerNetworkTimeouts(expectedRevision: String!, input: IndexerNetworkTimeoutPatchInput!): IndexerNetworkSettings!
-  addIndexerNetworkProfile(id: ID!, expectedRevision: String!, input: IndexerNetworkProfilePatchInput!): IndexerNetworkSettings!
-  updateIndexerNetworkProfile(id: ID!, expectedRevision: String!, input: IndexerNetworkProfilePatchInput!): IndexerNetworkSettings!
-  removeIndexerNetworkProfile(id: ID!, expectedRevision: String!): IndexerNetworkSettings!
+ updateIndexerNetwork(expectedRevision: String!, input: IndexerNetworkPatchInput!): IndexerNetworkSettings!
 }
-input IndexerNetworkTimeoutPatchInput { requestTimeoutSeconds: Int siteTimeoutSeconds: Int challengeTimeoutSeconds: Int }
-input IndexerNetworkProfilePatchInput { proxyUrl: String clearProxy: Boolean = false flareSolverrUrl: String clearFlareSolverr: Boolean = false }
+input IndexerNetworkPatchInput {
+ flareSolverrMaxTimeoutMs: Int
+ requestTimeoutSeconds: Int
+ siteTimeoutSeconds: Int
+ proxyEnabled: Boolean
+ proxyUrl: String
+ proxyUsername: String
+ proxyPassword: String
+ clearProxyPassword: Boolean = false
+ flareSolverrEnabled: Boolean
+ flareSolverrUrl: String
+}
 type IndexerNetworkSettings {
+ flareSolverrMaxTimeoutMs: Int!
  revision: String!
  requestTimeoutSeconds: Int!
  siteTimeoutSeconds: Int!
- challengeTimeoutSeconds: Int!
- profiles: [IndexerNetworkProfile!]!
+ proxyEnabled: Boolean!
+ proxyUrl: String!
+ proxyUsername: String!
+ proxyPasswordConfigured: Boolean!
+ flareSolverrEnabled: Boolean!
+ flareSolverrUrl: String!
 }
-type IndexerNetworkProfile { id: ID! proxyConfigured: Boolean! flareSolverrConfigured: Boolean! usedBy: Int! }

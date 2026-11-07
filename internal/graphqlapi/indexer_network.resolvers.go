@@ -10,24 +10,9 @@ import (
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 )
 
-// UpdateIndexerNetworkTimeouts is the resolver for the updateIndexerNetworkTimeouts field.
-func (r *mutationResolver) UpdateIndexerNetworkTimeouts(ctx context.Context, expectedRevision string, input model.IndexerNetworkTimeoutPatchInput) (*model.IndexerNetworkSettings, error) {
-	return r.updateIndexerNetworkTimeouts(ctx, expectedRevision, input)
-}
-
-// AddIndexerNetworkProfile is the resolver for the addIndexerNetworkProfile field.
-func (r *mutationResolver) AddIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) (*model.IndexerNetworkSettings, error) {
-	return r.saveIndexerNetworkProfile(ctx, id, expectedRevision, true, input)
-}
-
-// UpdateIndexerNetworkProfile is the resolver for the updateIndexerNetworkProfile field.
-func (r *mutationResolver) UpdateIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string, input model.IndexerNetworkProfilePatchInput) (*model.IndexerNetworkSettings, error) {
-	return r.saveIndexerNetworkProfile(ctx, id, expectedRevision, false, input)
-}
-
-// RemoveIndexerNetworkProfile is the resolver for the removeIndexerNetworkProfile field.
-func (r *mutationResolver) RemoveIndexerNetworkProfile(ctx context.Context, id string, expectedRevision string) (*model.IndexerNetworkSettings, error) {
-	return r.removeIndexerNetworkProfile(ctx, id, expectedRevision)
+// UpdateIndexerNetwork is the resolver for the updateIndexerNetwork field.
+func (r *mutationResolver) UpdateIndexerNetwork(ctx context.Context, expectedRevision string, input model.IndexerNetworkPatchInput) (*model.IndexerNetworkSettings, error) {
+	return r.updateIndexerNetwork(ctx, expectedRevision, input)
 }
 
 // IndexerNetworkSettings is the resolver for the indexerNetworkSettings field.

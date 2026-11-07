@@ -46,36 +46,39 @@ func (v SettingValue) Text() (string, error) {
 	return out, nil
 }
 
-type NetworkProfile struct {
-	ID              string
-	Revision        string
-	ProxyURL        string
-	FlareSolverrURL string
+type NetworkSnapshot struct {
+	// Retained only for frozen records and their existing cookie-session keys.
+	// New shared configuration does not expose or select a network identifier.
+	LegacyID               string `json:"ID"`
+	Revision               string
+	ProxyURL               string
+	FlareSolverrURL        string
+	FlareSolverrMaxTimeout time.Duration `json:",omitempty"`
 }
 
 // InstanceSnapshot is a server-only frozen configuration. It may contain
 // credentials and must never be returned as a GraphQL object or logged.
 type InstanceSnapshot struct {
-	SiteURL          string
-	SiteType         string
-	Language         string
-	ID               string
-	Kind             Kind
-	Name             string
-	Enabled          bool
-	DefinitionID     string
-	BundleRevision   string
-	RemoteID         string
-	ConfigRevision   string
-	BaseURL          string
-	TrustedOrigins   []string
-	Settings         map[string]SettingValue
-	Network          NetworkProfile
-	ChallengeTimeout time.Duration
-	RequestTimeout   time.Duration
-	SiteTimeout      time.Duration
-	RequestDelay     time.Duration
-	JackettAPIKey    string
+	SiteURL        string
+	SiteType       string
+	Language       string
+	ID             string
+	Kind           Kind
+	Name           string
+	Enabled        bool
+	DefinitionID   string
+	BundleRevision string
+	RemoteID       string
+	ConfigRevision string
+	BaseURL        string
+	TrustedOrigins []string
+	Settings       map[string]SettingValue
+	Network        NetworkSnapshot
+
+	RequestTimeout time.Duration
+	SiteTimeout    time.Duration
+	RequestDelay   time.Duration
+	JackettAPIKey  string
 }
 
 func (s InstanceSnapshot) String() string { return "indexer instance " + s.ID }

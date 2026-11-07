@@ -90,7 +90,7 @@ custom: {untouched: true}
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"config_version: 3", "indexers:", "query_order:", "downloader:", "metadata_priority:", "tasks:", "DEMOTE", "LOCK", "logging:", "untouched: true"} {
+	for _, expected := range []string{"config_version: 4", "indexers:", "query_order:", "downloader:", "metadata_priority:", "tasks:", "DEMOTE", "LOCK", "logging:", "untouched: true"} {
 		if !strings.Contains(string(data), expected) {
 			t.Fatalf("missing canonical field %s", expected)
 		}
@@ -124,7 +124,7 @@ custom: {untouched: true}
 }
 
 func TestLayoutRejectsMixedAndUnknownVersions(t *testing.T) {
-	for _, raw := range []string{"config_version: 4\n", "config_version: 2\nconnection: {}\n", "indexers: {}\n"} {
+	for _, raw := range []string{"config_version: 99\n", "config_version: 2\nconnection: {}\n", "indexers: {}\n"} {
 		var cfg Config
 		if err := yaml.Unmarshal([]byte(raw), &cfg); err == nil {
 			t.Fatalf("accepted ambiguous config %q", raw)
@@ -233,5 +233,15 @@ func TestReleaseTimezoneDefaultsAndValidation(t *testing.T) {
 	var cfg Config
 	if err := yaml.Unmarshal([]byte("config_version: 2\nsystem: {release_timezone: invalid/timezone}\n"), &cfg); err == nil {
 		t.Fatal("invalid timezone accepted")
+	}
+}
+
+func TestRemovedChallengeTimeoutIsRejectedWithoutAutomaticMigration(t *testing.T) {
+	var cfg Config
+	if err := yaml.Unmarshal([]byte("config_version: 4\nindexers:\n  builtin:\n    challenge_timeout_seconds: 90\n"), &cfg); err == nil {
+		t.Fatal("retired timeout was silently accepted")
+	}
+	if err := yaml.Unmarshal([]byte("config_version: 4\nindexers:\n  builtin:\n    network:\n      flaresolverr:\n        max_timeout_ms: 45000\n"), &cfg); err != nil || cfg.Indexers.Builtin.Network.FlareSolverr.MaxTimeoutMS != 45000 {
+		t.Fatal("unified solver timeout failed", err)
 	}
 }

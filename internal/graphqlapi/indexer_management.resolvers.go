@@ -14,7 +14,7 @@ import (
 
 // AddBuiltinIndexer is the resolver for the addBuiltinIndexer field.
 func (r *mutationResolver) AddBuiltinIndexer(ctx context.Context, expectedRevision string, input model.BuiltinIndexerInput) (*model.BuiltinIndexerResult, error) {
-	patch, err := builtinPatchInput(model.BuiltinIndexerPatchInput{Name: input.Name, Enabled: input.Enabled, BaseURL: input.BaseURL, NetworkProfile: input.NetworkProfile, TrustedOrigins: input.TrustedOrigins, Settings: input.Settings})
+	patch, err := builtinPatchInput(model.BuiltinIndexerPatchInput{Name: input.Name, Enabled: input.Enabled, BaseURL: input.BaseURL, TrustedOrigins: input.TrustedOrigins, Settings: input.Settings})
 	if err != nil {
 		return nil, err
 	}

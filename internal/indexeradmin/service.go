@@ -143,12 +143,8 @@ func (s *Service) Instances(ctx context.Context) (InstancePage, error) {
 	return InstancePage{}, config.ErrConfigRevision
 }
 func (s *Service) instances(ctx context.Context, cfg *config.Config, revision string) (InstancePage, error) {
-	result := InstancePage{Revision: revision, JackettEnabled: cfg.Indexers.Jackett.Enabled, Order: append([]string(nil), cfg.Indexers.QueryOrder...), NetworkProfiles: []string{}, Items: []Instance{}}
+	result := InstancePage{Revision: revision, JackettEnabled: cfg.Indexers.Jackett.Enabled, Order: append([]string(nil), cfg.Indexers.QueryOrder...), Items: []Instance{}}
 	result.JackettConfigured = cfg.Connection.Jackett.URL != "" && cfg.Connection.Jackett.APIKey != ""
-	for id := range cfg.Indexers.Builtin.NetworkProfiles {
-		result.NetworkProfiles = append(result.NetworkProfiles, id)
-	}
-	sort.Strings(result.NetworkProfiles)
 	var bundle *indexerdefs.Bundle
 	if s.definitions != nil {
 		lease, err := s.definitions.Acquire(ctx, "")
@@ -167,12 +163,9 @@ func (s *Service) instances(ctx context.Context, cfg *config.Config, revision st
 	sort.Strings(ids)
 	for _, id := range ids {
 		source := cfg.Indexers.Builtin.Instances[id]
-		item := Instance{ID: id, Kind: indexer.Builtin, Name: source.Name, Enabled: source.Enabled, DefinitionID: source.Definition, BaseURL: source.BaseURL, NetworkProfile: source.NetworkProfile, TrustedOrigins: append([]string(nil), source.TrustedOrigins...), Settings: []Setting{}, Modes: []string{}}
+		item := Instance{ID: id, Kind: indexer.Builtin, Name: source.Name, Enabled: source.Enabled, DefinitionID: source.Definition, BaseURL: source.BaseURL, TrustedOrigins: append([]string(nil), source.TrustedOrigins...), Settings: []Setting{}, Modes: []string{}}
 		if item.Name == "" {
 			item.Name = source.Definition
-		}
-		if item.NetworkProfile == "" {
-			item.NetworkProfile = "direct"
 		}
 		var plan *cardigann.Plan
 		if bundle != nil {

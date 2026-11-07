@@ -51,10 +51,10 @@ func (s *Store) UpdateIndexerSearchCache(ctx context.Context, expected string, p
 }
 
 type BuiltinInstancePatch struct {
-	Definition, Name, BaseURL, NetworkProfile *string
-	Enabled                                   *bool
-	TrustedOrigins                            *[]string
-	Settings                                  map[string]IndexerSettingChange
+	Definition, Name, BaseURL *string
+	Enabled                   *bool
+	TrustedOrigins            *[]string
+	Settings                  map[string]IndexerSettingChange
 }
 
 // UpdateBuiltinInstance applies only submitted fields under the same lock as
@@ -79,7 +79,6 @@ func (s *Store) UpdateBuiltinInstanceGuarded(ctx context.Context, id, expected s
 	instance, exists := cfg.Builtin.Instances[id]
 	if id == "" {
 		id = uuid.NewString()
-		instance.NetworkProfile = "direct"
 	} else if !exists {
 		return "", nil, ErrConfigRevision
 	}
@@ -123,9 +122,6 @@ func MergeBuiltinInstance(instance BuiltinIndexerInstance, patch BuiltinInstance
 	}
 	if patch.BaseURL != nil {
 		instance.BaseURL = *patch.BaseURL
-	}
-	if patch.NetworkProfile != nil {
-		instance.NetworkProfile = *patch.NetworkProfile
 	}
 	if patch.Enabled != nil {
 		instance.Enabled = *patch.Enabled
@@ -206,38 +202,6 @@ func (s *Store) ReorderIndexers(ctx context.Context, expected string, order []st
 	return s.mutateIndexerNodeLocked(func(indexers *yaml.Node) error { setNodeValue(indexers, "query_order", order); return nil })
 }
 
-// SetIndexerNetworkProfile replaces one profile. A referenced profile cannot be
-// removed; validation runs before either the file or runtime view changes.
-func (s *Store) SetIndexerNetworkProfile(ctx context.Context, expected, id string, profile *IndexerNetworkProfile) (*Config, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	if expected == "" || configDigest(s.saved) != expected {
-		return nil, ErrConfigRevision
-	}
-	cfg := s.cfg.Indexers.Clone()
-	if profile == nil {
-		delete(cfg.Builtin.NetworkProfiles, id)
-	} else {
-		cfg.Builtin.NetworkProfiles[id] = *profile
-	}
-	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidSettings, err)
-	}
-	return s.mutateIndexerNodeLocked(func(indexers *yaml.Node) error {
-		builtin := ensureMapValue(mapValue(indexers, "builtin"))
-		profiles := ensureMapValue(mapValue(builtin, "network_profiles"))
-		if profile == nil {
-			deleteMapKey(profiles, id)
-		} else {
-			setNodeValue(profiles, id, *profile)
-		}
-		return nil
-	})
-}
-
 func (s *Store) mutateIndexerNodeLocked(mutate func(*yaml.Node) error) (*Config, error) {
 	var root yaml.Node
 	if err := yaml.Unmarshal(s.saved, &root); err != nil {
@@ -245,9 +209,13 @@ func (s *Store) mutateIndexerNodeLocked(mutate func(*yaml.Node) error) (*Config,
 	}
 	top := documentNode(&root)
 	if existingMapValue(top, "config_version") == nil {
-		canonicalizeConfigNode(top)
+		if err := canonicalizeConfigNode(top); err != nil {
+			return nil, err
+		}
 	} else {
-		normalizeIndexerV3Node(top)
+		if err := normalizeIndexerNode(top); err != nil {
+			return nil, err
+		}
 	}
 	if err := mutate(ensureMapValue(mapValue(top, "indexers"))); err != nil {
 		return nil, err

@@ -54,7 +54,7 @@ func (a *JackettAdapter) client(instance InstanceSnapshot) (*externalClient, fun
 	}
 	data, _ := json.Marshal(struct {
 		URL, Key string
-		Network  NetworkProfile
+		Network  NetworkSnapshot
 		Timeout  time.Duration
 	}{instance.BaseURL, instance.JackettAPIKey, instance.Network, instance.RequestTimeout})
 	sum := sha256.Sum256(data)

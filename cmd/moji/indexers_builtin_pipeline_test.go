@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/indexeradmin"
 	"github.com/leothevan2444/moji/internal/indexerdefs"
@@ -124,12 +123,11 @@ func TestBuiltinManagedPipelineFiltersAndPersistsBeforeDownloadUnderQueuedLoad(t
 	if installed := awaitRuntimeRuleJob(t, ctx, runtime.definitions, job.ID); installed.State != indexerdefs.Completed {
 		t.Fatal("rule installation failed", installed.ErrorCode)
 	}
-	profile := "synthetic-proxy"
-	if _, err = runtime.admin.SaveNetworkProfile(ctx, store.Revision(), profile, true, config.IndexerNetworkProfilePatch{ProxyURL: &proxy.URL}); err != nil {
+	if _, err = runtime.admin.UpdateNetwork(ctx, store.Revision(), acceptanceNetworkPatch(proxy.URL, "")); err != nil {
 		t.Fatal(err)
 	}
 	definition, enabled := "example", true
-	saved, err := runtime.admin.SaveBuiltin(ctx, "", store.Revision(), indexeradmin.BuiltinPatch{Definition: &definition, Enabled: &enabled, NetworkProfile: &profile})
+	saved, err := runtime.admin.SaveBuiltin(ctx, "", store.Revision(), indexeradmin.BuiltinPatch{Definition: &definition, Enabled: &enabled})
 	if err != nil {
 		t.Fatal(err)
 	}

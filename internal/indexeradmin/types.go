@@ -35,22 +35,22 @@ type DefinitionPage struct {
 	Items                []Definition
 }
 type Instance struct {
-	LoginSupported                                                         bool
-	ConnectionRevision, SiteURL, Privacy, Language, Description            string
-	ID, Name, DefinitionID, BaseURL, NetworkProfile, RuleDigest, ErrorCode string
-	Kind                                                                   indexer.Kind
-	Enabled                                                                bool
-	TrustedOrigins                                                         []string
-	Modes                                                                  []string
-	Settings                                                               []Setting
-	Health                                                                 indexer.HealthState
+	LoginSupported                                              bool
+	ConnectionRevision, SiteURL, Privacy, Language, Description string
+	ID, Name, DefinitionID, BaseURL, RuleDigest, ErrorCode      string
+	Kind                                                        indexer.Kind
+	Enabled                                                     bool
+	TrustedOrigins                                              []string
+	Modes                                                       []string
+	Settings                                                    []Setting
+	Health                                                      indexer.HealthState
 }
 type InstancePage struct {
 	Revision, RuleRevision, RuleErrorCode, CatalogErrorCode string
 	JackettEnabled                                          bool
 	JackettConfigured                                       bool
 	JackettCatalog                                          indexer.CatalogStatus
-	Order, NetworkProfiles                                  []string
+	Order                                                   []string
 	Items                                                   []Instance
 	HealthErrorCode                                         string
 }

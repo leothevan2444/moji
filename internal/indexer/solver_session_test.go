@@ -34,14 +34,15 @@ func TestSolverSearchBindsProxyCookiesAndUserAgentAndClearsOnlyItsOwn503(t *test
 			solverCalls++
 			data, _ := io.ReadAll(r.Body)
 			var request struct {
-				Cmd, URL string
-				Cookies  []flaresolverr.Cookie
-				Proxy    *flaresolverr.Proxy
+				MaxTimeout int64
+				Cmd, URL   string
+				Cookies    []flaresolverr.Cookie
+				Proxy      *flaresolverr.Proxy
 			}
 			if err := json.Unmarshal(data, &request); err != nil {
 				t.Fatal(err)
 			}
-			if request.Cmd != "request.get" || request.URL != "https://site.invalid/search" || request.Proxy == nil || request.Proxy.URL != "socks5://proxy.example:1080" || request.Proxy.Username != "user" || request.Proxy.Password != "private-proxy" {
+			if (request.MaxTimeout <= 0 || request.MaxTimeout > 500) || request.Cmd != "request.get" || request.URL != "https://site.invalid/search" || request.Proxy == nil || request.Proxy.URL != "socks5://proxy.example:1080" || request.Proxy.Username != "user" || request.Proxy.Password != "private-proxy" {
 				t.Fatal("solver lost frozen egress or request scope")
 			}
 			found := false
@@ -64,7 +65,7 @@ func TestSolverSearchBindsProxyCookiesAndUserAgentAndClearsOnlyItsOwn503(t *test
 		}
 		return httpResponse(200, nil, "search-result"), nil
 	})
-	session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", ChallengeTimeout: time.Second, Network: NetworkProfile{ProxyURL: "socks5h://user:private-proxy@proxy.example:1080", FlareSolverrURL: "http://solver.internal:8191"}}, nil)
+	session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkSnapshot{ProxyURL: "socks5h://user:private-proxy@proxy.example:1080", FlareSolverrURL: "http://solver.internal:8191", FlareSolverrMaxTimeout: 500 * time.Millisecond}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +89,7 @@ func TestSolverNeverReplaysAcquisitionEvenForPlainHTMLBeforeTorrent(t *testing.T
 				}
 				return challengeResponse(), nil
 			})
-			session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkProfile{FlareSolverrURL: "http://solver.internal"}}, nil)
+			session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkSnapshot{FlareSolverrURL: "http://solver.internal"}}, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -143,7 +144,7 @@ func TestSolverRejectsForeignReplyWithoutAdoptingCookiesOrReplaying(t *testing.T
 				}
 				return httpResponse(200, nil, solverReply(t, target, domain)), nil
 			})
-			session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkProfile{FlareSolverrURL: "http://solver.internal"}}, nil)
+			session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkSnapshot{FlareSolverrURL: "http://solver.internal"}}, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -164,7 +165,7 @@ func TestSolverStopsAfterOneSolveAndOneOriginalRequestVerification(t *testing.T)
 		solverCalls++
 		return httpResponse(200, nil, solverReply(t, "https://site.invalid/search", "site.invalid")), nil
 	})
-	session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkProfile{FlareSolverrURL: "http://solver.internal"}}, nil)
+	session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkSnapshot{FlareSolverrURL: "http://solver.internal"}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +203,7 @@ func TestSolverHonorsRemainingParentBudgetWithoutCookieAdoption(t *testing.T) {
 		<-r.Context().Done()
 		return nil, r.Context().Err()
 	})
-	session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", RequestTimeout: 10 * time.Millisecond, ChallengeTimeout: time.Minute, Network: NetworkProfile{FlareSolverrURL: "http://solver.internal"}}, nil)
+	session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", RequestTimeout: 10 * time.Millisecond, Network: NetworkSnapshot{FlareSolverrURL: "http://solver.internal"}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,7 +274,7 @@ func TestSolverAuthenticationVerifiesOriginalPostAndRestoresPairedSession(t *tes
 	instance := fixtureInstance()
 	instance.BaseURL = ""
 	instance.Network.FlareSolverrURL = "http://solver.internal:8191"
-	instance.ChallengeTimeout = 10 * time.Second
+	instance.Network.FlareSolverrMaxTimeout = 10 * time.Second
 	bundles := fixedBundles{bundle: &indexerdefs.Bundle{Manifest: indexerdefs.Manifest{Revision: strings.Repeat("a", 40)}, Plans: map[string]*cardigann.Plan{"example": plan}}}
 	sessions, err := NewSessions(network, manager)
 	if err != nil {
@@ -320,7 +321,7 @@ func TestSolverDoesNotDelegateRateLimitedChallenge(t *testing.T) {
 		}
 		return httpResponse(429, http.Header{"Cf-Mitigated": []string{"challenge"}, "Retry-After": []string{"120"}}, "challenge"), nil
 	})
-	session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkProfile{FlareSolverrURL: "http://solver.internal"}}, nil)
+	session, err := network.NewSession(InstanceSnapshot{BaseURL: "https://site.invalid", Network: NetworkSnapshot{FlareSolverrURL: "http://solver.internal"}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,7 +6,7 @@ Settings initialize from fresh GraphQL queries and save automatically after 500 
 
 ## Configuration v2
 
-The example is [docker/config.example.yaml](../docker/config.example.yaml). `config_version: 2` identifies this layout:
+The example is [docker/config.example.yaml](../docker/config.example.yaml). `config_version: 4` is the current layout. The ownership changes originally introduced in v2 are:
 
 | Old field | New field |
 | --- | --- |
@@ -21,9 +21,9 @@ The example is [docker/config.example.yaml](../docker/config.example.yaml). `con
 | `system.task_delete_policy` | `tasks.task_delete_policy` |
 | `system`, `logging` | Same ownership, except StashBox cache and deletion policy above |
 
-Unknown top-level fields and fields within moved sections survive normal saves. Unmodeled fields directly inside old `connection` are retained under `legacy_connection`. Runtime Go provider fields and legacy GraphQL reads retain compatibility names; v2 is the persisted YAML format. Mixed v2/legacy fields and unsupported config versions are rejected. Startup reads legacy configuration without rewriting it; a successful settings save writes v2 atomically. Failed writes restore the last persisted state.
+Unknown top-level fields and fields within moved sections survive normal saves. Unmodeled fields directly inside old `connection` are retained under `legacy_connection`. Runtime Go provider fields and legacy GraphQL reads retain compatibility names; v4 is the persisted YAML format. Mixed v2/legacy fields and unsupported config versions are rejected. Startup reads legacy configuration without rewriting it; a successful settings save writes v4 atomically. Failed writes restore the last persisted state.
 
-Do not let an old running binary save a v2 file. Stop it before replacing the actual configuration and start the new binary afterwards. To roll back the binary, restore the original configuration as well.
+Do not let an old running binary save a v4 file. Stop it before replacing the actual configuration and start the new binary afterwards. To roll back the binary, restore the original configuration as well.
 
 The offline tool never opens the databases or contacts external services:
 
@@ -104,3 +104,11 @@ following; reconnects and sequence gaps refresh the snapshot. The viewer is not
 a reader for rotated files or logs from previous processes. Copy uses the visible
 list in display order; Download retrieves only the active file, with all recorded
 levels, via `/api/logs/current`. Rotated backups can be read from the log directory.
+
+## Shared builtin indexer network
+
+`indexers.builtin.network.proxy` contains `enabled`, `url`, `username`, and `password`. `indexers.builtin.network.flaresolverr` contains `enabled`, `url`, and `max_timeout_ms` (default 90000, range 1000–300000). This is the sole FlareSolverr timeout: it bounds queueing and the full call, with remaining milliseconds sent as protocol `maxTimeout`; a shorter operation deadline still applies. Both apply to all builtin sites; they do not configure the external Jackett service. Disabling retains saved values; password edits are write-only, blank retains the saved password, and clearing is explicit. Request and site timeouts remain shared values. Request timeout bounds one built-in HTTP request or Moji request to Jackett (connection, redirects and response reading). Site timeout bounds one complete site search, including login, pagination and solver use, and also bounds shared torrent acquisition. These settings do not change Jackett’s own timeouts. The network form uses the existing settings autosave queue: proxy, solver and timeout edits are persisted through one atomic updateIndexerNetwork patch. There is no manual save button. Empty usernames clear the saved username; empty passwords are omitted from patches and retain the saved password.
+
+The separate `challenge_timeout_seconds` field has been removed; configure `network.flaresolverr.max_timeout_ms` instead. Removed keys are rejected, with no automatic conversion.
+
+The profile registry, per-site `network_profile`, and profile CRUD API have been removed. There is no automatic profile migration. Replace these removed keys manually before loading an existing configuration, retaining a private backup. The schema rejects the removed keys instead of silently ignoring them. Existing accepted task resource records retain their frozen transport parameters.

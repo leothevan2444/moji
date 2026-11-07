@@ -35,7 +35,6 @@ type BuiltinIndexerInput struct {
 	Name           *string                      `json:"name,omitempty"`
 	Enabled        *bool                        `json:"enabled,omitempty"`
 	BaseURL        *string                      `json:"baseUrl,omitempty"`
-	NetworkProfile *string                      `json:"networkProfile,omitempty"`
 	TrustedOrigins []string                     `json:"trustedOrigins,omitempty"`
 	Settings       []*IndexerSettingChangeInput `json:"settings,omitempty"`
 }
@@ -44,7 +43,6 @@ type BuiltinIndexerPatchInput struct {
 	Name           *string                      `json:"name,omitempty"`
 	Enabled        *bool                        `json:"enabled,omitempty"`
 	BaseURL        *string                      `json:"baseUrl,omitempty"`
-	NetworkProfile *string                      `json:"networkProfile,omitempty"`
 	TrustedOrigins []string                     `json:"trustedOrigins,omitempty"`
 	Settings       []*IndexerSettingChangeInput `json:"settings,omitempty"`
 }
@@ -502,7 +500,6 @@ type IndexerInstance struct {
 	Enabled        bool              `json:"enabled"`
 	DefinitionID   string            `json:"definitionId"`
 	BaseURL        string            `json:"baseUrl"`
-	NetworkProfile string            `json:"networkProfile"`
 	TrustedOrigins []string          `json:"trustedOrigins"`
 	RuleDigest     string            `json:"ruleDigest"`
 	ErrorCode      string            `json:"errorCode"`
@@ -518,7 +515,6 @@ type IndexerInstances struct {
 	CatalogErrorCode string             `json:"catalogErrorCode"`
 	JackettEnabled   bool               `json:"jackettEnabled"`
 	Order            []string           `json:"order"`
-	NetworkProfiles  []string           `json:"networkProfiles"`
 	Items            []*IndexerInstance `json:"items"`
 }
 
@@ -544,32 +540,30 @@ type IndexerLoginReport struct {
 	Challenge      *IndexerLoginChallenge `json:"challenge,omitempty"`
 }
 
-type IndexerNetworkProfile struct {
-	ID                     string `json:"id"`
-	ProxyConfigured        bool   `json:"proxyConfigured"`
-	FlareSolverrConfigured bool   `json:"flareSolverrConfigured"`
-	UsedBy                 int    `json:"usedBy"`
-}
-
-type IndexerNetworkProfilePatchInput struct {
-	ProxyURL          *string `json:"proxyUrl,omitempty"`
-	ClearProxy        *bool   `json:"clearProxy,omitempty"`
-	FlareSolverrURL   *string `json:"flareSolverrUrl,omitempty"`
-	ClearFlareSolverr *bool   `json:"clearFlareSolverr,omitempty"`
+type IndexerNetworkPatchInput struct {
+	FlareSolverrMaxTimeoutMs *int    `json:"flareSolverrMaxTimeoutMs,omitempty"`
+	RequestTimeoutSeconds    *int    `json:"requestTimeoutSeconds,omitempty"`
+	SiteTimeoutSeconds       *int    `json:"siteTimeoutSeconds,omitempty"`
+	ProxyEnabled             *bool   `json:"proxyEnabled,omitempty"`
+	ProxyURL                 *string `json:"proxyUrl,omitempty"`
+	ProxyUsername            *string `json:"proxyUsername,omitempty"`
+	ProxyPassword            *string `json:"proxyPassword,omitempty"`
+	ClearProxyPassword       *bool   `json:"clearProxyPassword,omitempty"`
+	FlareSolverrEnabled      *bool   `json:"flareSolverrEnabled,omitempty"`
+	FlareSolverrURL          *string `json:"flareSolverrUrl,omitempty"`
 }
 
 type IndexerNetworkSettings struct {
-	Revision                string                   `json:"revision"`
-	RequestTimeoutSeconds   int                      `json:"requestTimeoutSeconds"`
-	SiteTimeoutSeconds      int                      `json:"siteTimeoutSeconds"`
-	ChallengeTimeoutSeconds int                      `json:"challengeTimeoutSeconds"`
-	Profiles                []*IndexerNetworkProfile `json:"profiles"`
-}
-
-type IndexerNetworkTimeoutPatchInput struct {
-	RequestTimeoutSeconds   *int `json:"requestTimeoutSeconds,omitempty"`
-	SiteTimeoutSeconds      *int `json:"siteTimeoutSeconds,omitempty"`
-	ChallengeTimeoutSeconds *int `json:"challengeTimeoutSeconds,omitempty"`
+	FlareSolverrMaxTimeoutMs int    `json:"flareSolverrMaxTimeoutMs"`
+	Revision                 string `json:"revision"`
+	RequestTimeoutSeconds    int    `json:"requestTimeoutSeconds"`
+	SiteTimeoutSeconds       int    `json:"siteTimeoutSeconds"`
+	ProxyEnabled             bool   `json:"proxyEnabled"`
+	ProxyURL                 string `json:"proxyUrl"`
+	ProxyUsername            string `json:"proxyUsername"`
+	ProxyPasswordConfigured  bool   `json:"proxyPasswordConfigured"`
+	FlareSolverrEnabled      bool   `json:"flareSolverrEnabled"`
+	FlareSolverrURL          string `json:"flareSolverrUrl"`
 }
 
 type IndexerObservation struct {

@@ -100,17 +100,48 @@ func (v IndexerSettingValue) clone() IndexerSettingValue {
 	return out
 }
 
-type IndexerNetworkProfile struct {
-	ProxyURL        string `yaml:"proxy_url"`
-	FlareSolverrURL string `yaml:"flaresolverr_url"`
+type IndexerProxyConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	URL      string `yaml:"url"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
+type IndexerSolverConfig struct {
+	MaxTimeoutMS int    `yaml:"max_timeout_ms"`
+	Enabled      bool   `yaml:"enabled"`
+	URL          string `yaml:"url"`
+}
+type IndexerNetworkConfig struct {
+	Proxy        IndexerProxyConfig  `yaml:"proxy"`
+	FlareSolverr IndexerSolverConfig `yaml:"flaresolverr"`
+}
+
+func (n IndexerNetworkConfig) ProxyURL() string {
+	if !n.Proxy.Enabled {
+		return ""
+	}
+	u, err := url.Parse(n.Proxy.URL)
+	if err != nil {
+		return ""
+	}
+	if n.Proxy.Username != "" || n.Proxy.Password != "" {
+		u.User = url.UserPassword(n.Proxy.Username, n.Proxy.Password)
+	}
+	return u.String()
+}
+func (n IndexerNetworkConfig) SolverURL() string {
+	if n.FlareSolverr.Enabled {
+		return n.FlareSolverr.URL
+	}
+	return ""
+}
+
 type BuiltinIndexerInstance struct {
 	Definition     string                         `yaml:"definition"`
 	Name           string                         `yaml:"name"`
 	Enabled        bool                           `yaml:"enabled"`
 	BaseURL        string                         `yaml:"base_url"`
 	Settings       map[string]IndexerSettingValue `yaml:"settings"`
-	NetworkProfile string                         `yaml:"network_profile"`
 	TrustedOrigins []string                       `yaml:"trusted_origins,omitempty"`
 }
 type IndexerDefinitionsConfig struct {
@@ -120,12 +151,11 @@ type IndexerDefinitionsConfig struct {
 	AutoUpdate         bool   `yaml:"auto_update"`
 }
 type BuiltinIndexersConfig struct {
-	Definitions             IndexerDefinitionsConfig          `yaml:"definitions"`
-	Instances               map[string]BuiltinIndexerInstance `yaml:"instances"`
-	NetworkProfiles         map[string]IndexerNetworkProfile  `yaml:"network_profiles"`
-	RequestTimeoutSeconds   int                               `yaml:"request_timeout_seconds"`
-	SiteTimeoutSeconds      int                               `yaml:"site_timeout_seconds"`
-	ChallengeTimeoutSeconds int                               `yaml:"challenge_timeout_seconds"`
+	Definitions           IndexerDefinitionsConfig          `yaml:"definitions"`
+	Instances             map[string]BuiltinIndexerInstance `yaml:"instances"`
+	Network               IndexerNetworkConfig              `yaml:"network"`
+	RequestTimeoutSeconds int                               `yaml:"request_timeout_seconds"`
+	SiteTimeoutSeconds    int                               `yaml:"site_timeout_seconds"`
 }
 type IndexerSearchCacheConfig struct {
 	Enabled         bool `yaml:"enabled"`
@@ -149,7 +179,7 @@ type IndexerJackettOptions struct {
 }
 
 func DefaultIndexersConfig() IndexersConfig {
-	return IndexersConfig{Builtin: BuiltinIndexersConfig{Definitions: IndexerDefinitionsConfig{Source: "prowlarr", SchemaVersion: 11, CheckIntervalHours: 24}, Instances: map[string]BuiltinIndexerInstance{}, NetworkProfiles: map[string]IndexerNetworkProfile{"direct": {}}, RequestTimeoutSeconds: 30, SiteTimeoutSeconds: 120, ChallengeTimeoutSeconds: 90}, SearchCache: IndexerSearchCacheConfig{Enabled: true, TTLSeconds: 300, EmptyTTLSeconds: 30, MaxSizeMB: 32}}
+	return IndexersConfig{Builtin: BuiltinIndexersConfig{Definitions: IndexerDefinitionsConfig{Source: "prowlarr", SchemaVersion: 11, CheckIntervalHours: 24}, Instances: map[string]BuiltinIndexerInstance{}, Network: IndexerNetworkConfig{FlareSolverr: IndexerSolverConfig{MaxTimeoutMS: 90000}}, RequestTimeoutSeconds: 30, SiteTimeoutSeconds: 120}, SearchCache: IndexerSearchCacheConfig{Enabled: true, TTLSeconds: 300, EmptyTTLSeconds: 30, MaxSizeMB: 32}}
 }
 func (c IndexersConfig) Clone() IndexersConfig {
 	out := c
@@ -165,14 +195,8 @@ func (c IndexersConfig) Clone() IndexersConfig {
 		copy.TrustedOrigins = append([]string(nil), instance.TrustedOrigins...)
 		out.Builtin.Instances[id] = copy
 	}
-	out.Builtin.NetworkProfiles = map[string]IndexerNetworkProfile{}
-	for id, profile := range c.Builtin.NetworkProfiles {
-		out.Builtin.NetworkProfiles[id] = profile
-	}
 	return out
 }
-
-var indexerName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$`)
 
 func (c IndexersConfig) Validate() error {
 	b := c.Builtin
@@ -180,17 +204,14 @@ func (c IndexersConfig) Validate() error {
 	if d.Source != "prowlarr" || d.SchemaVersion != 11 || d.CheckIntervalHours < 1 || d.CheckIntervalHours > 168 {
 		return fmt.Errorf("invalid definition library configuration")
 	}
-	if b.RequestTimeoutSeconds < 1 || b.RequestTimeoutSeconds > 120 || b.SiteTimeoutSeconds < 10 || b.SiteTimeoutSeconds > 600 || b.ChallengeTimeoutSeconds < 10 || b.ChallengeTimeoutSeconds > 300 {
+	if b.RequestTimeoutSeconds < 1 || b.RequestTimeoutSeconds > 120 || b.SiteTimeoutSeconds < 10 || b.SiteTimeoutSeconds > 600 {
 		return fmt.Errorf("invalid indexer timeout")
 	}
 	if c.SearchCache.TTLSeconds < 1 || c.SearchCache.TTLSeconds > 3600 || c.SearchCache.EmptyTTLSeconds < 1 || c.SearchCache.EmptyTTLSeconds > 300 || c.SearchCache.MaxSizeMB < 1 || c.SearchCache.MaxSizeMB > 256 {
 		return fmt.Errorf("invalid indexer cache budget")
 	}
-	if len(b.Instances) > 256 || len(b.NetworkProfiles) > 32 {
+	if len(b.Instances) > 256 {
 		return fmt.Errorf("indexer configuration exceeds capacity")
-	}
-	if direct, ok := b.NetworkProfiles["direct"]; !ok || direct != (IndexerNetworkProfile{}) {
-		return fmt.Errorf("direct network profile must remain direct")
 	}
 	if len(c.QueryOrder) > 1024 || len(c.Jackett.ExcludedIndexers) > 1024 {
 		return fmt.Errorf("too many ordered indexers")
@@ -208,49 +229,49 @@ func (c IndexersConfig) Validate() error {
 			return fmt.Errorf("unknown builtin instance in query order")
 		}
 	}
-	for id, profile := range b.NetworkProfiles {
-		if !indexerName.MatchString(id) {
-			return fmt.Errorf("invalid network profile ID")
+	if b.Network.FlareSolverr.MaxTimeoutMS < 1000 || b.Network.FlareSolverr.MaxTimeoutMS > 300000 {
+		return fmt.Errorf("invalid solver max timeout")
+	}
+	if b.Network.Proxy.Enabled && b.Network.Proxy.URL == "" || b.Network.FlareSolverr.Enabled && b.Network.FlareSolverr.URL == "" {
+		return fmt.Errorf("enabled network service requires a URL")
+	}
+	if len(b.Network.Proxy.Username) > 1024 || len(b.Network.Proxy.Password) > 4096 || strings.ContainsAny(b.Network.Proxy.Username+b.Network.Proxy.Password, "\r\n") {
+		return fmt.Errorf("invalid proxy credentials")
+	}
+	for kind, raw := range []string{b.Network.Proxy.URL, b.Network.FlareSolverr.URL} {
+		if raw == "" {
+			continue
 		}
-		for kind, raw := range []string{profile.ProxyURL, profile.FlareSolverrURL} {
-			if raw == "" {
-				continue
-			}
-			target, err := url.Parse(raw)
-			if err != nil || len(raw) > 4096 || target.Hostname() == "" || target.Fragment != "" || target.RawQuery != "" {
-				return fmt.Errorf("invalid network endpoint")
-			}
-			if kind == 1 && (target.Scheme != "http" && target.Scheme != "https" || target.User != nil) {
+		target, err := url.Parse(raw)
+		if err != nil || len(raw) > 4096 || target.Hostname() == "" || target.User != nil || target.Fragment != "" || target.RawQuery != "" {
+			return fmt.Errorf("invalid network endpoint")
+		}
+		if kind == 1 {
+			if target.Scheme != "http" && target.Scheme != "https" {
 				return fmt.Errorf("invalid solver endpoint")
 			}
-			if kind == 0 && target.Path != "" && target.Path != "/" {
-				return fmt.Errorf("invalid proxy path")
-			}
-			switch target.Scheme {
-			case "http", "https", "socks5", "socks5h":
-			default:
-				return fmt.Errorf("invalid proxy scheme")
-			}
+			continue
+		}
+		if target.Path != "" && target.Path != "/" {
+			return fmt.Errorf("invalid proxy path")
+		}
+		switch target.Scheme {
+		case "http", "https", "socks5", "socks5h":
+		default:
+			return fmt.Errorf("invalid proxy scheme")
 		}
 	}
 	for id, instance := range b.Instances {
 		if _, err := uuid.Parse(id); err != nil {
 			return fmt.Errorf("invalid builtin instance ID")
 		}
-		if !indexerName.MatchString(instance.Definition) || len(instance.Name) > 256 || len(instance.Settings) > 128 {
+		if !indexerParameterName.MatchString(instance.Definition) || len(instance.Name) > 256 || len(instance.Settings) > 128 {
 			return fmt.Errorf("invalid builtin instance")
 		}
 		if instance.BaseURL != "" {
 			if err := validIndexerURL(instance.BaseURL); err != nil {
 				return err
 			}
-		}
-		profile := instance.NetworkProfile
-		if profile == "" {
-			profile = "direct"
-		}
-		if _, ok := b.NetworkProfiles[profile]; !ok {
-			return fmt.Errorf("unknown indexer network profile")
 		}
 		for key, value := range instance.Settings {
 			if len(key) > 128 {
@@ -314,3 +335,5 @@ func (s *Store) Snapshot() (*Config, string) {
 	defer s.mu.RUnlock()
 	return cloneConfig(s.cfg), configDigest(s.saved)
 }
+
+var indexerParameterName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$`)
