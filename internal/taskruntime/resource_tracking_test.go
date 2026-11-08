@@ -116,18 +116,18 @@ func TestTrackingRejectsFuzzyResultsAndManualRetryRunsImmediately(t *testing.T) 
 	}
 }
 
-func TestTransientSearchFailureIsVisibleAndScheduledButPermanentFailureIsNot(t *testing.T) {
+func TestSearchFailureWaitsForResourceButPermanentFailureDoesNot(t *testing.T) {
 	ctx := context.Background()
 	clock := time.Now().UTC()
 	store := NewMemoryTaskStore()
 	s, _ := NewService(fakeTracker{err: errors.New("indexer unavailable")}, &fakeTorrentAdder{}, store, WithClock(func() time.Time { return clock }))
 	task, _ := s.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
-	if err := s.processQueuedSourcing(ctx, task.ID); err == nil {
-		t.Fatal("indexer error was hidden")
+	if err := s.processQueuedSourcing(ctx, task.ID); err != nil {
+		t.Fatal(err)
 	}
 	task, _ = store.Find(ctx, task.ID)
-	if task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != TaskStageErrorSearch || task.SourcingNextCheckAt == nil {
-		t.Fatalf("transient failure lost diagnostics or retry: %+v", task)
+	if !waitingForResource(task) || task.StageErrorCode != "" || task.StageErrorMessage != "" {
+		t.Fatalf("search failure did not become a clean resource wait: %+v", task)
 	}
 	clock = *task.SourcingNextCheckAt
 	s.tracker = fakeTracker{results: queuedResult()}
@@ -305,5 +305,104 @@ func TestInvalidQueuedRequestStopsScheduledRetry(t *testing.T) {
 	task, _ = store.Find(ctx, task.ID)
 	if task.StageErrorCode != TaskStageErrorSourcingRequest || task.StageStatus != TaskStageStatusBlocked || task.SourcingNextCheckAt != nil {
 		t.Fatalf("invalid request remained in retry loop: %+v", task)
+	}
+}
+
+func TestSearchFailuresNeverPublishBlockedTask(t *testing.T) {
+	for _, failure := range []error{indexer.ErrIncomplete, indexer.ErrCoolingDown, indexer.ErrSolver, indexer.ErrAuthentication} {
+		t.Run(failure.Error(), func(t *testing.T) {
+			ctx := context.Background()
+			bus := NewTaskEventBus(32)
+			defer bus.Close()
+			events := bus.Subscribe(ctx)
+			store, _ := NewEventingTaskStore(NewMemoryTaskStore(), bus)
+			s, _ := NewService(fakeTracker{err: failure}, &fakeTorrentAdder{}, store)
+			task, err := s.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = s.processQueuedSourcing(ctx, task.ID); err != nil {
+				t.Fatal(err)
+			}
+			task, err = store.Find(ctx, task.ID)
+			if err != nil || !waitingForResource(task) || task.StageErrorCode != "" || task.StageErrorMessage != "" {
+				t.Fatalf("search failure remained actionable: %+v %v", task, err)
+			}
+			for {
+				select {
+				case event := <-events:
+					if event.Task != nil && event.Task.StageStatus == TaskStageStatusBlocked {
+						t.Fatalf("search emitted blocked state: %+v", event.Task)
+					}
+				default:
+					return
+				}
+			}
+		})
+	}
+}
+
+func TestExistingScheduledFailureNaturallyBecomesWaitingOnNextCheck(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now().UTC()
+	store, _ := relationalStore(t)
+	next := now.Add(time.Hour)
+	last := next.Add(-6 * time.Hour)
+	task := &Task{ID: "existing", Code: "ABCD-123", Source: TaskSourceSearch, Stage: TaskStageSourcing, StageStatus: TaskStageStatusBlocked, StageErrorCode: "SEARCH_ERROR", StageErrorMessage: indexer.ErrIncomplete.Error(), SourcingLastCheckedAt: &last, SourcingNextCheckAt: &next, CreatedAt: last, UpdatedAt: last}
+	if err := ensureSourcingRequest(task); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Create(ctx, task); err != nil {
+		t.Fatal(err)
+	}
+	service, _ := NewService(fakeTracker{err: indexer.ErrIncomplete}, &fakeTorrentAdder{}, store, WithClock(func() time.Time { return now }))
+	if err := service.processQueuedSourcing(ctx, task.ID); err != nil {
+		t.Fatal(err)
+	}
+	saved, _ := store.Find(ctx, task.ID)
+	if saved.StageStatus != TaskStageStatusBlocked || !saved.SourcingNextCheckAt.Equal(next) {
+		t.Fatal("future work was executed early")
+	}
+	now = next
+	if err := service.processQueuedSourcing(ctx, task.ID); err != nil {
+		t.Fatal(err)
+	}
+	saved, err := store.Find(ctx, task.ID)
+	if err != nil || !waitingForResource(saved) || saved.StageErrorCode != "" || saved.StageErrorMessage != "" || !saved.SourcingNextCheckAt.Equal(now.Add(6*time.Hour)) || taskWorkspaceGroup(saved) != "WAITING" {
+		t.Fatalf("scheduled failure did not naturally recover its classification: %+v %v", saved, err)
+	}
+}
+
+func TestDiagnosticStorageFailureDoesNotClearTaskFailure(t *testing.T) {
+	ctx := context.Background()
+	store := NewMemoryTaskStore()
+	service, _ := NewService(fakeTracker{err: indexer.ErrStateUnavailable}, &fakeTorrentAdder{}, store)
+	task, err := service.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = service.processQueuedSourcing(ctx, task.ID)
+	task, err = store.Find(ctx, task.ID)
+	if err != nil || task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != TaskStageErrorSourcingState || task.SourcingNextCheckAt != nil {
+		t.Fatalf("diagnostic failure became ordinary waiting work: %+v %v", task, err)
+	}
+}
+
+func TestDiagnosticFailureRemainsVisibleAfterSiteDeadline(t *testing.T) {
+	store := NewMemoryTaskStore()
+	now := time.Now().UTC()
+	task := &Task{ID: "deadline", Code: "ABCD-123", Stage: TaskStageSourcing, StageStatus: TaskStageStatusRunning, CreatedAt: now, UpdatedAt: now}
+	if err := store.Create(context.Background(), task); err != nil {
+		t.Fatal(err)
+	}
+	service, _ := NewService(fakeTracker{}, &fakeTorrentAdder{}, store)
+	ctx, cancel := context.WithDeadline(context.Background(), now.Add(-time.Second))
+	defer cancel()
+	if err := service.blockSourcingState(ctx, task); err != nil {
+		t.Fatal(err)
+	}
+	saved, err := store.Find(context.Background(), task.ID)
+	if err != nil || saved.StageStatus != TaskStageStatusBlocked || saved.StageErrorCode != TaskStageErrorSourcingState || saved.SourcingNextCheckAt != nil {
+		t.Fatalf("deadline hid diagnostic failure: %+v %v", saved, err)
 	}
 }

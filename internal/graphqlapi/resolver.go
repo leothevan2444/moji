@@ -7,6 +7,7 @@ package graphqlapi
 import (
 	"context"
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/storage"
 
 	"github.com/leothevan2444/moji/internal/discovery"
@@ -383,6 +384,7 @@ type DatabasePerformanceSource interface {
 
 type Resolver struct {
 	IndexerAdmin                     IndexerAdminService
+	IndexerDiagnosticReader          indexer.DiagnosticReader
 	HomeIndexers                     HomeIndexerService
 	IndexerEventSource               IndexerEventsService
 	IndexerCache                     IndexerCacheService

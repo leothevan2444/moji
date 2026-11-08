@@ -1,3 +1,4 @@
+import { useIndexerEvents } from "./useIndexerEvents";
 import i18n from "../i18n/i18n";
 import { createContext, useContext, useCallback, useEffect, useRef, useState } from "react";
 import { useClient, useQuery, useSubscription } from "urql";
@@ -26,6 +27,8 @@ export function indexerSite(value: FragmentType<typeof IndexerInstanceFieldsFrag
 export function useIndexerManagementState() {
   const client = useClient();
   const [query, refresh] = useQuery({ query: IndexerInstancesDocument, requestPolicy: "network-only" });
+  const refreshSites = useCallback(() => refresh({ requestPolicy: "network-only" }), [refresh]);
+  useIndexerEvents(refreshSites);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const lock = useRef(false);

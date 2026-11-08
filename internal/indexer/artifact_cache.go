@@ -123,7 +123,7 @@ func (c *ArtifactCache) Fetch(ctx context.Context, instance InstanceSnapshot, re
 	if entry := c.entries[key]; entry != nil {
 		entry.lastUsed = c.now()
 		blob := c.blobs[entry.blob]
-		result := cloneArtifact(Artifact{TorrentBytes: blob.bytes, Magnet: blob.magnet, infoHash: blob.infoHash, AcquiredAt: entry.acquired}, ref)
+		result := cloneArtifact(Artifact{CacheHit: true, TorrentBytes: blob.bytes, Magnet: blob.magnet, infoHash: blob.infoHash, AcquiredAt: entry.acquired}, ref)
 		c.mu.Unlock()
 		if err := ctx.Err(); err != nil {
 			return Artifact{}, err
@@ -188,7 +188,7 @@ func (c *ArtifactCache) execute(ctx context.Context, key, scope string, f *artif
 	}
 	hash := result.infoHash
 	if err != nil {
-		result = Artifact{}
+		result = Artifact{executionStartedAt: result.executionStartedAt, executionFinishedAt: result.executionFinishedAt, executionCorrelationID: result.executionCorrelationID}
 	} else {
 		result = cloneArtifact(result, ResourceRef{})
 	}

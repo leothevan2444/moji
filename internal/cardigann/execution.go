@@ -24,6 +24,11 @@ type Request struct {
 	Torrent        bool
 }
 
+// HTTPStatusError carries only a status number, never upstream body or URL.
+type HTTPStatusError struct{ Status int }
+
+func (e *HTTPStatusError) Error() string { return fmt.Sprintf("site HTTP status %d", e.Status) }
+
 type HTTPResponse struct {
 	URL     string
 	Status  int
@@ -174,7 +179,7 @@ func (e *Execution) request(ctx context.Context, request Request) (HTTPResponse,
 		if e.plan.Definition.Login != nil && (response.Status == http.StatusUnauthorized || response.Status == http.StatusForbidden) {
 			return response, ErrAuthentication
 		}
-		return response, fmt.Errorf("site HTTP status %d", response.Status)
+		return response, &HTTPStatusError{Status: response.Status}
 	}
 	return response, nil
 }

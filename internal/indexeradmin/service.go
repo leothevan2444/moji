@@ -27,14 +27,15 @@ type Registry interface {
 	Refresh(context.Context) (indexer.Registry, error)
 }
 type Service struct {
-	connectionKey  []byte
-	definitionJobs DefinitionJobReader
-	store          *config.Store
-	definitions    Definitions
-	registry       Registry
-	health         HealthReader
-	cache          *indexer.SearchCache
-	events         indexer.EventPublisher
+	connectionKey []byte
+	store         *config.Store
+	definitions   Definitions
+	registry      Registry
+	health        HealthReader
+	diagnostics   indexer.DiagnosticReader
+	statistics    indexer.StatisticsReader
+	cache         *indexer.SearchCache
+	events        indexer.EventPublisher
 }
 
 type HealthReader interface {
@@ -238,6 +239,20 @@ func (s *Service) instances(ctx context.Context, cfg *config.Config, revision st
 				for i := range result.Items {
 					result.Items[i].Health = states[byID[result.Items[i].ID]]
 				}
+			}
+		}
+	}
+	if s.statistics != nil {
+		ids := make([]string, 0, len(result.Items))
+		for _, item := range result.Items {
+			ids = append(ids, item.ID)
+		}
+		recent, err := s.statistics.RecentExecutions(ctx, ids)
+		if err != nil {
+			result.HealthErrorCode = "INDEXER_STATUS_UNAVAILABLE"
+		} else {
+			for i := range result.Items {
+				result.Items[i].Recent = recent[result.Items[i].ID]
 			}
 		}
 	}
@@ -464,3 +479,12 @@ func (s *Service) connectionRevision(configRevision, ruleDigest string) string {
 	mac.Write([]byte(configRevision + "\x00" + ruleDigest))
 	return hex.EncodeToString(mac.Sum(nil))
 }
+
+func (s *Service) SetDiagnosticReader(reader indexer.DiagnosticReader) { s.diagnostics = reader }
+func (s *Service) Diagnostics(ctx context.Context, filter indexer.DiagnosticFilter) (indexer.DiagnosticPage, error) {
+	if s.diagnostics == nil {
+		return indexer.DiagnosticPage{}, indexer.ErrStateUnavailable
+	}
+	return s.diagnostics.Diagnostics(ctx, filter)
+}
+func (s *Service) SetStatisticsReader(reader indexer.StatisticsReader) { s.statistics = reader }

@@ -227,40 +227,14 @@ type HomeCheckPerformer struct {
 	Name        string `json:"name"`
 }
 
-type HomeIndexerIssue struct {
-	Operation   string              `json:"operation"`
-	Observation *IndexerObservation `json:"observation,omitempty"`
-	ID          string              `json:"id"`
-	Name        string              `json:"name"`
-	ErrorCode   string              `json:"errorCode"`
-}
-
-// Local indexer overview; reading this field never contacts a remote indexer.
+// Local statistics. Reading this field never contacts a remote indexer.
 type HomeIndexerSummary struct {
 	Revision string `json:"revision"`
-	// Enabled site count; unknown until the enabled Jackett directory is confirmed.
-	Total          *int `json:"total,omitempty"`
-	BuiltinEnabled int  `json:"builtinEnabled"`
-	// Configured sites without an observed verification result; does not imply connectivity.
-	BuiltinUnverified      int    `json:"builtinUnverified"`
-	BuiltinSearchSucceeded int    `json:"builtinSearchSucceeded"`
-	HealthErrorCode        string `json:"healthErrorCode"`
-	// Latest failed or interrupted persisted definition job; null once superseded.
-	DefinitionJob       *IndexerDefinitionJob `json:"definitionJob,omitempty"`
-	DefinitionErrorCode string                `json:"definitionErrorCode"`
-	Attention           int                   `json:"attention"`
-	// At most five enabled sites with configuration, rule or observed operation errors.
-	Issues []*HomeIndexerIssue `json:"issues"`
-	// Present only when the external gateway is configured and enabled.
-	Jackett *HomeJackettSummary `json:"jackett,omitempty"`
-}
-
-type HomeJackettSummary struct {
-	// Enabled remote sites; null for an unloaded directory, zero for confirmed empty.
-	Sites     *int    `json:"sites,omitempty"`
-	Stale     bool    `json:"stale"`
-	UpdatedAt *string `json:"updatedAt,omitempty"`
-	ErrorCode string  `json:"errorCode"`
+	// Current enabled sites; independent of the selected statistics window.
+	Total               int                         `json:"total"`
+	Hours               int                         `json:"hours"`
+	Statistics          *IndexerExecutionStatistics `json:"statistics,omitempty"`
+	StatisticsErrorCode string                      `json:"statisticsErrorCode"`
 }
 
 type HomeOverview struct {
@@ -472,11 +446,74 @@ type IndexerDefinitionStatus struct {
 	Job               *IndexerDefinitionJob        `json:"job,omitempty"`
 }
 
+type IndexerDiagnostic struct {
+	Executed       bool    `json:"executed"`
+	ElapsedKnown   bool    `json:"elapsedKnown"`
+	ID             string  `json:"id"`
+	InstanceID     string  `json:"instanceId"`
+	Name           string  `json:"name"`
+	Operation      string  `json:"operation"`
+	Trigger        string  `json:"trigger"`
+	TaskID         string  `json:"taskId"`
+	Code           string  `json:"code"`
+	SearchID       string  `json:"searchId"`
+	ResourceID     string  `json:"resourceId"`
+	ConfigRevision string  `json:"configRevision"`
+	BundleRevision string  `json:"bundleRevision"`
+	StartedAt      string  `json:"startedAt"`
+	FinishedAt     string  `json:"finishedAt"`
+	Mode           string  `json:"mode"`
+	Categories     []int   `json:"categories"`
+	Limit          int     `json:"limit"`
+	Offset         int     `json:"offset"`
+	ErrorCode      string  `json:"errorCode"`
+	CorrelationID  string  `json:"correlationId"`
+	RetryAt        *string `json:"retryAt,omitempty"`
+	Results        int     `json:"results"`
+	ElapsedMs      int     `json:"elapsedMs"`
+	CacheHit       bool    `json:"cacheHit"`
+	Partial        bool    `json:"partial"`
+	Truncated      bool    `json:"truncated"`
+	IssueCount     int     `json:"issueCount"`
+	HTTPStatus     int     `json:"httpStatus"`
+}
+
+type IndexerDiagnosticFilterInput struct {
+	InstanceID *string `json:"instanceId,omitempty"`
+	Query      *string `json:"query,omitempty"`
+	Operation  *string `json:"operation,omitempty"`
+	Outcome    *string `json:"outcome,omitempty"`
+	Since      *string `json:"since,omitempty"`
+	Limit      int     `json:"limit"`
+	Before     *string `json:"before,omitempty"`
+}
+
+type IndexerDiagnosticPage struct {
+	Items   []*IndexerDiagnostic     `json:"items"`
+	Sites   []*IndexerDiagnosticSite `json:"sites"`
+	Total   int                      `json:"total"`
+	HasMore bool                     `json:"hasMore"`
+}
+
+type IndexerDiagnosticSite struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // Invalidation only: reread the relevant bounded snapshot after READY or a change.
 type IndexerEvent struct {
 	StreamID string           `json:"streamId"`
 	Sequence int64            `json:"sequence"`
 	Kind     IndexerEventKind `json:"kind"`
+}
+
+type IndexerExecutionStatistics struct {
+	WindowStartedAt  string   `json:"windowStartedAt"`
+	WindowEndedAt    string   `json:"windowEndedAt"`
+	Searches         int      `json:"searches"`
+	SuccessRate      *float64 `json:"successRate,omitempty"`
+	AverageElapsedMs *float64 `json:"averageElapsedMs,omitempty"`
+	Records          int      `json:"records"`
 }
 
 // Last observed outcome of each operation; absence means no matching observation.
@@ -486,7 +523,8 @@ type IndexerHealth struct {
 }
 
 type IndexerInstance struct {
-	ConnectionRevision string `json:"connectionRevision"`
+	Recent             *IndexerRecentExecutions `json:"recent"`
+	ConnectionRevision string                   `json:"connectionRevision"`
 	// Whether the current built-in rule declares a login flow.
 	LoginSupported bool              `json:"loginSupported"`
 	Health         *IndexerHealth    `json:"health"`
@@ -508,14 +546,16 @@ type IndexerInstance struct {
 }
 
 type IndexerInstances struct {
-	HealthErrorCode  string             `json:"healthErrorCode"`
-	Revision         string             `json:"revision"`
-	RuleRevision     string             `json:"ruleRevision"`
-	RuleErrorCode    string             `json:"ruleErrorCode"`
-	CatalogErrorCode string             `json:"catalogErrorCode"`
-	JackettEnabled   bool               `json:"jackettEnabled"`
-	Order            []string           `json:"order"`
-	Items            []*IndexerInstance `json:"items"`
+	JackettCatalogUpdatedAt *string            `json:"jackettCatalogUpdatedAt,omitempty"`
+	JackettCatalogStale     bool               `json:"jackettCatalogStale"`
+	HealthErrorCode         string             `json:"healthErrorCode"`
+	Revision                string             `json:"revision"`
+	RuleRevision            string             `json:"ruleRevision"`
+	RuleErrorCode           string             `json:"ruleErrorCode"`
+	CatalogErrorCode        string             `json:"catalogErrorCode"`
+	JackettEnabled          bool               `json:"jackettEnabled"`
+	Order                   []string           `json:"order"`
+	Items                   []*IndexerInstance `json:"items"`
 }
 
 type IndexerLoginChallenge struct {
@@ -580,6 +620,12 @@ type IndexerPreferenceRule struct {
 
 type IndexerPreferenceRuleInput struct {
 	TrackerIds []string `json:"trackerIds"`
+}
+
+type IndexerRecentExecutions struct {
+	Count        int  `json:"count"`
+	Failures     int  `json:"failures"`
+	LatestFailed bool `json:"latestFailed"`
 }
 
 type IndexerSearchCachePatchInput struct {

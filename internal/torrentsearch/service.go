@@ -268,6 +268,7 @@ func (s *Service) execute(id string) {
 		cancel()
 	}
 	s.publish(id)
+	worker = indexer.WithDiagnosticContext(worker, indexer.DiagnosticContext{Trigger: "INTERACTIVE", TaskID: snapshot.TaskID, SearchID: id})
 	var report indexer.SearchReport
 	if worker.Err() == nil {
 		report, err = s.searcher.SearchWithProgress(worker, snapshot.Query, func(ctx context.Context, event indexer.SearchProgress) error {

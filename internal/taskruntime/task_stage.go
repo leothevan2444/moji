@@ -23,7 +23,8 @@ const (
 )
 
 const (
-	TaskStageErrorSearch              = "SEARCH_ERROR"
+	TaskStageErrorLibraryCheck        = "LIBRARY_CHECK_FAILED"
+	TaskStageErrorSourcingState       = "SOURCING_STATE_UNAVAILABLE"
 	TaskStageErrorSourcingRequest     = "SOURCING_REQUEST_INVALID"
 	TaskStageErrorNoCandidate         = "NO_CANDIDATE"
 	TaskStageErrorNoDownloadCandidate = "NO_DOWNLOADABLE_CANDIDATE"

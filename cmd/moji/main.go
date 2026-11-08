@@ -337,6 +337,7 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 	if indexers != nil {
 		resolver.DefinitionLibrary = indexers.definitions
 		resolver.IndexerAdmin = indexers.admin
+		resolver.IndexerDiagnosticReader = indexers.admin
 		resolver.HomeIndexers = indexers.admin
 		resolver.IndexerEventSource = indexers.events
 		resolver.IndexerCache = indexers.admin

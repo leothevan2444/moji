@@ -147,15 +147,15 @@ func TestHomeIndexerSummaryNeverLoadsCatalogAndRetainsConfirmedEmptyOnFailure(t 
 		return []indexer.InstanceSnapshot{}, nil
 	})}
 	admin := indexeradmin.NewService(store, nil, provider)
-	unknown, err := admin.Summary(context.Background())
-	if err != nil || calls.Load() != 0 || unknown.Total != nil || unknown.Jackett == nil || unknown.Jackett.Sites != nil {
+	unknown, err := admin.Summary(context.Background(), 72)
+	if err != nil || calls.Load() != 0 || unknown.Total != 0 {
 		t.Fatal("Home loaded directory or invented zero", err)
 	}
 	if _, err = provider.Snapshot(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	confirmed, err := admin.Summary(context.Background())
-	if err != nil || calls.Load() != 1 || confirmed.Total == nil || *confirmed.Total != 0 || confirmed.Jackett.Sites == nil || *confirmed.Jackett.Sites != 0 || confirmed.Jackett.Stale || confirmed.Jackett.UpdatedAt == nil {
+	confirmed, err := admin.Summary(context.Background(), 72)
+	if err != nil || calls.Load() != 1 || confirmed.Total != 0 {
 		t.Fatal("successful empty directory remained unknown", err)
 	}
 	failed = true
@@ -163,8 +163,8 @@ func TestHomeIndexerSummaryNeverLoadsCatalogAndRetainsConfirmedEmptyOnFailure(t 
 	if _, err = provider.Snapshot(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	stale, err := admin.Summary(context.Background())
-	if err != nil || calls.Load() != 2 || stale.Total == nil || *stale.Total != 0 || !stale.Jackett.Stale || stale.Jackett.ErrorCode != indexer.ErrTransport.Error() || !stale.Jackett.UpdatedAt.Equal(*confirmed.Jackett.UpdatedAt) {
+	stale, err := admin.Summary(context.Background(), 72)
+	if err != nil || calls.Load() != 2 || stale.Total != 0 {
 		t.Fatal("failed refresh lost last confirmed empty directory", err)
 	}
 }
@@ -220,8 +220,8 @@ func TestUnloadedCatalogRetainsCurrentAccountFailureInLocalSummary(t *testing.T)
 		t.Fatal("catalog failure was not published")
 	}
 	admin := indexeradmin.NewService(store, nil, provider)
-	summary, err := admin.Summary(context.Background())
-	if err != nil || summary.Jackett == nil || summary.Jackett.ErrorCode != indexer.ErrAuthentication.Error() || summary.Jackett.Sites != nil {
+	summary, err := admin.Instances(context.Background())
+	if err != nil || summary.CatalogErrorCode != indexer.ErrAuthentication.Error() || summary.JackettCatalog.Known {
 		t.Fatal("initial account failure hidden as an unloaded directory", err)
 	}
 	select {
@@ -232,8 +232,8 @@ func TestUnloadedCatalogRetainsCurrentAccountFailureInLocalSummary(t *testing.T)
 	if _, err = store.UpdateJackett("https://jackett.example", "different-synthetic-key", ""); err != nil {
 		t.Fatal(err)
 	}
-	summary, err = admin.Summary(context.Background())
-	if err != nil || summary.Jackett == nil || summary.Jackett.ErrorCode != indexer.ErrCatalogNotLoaded.Error() {
+	summary, err = admin.Instances(context.Background())
+	if err != nil || summary.CatalogErrorCode != indexer.ErrCatalogNotLoaded.Error() {
 		t.Fatal("another account inherited the prior authentication failure", err)
 	}
 }

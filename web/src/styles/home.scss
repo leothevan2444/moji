@@ -180,15 +180,10 @@
 .home-downloader-footer .home-more { margin: 0; padding: 0; border: 0; }
 
 .home-indexer-note { margin: 0 22px 12px; font-size: 12px; overflow-wrap: anywhere; }
-.home-indexer-sources:empty { display: none; }
-.home-indexer-sources li { gap: 12px; flex-wrap: wrap; }
-.home-indexer-issues { list-style: none; margin: 0; padding: 0 22px; }
-.home-indexer-issues li { display: flex; flex-direction: column; gap: 4px; padding-block: 10px; font-size: 12px; overflow-wrap: anywhere; }
-.home-indexer-issues span { color: var(--muted); }
 @media (max-width: 560px) {
   .home-indexer-note { margin-inline: 16px; }
-  .home-indexer-issues { padding-inline: 16px; }
   .home-downloader-metrics, .home-downloader-footer { padding-inline: 16px; }
 }
 
-.home-indexer-definition-job { display: flex; flex-direction: column; gap: 4px; code { direction: ltr; unicode-bidi: isolate; text-align: start; } }
+.home-indexer-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.home-indexer-period { width: auto; max-width: 90px; min-height: 28px; padding: 2px 5px; font-size: 11px; }

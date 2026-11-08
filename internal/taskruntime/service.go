@@ -871,6 +871,7 @@ func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest)
 }
 
 func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadRequest) (*Task, error) {
+	ctx = indexer.WithDiagnosticContext(ctx, indexer.DiagnosticContext{Trigger: "AUTOMATIC", TaskID: task.ID, Code: task.Code})
 	code := strings.TrimSpace(task.Code)
 	legacyTrackers := append([]string(nil), req.Trackers...)
 	for i, id := range legacyTrackers {
@@ -904,6 +905,9 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 				rows = append(rows, indexer.SelectionFromRelease(release))
 			}
 			result, prepared, selectionErr = s.selectVerifiedCandidate(siteCtx, selector, code, rows, selectionConfig, task.ID)
+			if errors.Is(selectionErr, indexer.ErrStateUnavailable) {
+				return false, selectionErr
+			}
 			if ctx.Err() != nil {
 				return false, ctx.Err()
 			}
@@ -950,7 +954,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 			result, prepared, err = s.selectVerifiedCandidate(ctx, selector, code, results, selectionConfig, task.ID)
 		}
 	}
-	if ctx.Err() != nil {
+	if ctx.Err() != nil && !errors.Is(err, indexer.ErrStateUnavailable) {
 		return task, ctx.Err()
 	}
 
@@ -962,23 +966,22 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 			}
 			return task, err
 		}
+		if errors.Is(err, indexer.ErrStateUnavailable) {
+			return task, s.blockSourcingState(ctx, task)
+		}
 		var validation *candidateValidationError
 		if errors.As(err, &validation) {
 			return task, s.blockSourcingValidation(ctx, task, err)
 		}
-		errorCode := TaskStageErrorSearch
-		if strings.Contains(err.Error(), "no downloadable torrent candidate found") {
-			errorCode = TaskStageErrorNoDownloadCandidate
+
+		if errors.Is(err, indexer.ErrInvalidQuery) || errors.Is(err, indexer.ErrInvalidScope) {
+			blockTask(task, TaskStageErrorSourcingRequest, "invalid sourcing query or source scope", s.now().UTC())
+			return task, s.store.Update(ctx, task)
 		}
-		if persistErr := s.recordSourcingFailure(ctx, task, errorCode, err.Error()); persistErr != nil {
+		if persistErr := s.scheduleResourceCheck(task, s.now().UTC()); persistErr != nil {
 			return task, persistErr
 		}
-		if resourceUnavailable(errorCode) {
-			logging.Infof("taskruntime: no verified resource yet for code %q", code)
-		} else {
-			logging.Errorf("taskruntime: select candidate failed for code %q: %v", code, err)
-		}
-		return task, err
+		return task, s.store.Update(ctx, task)
 	}
 
 	candidate := prepared.candidate
@@ -1062,8 +1065,22 @@ func (s *Service) submitTaskTorrentWithMetadata(ctx context.Context, task *Task,
 	var prepared preparedTorrent
 	var err error
 	if task.IndexerResource != nil {
-		if err := s.acquireSelectedResource(ctx, task); err != nil {
-			return s.blockSourcingValidation(ctx, task, err)
+		fetchCtx := indexer.WithDiagnosticContext(ctx, indexer.DiagnosticContext{Trigger: "SELECTED", TaskID: task.ID, Code: task.Code})
+		if err := s.acquireSelectedResource(fetchCtx, task); err != nil {
+			if errors.Is(err, indexer.ErrStateUnavailable) {
+				return s.blockSourcingState(ctx, task)
+			}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			var validation *candidateValidationError
+			if errors.As(err, &validation) {
+				return s.blockSourcingValidation(ctx, task, err)
+			}
+			if err := s.scheduleResourceCheck(task, s.now().UTC()); err != nil {
+				return err
+			}
+			return s.store.Update(ctx, task)
 		}
 		torrentURL = task.TorrentURL
 	}

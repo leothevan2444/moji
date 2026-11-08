@@ -17,9 +17,11 @@ import (
 type candidateValidationError struct {
 	code    string
 	message string
+	cause   error
 }
 
 func (e *candidateValidationError) Error() string { return e.message }
+func (e *candidateValidationError) Unwrap() error { return e.cause }
 
 func candidateError(code, message string) error {
 	return &candidateValidationError{code: code, message: message}
@@ -81,7 +83,7 @@ func (s *Service) prepareTorrentWithMetadata(ctx context.Context, code string, c
 		}
 		resource, magnet, err := s.resolveIndexedResource(ctx, torrentURL)
 		if err != nil {
-			return preparedTorrent{}, candidateError(TaskStageErrorTorrentMetadata, "unable to acquire indexer resource")
+			return preparedTorrent{}, &candidateValidationError{code: TaskStageErrorTorrentMetadata, message: "unable to acquire indexer resource", cause: err}
 		}
 		if magnet != "" {
 			candidate.MagnetURI = magnet
@@ -204,6 +206,9 @@ func (s *Service) selectVerifiedCandidate(ctx context.Context, selector Candidat
 			if err == nil {
 				return result, prepared, nil
 			}
+		}
+		if errors.Is(err, indexer.ErrStateUnavailable) {
+			return indexer.SelectionCandidate{}, preparedTorrent{}, err
 		}
 		rejected = err
 		logging.Infof("taskruntime: rejected candidate for code %s: %v", code, err)

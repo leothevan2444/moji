@@ -141,24 +141,28 @@ type Release struct {
 }
 
 type Artifact struct {
-	infoHash     string
-	TorrentBytes []byte
-	Magnet       string
-	Resource     ResourceRef
-	AcquiredAt   time.Time
+	executionStartedAt, executionFinishedAt time.Time
+	executionCorrelationID                  string
+	CacheHit                                bool
+	infoHash                                string
+	TorrentBytes                            []byte
+	Magnet                                  string
+	Resource                                ResourceRef
+	AcquiredAt                              time.Time
 }
 
 type Batch struct {
-	ObservationCorrelationID string
-	FetchedAt                time.Time
-	InstanceID               string
-	Releases                 []Release
-	CacheHit                 bool
-	Truncated                bool
-	Partial                  bool
-	IssueCount               int
-	ReportedCount            *int64
-	release                  func()
+	ObservationCorrelationID                string
+	ExecutionStartedAt, ExecutionFinishedAt time.Time
+	FetchedAt                               time.Time
+	InstanceID                              string
+	Releases                                []Release
+	CacheHit                                bool
+	Truncated                               bool
+	Partial                                 bool
+	IssueCount                              int
+	ReportedCount                           *int64
+	release                                 func()
 }
 
 // Close releases the rule lease retained for this owned result batch.
@@ -171,6 +175,9 @@ func (b *Batch) Close() {
 }
 
 type SiteReport struct {
+	HTTPStatus    int
+	IssueCount    int
+	ReportedCount *int64
 	InstanceID    string
 	Code          string
 	CorrelationID string

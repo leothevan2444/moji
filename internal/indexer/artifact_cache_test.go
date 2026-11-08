@@ -446,3 +446,20 @@ func TestKnownSuccessfulLateAcquisitionCanBeReusedAfterItsLastWaiterLeaves(t *te
 		t.Fatal("known acquired data was discarded and grabbed again", err)
 	}
 }
+
+func TestAcquisitionReportsCacheHitsWithoutChangingTheOriginalOutcome(t *testing.T) {
+	cache, instance, ref := artifactFixture(t)
+	calls := 0
+	fetch := func(context.Context) (Artifact, error) {
+		calls++
+		return Artifact{TorrentBytes: artifactBytes("")}, nil
+	}
+	first, err := cache.Fetch(context.Background(), instance, ref, fetch)
+	if err != nil || first.CacheHit {
+		t.Fatal("first acquisition marked cached", err)
+	}
+	second, err := cache.Fetch(context.Background(), instance, ref, fetch)
+	if err != nil || !second.CacheHit || calls != 1 || !first.AcquiredAt.Equal(second.AcquiredAt) {
+		t.Fatal("cache hit not distinguished", err)
+	}
+}

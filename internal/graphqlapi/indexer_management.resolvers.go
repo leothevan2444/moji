@@ -6,6 +6,8 @@ package graphqlapi
 
 import (
 	"context"
+	"strconv"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/indexer"
@@ -122,4 +124,58 @@ func (r *queryResolver) IndexerInstances(ctx context.Context) (*model.IndexerIns
 		return nil, err
 	}
 	return indexerInstancesModel(page), nil
+}
+
+// IndexerDiagnostics is the resolver for the indexerDiagnostics field.
+func (r *queryResolver) IndexerDiagnostics(ctx context.Context, input model.IndexerDiagnosticFilterInput) (*model.IndexerDiagnosticPage, error) {
+	if r.IndexerDiagnosticReader == nil {
+		return nil, indexer.ErrNotConfigured
+	}
+	filter := indexer.DiagnosticFilter{Limit: input.Limit}
+	if input.InstanceID != nil {
+		filter.InstanceID = *input.InstanceID
+	}
+	if input.Query != nil {
+		filter.Query = *input.Query
+	}
+	if input.Operation != nil {
+		filter.Operation = *input.Operation
+	}
+	if input.Outcome != nil {
+		filter.Outcome = *input.Outcome
+	}
+	if input.Before != nil {
+		cursor, err := strconv.ParseInt(*input.Before, 10, 64)
+		if err != nil || cursor <= 0 {
+			return nil, indexer.ErrInvalidQuery
+		}
+		filter.Before = cursor
+	}
+	if input.Since != nil {
+		since, err := time.Parse(time.RFC3339Nano, *input.Since)
+		if err != nil {
+			return nil, indexer.ErrInvalidQuery
+		}
+		filter.Since = &since
+	}
+	page, err := r.IndexerDiagnosticReader.Diagnostics(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	records := page.Items
+	result := make([]*model.IndexerDiagnostic, 0, len(records))
+	for _, record := range records {
+		var retry *string
+		if record.Report.RetryAt != nil {
+			value := record.Report.RetryAt.UTC().Format(time.RFC3339Nano)
+			retry = &value
+		}
+		categories := append([]int{}, record.Categories...)
+		result = append(result, &model.IndexerDiagnostic{Executed: record.Executed, ElapsedKnown: record.ElapsedKnown, ID: record.ID, InstanceID: record.InstanceID, Name: record.Name, Operation: string(record.Operation), Trigger: record.Trigger, TaskID: record.TaskID, Code: record.Code, SearchID: record.SearchID, ResourceID: record.ResourceID, ConfigRevision: record.ConfigRevision, BundleRevision: record.BundleRevision, StartedAt: record.StartedAt.UTC().Format(time.RFC3339Nano), FinishedAt: record.FinishedAt.UTC().Format(time.RFC3339Nano), Mode: record.Mode, Categories: categories, Limit: record.Limit, Offset: record.Offset, ErrorCode: record.Report.Code, CorrelationID: record.Report.CorrelationID, RetryAt: retry, Results: record.Report.Results, ElapsedMs: int(record.Report.Elapsed.Milliseconds()), CacheHit: record.Report.CacheHit, Partial: record.Report.Partial, Truncated: record.Report.Truncated, IssueCount: record.Report.IssueCount, HTTPStatus: record.Report.HTTPStatus})
+	}
+	sites := make([]*model.IndexerDiagnosticSite, 0, len(page.Sites))
+	for _, site := range page.Sites {
+		sites = append(sites, &model.IndexerDiagnosticSite{ID: site.ID, Name: site.Name})
+	}
+	return &model.IndexerDiagnosticPage{Items: result, Sites: sites, Total: page.Total, HasMore: page.HasMore}, nil
 }

@@ -1,3 +1,4 @@
+import { IndexerDiagnosticsDrawer } from "../indexers/IndexerDiagnosticsDrawer";
 import { IndexerLoginDialog } from "./IndexerLoginDialog";
 import { useIndexerConnections } from "../../hooks/useIndexerConnections";
 import { IndexerConnectionButton } from "./IndexerConnectionButton";
@@ -7,7 +8,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGripVertical, faPlus, faWrench, faTrashCan, faRightToBracket, faRotate } from "@fortawesome/free-solid-svg-icons";
+import { faGripVertical, faPlus, faWrench, faTrashCan, faRightToBracket, faRotate, faClockRotateLeft } from "@fortawesome/free-solid-svg-icons";
 import { SettingsSwitch } from "./SettingsSwitch";
 import { IndexerPrivacyBadge } from "../indexers/IndexerPrivacyBadge";
 import { useIndexerManagement, type IndexerSite } from "../../hooks/useIndexerManagement";
@@ -21,6 +22,7 @@ import { describeQueryError } from "../../services/queryError";
 export function IndexerSitesPanel() {
   const { t } = useTranslation();
   const management = useIndexerManagement(); const [, setSearch] = useSearchParams();
+  const [diagnostics, setDiagnostics] = useState<{ id?: string; name?: string } | null>(null);
   const [loginId,setLoginId]=useState<string|null>(null);
   const [adding, setAdding] = useState(false);
   const [editor, setEditor] = useState<{ site?: IndexerSite; definition: SiteEditorDefinition; revision: string } | null>(null);
@@ -33,8 +35,10 @@ export function IndexerSitesPanel() {
   if (management.loading) return <SettingsLoading title={t("indexers.sites")} />;
   if (!management.snapshot) return <SettingsError title={t("indexers.sites")} error={management.error} onRetry={management.refresh} />;
   const { snapshot } = management;
+  const historyStatus = (site: IndexerSite) => t(!site.recent.count ? "indexerHistoryStatus.empty" : site.recent.latestFailed ? "indexerHistoryStatus.latestFailed" : "indexerHistoryStatus.summary", {count:site.recent.count,failures:site.recent.failures});
   const add = () => { if (snapshot.ruleRevision) setAdding(true); else setSearch(current => { const next = new URLSearchParams(current); next.set("panel", "definitions"); return next; }); };
   return <SettingsCard title={t("indexers.sites")} actions={<>
+      <button className="ghost-button" onClick={() => setDiagnostics({})}><FontAwesomeIcon icon={faClockRotateLeft} aria-hidden="true"/> {t("indexerDiagnostics.title")}</button>
       <button className="ghost-button" disabled={busy} onClick={add}><FontAwesomeIcon icon={faPlus} aria-hidden="true" /> {t(snapshot.ruleRevision ? "indexers.addSite" : "indexers.installFirst")}</button>
       {snapshot.jackettEnabled ? <button className="ghost-button" disabled={busy} onClick={() => void management.refreshJackett()}><FontAwesomeIcon icon={faRotate} aria-hidden="true" /> {t("indexers.refreshExternal")}</button> : null}
       <IndexerConnectionButton result={checks.all} all disabled={busy || Boolean(checks.all) || !sites.length} onClick={() => void checks.run(sites.map(site => site.id), true)} />
@@ -58,6 +62,7 @@ export function IndexerSitesPanel() {
         <div className="indexer-row__controls">
           <span className="indexer-source">{t(site.kind === IndexerSourceKind.Builtin ? "indexers.builtin" : "indexers.external")}</span>
           <div className="indexer-row__actions">
+          <button className="icon-button" title={historyStatus(site)} aria-description={historyStatus(site)} aria-label={t("indexerDiagnostics.title")} onClick={() => setDiagnostics({ id: site.id, name: site.name })}><FontAwesomeIcon className={site.recent.latestFailed ? "indexer-history-icon--failed" : site.recent.failures ? "indexer-history-icon--warning" : undefined} icon={faClockRotateLeft} aria-hidden="true" /></button>
           <IndexerConnectionButton result={checks.results[site.id]} disabled={busy || checks.isTesting(site.id)} jackett={site.kind === IndexerSourceKind.Jackett} onClick={() => void checks.run([site.id])} />
           {site.kind === IndexerSourceKind.Builtin ? <>{site.loginSupported ? <button className="icon-button" title={t("indexerLogin.title")} aria-label={t("indexerLogin.title")} disabled={busy} onClick={()=>setLoginId(site.id)}><FontAwesomeIcon icon={faRightToBracket} aria-hidden="true" /></button> : null}<button className="icon-button" title={t("indexers.configure")} aria-label={t("indexers.configure")} disabled={busy} onClick={() => setEditor({ site, definition: { id: site.definitionId, name: site.name, links: [site.siteUrl], settings: site.settings }, revision: snapshot.revision })}><FontAwesomeIcon icon={faWrench} aria-hidden="true" /></button><button className="icon-button" title={t("indexers.remove")} aria-label={t("indexers.remove")} disabled={busy} onClick={() => setRemoving(site)}><FontAwesomeIcon icon={faTrashCan} aria-hidden="true" /></button></> : null}
           <SettingsSwitch checked={site.enabled} disabled={busy} label={t("indexers.enableSite", { name: site.name })} onChange={enabled => void management.setEnabled(site.id, enabled)} />
@@ -65,6 +70,7 @@ export function IndexerSitesPanel() {
         </div>
       </div>)}
     </div>
+    {diagnostics ? <IndexerDiagnosticsDrawer instanceId={diagnostics.id} name={diagnostics.name} onClose={() => setDiagnostics(null)} /> : null}
     {loginId && sites.some(site=>site.id===loginId)?<IndexerLoginDialog input={{instanceId:loginId,expectedRevision:snapshot.revision}} name={sites.find(site=>site.id===loginId)!.name} onClose={()=>setLoginId(null)}/>:null}
     {adding ? <IndexerCatalog sites={sites} busy={busy} mutationError={management.error} onQuickAdd={definition => management.save(null, snapshot.revision, { definitionId: definition.id, name: definition.name, enabled: true })} onClose={() => setAdding(false)} onSelect={definition => { setAdding(false); setEditor({ definition, revision: snapshot.revision }); }} /> : null}
     {editor ? <IndexerSiteEditor connectionPending={Boolean(editor.site && checks.isTesting(editor.site.id))} key={editor.site?.id ?? editor.definition.id} {...editor} busy={busy} error={management.error} onSave={management.save} onClose={() => setEditor(null)} /> : null}

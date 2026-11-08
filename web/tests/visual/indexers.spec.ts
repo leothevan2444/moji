@@ -61,25 +61,18 @@ test.describe("search cache management", () => {
     } finally { entries = 3; scopes.length = 0;enabled=true;ttlSeconds=300;revision=1; }
   });
 });
-test.describe("persisted site observations", () => {
-  test.use({ graphqlOverrides: {
-    indexerInstances: { ...indexerInstances, items: [{ ...indexerInstances.items[0], health: { search: observedSearch, fetch: observedFetch } }] },
-    homeIndexerSummary: { definitionJob: null, definitionErrorCode: "", revision: "observed", total: 1, builtinEnabled: 1, builtinUnverified: 0, builtinSearchSucceeded: 1, healthErrorCode: "", attention: 1, issues: [{ id: "builtin-one", name: "Sukebei", errorCode: observedFetch.errorCode, operation: "FETCH", observation: observedFetch }], jackett: null }
-  } });
-  test("search success and acquisition failure remain distinct after refresh", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
-    await page.goto("/settings/indexers");
-    const site = page.locator(".indexer-row").first();
-    await expect(site.locator(".indexer-history, .indexer-error, .indexer-observation")).toHaveCount(0);
-    await page.reload();
-    await expect(site.locator(".indexer-history, .indexer-error, .indexer-observation")).toHaveCount(0);
-    await page.goto("/");
-    const summary = page.getByRole("region", { name: "Indexers", exact: true });
-    await expect(summary.getByText("Last search succeeded for 1 built-in site", { exact: true })).toBeVisible();
-    await expect(summary.getByText(/^Last acquisition failed/)).toBeVisible();
-    await expect(summary.getByText(/has not been verified/)).toHaveCount(0);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  });
+test.describe("site history status",()=>{
+ test.use({graphqlOverrides:{indexerInstances:{...indexerInstances,items:[{...indexerInstances.items[0],recent:{count:10,failures:2,latestFailed:true},health:{search:observedSearch,fetch:observedFetch}},{...indexerInstances.items[1],recent:{count:10,failures:1,latestFailed:false}}]}}});
+ test("latest failure is red, recent failure is yellow, and rows have no error block",async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto("/settings/indexers");
+  await expect(page.locator(".indexer-row").first().locator(".indexer-history-icon--failed")).toHaveCount(1);
+  await expect(page.locator(".indexer-row").first().getByRole("button",{name:"Execution history",exact:true})).toHaveAttribute("aria-description",/Latest execution failed/);
+  await expect(page.locator(".indexer-row").nth(1).locator(".indexer-history-icon--warning")).toHaveCount(1);
+  await expect(page.locator(".indexer-row .indexer-observation, .indexer-row .tone-danger")).toHaveCount(0);
+  await page.reload();await expect(page.locator(".indexer-history-icon--failed")).toHaveCount(1);
+  await page.goto("/");const section=page.getByRole("region",{name:"Indexers",exact:true});
+  await expect(section.getByText(/Last acquisition failed|Last search succeeded|authentication failed/)).toHaveCount(0);
+ });
 });
 
 for (const scenario of [{ locale: "zh-CN", theme: "light", edit: "配置", library: "规则库" }, { locale: "en", theme: "dark", edit: "Configure", library: "Definitions" }, { locale: "ar-XB", theme: "dark", edit: "", library: "" }]) {

@@ -54,13 +54,13 @@ export const indexerLibrary = {
   installed: [{ revision: "a".repeat(40), schemaVersion: 11, engineVersion: "cardigann-v11-1", definitionCount: 579, installedAt: now }]
 };
 export const indexerInstances = {
-  healthErrorCode: "", revision: "config-1", ruleRevision: "a".repeat(40), ruleErrorCode: "", catalogErrorCode: "", jackettEnabled: true, order: ["builtin-one", "jackett/onejav"],
+  jackettCatalogUpdatedAt: now, jackettCatalogStale:false, healthErrorCode: "", revision: "config-1", ruleRevision: "a".repeat(40), ruleErrorCode: "", catalogErrorCode: "", jackettEnabled: true, order: ["builtin-one", "jackett/onejav"],
   items: [
-    {connectionRevision:"site-version-1",description:"",loginSupported:false,health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
+    {connectionRevision:"site-version-1",description:"",loginSupported:false,recent:{count:0,failures:0,latestFailed:false},health:{search:null,fetch:null}, id: "builtin-one", name: "Sukebei", kind: "BUILTIN", enabled: true, definitionId: "sukebei", baseUrl: "", siteUrl: "https://sukebei.nyaa.si/", privacy: "public", language: "en-US", trustedOrigins: [], ruleDigest: "digest", errorCode: "", modes: ["search"], settings: [
       { name: "filter", type: "select", label: "Filter", secret: false, configured: false, value: null, defaultValue: { string: "0", boolean: null, number: null }, options: [{ value: "0", label: "All" }, { value: "1", label: "Trusted only" }] },
       { name: "cookie", type: "text", label: "Cookie", secret: true, configured: true, value: null, defaultValue: null, options: [] }
     ] },
-    {connectionRevision:"site-version-1",description:"",loginSupported:false,health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
+    {connectionRevision:"site-version-1",description:"",loginSupported:false,recent:{count:0,failures:0,latestFailed:false},health:{search:null,fetch:null}, id: "jackett/onejav", name: "OneJAV", kind: "JACKETT", enabled: true, definitionId: "", baseUrl: "", siteUrl: "https://onejav.com/", privacy: "public", language: "en-US", trustedOrigins: [], ruleDigest: "", errorCode: "", modes: ["search"], settings: [] }
   ]
 };
 export const searchCandidate = { id:"candidate-one",instanceId:"builtin-one",instanceName:"Sukebei",kind:"BUILTIN",title:"MOJI-102 Long resource title with release and encoding information",detailsUrl:"https://example.test/details?id=1",infoHash:null,size:null,seeders:null,peers:null,publishedAt:null,categories:[] };
@@ -88,6 +88,7 @@ const rootValue = {
   indexerDefinitionStatus: indexerLibrary,
   indexerDefinitionEvents: indexerLibrary,
   checkIndexerDefinitionUpdate: indexerLibrary,
+  indexerDiagnostics: {items:[],sites:[],total:0,hasMore:false},
   indexerInstances,
   indexerDefinitions: { revision: "a".repeat(40), totalCount: 1, offset: 0, limit: 30, items: [{ id: "sukebei", name: "Sukebei", description: "Public torrent index", categories: ["XXX", "XXX/DVD"], language: "en-US", privacy: "public", loginSupported: false, digest: "digest", links: ["https://sukebei.nyaa.si/"], modes: ["search"], warnings: [], settings: indexerInstances.items[0].settings }] },
   setIndexerEnabled: indexerInstances,
@@ -101,7 +102,7 @@ const rootValue = {
   controlTorrent: true,
   updateDownloaderPolicy: ({input}: {input: Record<string,unknown>}) => ({...downloaderSnapshot.policy,...input}),
   downloader: downloaderSnapshot,
-  homeIndexerSummary: {definitionJob:null,definitionErrorCode:"",revision:"indexers-config-1",total:2,builtinEnabled:1,builtinUnverified:1, builtinSearchSucceeded:0,healthErrorCode:"",attention:0,issues:[],jackett:{sites:1,stale:false,updatedAt:now,errorCode:""}},
+  homeIndexerSummary: ({hours=72}:{hours?:number})=>({revision:"indexers-config-1",total:2,hours,statisticsErrorCode:"",statistics:{windowStartedAt:new Date(Date.parse(now)-hours*3600000).toISOString(),windowEndedAt:now,searches:120,successRate:95,averageElapsedMs:2400,records:240}}),
   homeOverview,
   homeSubscriptionSummary: { total: 24, attention: 1, unchecked: 0, lastCheckedAt: "2026-01-15T11:30:00Z", attentionPerformerIds: ["p1"] },
   tasks: [],
@@ -274,7 +275,7 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
           errors.push(...(result.errors ?? []).map(error => error.message));
           socket.send(JSON.stringify({ id: message.id, type: "next", payload: result }));
         }
-        if (message.type === "subscribe" && (message.payload?.query?.includes("subscription IndexerDefinitionEvents") || message.payload?.query?.includes("subscription HomeIndexerDefinitionEvents"))) {
+        if (message.type === "subscribe" && (message.payload?.query?.includes("subscription IndexerDefinitionEvents"))) {
           const result = graphqlSync({ schema, rootValue: { ...rootValue, ...graphqlOverrides }, source: message.payload.query, variableValues: message.payload.variables, operationName: message.payload.operationName });
           errors.push(...(result.errors ?? []).map(error => error.message));
           socket.send(JSON.stringify({ id: message.id, type: "next", payload: result }));

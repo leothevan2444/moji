@@ -11,6 +11,6 @@ import (
 )
 
 // HomeIndexerSummary is the resolver for the homeIndexerSummary field.
-func (r *queryResolver) HomeIndexerSummary(ctx context.Context) (*model.HomeIndexerSummary, error) {
-	return r.homeIndexerSummary(ctx)
+func (r *queryResolver) HomeIndexerSummary(ctx context.Context, hours int) (*model.HomeIndexerSummary, error) {
+	return r.homeIndexerSummary(ctx, hours)
 }

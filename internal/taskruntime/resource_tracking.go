@@ -27,14 +27,10 @@ func waitingForResource(task *Task) bool {
 
 func resourceUnavailable(code string) bool {
 	switch code {
-	case TaskStageErrorNoCandidate, TaskStageErrorNoDownloadCandidate, TaskStageErrorCandidateMismatch, TaskStageErrorCandidateUnverified:
+	case TaskStageErrorNoCandidate, TaskStageErrorNoDownloadCandidate, TaskStageErrorCandidateMismatch, TaskStageErrorCandidateUnverified, TaskStageErrorTorrentMetadata:
 		return true
 	}
 	return false
-}
-
-func retryableSourcingFailure(code string) bool {
-	return resourceUnavailable(code) || code == TaskStageErrorSearch || code == TaskStageErrorTorrentMetadata
 }
 
 func ensureSourcingRequest(task *Task) error {
@@ -60,22 +56,21 @@ func (s *Service) recordSourcingFailure(ctx context.Context, task *Task, code, m
 	return s.store.Update(ctx, task)
 }
 
-// A future check always searches again. An expired or fuzzy selection is not
-// reused, and expected resource absence is represented as pending work.
+// Automatic sourcing searches afresh; an explicit selection keeps its frozen
+// acquisition intent. Both wait without carrying an indexer failure on the task.
 func (s *Service) scheduleResourceCheck(task *Task, checkedAt time.Time) error {
-	if task.SelectedResourceID != "" {
-		return nil
-	}
 	if err := ensureSourcingRequest(task); err != nil {
 		return err
 	}
-	if resourceUnavailable(task.StageErrorCode) {
-		setTaskStage(task, TaskStageSourcing, TaskStageStatusPending)
-		clearTaskStageError(task)
-	}
+	setTaskStage(task, TaskStageSourcing, TaskStageStatusPending)
+	clearTaskStageError(task)
 	task.SourcingLastCheckedAt = cloneTime(&checkedAt)
 	next := checkedAt.Add(s.resourceCheckInterval())
 	task.SourcingNextCheckAt = &next
+	if task.SelectedResourceID != "" {
+		task.UpdatedAt = s.now().UTC()
+		return nil
+	}
 	task.TorrentURL = ""
 	task.Candidate = Candidate{}
 	task.TorrentIdentityHash, task.TorrentIdentityMagnet = "", ""
@@ -88,10 +83,10 @@ func (s *Service) scheduleResourceCheck(task *Task, checkedAt time.Time) error {
 // Adopt historical blocked searches and apply changes to the configured
 // interval. Each snapshot is re-read under the same lock used by manual retry.
 func (s *Service) prepareResourceTracking(ctx context.Context, snapshot *Task) (*Task, error) {
-	if snapshot.SelectedResourceID != "" {
+	if snapshot.SelectedResourceID != "" && snapshot.SourcingNextCheckAt == nil {
 		return snapshot, nil
 	}
-	if snapshot.Stage != TaskStageSourcing || (snapshot.SourcingNextCheckAt == nil && (snapshot.StageStatus != TaskStageStatusBlocked || !retryableSourcingFailure(snapshot.StageErrorCode))) {
+	if snapshot.Stage != TaskStageSourcing || (snapshot.SourcingNextCheckAt == nil && (snapshot.StageStatus != TaskStageStatusBlocked || !resourceUnavailable(snapshot.StageErrorCode))) {
 		return snapshot, nil
 	}
 	// Most scans see unchanged future schedules. Avoid a query and task lock
@@ -105,11 +100,11 @@ func (s *Service) prepareResourceTracking(ctx context.Context, snapshot *Task) (
 	if err != nil {
 		return nil, err
 	}
-	if task.Stage != TaskStageSourcing {
+	if task.Stage != TaskStageSourcing || (task.SelectedResourceID != "" && task.SourcingNextCheckAt == nil) {
 		return task, nil
 	}
 	if task.SourcingNextCheckAt == nil {
-		if task.StageStatus != TaskStageStatusBlocked || !retryableSourcingFailure(task.StageErrorCode) {
+		if task.StageStatus != TaskStageStatusBlocked || !resourceUnavailable(task.StageErrorCode) {
 			return task, nil
 		}
 		checkedAt := task.UpdatedAt
@@ -141,10 +136,19 @@ func (s *Service) finishResourceCheck(ctx context.Context, id string) error {
 	checkedAt := s.now().UTC()
 	task.SourcingLastCheckedAt = &checkedAt
 	task.SourcingNextCheckAt = nil
-	if task.Stage == TaskStageSourcing && task.StageStatus == TaskStageStatusBlocked && retryableSourcingFailure(task.StageErrorCode) {
+	if task.SelectedResourceID == "" && task.Stage == TaskStageSourcing && task.StageStatus == TaskStageStatusBlocked && resourceUnavailable(task.StageErrorCode) {
 		if err := s.scheduleResourceCheck(task, checkedAt); err != nil {
 			return err
 		}
 	}
 	return s.store.Update(ctx, task)
+}
+
+// Even a site deadline must not hide a failed diagnostic write. Only this
+// bounded local persistence may outlive the expired operation context.
+func (s *Service) blockSourcingState(ctx context.Context, task *Task) error {
+	blockTask(task, TaskStageErrorSourcingState, "unable to persist indexer diagnostics", s.now().UTC())
+	writeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
+	defer cancel()
+	return s.store.Update(writeCtx, task)
 }

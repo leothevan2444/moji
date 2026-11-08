@@ -79,8 +79,7 @@ status. Configure the remote sites in Jackett itself; refresh the Jackett catalo
 in Moji after making remote changes.
 
 Enabled external sites appear alongside built-in sites and can share their
-order. Home shows Jackett inside **Indexers** only when the connection is
-configured and enabled. An unavailable catalog retains the last confirmed state;
+order. Home counts enabled built-in and Jackett sites together. An unavailable catalog retains the last confirmed state;
 it is not treated as a confirmed empty list.
 
 New installations leave Jackett disabled. Reading supported older configurations
@@ -128,6 +127,35 @@ submission reuse the acquired torrent so that they operate on the same bytes.
 | Search succeeded but resource acquisition failed | Review the acquisition result separately; a working search does not verify the download endpoint. |
 | Jackett unavailable | Check that optional connection and its remote sites; the last confirmed catalog remains visible. |
 
-Home's **Indexers** section links to the relevant settings or rule job. It sits
-alongside **Downloader**; download progress and qBittorrent controls remain in the
-downloader section.
+Home's **Indexers** section shows current enabled sites and search statistics
+over a selected period (24h, 72h, or two weeks; default 72h): search count, success
+rate, and average search time. The retained record count covers all saved reports.
+Cache hits and joined callers do not increase search counters; a successful empty
+response counts as success. The measured interval is available on the metrics.
+History, statistics, and recent site status are all queried from the same execution table.
+All records in the last 14 days are retained without a global row limit. Each
+configured site also retains its ten latest actual executions, even when older.
+Removed sites lose that extra protection. Cleanup never shortens the two-week
+statistics window. Search time excludes candidate inspection and acquisition;
+the average uses only records with reliable separate search timing. Missing
+timing records are excluded from the mean; no samples or a zero mean displays
+"-" without an additional notice.
+
+**Manage indexers** opens settings. **View indexer records** opens the same history
+available in settings, with site, outcome, operation, and time filters plus text
+search. Filters apply to all retained reports before pagination. Site history
+icons turn red when the latest execution failed, or yellow when an earlier one
+of the last ten actual searches or fetches failed. Cache hits and cancellations
+do not clear this status. Execution records directly determine both recent site
+status and search statistics; there are no separate recent snapshots or counters. Current enabled
+site counts do not depend on the selected search period and always show a number.
+When Jackett is enabled and its connection is configured, Moji loads its directory
+automatically in the background after startup and on configuration changes.
+Periodic checks reuse the directory cache and failure backoff; refresh failures
+retain the last confirmed directory for the same connection. An empty statistics window keeps its
+requested time bounds and does not imply a zero success rate. Full errors and copyable identifiers are in history;
+the list does not repeat the errors on each row.
+
+The Jackett settings panel shows the last confirmed site-list update and catalog
+errors. An old directory is independent of an individual site's search outcome.
+Download progress and qBittorrent controls remain in **Downloader**.

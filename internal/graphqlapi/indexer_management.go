@@ -40,10 +40,14 @@ func indexerSettingModels(settings []indexeradmin.Setting) []*model.IndexerSetti
 	return result
 }
 func indexerInstanceModel(instance indexeradmin.Instance) *model.IndexerInstance {
-	return &model.IndexerInstance{ConnectionRevision: instance.ConnectionRevision, Description: instance.Description, LoginSupported: instance.LoginSupported, Health: &model.IndexerHealth{Search: indexerObservationModel(instance.Health.Search), Fetch: indexerObservationModel(instance.Health.Fetch)}, SiteURL: instance.SiteURL, Privacy: instance.Privacy, Language: instance.Language, ID: instance.ID, Kind: model.IndexerSourceKind(instance.Kind), Name: instance.Name, Enabled: instance.Enabled, DefinitionID: instance.DefinitionID, BaseURL: instance.BaseURL, TrustedOrigins: instance.TrustedOrigins, RuleDigest: instance.RuleDigest, ErrorCode: instance.ErrorCode, Modes: instance.Modes, Settings: indexerSettingModels(instance.Settings)}
+	return &model.IndexerInstance{Recent: &model.IndexerRecentExecutions{Count: instance.Recent.Count, Failures: instance.Recent.Failures, LatestFailed: instance.Recent.LatestFailed}, ConnectionRevision: instance.ConnectionRevision, Description: instance.Description, LoginSupported: instance.LoginSupported, Health: &model.IndexerHealth{Search: indexerObservationModel(instance.Health.Search), Fetch: indexerObservationModel(instance.Health.Fetch)}, SiteURL: instance.SiteURL, Privacy: instance.Privacy, Language: instance.Language, ID: instance.ID, Kind: model.IndexerSourceKind(instance.Kind), Name: instance.Name, Enabled: instance.Enabled, DefinitionID: instance.DefinitionID, BaseURL: instance.BaseURL, TrustedOrigins: instance.TrustedOrigins, RuleDigest: instance.RuleDigest, ErrorCode: instance.ErrorCode, Modes: instance.Modes, Settings: indexerSettingModels(instance.Settings)}
 }
 func indexerInstancesModel(page indexeradmin.InstancePage) *model.IndexerInstances {
-	result := &model.IndexerInstances{HealthErrorCode: page.HealthErrorCode, Revision: page.Revision, RuleRevision: page.RuleRevision, RuleErrorCode: page.RuleErrorCode, CatalogErrorCode: page.CatalogErrorCode, JackettEnabled: page.JackettEnabled, Order: page.Order, Items: make([]*model.IndexerInstance, 0, len(page.Items))}
+	result := &model.IndexerInstances{JackettCatalogStale: page.JackettCatalog.Stale, HealthErrorCode: page.HealthErrorCode, Revision: page.Revision, RuleRevision: page.RuleRevision, RuleErrorCode: page.RuleErrorCode, CatalogErrorCode: page.CatalogErrorCode, JackettEnabled: page.JackettEnabled, Order: page.Order, Items: make([]*model.IndexerInstance, 0, len(page.Items))}
+	if page.JackettCatalog.UpdatedAt != nil {
+		value := indexerTime(*page.JackettCatalog.UpdatedAt)
+		result.JackettCatalogUpdatedAt = &value
+	}
 	for _, instance := range page.Items {
 		result.Items = append(result.Items, indexerInstanceModel(instance))
 	}

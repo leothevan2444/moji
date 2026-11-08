@@ -80,7 +80,7 @@ func (s *Service) acquireSelectedResource(ctx context.Context, task *Task) error
 	}
 	artifact, err := s.resourceAccess.FetchRecord(ctx, task.IndexerResource.Clone())
 	if err != nil {
-		return candidateError(TaskStageErrorTorrentMetadata, "unable to acquire selected indexer resource")
+		return err
 	}
 	if len(artifact.TorrentBytes) > 0 && len(artifact.TorrentBytes) <= MaxTorrentBytes && artifact.Magnet == "" {
 		if _, err = parseTorrentMetadata(artifact.TorrentBytes); err != nil {

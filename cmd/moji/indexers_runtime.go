@@ -20,6 +20,7 @@ import (
 
 type indexerRuntime struct {
 	admin         *indexeradmin.Service
+	diagnostics   *indexer.DiagnosticStore
 	service       *indexer.Service
 	registry      *runtimeIndexerRegistry
 	definitions   *indexerdefs.Service
@@ -48,6 +49,10 @@ func newIndexerRuntime(ctx context.Context, cfg *config.Config, store *config.St
 	}
 	validator.bundles = definitions
 	health, err := indexer.NewHealthStore(manager)
+	if err != nil {
+		return nil, err
+	}
+	diagnostics, err := indexer.NewDiagnosticStore(manager)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +91,7 @@ func newIndexerRuntime(ctx context.Context, cfg *config.Config, store *config.St
 		network.Close()
 		return nil, err
 	}
+	service.SetDiagnosticRecorder(diagnostics)
 	service.SetEventPublisher(events)
 	searchCache, err := indexer.NewSearchCache(ctx)
 	if err != nil {
@@ -140,7 +146,8 @@ func newIndexerRuntime(ctx context.Context, cfg *config.Config, store *config.St
 	}
 	admin := indexeradmin.NewService(store, definitions, registry)
 	admin.SetHealthReader(health)
-	admin.SetDefinitionJobReader(definitions)
+	admin.SetDiagnosticReader(diagnostics)
+	admin.SetStatisticsReader(diagnostics)
 	admin.SetSearchCache(searchCache, events)
 	checks, err := indexercheck.New(ctx, admin, indexercheck.AdapterFactory{Network: network, Bundles: definitions})
 	if err != nil {
@@ -164,7 +171,7 @@ func newIndexerRuntime(ctx context.Context, cfg *config.Config, store *config.St
 		network.Close()
 		return nil, err
 	}
-	return &indexerRuntime{admin: admin, service: service, registry: registry, definitions: definitions, resources: resources, sessions: sessions, network: network, configuration: configuration, events: events, searchCache: searchCache, artifactCache: artifactCache, searches: searches, downloads: downloads, checks: checks, logins: logins}, nil
+	return &indexerRuntime{admin: admin, diagnostics: diagnostics, service: service, registry: registry, definitions: definitions, resources: resources, sessions: sessions, network: network, configuration: configuration, events: events, searchCache: searchCache, artifactCache: artifactCache, searches: searches, downloads: downloads, checks: checks, logins: logins}, nil
 }
 
 // Start does not fetch rules. Definitions already on disk are validated and
@@ -173,12 +180,17 @@ func (r *indexerRuntime) Start(ctx context.Context) error {
 	if err := r.definitions.Start(ctx); err != nil {
 		return err
 	}
-	return r.searches.Start(ctx)
+	if err := r.searches.Start(ctx); err != nil {
+		return err
+	}
+	r.pruneExecutions(ctx)
+	return nil
 }
 func (r *indexerRuntime) Run(ctx context.Context) {
 	var workers sync.WaitGroup
-	workers.Add(3)
+	workers.Add(4)
 	go func() { defer workers.Done(); r.watchConfiguration(ctx) }()
+	go func() { defer workers.Done(); r.maintainJackettCatalog(ctx) }()
 	go func() { defer workers.Done(); r.searches.Run(ctx) }()
 	go func() {
 		defer workers.Done()
@@ -197,6 +209,7 @@ func (r *indexerRuntime) Run(ctx context.Context) {
 			return
 		case <-ticker.C:
 			r.checkDefinitions(ctx)
+			r.pruneExecutions(ctx)
 		}
 	}
 }
@@ -279,4 +292,71 @@ func (r *indexerRuntime) Close() {
 	r.resources.Close()
 	r.sessions.Close()
 	r.network.Close()
+}
+
+// Unknown remote catalogs cannot prove that a site's configuration was removed.
+func (r *indexerRuntime) pruneExecutions(ctx context.Context) {
+	if r.diagnostics == nil {
+		return
+	}
+	registry, err := r.registry.CachedSnapshot(ctx)
+	if err != nil {
+		return
+	}
+	cfg, _ := r.configuration.snapshot()
+	preserveJackett := cfg.Indexers.Jackett.Enabled && cfg.Connection.Jackett.URL != "" && cfg.Connection.Jackett.APIKey != "" && !registry.JackettCatalog.Known
+	ids := make([]string, 0, len(registry.Instances))
+	for _, site := range registry.Instances {
+		ids = append(ids, site.ID)
+	}
+	if err := r.diagnostics.Prune(ctx, ids, preserveJackett, time.Now().UTC()); err != nil && ctx.Err() == nil {
+		logging.Warn("indexer execution cleanup unavailable")
+	}
+}
+
+// Catalog loading belongs to the application lifecycle, not to page visits.
+// The registry shares requests, keeps confirmed results on failure, and applies
+// its existing five-minute cache and failure backoff. Configuration changes wake
+// this worker without blocking configuration event delivery or server startup.
+func (r *indexerRuntime) maintainJackettCatalog(ctx context.Context) {
+	var changes <-chan struct{}
+	if r.configuration.store != nil {
+		ch, unsubscribe, err := r.configuration.store.SubscribeChanges()
+		if err == nil {
+			changes = ch
+			defer unsubscribe()
+		} else {
+			logging.Warn("Jackett catalog configuration notifications unavailable")
+		}
+	}
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+		r.refreshJackettCatalog(ctx)
+		select {
+		case <-ctx.Done():
+			return
+		case _, ok := <-changes:
+			if !ok {
+				return
+			}
+		case <-ticker.C:
+		}
+	}
+}
+
+func (r *indexerRuntime) refreshJackettCatalog(ctx context.Context) {
+	if ctx.Err() != nil {
+		return
+	}
+	cfg, _ := r.configuration.snapshot()
+	if !cfg.Indexers.Jackett.Enabled || cfg.Connection.Jackett.URL == "" || cfg.Connection.Jackett.APIKey == "" {
+		return
+	}
+	if _, err := r.registry.Snapshot(ctx); err != nil && ctx.Err() == nil {
+		logging.Warn("Jackett catalog refresh unavailable")
+	}
 }

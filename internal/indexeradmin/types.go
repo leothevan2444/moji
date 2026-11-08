@@ -44,6 +44,7 @@ type Instance struct {
 	Modes                                                       []string
 	Settings                                                    []Setting
 	Health                                                      indexer.HealthState
+	Recent                                                      indexer.RecentExecutions
 }
 type InstancePage struct {
 	Revision, RuleRevision, RuleErrorCode, CatalogErrorCode string

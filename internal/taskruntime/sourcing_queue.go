@@ -163,14 +163,17 @@ func (s *Service) processQueuedSourcing(parent context.Context, id string) (resu
 	if task.SourcingNextCheckAt != nil && task.SourcingNextCheckAt.After(s.now().UTC()) {
 		return nil
 	}
-	// Shutdown leaves a resumable job; a live deadline becomes actionable even
-	// when it expires during the library lookup rather than during torrent search.
+	// Shutdown leaves a resumable job. A live deadline schedules a resource
+	// check without publishing an intermediate task failure.
 	defer func() {
 		if parent.Err() != nil {
 			return
 		}
-		if parent.Err() == nil && ctx.Err() != nil {
-			blockTask(task, TaskStageErrorSearch, "sourcing timed out; retry this task", s.now().UTC())
+		if ctx.Err() != nil && task.Stage == TaskStageSourcing && task.StageStatus == TaskStageStatusRunning {
+			if err := s.scheduleResourceCheck(task, s.now().UTC()); err != nil {
+				resultErr = err
+				return
+			}
 			if err := s.store.Update(parent, task); err != nil {
 				resultErr = err
 			}
@@ -202,7 +205,7 @@ func (s *Service) processQueuedSourcing(parent context.Context, id string) (resu
 			return ctx.Err()
 		}
 		if lookupErr != nil || exists {
-			code, message := TaskStageErrorSearch, "unable to check Stash library"
+			code, message := TaskStageErrorLibraryCheck, "unable to check Stash library"
 			if exists {
 				code, message = TaskStageErrorDuplicateLibrary, "Stash library already contains this code"
 			}

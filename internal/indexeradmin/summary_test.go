@@ -3,113 +3,75 @@ package indexeradmin
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/leothevan2444/moji/internal/indexer"
-	"github.com/leothevan2444/moji/internal/indexerdefs"
+	"github.com/leothevan2444/moji/internal/storage"
 )
 
-func TestSummaryKeepsUnknownSeparateFromConfirmedEmptyAndCountsOnlyEnabledSites(t *testing.T) {
-	page := InstancePage{JackettEnabled: true, JackettConfigured: true, Items: []Instance{
-		{ID: "builtin", Kind: indexer.Builtin, Enabled: true},
-		{ID: "disabled", Kind: indexer.Builtin, Enabled: false, ErrorCode: "broken"},
-		{ID: "jackett/one", Kind: indexer.Jackett, Enabled: true},
-		{ID: "jackett/two", Kind: indexer.Jackett, Enabled: false},
-	}}
-	unknown := summarize(page)
-	if unknown.Total != nil || unknown.Jackett == nil || unknown.Jackett.Sites != nil || unknown.BuiltinEnabled != 1 || unknown.BuiltinUnverified != 1 || unknown.Attention != 0 {
-		t.Fatal("unloaded directory presented as known or disabled sources counted")
+func TestSummaryCountsCurrentEnabledSites(t *testing.T) {
+	page := InstancePage{JackettEnabled: true, JackettConfigured: true, Items: []Instance{{ID: "builtin", Kind: indexer.Builtin, Enabled: true}, {ID: "off", Kind: indexer.Builtin}, {ID: "jackett/one", Kind: indexer.Jackett, Enabled: true}}}
+	if summarize(page).Total != 2 {
+		t.Fatal("current enabled sites were not counted")
 	}
 	page.JackettCatalog.Known = true
-	known := summarize(page)
-	if known.Total == nil || *known.Total != 2 || known.Jackett.Sites == nil || *known.Jackett.Sites != 1 {
-		t.Fatal("gateway counted as a site or enabled remote site lost")
+	if total := summarize(page).Total; total != 2 {
+		t.Fatal("enabled count lost")
 	}
 	page.Items = nil
-	empty := summarize(page)
-	if empty.Total == nil || *empty.Total != 0 || empty.Jackett.Sites == nil || *empty.Jackett.Sites != 0 {
-		t.Fatal("confirmed empty directory became unknown")
+	if total := summarize(page).Total; total != 0 {
+		t.Fatal("confirmed empty became unknown")
 	}
-	for _, configured := range []bool{false, true} {
-		page.JackettConfigured = configured
-		page.JackettEnabled = !configured
-		if summarize(page).Jackett != nil {
-			t.Fatal("unconfigured or disabled gateway shown")
-		}
+	page.JackettCatalog.Known = false
+	page.JackettEnabled = false
+	if total := summarize(page).Total; total != 0 {
+		t.Fatal("disabled gateway made total unknown")
 	}
 }
-
-func TestSummaryBoundsIssuesAndRetainsStaleConfirmedCounts(t *testing.T) {
-	confirmed := time.Now().Add(-time.Hour)
-	page := InstancePage{JackettEnabled: true, JackettConfigured: true, CatalogErrorCode: indexer.ErrTransport.Error(), JackettCatalog: indexer.CatalogStatus{Known: true, Stale: true, UpdatedAt: &confirmed}}
-	for i := 0; i < 20; i++ {
-		page.Items = append(page.Items, Instance{ID: fmt.Sprint(i), Kind: indexer.Builtin, Enabled: true, ErrorCode: indexer.ErrInvalidSettings.Error()})
-	}
-	page.Items = append(page.Items, Instance{ID: "jackett/one", Kind: indexer.Jackett, Enabled: true})
-	result := summarize(page)
-	if len(result.Issues) != 5 || result.Attention != 21 || result.BuiltinUnverified != 0 || result.Total == nil || *result.Total != 21 || result.Jackett.Sites == nil || *result.Jackett.Sites != 1 || !result.Jackett.Stale || !result.Jackett.UpdatedAt.Equal(confirmed) {
-		t.Fatal("bounded issue projection or stale last-confirmed counts lost")
-	}
-}
-
-func TestSummaryKeepsSuccessfulSearchAndFailedAcquisitionSeparate(t *testing.T) {
-	page := InstancePage{Items: []Instance{{ID: "site", Kind: indexer.Builtin, Enabled: true, Health: indexer.HealthState{Search: &indexer.Observation{StartedAt: time.Now().Add(-time.Minute)}, Fetch: &indexer.Observation{StartedAt: time.Now(), ErrorCode: indexer.ErrAuthentication.Error()}}}}}
-	summary := summarize(page)
-	if summary.BuiltinSearchSucceeded != 1 || summary.BuiltinUnverified != 0 || summary.Attention != 1 || len(summary.Issues) != 1 || summary.Issues[0].Operation != "FETCH" {
-		t.Fatal("search success hid acquisition failure or implied unverified access")
-	}
-	page.HealthErrorCode = "INDEXER_STATUS_UNAVAILABLE"
-	page.Items[0].Health = indexer.HealthState{}
-	summary = summarize(page)
-	if summary.BuiltinUnverified != 0 || summary.HealthErrorCode == "" {
-		t.Fatal("unreadable history presented as no previous observation")
-	}
-}
-
 func TestSummaryUsesLocalSnapshotWithoutRefreshingJackett(t *testing.T) {
 	service, _, _, registry := managementFixture(t)
-	result, err := service.Summary(context.Background())
-	if err != nil || registry.refreshes != 0 || result.Jackett == nil || result.Jackett.Sites != nil {
-		t.Fatal("Home contacted remote directory or fabricated count", err)
+	result, err := service.Summary(context.Background(), 72)
+	if err != nil || registry.refreshes != 0 || result.Total != 1 {
+		t.Fatal("Home refreshed remote state or fabricated count", err)
 	}
 }
 
-type summaryJobReader struct {
-	job   *indexerdefs.Job
-	err   error
-	reads int
-}
-
-func (r *summaryJobReader) CurrentJob(context.Context) (*indexerdefs.Job, error) {
-	r.reads++
-	return r.job, r.err
-}
-func TestHomeShowsOnlyCurrentFailedDefinitionJobWithoutRemoteActions(t *testing.T) {
-	service, _, _, registry := managementFixture(t)
-	reader := &summaryJobReader{}
-	service.SetDefinitionJobReader(reader)
-	for _, state := range []indexerdefs.JobState{indexerdefs.Failed, indexerdefs.Interrupted, indexerdefs.Cancelled, indexerdefs.Completed, indexerdefs.Downloading} {
-		reader.job = &indexerdefs.Job{ID: "job", State: state, ErrorCode: "DEFINITION_SOURCE_UNAVAILABLE"}
-		result, e := service.Summary(context.Background())
-		if e != nil {
-			t.Fatal(e)
-		}
-		expected := state == indexerdefs.Failed || state == indexerdefs.Interrupted
-		if (result.DefinitionJob != nil) != expected || result.Attention != map[bool]int{true: 1, false: 0}[expected] || registry.refreshes != 0 {
-			t.Fatal("job outcome projected incorrectly or caused remote action", state)
-		}
+func TestManagementHistoryAndSummaryUseSameExecution(t *testing.T) {
+	ctx := context.Background()
+	service, cfg, _, _ := managementFixture(t)
+	if _, err := cfg.ApplyPatch(map[string]any{"indexers": map[string]any{"jackett": map[string]any{"enabled": false}}}); err != nil {
+		t.Fatal(err)
 	}
-	reader.err = errors.New("synthetic local read failure")
-	result, e := service.Summary(context.Background())
-	if e != nil || result.DefinitionJob != nil || result.DefinitionErrorCode != indexerdefs.ErrUnavailable.Error() || result.Jackett == nil || result.Attention != 1 {
-		t.Fatal("job read failure removed other indexer state", e)
+	service.registry = currentBuiltinHealthRegistry{store: cfg}
+	definition, enabled := "example", true
+	saved, err := service.SaveBuiltin(ctx, "", cfg.Revision(), BuiltinPatch{Definition: &definition, Enabled: &enabled})
+	if err != nil {
+		t.Fatal(err)
 	}
-	reader.err = nil
-	reader.job = nil
-	result, e = service.Summary(context.Background())
-	if e != nil || result.DefinitionJob != nil || result.DefinitionErrorCode != "" || result.Attention != 0 {
-		t.Fatal("successful current read retained old failure", e)
+	manager, err := storage.OpenManager(ctx, storage.DefaultManagerOptions(t.TempDir()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
+	history, _ := indexer.NewDiagnosticStore(manager)
+	service.SetStatisticsReader(history)
+	at := time.Now().UTC().Add(-time.Hour)
+	if err = history.Record(ctx, indexer.Diagnostic{Executed: true, InstanceID: saved.Instance.ID, Name: "Example", Operation: indexer.HealthSearch, StartedAt: at, FinishedAt: at.Add(time.Second), Report: indexer.SiteReport{CorrelationID: "previous-search", Code: indexer.ErrSolver.Error(), Partial: true}}); err != nil {
+		t.Fatal(err)
+	}
+	page, err := service.Instances(ctx)
+	if err != nil || len(page.Items) != 1 || page.Items[0].Recent.Count != 1 || !page.Items[0].Recent.LatestFailed {
+		t.Fatalf("existing failure invisible to station UI: %+v %v", page, err)
+	}
+	summary, err := service.Summary(ctx, 72)
+	if err != nil || summary.Total != 1 || summary.Hours != 72 || summary.Statistics == nil || summary.Statistics.Searches != 1 {
+		t.Fatalf("current sites tied to missing samples: %+v %v", summary, err)
+	}
+}
+func TestInvalidStatisticsPeriodFailsBeforeReadingSources(t *testing.T) {
+	service := &Service{}
+	if _, err := service.Summary(context.Background(), 48); !errors.Is(err, indexer.ErrInvalidQuery) {
+		t.Fatal("invalid period was accepted", err)
 	}
 }

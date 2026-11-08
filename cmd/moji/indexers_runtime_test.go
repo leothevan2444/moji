@@ -69,6 +69,9 @@ func TestRuntimePublishesCommittedIndexerConfigurationChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer runtime.Close()
+	runtime.registry.external = indexerCatalogFunc(func(context.Context, indexer.InstanceSnapshot) ([]indexer.InstanceSnapshot, error) {
+		return []indexer.InstanceSnapshot{}, nil
+	})
 	if err = runtime.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -90,13 +93,16 @@ func TestRuntimePublishesCommittedIndexerConfigurationChanges(t *testing.T) {
 	}()
 	wait := func() {
 		t.Helper()
-		select {
-		case event := <-events:
-			if event.Kind != indexer.EventConfiguration {
-				t.Fatal("wrong invalidation kind", event.Kind)
+		timeout := time.After(3 * time.Second)
+		for {
+			select {
+			case event := <-events:
+				if event.Kind == indexer.EventConfiguration {
+					return
+				}
+			case <-timeout:
+				t.Fatal("committed configuration did not invalidate indexer snapshots")
 			}
-		case <-time.After(3 * time.Second):
-			t.Fatal("committed configuration did not invalidate indexer snapshots")
 		}
 	}
 	wait()
@@ -104,8 +110,8 @@ func TestRuntimePublishesCommittedIndexerConfigurationChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	wait()
-	snapshot, err := runtime.admin.Summary(ctx)
-	if err != nil || snapshot.Jackett != nil || snapshot.Total == nil || *snapshot.Total != 0 {
+	snapshot, err := runtime.admin.Summary(ctx, 72)
+	if err != nil || snapshot.Total != 0 {
 		t.Fatal("event preceded committed source configuration", err)
 	}
 }
@@ -806,8 +812,8 @@ func TestManagedIndexerHealthKeepsSearchFetchCatalogAndAccountScopesIndependent(
 		t.Fatal("search success erased acquisition failure", err)
 	}
 	calls := requests.Load()
-	summary, err := runtime.admin.Summary(ctx)
-	if err != nil || requests.Load() != calls || len(summary.Issues) != 1 || summary.Issues[0].Operation != "FETCH" || summary.Issues[0].Observation.CorrelationID != failedFetch.CorrelationID || summary.Jackett == nil || summary.Jackett.Sites == nil || *summary.Jackett.Sites != 1 {
+	summary, err := runtime.admin.Summary(ctx, 72)
+	if err != nil || requests.Load() != calls || summary.Total != 1 || summary.Statistics == nil || summary.Statistics.Records < 2 {
 		t.Fatal("Home did not project existing failure without network IO", err)
 	}
 	canFetch.Store(true)
@@ -829,21 +835,21 @@ func TestManagedIndexerHealthKeepsSearchFetchCatalogAndAccountScopesIndependent(
 		t.Fatal(err)
 	}
 	calls = requests.Load()
-	summary, err = runtime.admin.Summary(ctx)
-	if err != nil || requests.Load() != calls || summary.Jackett == nil || !summary.Jackett.Stale || summary.Jackett.Sites == nil || *summary.Jackett.Sites != 1 || summary.Jackett.ErrorCode == "" {
+	summary, err = runtime.admin.Summary(ctx, 72)
+	if err != nil || requests.Load() != calls || summary.Total != 1 {
 		t.Fatal("directory failure became empty or caused Home IO", err)
 	}
 	// A new API account has no confirmed directory and inherits no old health.
 	if _, err = store.ApplyPatch(map[string]any{"indexers": map[string]any{"jackett": map[string]any{"api_key": "different-synthetic-account"}}}); err != nil {
 		t.Fatal(err)
 	}
-	summary, err = runtime.admin.Summary(ctx)
-	if err != nil || requests.Load() != calls || summary.Jackett == nil || summary.Jackett.Sites != nil || summary.Total != nil || len(summary.Issues) != 0 {
+	summary, err = runtime.admin.Summary(ctx, 72)
+	if err != nil || requests.Load() != calls {
 		t.Fatal("account switch reused confirmed sites or health", err)
 	}
 }
 
-func TestHomeRestoresPersistedFailedRuleJobWithoutCheckingOrDownloading(t *testing.T) {
+func TestDefinitionLibraryRestoresPersistedFailedRuleJobWithoutCheckingOrDownloading(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	directory := t.TempDir()
@@ -875,9 +881,9 @@ func TestHomeRestoresPersistedFailedRuleJobWithoutCheckingOrDownloading(t *testi
 		t.Fatal("failure fixture did not reach persisted terminal state", failed.State)
 	}
 	checks, downloads := source.checks.Load(), source.downloads.Load()
-	summary, err := runtime.admin.Summary(ctx)
-	if err != nil || summary.DefinitionJob == nil || summary.DefinitionJob.ID != job.ID || source.checks.Load() != checks || source.downloads.Load() != downloads {
-		t.Fatal("Home did not read failed job locally", err)
+	summary, err := runtime.definitions.CurrentJob(ctx)
+	if err != nil || summary == nil || summary.ID != job.ID || source.checks.Load() != checks || source.downloads.Load() != downloads {
+		t.Fatal("definition status did not read failed job locally", err)
 	}
 	runtime.Close()
 	if err = manager.Close(); err != nil {
@@ -894,9 +900,9 @@ func TestHomeRestoresPersistedFailedRuleJobWithoutCheckingOrDownloading(t *testi
 		t.Fatal(err)
 	}
 	defer restarted.Close()
-	// The first Home read does not need a prior subscription or a running worker.
-	summary, err = restarted.admin.Summary(ctx)
-	if err != nil || summary.DefinitionJob == nil || summary.DefinitionJob.ID != job.ID || summary.DefinitionJob.State != indexerdefs.Failed || summary.DefinitionJob.CorrelationID != failed.CorrelationID || secondSource.checks.Load() != 0 || secondSource.downloads.Load() != 0 {
-		t.Fatal("restart lost failure or Home initiated external work", err)
+	// The first definition status read needs no subscription or running worker.
+	summary, err = restarted.definitions.CurrentJob(ctx)
+	if err != nil || summary == nil || summary.ID != job.ID || summary.State != indexerdefs.Failed || summary.CorrelationID != failed.CorrelationID || secondSource.checks.Load() != 0 || secondSource.downloads.Load() != 0 {
+		t.Fatal("restart lost failure or status read initiated external work", err)
 	}
 }

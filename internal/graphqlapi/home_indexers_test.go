@@ -8,44 +8,17 @@ import (
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/indexeradmin"
-	"github.com/leothevan2444/moji/internal/indexerdefs"
 )
 
 type homeIndexerSummarySource struct{ snapshot indexeradmin.Summary }
 
-func (s *homeIndexerSummarySource) Summary(context.Context) (indexeradmin.Summary, error) {
-	return s.snapshot, nil
+func (s *homeIndexerSummarySource) Summary(_ context.Context, hours int) (indexeradmin.Summary, error) {
+	snapshot := s.snapshot
+	snapshot.Hours = hours
+	return snapshot, nil
 }
-
-func TestHomeIndexerSummaryGraphQLPreservesUnknownAndConfirmedZero(t *testing.T) {
-	source := &homeIndexerSummarySource{snapshot: indexeradmin.Summary{Revision: "config-revision", BuiltinEnabled: 1, BuiltinUnverified: 1, Issues: []indexeradmin.SummaryIssue{}, Jackett: &indexeradmin.JackettSummary{}}}
-	resolver := NewResolver(nil, nil, nil, "test")
-	resolver.HomeIndexers = source
-	const query = `{homeIndexerSummary{revision total builtinEnabled builtinUnverified attention issues{id name errorCode} jackett{sites stale updatedAt errorCode}}}`
-	var response struct {
-		Errors []struct{ Message string }
-		Data   struct {
-			Summary model.HomeIndexerSummary `json:"homeIndexerSummary"`
-		}
-	}
-	executeDefinitionGraphQLInto(t, resolver, query, &response)
-	if len(response.Errors) > 0 || response.Data.Summary.Total != nil || response.Data.Summary.Jackett == nil || response.Data.Summary.Jackett.Sites != nil || response.Data.Summary.BuiltinUnverified != 1 {
-		t.Fatal("unknown counts converted to zero", response.Errors)
-	}
-	zero := 0
-	confirmed := time.Date(2026, 11, 2, 1, 2, 3, 0, time.UTC)
-	source.snapshot.Total = &zero
-	source.snapshot.Jackett = &indexeradmin.JackettSummary{Sites: &zero, Stale: true, UpdatedAt: &confirmed, ErrorCode: indexer.ErrTransport.Error()}
-	executeDefinitionGraphQLInto(t, resolver, query, &response)
-	got := response.Data.Summary
-	if len(response.Errors) > 0 || got.Total == nil || *got.Total != 0 || got.Jackett.Sites == nil || *got.Jackett.Sites != 0 || !got.Jackett.Stale || got.Jackett.UpdatedAt == nil || *got.Jackett.UpdatedAt != "2026-11-02T01:02:03Z" || got.Jackett.ErrorCode != indexer.ErrTransport.Error() {
-		t.Fatal("confirmed empty/stale summary lost", response.Errors)
-	}
-}
-
-func TestHomeDefinitionFailureUsesExistingJobContractAndLocalErrorProjection(t *testing.T) {
-	at := time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC)
-	source := &homeIndexerSummarySource{snapshot: indexeradmin.Summary{DefinitionJob: &indexerdefs.Job{ID: "job", Kind: "UPDATE", State: indexerdefs.Failed, ErrorCode: indexerdefs.ErrSource.Error(), CorrelationID: "synthetic-correlation", StartedAt: at, FinishedAt: &at, Revision: 3}}}
+func TestHomeIndexerStatisticsPreserveUnknownZeroAndMeasuredWindow(t *testing.T) {
+	source := &homeIndexerSummarySource{snapshot: indexeradmin.Summary{Revision: "revision"}}
 	resolver := NewResolver(nil, nil, nil, "test")
 	resolver.HomeIndexers = source
 	var response struct {
@@ -54,16 +27,42 @@ func TestHomeDefinitionFailureUsesExistingJobContractAndLocalErrorProjection(t *
 			Summary model.HomeIndexerSummary `json:"homeIndexerSummary"`
 		}
 	}
-	query := `{homeIndexerSummary{definitionJob{id state errorCode correlationId finishedAt} definitionErrorCode}}`
+	query := `{homeIndexerSummary{revision total hours statisticsErrorCode statistics{windowStartedAt windowEndedAt searches successRate averageElapsedMs records}}}`
 	executeDefinitionGraphQLInto(t, resolver, query, &response)
-	job := response.Data.Summary.DefinitionJob
-	if len(response.Errors) > 0 || job == nil || job.ID != "job" || job.State != model.IndexerDefinitionJobStateFailed || job.FinishedAt == nil {
-		t.Fatal("persisted job omitted from Home", response.Errors)
+	if len(response.Errors) > 0 || response.Data.Summary.Statistics != nil {
+		t.Fatal("absent statistics were fabricated", response.Errors)
 	}
-	source.snapshot.DefinitionJob = nil
-	source.snapshot.DefinitionErrorCode = indexerdefs.ErrUnavailable.Error()
+	at := time.Date(2026, 11, 8, 0, 0, 0, 0, time.UTC)
+	source.snapshot.Total = 0
+	source.snapshot.Statistics = &indexer.ExecutionStatistics{WindowStartedAt: at.Add(-24 * time.Hour), WindowEndedAt: at, Records: 7}
 	executeDefinitionGraphQLInto(t, resolver, query, &response)
-	if len(response.Errors) > 0 || response.Data.Summary.DefinitionJob != nil || response.Data.Summary.DefinitionErrorCode != indexerdefs.ErrUnavailable.Error() {
-		t.Fatal("job read error became false empty success", response.Errors)
+	stats := response.Data.Summary.Statistics
+	if len(response.Errors) > 0 || response.Data.Summary.Total != 0 || stats == nil || stats.Searches != 0 || stats.SuccessRate != nil || stats.AverageElapsedMs != nil || stats.Records != 7 {
+		t.Fatal("empty window fabricated a rate", response.Errors)
 	}
+	source.snapshot.Statistics.Searches = 4
+	source.snapshot.Statistics.TimedSearches = 4
+	source.snapshot.Statistics.Succeeded = 3
+	source.snapshot.Statistics.TotalElapsedMs = 8000
+	executeDefinitionGraphQLInto(t, resolver, query, &response)
+	stats = response.Data.Summary.Statistics
+	if len(response.Errors) > 0 || stats.SuccessRate == nil || *stats.SuccessRate != 75 || stats.AverageElapsedMs == nil || *stats.AverageElapsedMs != 2000 || stats.WindowEndedAt != "2026-11-08T00:00:00Z" {
+		t.Fatal("statistics denominator or unit wrong", response.Errors)
+	}
+	source.snapshot.Statistics.TimedSearches = 3
+	executeDefinitionGraphQLInto(t, resolver, query, &response)
+	stats = response.Data.Summary.Statistics
+	if stats.SuccessRate == nil || *stats.SuccessRate != 75 || stats.AverageElapsedMs == nil || *stats.AverageElapsedMs != float64(8000)/3 {
+		t.Fatal("mean must use only records with known timing")
+	}
+
+	for _, counts := range [][2]int64{{0, 0}, {3, 0}, {0, 8000}} {
+		source.snapshot.Statistics.TimedSearches = int(counts[0])
+		source.snapshot.Statistics.TotalElapsedMs = counts[1]
+		executeDefinitionGraphQLInto(t, resolver, query, &response)
+		if response.Data.Summary.Statistics.AverageElapsedMs != nil {
+			t.Fatal("zero or absent timing must not produce an average", counts)
+		}
+	}
+
 }

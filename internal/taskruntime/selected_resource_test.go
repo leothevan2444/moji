@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leothevan2444/moji/internal/indexer"
@@ -290,7 +291,7 @@ func TestExplicitManualReplacementDropsOldFrozenSelectionAndRulePin(t *testing.T
 	}
 	_ = service.processQueuedSourcing(ctx, task.ID)
 	blocked, err := store.Find(ctx, task.ID)
-	if err != nil || blocked.StageStatus != TaskStageStatusBlocked || blocked.IndexerResource == nil || selectionPins(t, m) != 1 {
+	if err != nil || !waitingForResource(blocked) || blocked.StageErrorCode != "" || blocked.IndexerResource == nil || selectionPins(t, m) != 1 {
 		t.Fatal("failed acquisition lost its durable source", err)
 	}
 	data := []byte(testTorrentFile("ABCD-123", []string{"ABCD-123.mp4"}))
@@ -332,5 +333,37 @@ func TestAcceptedMagnetDropsSecretSourceAndPublishesOnlyAnOpaqueReference(t *tes
 	public := PublicTaskSnapshot(stored)
 	if public.IndexerResource != nil || public.Candidate.MagnetURI != "" || public.TorrentURL != "indexer-resource:server-reference" {
 		t.Fatal("public event exposed private tracker URL")
+	}
+}
+
+func TestSelectedSiteFailureWaitsAndRetriesSameFrozenResource(t *testing.T) {
+	ctx := context.Background()
+	store, m := relationalStore(t)
+	seedSelectionBundle(t, m)
+	source := &selectedSource{record: selectionRecord(), fetchErr: indexer.ErrCoolingDown}
+	service, err := NewService(nil, &fakeTorrentAdder{}, store, WithIndexers(source))
+	if err != nil {
+		t.Fatal(err)
+	}
+	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = service.processQueuedSourcing(ctx, task.ID); err != nil {
+		t.Fatal(err)
+	}
+	task, err = store.Find(ctx, task.ID)
+	if err != nil || !waitingForResource(task) || task.IndexerResource == nil || task.SelectedResourceID != "server-reference" || task.StageErrorCode != "" || selectionPins(t, m) != 1 {
+		t.Fatalf("choice lost while waiting: %+v %v", task, err)
+	}
+	source.fetchErr = nil
+	source.data = []byte(testTorrentFile("ABCD-123", []string{"ABCD-123.mp4"}))
+	service.now = func() time.Time { return *task.SourcingNextCheckAt }
+	if err = service.processQueuedSourcing(ctx, task.ID); err != nil {
+		t.Fatal(err)
+	}
+	restored, err := store.Find(ctx, task.ID)
+	if err != nil || restored.Stage != TaskStageDownloading || source.fetches != 2 || source.searches != 0 || restored.SourcingNextCheckAt != nil {
+		t.Fatalf("did not retry original choice: %+v %v", restored, err)
 	}
 }

@@ -17,6 +17,7 @@ type Service struct {
 	resources     ResourceRegistry
 	events        EventPublisher
 	health        HealthRecorder
+	diagnostics   DiagnosticRecorder
 	healthError   func(error)
 	searchCache   *SearchCache
 	artifactCache *ArtifactCache
@@ -31,10 +32,12 @@ func (s *Service) SetSearchCache(cache *SearchCache, policy func() SearchCachePo
 func (s *Service) searchObserved(ctx context.Context, instance InstanceSnapshot, query Query, adapter Adapter) (Batch, error) {
 	started := time.Now()
 	batch, err := adapter.Search(ctx, instance, query)
+	finished := time.Now().UTC()
 	if s.searchCache != nil && (errors.Is(err, ErrAuthentication) || errors.Is(err, ErrChallenge)) {
 		s.searchCache.InvalidateInstance(instance.ID)
 	}
 	batch.ObservationCorrelationID = uuid.NewString()
+	batch.ExecutionStartedAt, batch.ExecutionFinishedAt = started.UTC(), finished
 	batch.InstanceID = instance.ID
 	if len(batch.Releases) > query.Limit {
 		batch.Releases = batch.Releases[:query.Limit]
@@ -69,7 +72,10 @@ func (s *Service) observe(ctx context.Context, instance InstanceSnapshot, op Hea
 	if s.health == nil {
 		return
 	}
-	observationCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	if errors.Is(ctx.Err(), context.Canceled) {
+		return
+	}
+	observationCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
 	defer cancel()
 	if _, err := s.health.Observe(observationCtx, instance, op, started, result, correlation); err != nil && s.healthError != nil {
 		s.healthError(err)
@@ -194,7 +200,19 @@ func cloneInstance(instance InstanceSnapshot) InstanceSnapshot {
 func (s *Service) SearchSequential(ctx context.Context, query Query, accept func(context.Context, Batch) (bool, error)) (SearchReport, error) {
 	return s.SearchWithProgress(ctx, query, nil, accept)
 }
-func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress func(context.Context, SearchProgress) error, accept func(context.Context, Batch) (bool, error)) (SearchReport, error) {
+func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress func(context.Context, SearchProgress) error, accept func(context.Context, Batch) (bool, error)) (report SearchReport, resultErr error) {
+	operationStarted := time.Now().UTC()
+	defer func() {
+		if resultErr == nil || len(report.Sites) > 0 || errors.Is(resultErr, context.Canceled) || errors.Is(resultErr, ErrInvalidQuery) || errors.Is(resultErr, ErrInvalidScope) {
+			return
+		}
+		site := SiteReport{InstanceID: "indexers", Code: ErrorCode(resultErr), CorrelationID: uuid.NewString(), Elapsed: time.Since(operationStarted), Partial: true}
+		if err := s.recordDiagnostic(ctx, Diagnostic{DiagnosticContext: diagnosticContext(ctx), InstanceID: "indexers", Name: "Indexers", Operation: HealthSearch, StartedAt: operationStarted, FinishedAt: time.Now().UTC(), Mode: query.Mode, Report: site}); err != nil {
+			resultErr = err
+		} else if s.events != nil {
+			s.events.Publish(EventSite)
+		}
+	}()
 	ctx, cancelOperation := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancelOperation()
 	if accept == nil {
@@ -234,7 +252,7 @@ func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress 
 			break
 		}
 	}
-	report := SearchReport{Sites: append([]SiteReport(nil), registry.Diagnostics...)}
+	report = SearchReport{Sites: append([]SiteReport(nil), registry.Diagnostics...)}
 	notify := func(event SearchProgress) error {
 		if progress == nil {
 			return nil
@@ -250,6 +268,10 @@ func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress 
 	}
 
 	for _, diagnostic := range registry.Diagnostics {
+		now := time.Now().UTC()
+		if err := s.recordDiagnostic(ctx, Diagnostic{DiagnosticContext: diagnosticContext(ctx), InstanceID: diagnostic.InstanceID, Name: diagnostic.InstanceID, Operation: HealthSearch, StartedAt: now, FinishedAt: now, Mode: query.Mode, Categories: query.Categories, Limit: query.Limit, Offset: query.Offset, Report: diagnostic}); err != nil {
+			return report, err
+		}
 		if diagnostic.Partial || diagnostic.Code != "" {
 			report.Partial = true
 		}
@@ -280,7 +302,6 @@ func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress 
 		defer cancelSite()
 		var batch Batch
 		var searchErr error
-		attempted := false
 		if instance.Kind == Builtin && bundleErr != nil {
 			searchErr = bundleErr
 		} else if adapter == nil {
@@ -289,15 +310,14 @@ func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress 
 			if s.searchCache != nil && s.cachePolicy != nil {
 				batch, searchErr = s.searchCache.Search(siteCtx, instance, query, s.cachePolicy(), func(worker context.Context) (Batch, error) { return s.searchObserved(worker, instance, query, adapter) })
 			} else {
-				attempted = true
-				batch, searchErr = adapter.Search(siteCtx, instance, query)
+				batch, searchErr = s.searchObserved(siteCtx, instance, query, adapter)
 			}
 		}
 		if batch.release != nil {
 			defer batch.release()
 		}
-		if err := ctx.Err(); err != nil {
-			return report, err
+		if ctx.Err() != nil && searchErr == nil {
+			searchErr = ctx.Err()
 		}
 		batch.InstanceID = instance.ID
 		if len(batch.Releases) > query.Limit {
@@ -315,13 +335,7 @@ func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress 
 		if batch.ObservationCorrelationID != "" {
 			correlation = batch.ObservationCorrelationID
 		}
-		if attempted && !batch.CacheHit {
-			healthResult := searchErr
-			if healthResult == nil && batch.Partial {
-				healthResult = ErrIncomplete
-			}
-			s.observe(ctx, instance, HealthSearch, started, healthResult, correlation)
-		}
+
 		if len(batch.Releases) > 0 {
 			refs := make([]ResourceRef, len(batch.Releases))
 			for i := range batch.Releases {
@@ -332,9 +346,10 @@ func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress 
 				batch.Releases = nil
 			}
 		}
-		site := SiteReport{InstanceID: instance.ID, Results: len(batch.Releases), Elapsed: time.Since(started), CacheHit: batch.CacheHit, Truncated: batch.Truncated, Partial: batch.Partial || searchErr != nil, CorrelationID: correlation}
+		site := SiteReport{InstanceID: instance.ID, Results: len(batch.Releases), Elapsed: time.Since(started), CacheHit: batch.CacheHit, Truncated: batch.Truncated, Partial: batch.Partial || searchErr != nil, CorrelationID: correlation, IssueCount: batch.IssueCount, ReportedCount: batch.ReportedCount}
 		if searchErr != nil {
 			site.Code = ErrorCode(searchErr)
+			site.HTTPStatus = diagnosticHTTPStatus(searchErr)
 			var cooling *CoolingDownError
 			if errors.As(searchErr, &cooling) {
 				until := cooling.Until
@@ -349,10 +364,23 @@ func (s *Service) SearchWithProgress(ctx context.Context, query Query, progress 
 			report.Truncated = true
 		}
 		report.Sites = append(report.Sites, site)
-		if s.events != nil {
-			s.events.Publish(EventSite)
-		}
 		finished := func() error {
+			record := Diagnostic{DiagnosticContext: diagnosticContext(ctx), InstanceID: instance.ID, Name: instance.Name, ConfigRevision: instance.ConfigRevision, BundleRevision: instance.BundleRevision, Operation: HealthSearch, StartedAt: started.UTC(), FinishedAt: time.Now().UTC(), Mode: query.Mode, Categories: query.Categories, Limit: query.Limit, Offset: query.Offset, Report: report.Sites[len(report.Sites)-1]}
+			record.Executed = !batch.CacheHit && !batch.ExecutionStartedAt.IsZero()
+			record.ElapsedKnown = record.Executed
+			if record.Executed {
+				record.StartedAt = batch.ExecutionStartedAt
+				record.Report.Elapsed = batch.ExecutionFinishedAt.Sub(batch.ExecutionStartedAt)
+			}
+			if batch.CacheHit {
+				record.Report.CorrelationID = uuid.NewString()
+			}
+			if err := s.recordDiagnostic(ctx, record); err != nil {
+				return err
+			}
+			if s.events != nil {
+				s.events.Publish(EventSite)
+			}
 			return notify(SearchProgress{Phase: "FINISHED", InstanceID: instance.ID, Report: report.Sites[len(report.Sites)-1], FetchedAt: batch.FetchedAt})
 		}
 		if len(batch.Releases) == 0 {
@@ -424,18 +452,49 @@ func (s *Service) Search(ctx context.Context, query Query) (SearchResult, error)
 // locator data. Older already accepted work can intentionally use its snapshot.
 // SetArtifactCache installs the application-owned acquisition coordinator.
 func (s *Service) SetArtifactCache(cache *ArtifactCache) { s.artifactCache = cache }
-func (s *Service) Fetch(ctx context.Context, instance InstanceSnapshot, ref ResourceRef) (Artifact, error) {
+func (s *Service) Fetch(ctx context.Context, instance InstanceSnapshot, ref ResourceRef) (artifact Artifact, resultErr error) {
+	started := time.Now().UTC()
+	correlation := uuid.NewString()
+	defer func() {
+		report := SiteReport{InstanceID: instance.ID, CorrelationID: correlation, Elapsed: time.Since(started), Partial: resultErr != nil, CacheHit: artifact.CacheHit}
+		if resultErr != nil {
+			report.Code = ErrorCode(resultErr)
+			report.HTTPStatus = diagnosticHTTPStatus(resultErr)
+		}
+		var cooling *CoolingDownError
+		if errors.As(resultErr, &cooling) {
+			report.RetryAt = &cooling.Until
+		}
+		record := Diagnostic{DiagnosticContext: diagnosticContext(ctx), InstanceID: instance.ID, Name: instance.Name, ConfigRevision: instance.ConfigRevision, BundleRevision: instance.BundleRevision, Operation: HealthFetch, StartedAt: started, FinishedAt: time.Now().UTC(), ResourceID: ref.ID, Report: report}
+		record.Executed = !artifact.CacheHit && !artifact.executionStartedAt.IsZero()
+		record.ElapsedKnown = record.Executed
+		if record.Executed {
+			record.StartedAt = artifact.executionStartedAt
+			record.Report.CorrelationID = artifact.executionCorrelationID
+			record.Report.Elapsed = artifact.executionFinishedAt.Sub(artifact.executionStartedAt)
+		}
+		err := s.recordDiagnostic(ctx, record)
+		if err != nil {
+			artifact = Artifact{}
+			resultErr = err
+		}
+		if s.events != nil {
+			s.events.Publish(EventSite)
+		}
+	}()
 	if ref.Version != 1 || ref.ID == "" || ref.InstanceID != instance.ID || ref.Kind != instance.Kind || ref.ConfigRevision != instance.ConfigRevision {
 		return Artifact{}, ErrReference
 	}
 	instance = cloneInstance(instance)
 	ref = ResourceRecord{Ref: ref}.Clone().Ref
 	if s.artifactCache != nil {
-		return s.artifactCache.Fetch(ctx, instance, ref, func(worker context.Context) (Artifact, error) { return s.fetchObserved(worker, instance, ref) })
+		return s.artifactCache.Fetch(ctx, instance, ref, func(worker context.Context) (Artifact, error) {
+			return s.fetchObserved(worker, instance, ref, correlation)
+		})
 	}
-	return s.fetchObserved(ctx, instance, ref)
+	return s.fetchObserved(ctx, instance, ref, correlation)
 }
-func (s *Service) fetchObserved(ctx context.Context, instance InstanceSnapshot, ref ResourceRef) (result Artifact, resultErr error) {
+func (s *Service) fetchObserved(ctx context.Context, instance InstanceSnapshot, ref ResourceRef, correlation string) (result Artifact, resultErr error) {
 	if ref.Version != 1 || ref.ID == "" || ref.InstanceID != instance.ID || ref.Kind != instance.Kind || ref.ConfigRevision != instance.ConfigRevision || strings.TrimSpace(ref.ID) == "" {
 		return Artifact{}, ErrReference
 	}
@@ -448,10 +507,9 @@ func (s *Service) fetchObserved(ctx context.Context, instance InstanceSnapshot, 
 		if s.searchCache != nil && (errors.Is(resultErr, ErrAuthentication) || errors.Is(resultErr, ErrChallenge)) {
 			s.searchCache.InvalidateInstance(instance.ID)
 		}
-		s.observe(ctx, instance, HealthFetch, started, resultErr, uuid.NewString())
-		if s.events != nil {
-			s.events.Publish(EventSite)
-		}
+		finished := time.Now().UTC()
+		s.observe(ctx, instance, HealthFetch, started, resultErr, correlation)
+		result.executionStartedAt, result.executionFinishedAt, result.executionCorrelationID = started, finished, correlation
 	}()
 	artifact, err := adapter.Fetch(ctx, cloneInstance(instance), ref)
 	if err != nil {

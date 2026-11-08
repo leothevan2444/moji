@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/cardigann"
 	"github.com/leothevan2444/moji/internal/indexerdefs"
 )
 
@@ -52,4 +53,12 @@ func ErrorCode(err error) string {
 		}
 	}
 	return "INDEXER_OPERATION_FAILED"
+}
+
+func diagnosticHTTPStatus(err error) int {
+	var status *cardigann.HTTPStatusError
+	if errors.As(err, &status) {
+		return status.Status
+	}
+	return 0
 }

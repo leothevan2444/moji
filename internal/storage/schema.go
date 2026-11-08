@@ -38,6 +38,9 @@ var runtimeV5 string
 //go:embed schema/runtime_v6.sql
 var runtimeV6 string
 
+//go:embed schema/runtime_v7.sql
+var runtimeV7 string
+
 //go:embed schema/cache.sql
 var cacheSchema string
 
@@ -45,7 +48,7 @@ func CoreMigrations() []Migration {
 	return []Migration{{1, "normalized durable workflow", coreSchema}, {2, "durable resolved download location", coreV2}, {3, "upcoming subscription releases", coreV3}, {4, "runtime indexer definition bundles", coreV4}, {5, "durable selected indexer provenance", coreV5}, {6, "accepted indexer resource snapshots", coreV6}}
 }
 func RuntimeMigrations() []Migration {
-	return []Migration{{1, "replaceable observations", runtimeSchema}, {2, "isolated indexer sessions", runtimeV2}, {3, "server-owned indexer resources", runtimeV3}, {4, "scoped indexer observations", runtimeV4}, {5, "persistent interactive torrent searches", runtimeV5}, {6, "persistent origin egress cooldowns", runtimeV6}}
+	return []Migration{{1, "replaceable observations", runtimeSchema}, {2, "isolated indexer sessions", runtimeV2}, {3, "server-owned indexer resources", runtimeV3}, {4, "scoped indexer observations", runtimeV4}, {5, "persistent interactive torrent searches", runtimeV5}, {6, "persistent origin egress cooldowns", runtimeV6}, {7, "unified indexer executions", runtimeV7}}
 }
 func CacheMigrations() []Migration { return []Migration{{1, "external catalog cache", cacheSchema}} }
 func DefaultManagerOptions(directory string) ManagerOptions {

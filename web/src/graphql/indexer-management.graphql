@@ -5,12 +5,14 @@ fragment IndexerSettingFields on IndexerSetting {
   options { value label }
 }
 fragment IndexerInstanceFields on IndexerInstance {
+  recent { count failures latestFailed }
   health { search { ...IndexerObservationFields } fetch { ...IndexerObservationFields } }
   connectionRevision siteUrl description privacy language loginSupported
   id kind name enabled definitionId baseUrl trustedOrigins
   ruleDigest errorCode modes settings { ...IndexerSettingFields }
 }
 fragment IndexerInstancesFields on IndexerInstances {
+  jackettCatalogUpdatedAt jackettCatalogStale
   healthErrorCode
   revision ruleRevision ruleErrorCode catalogErrorCode jackettEnabled
   order items { ...IndexerInstanceFields }
@@ -44,4 +46,15 @@ mutation RefreshJackettIndexers { refreshJackettIndexers { ...IndexerInstancesFi
 
 fragment IndexerObservationFields on IndexerObservation {
   startedAt finishedAt errorCode correlationId retryAt
+}
+
+query IndexerDiagnostics($input: IndexerDiagnosticFilterInput!) {
+ indexerDiagnostics(input: $input) {
+  total hasMore sites { id name }
+  items {
+    executed elapsedKnown id instanceId name operation trigger taskId code searchId resourceId
+    configRevision bundleRevision startedAt finishedAt mode categories limit offset
+    errorCode correlationId retryAt results elapsedMs cacheHit partial truncated issueCount httpStatus
+  }
+ }
 }

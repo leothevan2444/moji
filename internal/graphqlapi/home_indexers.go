@@ -9,26 +9,27 @@ import (
 )
 
 type HomeIndexerService interface {
-	Summary(context.Context) (indexeradmin.Summary, error)
+	Summary(context.Context, int) (indexeradmin.Summary, error)
 }
 
-func (r *Resolver) homeIndexerSummary(ctx context.Context) (*model.HomeIndexerSummary, error) {
+func (r *Resolver) homeIndexerSummary(ctx context.Context, hours int) (*model.HomeIndexerSummary, error) {
 	if r.HomeIndexers == nil {
 		return nil, indexer.ErrNotConfigured
 	}
-	snapshot, err := r.HomeIndexers.Summary(ctx)
+	snapshot, err := r.HomeIndexers.Summary(ctx, hours)
 	if err != nil {
 		return nil, err
 	}
-	result := &model.HomeIndexerSummary{DefinitionJob: definitionJobToModel(snapshot.DefinitionJob), DefinitionErrorCode: snapshot.DefinitionErrorCode, BuiltinSearchSucceeded: snapshot.BuiltinSearchSucceeded, HealthErrorCode: snapshot.HealthErrorCode, Revision: snapshot.Revision, Total: snapshot.Total, BuiltinEnabled: snapshot.BuiltinEnabled, BuiltinUnverified: snapshot.BuiltinUnverified, Attention: snapshot.Attention, Issues: make([]*model.HomeIndexerIssue, 0, len(snapshot.Issues))}
-	for _, issue := range snapshot.Issues {
-		result.Issues = append(result.Issues, &model.HomeIndexerIssue{Operation: issue.Operation, Observation: indexerObservationModel(issue.Observation), ID: issue.ID, Name: issue.Name, ErrorCode: issue.ErrorCode})
-	}
-	if gateway := snapshot.Jackett; gateway != nil {
-		result.Jackett = &model.HomeJackettSummary{Sites: gateway.Sites, Stale: gateway.Stale, ErrorCode: gateway.ErrorCode}
-		if gateway.UpdatedAt != nil {
-			value := indexerTime(*gateway.UpdatedAt)
-			result.Jackett.UpdatedAt = &value
+	result := &model.HomeIndexerSummary{Revision: snapshot.Revision, Total: snapshot.Total, Hours: snapshot.Hours, StatisticsErrorCode: snapshot.StatisticsErrorCode}
+	if stats := snapshot.Statistics; stats != nil {
+		result.Statistics = &model.IndexerExecutionStatistics{WindowStartedAt: indexerTime(stats.WindowStartedAt), WindowEndedAt: indexerTime(stats.WindowEndedAt), Searches: stats.Searches, Records: stats.Records}
+		if stats.Searches > 0 {
+			rate := 100 * float64(stats.Succeeded) / float64(stats.Searches)
+			result.Statistics.SuccessRate = &rate
+			if stats.TimedSearches > 0 && stats.TotalElapsedMs > 0 {
+				elapsed := float64(stats.TotalElapsedMs) / float64(stats.TimedSearches)
+				result.Statistics.AverageElapsedMs = &elapsed
+			}
 		}
 	}
 	return result, nil

@@ -26,7 +26,7 @@ func (r currentBuiltinHealthRegistry) Refresh(ctx context.Context) (indexer.Regi
 	return r.CachedSnapshot(ctx)
 }
 
-func TestBuiltinHomeHealthUsesCurrentAccountAndActiveRuleNamespace(t *testing.T) {
+func TestBuiltinManagementHealthUsesCurrentAccountAndActiveRuleNamespace(t *testing.T) {
 	ctx := context.Background()
 	service, store, defs, _ := managementFixture(t)
 	if _, e := store.ApplyPatch(map[string]any{"indexers": map[string]any{"jackett": map[string]any{"enabled": false}}}); e != nil {
@@ -55,28 +55,28 @@ func TestBuiltinHomeHealthUsesCurrentAccountAndActiveRuleNamespace(t *testing.T)
 	if _, e = health.Observe(ctx, frozen, indexer.HealthSearch, time.Now().Add(-time.Second), indexer.ErrAuthentication, correlation); e != nil {
 		t.Fatal(e)
 	}
-	summary, e := service.Summary(ctx)
-	if e != nil || summary.Attention != 1 || len(summary.Issues) != 1 || summary.Issues[0].Observation.CorrelationID != correlation || summary.BuiltinUnverified != 0 {
+	summary, e := service.Instances(ctx)
+	if e != nil || len(summary.Items) != 1 || summary.Items[0].Health.Search == nil || summary.Items[0].Health.Search.CorrelationID != correlation {
 		t.Fatal("current auth failure missing", e)
 	}
 	changed := "synthetic-other-account"
 	if _, e = service.SaveBuiltin(ctx, save.Instance.ID, store.Revision(), BuiltinPatch{Settings: map[string]config.IndexerSettingChange{"password": {Value: &config.IndexerSettingValue{String: &changed}}}}); e != nil {
 		t.Fatal(e)
 	}
-	summary, e = service.Summary(ctx)
-	if e != nil || summary.Attention != 0 || len(summary.Issues) != 0 || summary.BuiltinUnverified != 1 {
+	summary, e = service.Instances(ctx)
+	if e != nil || len(summary.Items) != 1 || summary.Items[0].Health.Search != nil {
 		t.Fatal("new account inherited previous auth failure", e)
 	}
 	if _, e = service.SaveBuiltin(ctx, save.Instance.ID, store.Revision(), BuiltinPatch{Settings: map[string]config.IndexerSettingChange{"password": {Value: &config.IndexerSettingValue{String: &password}}}}); e != nil {
 		t.Fatal(e)
 	}
-	summary, e = service.Summary(ctx)
-	if e != nil || len(summary.Issues) != 1 {
+	summary, e = service.Instances(ctx)
+	if e != nil || len(summary.Items) != 1 || summary.Items[0].Health.Search == nil {
 		t.Fatal("original namespace not preserved", e)
 	}
 	defs.bundle.Manifest.Revision = strings.Repeat("b", 40)
-	summary, e = service.Summary(ctx)
-	if e != nil || summary.Attention != 0 || summary.BuiltinUnverified != 1 || len(summary.Issues) != 0 {
+	summary, e = service.Instances(ctx)
+	if e != nil || len(summary.Items) != 1 || summary.Items[0].Health.Search != nil {
 		t.Fatal("active rule revision reused old auth failure", e)
 	}
 	// Observations remain in the old namespace; reading the new rule did not erase

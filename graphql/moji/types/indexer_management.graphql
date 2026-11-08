@@ -75,6 +75,7 @@ type IndexerDefinitionPage {
   items: [IndexerDefinition!]!
 }
 type IndexerInstance {
+ recent: IndexerRecentExecutions!
  connectionRevision: String!
   "Whether the current built-in rule declares a login flow."
   loginSupported: Boolean!
@@ -96,6 +97,8 @@ type IndexerInstance {
   settings: [IndexerSetting!]!
 }
 type IndexerInstances {
+  jackettCatalogUpdatedAt: String
+  jackettCatalogStale: Boolean!
   healthErrorCode: String!
   revision: String!
   ruleRevision: String!
@@ -119,3 +122,52 @@ type IndexerObservation {
   correlationId: String!
   retryAt: String
 }
+
+extend type Query {
+  "Execution records, newest first. Retains 14 days plus each configured site's latest ten effective executions. before is an exclusive record ID."
+  indexerDiagnostics(input: IndexerDiagnosticFilterInput!): IndexerDiagnosticPage!
+}
+type IndexerDiagnostic {
+  executed: Boolean!
+  elapsedKnown: Boolean!
+  id: ID!
+  instanceId: ID!
+  name: String!
+  operation: String!
+  trigger: String!
+  taskId: ID!
+  code: String!
+  searchId: ID!
+  resourceId: ID!
+  configRevision: String!
+  bundleRevision: String!
+  startedAt: String!
+  finishedAt: String!
+  mode: String!
+  categories: [Int!]!
+  limit: Int!
+  offset: Int!
+  errorCode: String!
+  correlationId: String!
+  retryAt: String
+  results: Int!
+  elapsedMs: Int!
+  cacheHit: Boolean!
+  partial: Boolean!
+  truncated: Boolean!
+  issueCount: Int!
+  httpStatus: Int!
+}
+
+type IndexerRecentExecutions { count: Int! failures: Int! latestFailed: Boolean! }
+input IndexerDiagnosticFilterInput {
+ instanceId: ID
+ query: String
+ operation: String
+ outcome: String
+ since: String
+ limit: Int! = 20
+ before: ID
+}
+type IndexerDiagnosticPage { items: [IndexerDiagnostic!]! sites: [IndexerDiagnosticSite!]! total: Int! hasMore: Boolean! }
+type IndexerDiagnosticSite { id: ID! name: String! }
