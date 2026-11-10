@@ -1,4 +1,6 @@
 import { RefreshStashPerformerScenesDocument, type LibraryFilter, type SceneSourceFilter } from "../graphql/generated/graphql";
+import { usePerformerActivity } from "./usePerformerActivity";
+import { performerCheckRun } from "./useSubscriptionChecks";
 import { useEffect, useRef } from "react";
 import { useMutation } from "urql";
 import { usePerformers } from "./usePerformers";
@@ -49,6 +51,7 @@ export function usePerformersWorkspace(options: Options) {
   const subscriptions = useSubscriptions(options.enabled, performers.subscribedPerformers, performers.reloadStashPerformers);
   const queue = useQueuePerformerScenes();
   const checks = useSubscriptionChecks(options.enabled, [...performers.stashPerformers.map(actor => actor.id), ...(options.performerId ? [options.performerId] : []), ...(options.checkPerformerIds ?? [])]);
+  const activity = usePerformerActivity(options.enabled ? options.performerId : null, Boolean(options.performerId && performerCheckRun(checks.checkActivity,options.performerId)));
   const [{ fetching: refreshingPerformerCache }, refreshPerformerCache] = useMutation(RefreshStashPerformerScenesDocument);
 
   const reloadSubscription = async () => {
@@ -62,5 +65,5 @@ export function usePerformersWorkspace(options: Options) {
     return [await performers.reloadStashPerformers()];
   };
 
-  return { ...performers, ...scenes, ...subscriptions, ...queue, ...checks, fetchingSubscription: performers.fetchingStashPerformers, subscriptionError: performers.stashPerformersError, refreshingPerformerCache, reloadSubscription };
+  return { performerActivity:activity.activity, performerActivityError:Boolean(activity.error), refreshActivity:activity.reload, ...performers, ...scenes, ...subscriptions, ...queue, ...checks, fetchingSubscription: performers.fetchingStashPerformers, subscriptionError: performers.stashPerformersError, refreshingPerformerCache, reloadSubscription };
 }

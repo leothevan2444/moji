@@ -108,7 +108,12 @@ type QueueScenesResult struct {
 	Summary     QueueScenesSummary
 }
 
+type LatestRelease struct {
+	Code, Title, Date string
+}
+
 type Detail struct {
+	LatestRelease                                                           *LatestRelease
 	Performer                                                               Performer
 	Disambiguation, Birthdate, Ethnicity, Country, EyeColor                 string
 	HeightCm, Rating100                                                     *int

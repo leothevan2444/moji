@@ -40,7 +40,12 @@ func stashPerformerPageToModel(page StashPerformerPage) *model.StashPerformerCon
 }
 
 func stashPerformerDetailToModel(detail performerdomain.Detail) *model.StashPerformerDetail {
+	var latest *model.PerformerLatestRelease
+	if detail.LatestRelease != nil {
+		latest = &model.PerformerLatestRelease{Code: detail.LatestRelease.Code, Title: detail.LatestRelease.Title, Date: detail.LatestRelease.Date}
+	}
 	return &model.StashPerformerDetail{
+		LatestRelease:      latest,
 		Performer:          stashPerformerToModel(detail.Performer),
 		Disambiguation:     nilIfEmpty(detail.Disambiguation),
 		Birthdate:          nilIfEmpty(detail.Birthdate),
@@ -201,6 +206,7 @@ func subscriptionPerformerToModel(item subscription.SubscribedPerformer) *model.
 	}
 
 	return &model.SubscribedPerformer{
+		Activity:              activityToModel(item.Activity, item.Performer.ID),
 		Performer:             stashPerformerToModel(item.Performer),
 		LastCheckedAt:         formatTimePointer(item.LastCheckedAt),
 		LastError:             nilIfEmpty(item.LastError),
@@ -286,4 +292,8 @@ func formatTimePointer(value *time.Time) *string {
 	}
 	formatted := formatTime(*value)
 	return &formatted
+}
+
+func activityToModel(activity subscription.ActivityState, id string) *model.PerformerActivity {
+	return &model.PerformerActivity{EvaluationStatus: model.ActivityEvaluationStatus(activity.EvaluationStatus()), ID: id, Value: activity.Value, Rank: activity.Rank, LowerBound: activity.LowerBound, ObservedAt: formatTimePointer(activity.ObservedAt), LastSuccessAt: formatTimePointer(activity.LastSuccessAt), NextCheckAt: formatTimePointer(activity.NextCheckAt)}
 }

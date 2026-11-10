@@ -120,7 +120,7 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			TaskProcessingEnabled:           snapshot.Automation.TaskProcessingEnabled,
 			SourcingRetryIntervalHours:      snapshot.Automation.SourcingRetryIntervalHours,
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
-			SubscriptionPollIntervalHours:   snapshot.Automation.SubscriptionPollIntervalHours,
+			SubscriptionCheckEnabled:        snapshot.Automation.SubscriptionCheckEnabled,
 			StashBoxEndpoints:               append([]string(nil), snapshot.Automation.StashBoxEndpoints...),
 			SubscriptionReleasePolicy:       subscriptionReleasePolicyToModel(snapshot.Automation.SubscriptionReleasePolicy),
 			TorrentSelection:                torrentSelectionSettingsToModel(snapshot.Automation.TorrentSelection),
@@ -238,7 +238,7 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 		Automation: &model.AutomationStatus{
 			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
 			TaskProgressSyncEnabled:         snapshot.Automation.TaskProgressSyncEnabled,
-			SubscriptionPollIntervalHours:   snapshot.Automation.SubscriptionPollIntervalHours,
+			SubscriptionCheckEnabled:        snapshot.Automation.SubscriptionCheckEnabled,
 			SubscriptionPollEnabled:         snapshot.Automation.SubscriptionPollEnabled,
 		},
 		StashBox: &model.StashBoxStatus{

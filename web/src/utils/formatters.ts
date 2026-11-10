@@ -8,12 +8,14 @@ function activeLocale() {
 const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
 const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
 
-function dateTimeFormatter(short = false) {
+function dateTimeFormatter(style: "full" | "date" | "compact" = "full") {
   const locale = activeLocale();
-  const key = `${locale}:${short ? "short" : "full"}`;
+  const key = `${locale}:${style}`;
   let formatter = dateTimeFormatters.get(key);
   if (!formatter) {
-    formatter = new Intl.DateTimeFormat(locale, short
+    formatter = new Intl.DateTimeFormat(locale, style === "compact"
+      ? { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }
+      : style === "date"
       ? { month: "short", day: "numeric" }
       : { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
     dateTimeFormatters.set(key, formatter);
@@ -48,11 +50,11 @@ export function formatBytesRate(bytesPerSec: number) {
   return `${formatBytes(bytesPerSec)}/s`;
 }
 
-export function formatDateTime(value?: string | null) {
+export function formatDateTime(value?: string | null, style: "full" | "compact" = "full") {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return dateTimeFormatter().format(date);
+  return dateTimeFormatter(style).format(date);
 }
 
 export function formatLogEntries(entries: LogsDocumentQuery["logs"]) {
@@ -65,7 +67,7 @@ export function formatRelativeDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return dateTimeFormatter(true).format(date);
+  return dateTimeFormatter("date").format(date);
 }
 
 /**

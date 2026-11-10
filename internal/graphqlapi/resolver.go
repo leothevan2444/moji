@@ -123,7 +123,7 @@ type SettingsSectionUpdate struct {
 	TaskProcessingEnabled           *bool
 	SourcingRetryIntervalHours      int
 	TaskProgressSyncIntervalSeconds int
-	SubscriptionPollIntervalHours   int
+	SubscriptionCheckEnabled        bool
 	StashBoxEndpoints               []string
 	SubscriptionReleasePolicy       SubscriptionReleasePolicySnapshot
 	TorrentSelection                TorrentSelectionSettingsSnapshot
@@ -256,7 +256,7 @@ type AutomationSettingsSnapshot struct {
 	TaskProcessingEnabled           bool
 	SourcingRetryIntervalHours      int
 	TaskProgressSyncIntervalSeconds int
-	SubscriptionPollIntervalHours   int
+	SubscriptionCheckEnabled        bool
 	StashBoxEndpoints               []string
 	SubscriptionReleasePolicy       SubscriptionReleasePolicySnapshot
 	TorrentSelection                TorrentSelectionSettingsSnapshot
@@ -314,7 +314,7 @@ type ServiceStatusSnapshot struct {
 type AutomationStatusSnapshot struct {
 	TaskProgressSyncIntervalSeconds int
 	TaskProgressSyncEnabled         bool
-	SubscriptionPollIntervalHours   int
+	SubscriptionCheckEnabled        bool
 	SubscriptionPollEnabled         bool
 }
 

@@ -26,7 +26,7 @@ export interface AppOutletContext {
   onDeveloperModeChange?: (enabled: boolean) => void;
   pushToast: ReturnType<typeof useToast>["pushToast"];
   copyText: ReturnType<typeof useToast>["copyText"];
-  openHelp: () => void;
+  openHelp: (topicId?: HelpTopicId) => void;
 }
 
 export function AppLayout() {
@@ -41,6 +41,10 @@ export function AppLayout() {
   const [performanceOpen, setPerformanceOpen] = useState(false);
   useEffect(() => { if (!interfaceSettings.developerMode) setPerformanceOpen(false); }, [interfaceSettings.developerMode]);
   const [helpTopicId, setHelpTopicId] = useState<HelpTopicId>("introduction");
+  const openHelp = (topicId?: HelpTopicId) => {
+    if (topicId) setHelpTopicId(topicId);
+    setHelpOpen(true);
+  };
   useEffect(() => {
     const path = location.pathname;
     const key = path.startsWith("/tasks") ? "tasks" : path.startsWith("/performers") ? "performers" : path.startsWith("/discover") ? "discover" : path.startsWith("/settings") ? "settings" : path === "/stats" ? "stats" : "home";
@@ -58,7 +62,7 @@ export function AppLayout() {
       <main className="content">
         <TaskProcessingNotice />
         <Suspense fallback={<div className="skeleton skeleton-card" aria-label={t("common.loading")} />}>
-          <Outlet context={{ pushToast, copyText, openHelp: () => setHelpOpen(true), onDeveloperModeChange: interfaceSettings.updateDeveloperMode, onLanguageChange: interfaceSettings.updateLanguage, localeLoadError, retryLocale } satisfies AppOutletContext} />
+          <Outlet context={{ pushToast, copyText, openHelp, onDeveloperModeChange: interfaceSettings.updateDeveloperMode, onLanguageChange: interfaceSettings.updateLanguage, localeLoadError, retryLocale } satisfies AppOutletContext} />
         </Suspense>
       </main>
       {interfaceSettings.developerMode && performanceOpen ? (

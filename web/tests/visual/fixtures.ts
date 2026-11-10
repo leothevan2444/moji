@@ -138,7 +138,7 @@ const rootValue = {
     },
     automation: {
       taskProcessingEnabled: true,
-      taskProgressSyncIntervalSeconds: 60, subscriptionPollIntervalHours: 6,
+      taskProgressSyncIntervalSeconds: 60, subscriptionCheckEnabled: true,
       sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: {
         soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW",
@@ -160,7 +160,7 @@ const rootValue = {
     ingest: { configured: true },
     automation: {
       taskProgressSyncIntervalSeconds: 60, taskProgressSyncEnabled: false,
-      subscriptionPollIntervalHours: 6, subscriptionPollEnabled: false,
+      subscriptionCheckEnabled: true, subscriptionPollEnabled: false,
     },
     stashBox: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null },
     stashLibraries: [{ path: "/library" }],
@@ -185,7 +185,10 @@ const rootValue = {
   homeSubscriptionChecks: { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: 0, latestScheduled: null, activeRuns: [], recentRuns: [] },
   subscriptionCheckActivity: { activeCount: 0, allRunId: null, performers: [] },
   subscriptionCheck: null,
+  subscriptionCheckHistory: [],
+  performerActivity: ({id}:{id:string}) => ({id,evaluationStatus:"READY",value:3.25,rank:4,lowerBound:false,observedAt:now,lastSuccessAt:now,nextCheckAt:"2026-01-18T12:00:00Z"}),
   performerWorkspace: {
+    activities: [],
     performers: {
       items: [], page: 1, pageSize: 24, totalCount: 0, totalPages: 1,
       hasPrevPage: false, hasNextPage: false,

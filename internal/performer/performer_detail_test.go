@@ -74,6 +74,10 @@ func TestListPerformerScenesLoadsFortyItemBatchesOnDemand(t *testing.T) {
 		2: sceneFragments(41, 40),
 		3: sceneFragments(81, 5),
 	}}
+	oldDate, newDate, title := "2000-01-01", "2000-02-01", "Latest source work"
+	client.pages[1][0].Date = &oldDate
+	client.pages[1][30].Date = &newDate
+	client.pages[1][30].Title = &title
 	registry := metadata.NewRegistry(performerClientFactory{client: client})
 	registry.Replace([]stash.StashBoxEndpoint{{Name: "box", Endpoint: "https://box/graphql"}})
 	metadataService := metadata.NewService(nil, registry)
@@ -117,6 +121,9 @@ func TestListPerformerScenesLoadsFortyItemBatchesOnDemand(t *testing.T) {
 	}
 	if detail.StashBoxSceneCount != 85 || detail.SceneStatsComplete || detail.ActiveTaskCount != 0 {
 		t.Fatalf("unexpected detail summary: %+v", detail)
+	}
+	if detail.LatestRelease == nil || detail.LatestRelease.Date != newDate || detail.LatestRelease.Title != title || len(client.inputs) != 1 {
+		t.Fatalf("latest source release should use all loaded records without more requests: %+v calls=%d", detail.LatestRelease, len(client.inputs))
 	}
 	second, err := service.ListPerformerScenes(context.Background(), stashPerformer.ID, SceneQuery{Source: SceneSourceFilterStashBox, Page: 2, PageSize: 24})
 	if err != nil {

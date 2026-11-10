@@ -187,3 +187,11 @@
 
 .home-indexer-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .home-indexer-period { width: auto; max-width: 90px; min-height: 28px; padding: 2px 5px; font-size: 11px; }
+
+.home-check-heading-actions {
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ color: var(--muted-2);
+ button { font-size: 12px; }
+}

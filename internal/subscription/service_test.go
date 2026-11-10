@@ -842,8 +842,8 @@ func TestRefreshPerformerPollFindsNewReleaseOnLaterPage(t *testing.T) {
 	if item.PendingReleaseCount != 2 {
 		t.Fatalf("expected existing + new pending release, got %d", item.PendingReleaseCount)
 	}
-	if len(client.queryInputs) != 2 {
-		t.Fatalf("expected poll to inspect two 40-item batches, got %d calls", len(client.queryInputs))
+	if len(client.queryInputs) != 3 {
+		t.Fatalf("expected a third page to confirm rating coverage, got %d calls", len(client.queryInputs))
 	}
 	if client.queryInputs[0].PerPage != releaseQueryPerPage || client.queryInputs[1].Page != 2 {
 		t.Fatalf("unexpected query inputs: %+v", client.queryInputs)
@@ -890,8 +890,8 @@ func TestRefreshPerformerPollStopsAtKnownReleaseBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RefreshSubscribedPerformer failed: %v", err)
 	}
-	if len(client.queryInputs) != 2 {
-		t.Fatalf("expected known-release boundary to stop on second page, got %d calls", len(client.queryInputs))
+	if len(client.queryInputs) != 4 {
+		t.Fatalf("expected scoring to extend catalog coverage without processing historical releases, got %d calls", len(client.queryInputs))
 	}
 }
 

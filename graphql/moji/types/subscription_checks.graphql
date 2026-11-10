@@ -69,3 +69,28 @@ extend type Query {
   "Check reservations for at most 256 visible or selected actors; no history or upstream reads."
   subscriptionCheckActivity(ids: [ID!]!): SubscriptionCheckActivity!
 }
+
+"Confirmed activity observation; absent value/rank means evaluation is incomplete."
+enum ActivityEvaluationStatus {
+ READY
+ NOT_CHECKED
+ CHECK_FAILED
+ INCOMPLETE_CATALOG
+ INVALID_DATES
+ INVALID_MEMBERSHIP
+}
+type PerformerActivity {
+ evaluationStatus: ActivityEvaluationStatus!
+ id: ID!
+ value: Float
+ rank: Int
+ lowerBound: Boolean!
+ observedAt: String
+ lastSuccessAt: String
+ nextCheckAt: String
+}
+extend type Query {
+ performerActivity(id: ID!): PerformerActivity!
+ "At most 100 retained runs; full actor results are loaded only on opening a run."
+ subscriptionCheckHistory: [HomeSubscriptionCheckRun!]!
+}

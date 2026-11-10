@@ -58,3 +58,34 @@ func (r *queryResolver) SubscriptionCheckActivity(ctx context.Context, ids []str
 	}
 	return result, nil
 }
+
+// PerformerActivity is the resolver for the performerActivity field.
+func (r *queryResolver) PerformerActivity(ctx context.Context, id string) (*model.PerformerActivity, error) {
+	source, ok := r.PerformerSubscription.(interface {
+		PerformerActivity(context.Context, string) (subscription.ActivityState, error)
+	})
+	if !ok {
+		return activityToModel(subscription.ActivityState{}, id), nil
+	}
+	activity, err := source.PerformerActivity(ctx, id)
+	return activityToModel(activity, id), err
+}
+
+// SubscriptionCheckHistory is the resolver for the subscriptionCheckHistory field.
+func (r *queryResolver) SubscriptionCheckHistory(ctx context.Context) ([]*model.HomeSubscriptionCheckRun, error) {
+	source, ok := r.PerformerSubscription.(interface {
+		CheckHistory(context.Context) ([]subscription.HomeCheckRun, error)
+	})
+	out := []*model.HomeSubscriptionCheckRun{}
+	if !ok {
+		return out, nil
+	}
+	runs, err := source.CheckHistory(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, run := range runs {
+		out = append(out, homeCheckRunToModel(run))
+	}
+	return out, nil
+}

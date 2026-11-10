@@ -1,4 +1,43 @@
 {
+  "performerActivity": {
+    "help": "查看活跃度与活跃值说明",
+    "latestSourceHelp": "首选 StashBox 已加载作品中最近的有效发行日期；不含未来发行或日期未知的作品，目录可能尚未完整加载。",
+    "value": "活跃值",
+    "rank": "活跃度",
+    "rankLabel": "活跃度 {{rank}} / 5",
+    "nextCheck": "预计下次检查",
+    "lowerBound": "已读取作品的活跃值下限，已确认 5 档。",
+    "automaticChecks": "自动检查订阅演员的作品",
+    "history": "历史记录",
+    "recentRuns": "最近运行记录",
+    "loadFailed": "无法更新活跃度与检查安排。",
+    "states": {
+      "READY": "已评估",
+      "LOADING": "加载中",
+      "READ_FAILED": "读取失败",
+      "NOT_CHECKED": "尚未评估",
+      "CHECK_FAILED": "检查未成功",
+      "INCOMPLETE_CATALOG": "作品读取不全",
+      "INVALID_DATES": "日期不完整",
+      "INVALID_MEMBERSHIP": "作品归属异常",
+      "EVALUATING": "正在评估",
+      "WAITING_EVALUATION": "等待评估"
+    },
+    "details": {
+      "READY": "已取得评分。",
+      "LOADING": "正在读取评分。",
+      "READ_FAILED": "评分读取失败，请重试。",
+      "NOT_CHECKED": "尚未评估。",
+      "CHECK_FAILED": "作品检查未成功，暂不能评分。",
+      "INCOMPLETE_CATALOG": "作品记录未读全，暂不能评分。",
+      "INVALID_DATES": "发行日期信息不足。",
+      "INVALID_MEMBERSHIP": "作品与演员的关联尚未确认。",
+      "EVALUATING": "正在检查作品并评估。",
+      "WAITING_EVALUATION": "等待作品检查。"
+    },
+    "valueHelp": "近期发行记录的加权总值。",
+    "cardUnknown": "0 档：尚无可靠评分。"
+  },
   "indexerLogin": {
     "title": "登录站点",
     "scope": "使用已保存的站点配置。登录会话用于后续搜索和取种；答案不会保存到设置。重新打开可恢复仍有效的验证码。",
@@ -472,7 +511,6 @@
     "pausedDetail": "下载进度暂时停止更新，已下载的影片不会自动入库。正在下载或处理的内容可能继续完成，资源搜索和订阅检查不受影响。",
     "openSettings": "打开任务与订阅设置",
     "syncInterval": "任务检查间隔",
-    "pollInterval": "订阅检查间隔（小时）",
     "policyTitle": "新发行下载策略",
     "solo": "单人作品",
     "group": "多人作品",
@@ -480,8 +518,7 @@
     "compilationInfo": "标题、简介或标签含合集特征，或演员不少于 10 人时归为合集。",
     "dateRange": "自动下载的发行日期范围",
     "dateRangeInfo": "仅限单人和多人作品；超出范围或日期未知时进入复核。",
-    "title": "任务与订阅",
-    "pollIntervalHelp": "负数关闭定时检查；0 按 1 小时处理。"
+    "title": "任务与订阅"
   },
   "metadataSources": {
     "title": "元数据来源优先级",
@@ -2003,8 +2040,8 @@
     }
   },
   "performerWorkspace": {
-    "recentCheck": "最近检查",
-    "checkTime": "检查时间",
+    "checks": "检查",
+    "checkTime": "上次检查",
     "worksAndTasks": "作品与任务",
     "libraryWorks": "Stash 已入库作品",
     "sourceWorks": "数据源作品",

@@ -148,14 +148,15 @@ describe("Home release checks", () => {
     expect(onRefreshChecks).toHaveBeenCalledOnce();
   });
 
-  it("keeps recent outcomes collapsed and shows the backend's partial failure", () => {
+  it("shows recent outcomes directly and retains a history button", () => {
     const finished = { ...run, status: "PARTIAL", failedCount: 1 } as typeof run;
     setup({ checks: { ...checks, activeCount: 0, activeRuns: [], latestScheduled: finished, recentRuns: [finished] } });
     const region = screen.getByRole("region", { name: /Release checks/ });
     expect(within(region).getByText("Idle")).toBeTruthy();
-    const history = region.querySelector("details")!;
-    expect(history.open).toBe(false);
-    expect(within(history).getByText("Partially failed")).toBeTruthy();
-    expect(within(history).getByText("Succeeded 3 · Failed 1 · Skipped 0")).toBeTruthy();
+    expect(region.querySelector("details")).toBeNull();
+    const recent = within(region).getByLabelText("Recent runs");
+    expect(within(recent).getByText("Partially failed")).toBeTruthy();
+    expect(within(recent).getByText("Succeeded 3 · Failed 1 · Skipped 0")).toBeTruthy();
+    expect(within(region).getByRole("button", {name:"History"})).toBeTruthy();
   });
 });

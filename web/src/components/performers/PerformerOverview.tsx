@@ -1,3 +1,7 @@
+import { ActivityLevelIcons } from "./ActivityLevelIcons";
+import { activityDisplayStatus, activityRankForDisplay } from "./performerActivityStatus";
+import { faRotateRight } from "@fortawesome/free-solid-svg-icons/faRotateRight";
+import { faCircleInfo } from "@fortawesome/free-solid-svg-icons/faCircleInfo";
 import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
 import { faClipboardQuestion } from "@fortawesome/free-solid-svg-icons/faClipboardQuestion";
 import { faHeart } from "@fortawesome/free-solid-svg-icons/faHeart";
@@ -22,14 +26,22 @@ import {
 import { performerCheckRun } from "../../hooks/useSubscriptionChecks";
 import type { PerformerSummary, PerformersPageProps, StashPerformerDetail, SubscribedPerformerEntry } from "./types";
 
-export function PerformerOverview({ performerDetail, performerSummary, performerSubscription, page }: { performerDetail: NonNullable<StashPerformerDetail>; performerSummary?: PerformerSummary | null; performerSubscription: SubscribedPerformerEntry | null; page: Pick<PerformersPageProps, "checkActivity" | "checksLoading" | "checksError" | "checkStarting" | "stashBaseURL" | "reviewCounts" | "pendingSubscriptionID" | "onToggle" | "onRefreshOne" | "fetchingPerformerSummary">; }) {
+export function PerformerOverview({ performerDetail, performerSummary, performerSubscription, page }: { performerDetail: NonNullable<StashPerformerDetail>; performerSummary?: PerformerSummary | null; performerSubscription: SubscribedPerformerEntry | null; page: Pick<PerformersPageProps, "checkActivity" | "checksLoading" | "checksError" | "checkStarting" | "stashBaseURL" | "reviewCounts" | "pendingSubscriptionID" | "onToggle" | "onRefreshOne" | "fetchingPerformerSummary" | "performerActivity" | "performerActivityError" | "onRefreshActivity" | "onOpenActivityHelp">; }) {
   const { t } = useTranslation();
   const checkRun = performerCheckRun(page.checkActivity, performerDetail.performer.id);
   const checkItem = checkRun;
+  const activity = page.performerActivity;
+  const activityError = page.performerActivityError;
+  const reloadActivity = page.onRefreshActivity;
+  const ratingStatus = activityDisplayStatus(activity, Boolean(activityError), checkItem?.status);
+  const displayedRank = activityRankForDisplay(activity);
+  const unknownReason = t(`performerActivity.details.${ratingStatus}`);
+  const rankDescription = displayedRank ? t("performerActivity.rankLabel", {rank:displayedRank}) : unknownReason;
+  const valueDescription = [displayedRank ? t(activity?.lowerBound ? "performerActivity.lowerBound" : "performerActivity.valueHelp") : unknownReason, activityError ? t("performerActivity.loadFailed") : null].filter(Boolean).join(" ");
   const [showCheckError, setShowCheckError] = useState(false);
   const { stashBaseURL, reviewCounts = {}, pendingSubscriptionID, onToggle, onRefreshOne } = page;
   const detailStashURL = stashPerformerURL(performerDetail.performer.id, stashBaseURL);
-  const latestRelease = performerSubscription?.recentReleases[0] ?? null;
+  const latestRelease = performerSummary?.latestRelease ?? null;
   return (
     <article className="performer-detail-card">
       <div className="performer-detail-hero">
@@ -115,17 +127,40 @@ export function PerformerOverview({ performerDetail, performerSummary, performer
                 .join(" · ") || t("performerUi.none")}
             </p>
             {latestRelease ? (
-              <p title={latestRelease.title}>
+              <p title={[latestRelease.title, t("performerActivity.latestSourceHelp")].join(" · ")}>
                 <span>{t("performerUi.latest")}</span>
-                {latestRelease.code || latestRelease.title} · {formatRelativeDate(latestRelease.date || latestRelease.seenAt)}
+                {latestRelease.code || latestRelease.title} · {formatRelativeDate(latestRelease.date)}
               </p>
             ) : null}
           </div>
 
           <div className="performer-summary-groups">
-            <section className="performer-summary-group" aria-label={t("performerWorkspace.recentCheck")}>
-              <h4>{t("performerWorkspace.recentCheck")}</h4>
+            <section className="performer-summary-group performer-summary-group--activity" aria-label={t("performerActivity.rank")}>
+              <h4>{t("performerActivity.rank")}</h4>
+              <button type="button" className="performer-activity-help" title={t("performerActivity.help")} onClick={page.onOpenActivityHelp}>{t("performerActivity.help")}</button>
+              <dl className="performer-summary-metrics performer-summary-metrics--activity">
+                <div>
+                  <dt>{t("performerActivity.rank")}</dt>
+                  <dd title={rankDescription}>
+                    <ActivityLevelIcons rank={displayedRank} label={displayedRank ? rankDescription : t(`performerActivity.states.${ratingStatus}`)} title={rankDescription} />
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("performerActivity.value")}</dt>
+                  <dd className="performer-activity-value" title={valueDescription}>
+                    <span>{activity?.value != null ? `${activity.lowerBound ? "≥ " : ""}${activity.value.toFixed(2)}` : t(`performerActivity.states.${ratingStatus}`)}</span>
+                    <span className="performer-activity-retry">{activityError ? <button type="button" className="performer-check-reason" title={`${t("performerActivity.loadFailed")} ${t("common.retry")}`} aria-label={`${t("performerActivity.loadFailed")} ${t("common.retry")}`} onClick={reloadActivity}><FontAwesomeIcon icon={faRotateRight} /></button> : null}</span>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+            <section className="performer-summary-group" aria-label={t("performerWorkspace.checks")}>
+              <h4>{t("performerWorkspace.checks")}</h4>
               <dl className="performer-summary-metrics performer-summary-metrics--check">
+                <div>
+                  <dt>{t("performerActivity.nextCheck")}</dt>
+                  <dd title={performerDetail.performer.subscribed && activity?.nextCheckAt ? formatDateTime(activity.nextCheckAt) : undefined}>{checkRun ? t("subscriptionChecks.itemStates.RUNNING") : performerDetail.performer.subscribed && activity?.nextCheckAt ? formatDateTime(activity.nextCheckAt, "compact") : "—"}</dd>
+                </div>
                 <div>
                   <dt>{t("performerWorkspace.checkTime")}</dt>
                   <dd title={formatDateTime(performerSubscription?.lastCheckedAt)}>{formatRelative(performerSubscription?.lastCheckedAt) ?? t("performerUi.neverChecked")}</dd>
@@ -134,12 +169,12 @@ export function PerformerOverview({ performerDetail, performerSummary, performer
                   <dt>{t("performerUi.checkStatus")}</dt>
                   <dd className="performer-check-result">
                     <span className={`performer-check-state ${performerSubscription?.lastError ? "is-failed" : performerDetail.performer.subscribed && performerSubscription?.lastCheckedAt ? "is-healthy" : "is-neutral"}`}>{checkRun ? t(`subscriptionChecks.itemStates.${checkItem?.status ?? "PENDING"}`) : t(performerSubscription?.lastError ? "performerUi.failed" : performerDetail.performer.subscribed ? performerSubscription?.lastCheckedAt ? "performerUi.normal" : "performerUi.neverChecked" : "performerUi.unsubscribed")}</span>
-                    {performerSubscription?.lastError ? <button type="button" className="performer-check-reason" aria-haspopup="dialog" title={t("performerWorkspace.errorDetails")} onClick={() => setShowCheckError(true)}>{t("performerWorkspace.errorReason")}</button> : null}
+                    {performerSubscription?.lastError ? <button type="button" className="performer-check-reason" aria-label={t("performerWorkspace.errorReason")} aria-haspopup="dialog" title={t("performerWorkspace.errorDetails")} onClick={() => setShowCheckError(true)}><span className="performer-check-reason__label">{t("performerWorkspace.errorReason")}</span><FontAwesomeIcon className="performer-check-reason__icon" icon={faCircleInfo} aria-hidden="true" /></button> : null}
                   </dd>
                 </div>
               </dl>
             </section>
-            <section className="performer-summary-group" aria-label={t("performerWorkspace.worksAndTasks")}>
+            <section className="performer-summary-group performer-summary-group--works" aria-label={t("performerWorkspace.worksAndTasks")}>
               <h4>{t("performerWorkspace.worksAndTasks")}</h4>
               <dl className="performer-summary-metrics performer-summary-metrics--works">
                 <div>
@@ -155,7 +190,6 @@ export function PerformerOverview({ performerDetail, performerSummary, performer
                   <dd title={performerSummary ? t(performerSummary.sceneStatsComplete ? "performerWorkspace.activeTasksHelp" : "performerWorkspace.partialTasksHelp") : undefined}>{performerSummary ? performerSummary.sceneStatsComplete ? performerSummary.activeTaskCount : `≥ ${performerSummary.activeTaskCount}` : "—"}</dd>
                 </div>
               </dl>
-              {performerSummary && !performerSummary.sceneStatsComplete ? <p className="performer-summary-note">{t("performerWorkspace.partialTasksHelp")}</p> : null}
             </section>
           </div>
         </div>

@@ -230,6 +230,16 @@ func (s *Service) subscribePerformer(ctx context.Context, performerID string) (S
 		logging.Errorf("subscription: load state for performer %s after subscribe failed: %v", item.ID, err)
 		return SubscribedPerformer{}, err
 	}
+	if state == nil {
+		state = &PerformerState{PerformerID: item.ID}
+	}
+	if state.Activity.NextCheckAt == nil {
+		now := s.now().UTC()
+		state.Activity.NextCheckAt = &now
+		if err := s.store.InitializeCheckSchedule(ctx, item.ID, now); err != nil {
+			return SubscribedPerformer{}, err
+		}
+	}
 	logging.Infof("subscription: subscribed performer %s (%s)", item.ID, item.Name)
 
 	result := buildSubscribedPerformer(item, state)
@@ -307,7 +317,27 @@ func (s *Service) executeCheckItem(ctx context.Context, performerID string) (res
 	}()
 	unlock := s.lockPerformerOperation(performerID)
 	defer unlock()
-	return s.refreshSubscribedPerformer(ctx, performerID)
+	started := s.now().UTC()
+	result, resultErr = s.refreshSubscribedPerformer(ctx, performerID)
+	finalCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	scheduleErr := resultErr
+	if scheduleErr == nil && result.LastError != "" {
+		scheduleErr = errors.New(result.LastError)
+	}
+	state, err := s.recordCheckSchedule(finalCtx, performerID, started, scheduleErr)
+	if err != nil {
+		return result, err
+	}
+	if state != nil {
+		result.Activity = state.Activity
+		result.LastCheckedAt = state.LastCheckedAt
+		result.LastError = state.LastError
+	}
+	if result.Performer.ID != "" {
+		s.publishEvent(PerformerSubscriptionEventUpdated, performerID, &result)
+	}
+	return result, resultErr
 }
 
 func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID string) (SubscribedPerformer, error) {
@@ -346,16 +376,17 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	state.LastError = ""
 
 	releases, err := s.fetchReleases(ctx, performer, state)
+	// Save the catalog observation without touching release links or deadlines.
+	if state.Activity.ObservedAt != nil && !state.Activity.ObservedAt.Before(now) {
+		if saveErr := s.store.SaveActivity(ctx, performerID, state.Activity); saveErr != nil {
+			return SubscribedPerformer{}, saveErr
+		}
+	}
 	if err != nil {
 		state.LastError = err.Error()
-		if putErr := s.store.Put(ctx, state); putErr != nil {
-			logging.Errorf("subscription: persist error state for performer %s failed: %v", performerID, putErr)
-			return SubscribedPerformer{}, putErr
-		}
 		result := buildSubscribedPerformer(item, state)
 		s.applyStoredReviewSummary(ctx, &result)
-		s.publishEvent(PerformerSubscriptionEventUpdated, performerID, &result)
-		logging.Errorf("subscription: refresh failed for performer %s (%s): %v", performerID, performer.Name, err)
+		logging.Errorf("subscription: refresh failed for performer %s: %v", performerID, err)
 		if errors.Is(err, errNoMatchingStashBoxMapping) {
 			return result, nil
 		}
@@ -546,7 +577,6 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	result := buildSubscribedPerformer(item, state)
 	s.applyStoredReviewSummary(ctx, &result)
 	applyReviewSummary(&result, reviewRecords)
-	s.publishEvent(PerformerSubscriptionEventUpdated, performerID, &result)
 	return result, nil
 }
 
@@ -611,9 +641,13 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 	releases := make([]Release, 0, releaseQueryPerPage)
 	stats := releaseFetchStats{}
 
-	for page := 1; page <= strategy.maxPages; page++ {
+	sample := newActivitySample(now, s.releaseTimezone())
+	releaseDone := false
+	var releaseErr error
+	for page := 1; page <= releaseQueryBackfillMaxPages; page++ {
 		stats.pagesRequested++
 		var scenes []*stashboxgraphql.SceneFragment
+		complete := false
 		if s.metadata.HasCache() {
 			cachePolicy := metadata.RequireFresh
 			if page == 1 {
@@ -626,6 +660,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 			start := min((page-1)*strategy.perPage, len(cached.Scenes))
 			end := min(start+strategy.perPage, len(cached.Scenes))
 			scenes = cached.Scenes[start:end]
+			complete = cached.Complete && end >= len(cached.Scenes)
 		} else {
 			var err error
 			scenes, err = target.Client.QueryScenes(ctx, stashboxgraphql.SceneQueryInput{
@@ -636,9 +671,25 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 				return nil, err
 			}
 		}
+		complete = complete || len(scenes) == 0
+		ratingScenes := make([]*stashboxgraphql.SceneFragment, 0, len(scenes))
+		for _, scene := range scenes {
+			if _, matched := releasePerformerNames(target.Performer, scene); matched {
+				ratingScenes = append(ratingScenes, scene)
+			} else {
+				sample.invalidMembership = true
+			}
+		}
+		sample.observe(ratingScenes, complete)
 		if len(scenes) == 0 {
 			stats.stopReason = "empty_page"
 			break
+		}
+		if releaseDone {
+			if complete || sample.sufficient(now) {
+				break
+			}
+			continue
 		}
 		stats.pagesWithResult++
 
@@ -664,7 +715,8 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 			}
 			code := strings.TrimSpace(stringValue(scene.Code))
 			if code == "" && releasedate.Check(stringValue(scene.Date), now, s.releaseTimezone()) != releasedate.ErrNotReleased {
-				return nil, fmt.Errorf("subscription: stash-box scene %q is missing code", scene.ID)
+				releaseErr = fmt.Errorf("subscription: stash-box scene %q is missing code", scene.ID)
+				continue
 			}
 			pageReleaseCount++
 			release := Release{
@@ -686,7 +738,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 			if len(scene.Urls) > 0 && scene.Urls[0] != nil {
 				release.URL = scene.Urls[0].URL
 			}
-			if _, exists := seenReleaseKeys[release.Key]; !exists {
+			if _, exists := seenReleaseKeys[release.Key]; !exists && !releaseDone && page <= strategy.maxPages {
 				seenReleaseKeys[release.Key] = struct{}{}
 				releases = append(releases, release)
 			}
@@ -701,21 +753,34 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 			}
 		}
 
-		if !pageHasUniqueScene || pageReleaseCount == 0 {
-			stats.stopReason = "empty_page"
+		if !pageHasUniqueScene {
+			stats.stopReason = "repeated_page"
 			break
+		}
+		if pageReleaseCount == 0 {
+			releaseDone = true
+			stats.stopReason = "empty_page"
 		}
 		if strategy.mode == releaseFetchModePoll {
 			if page > 1 && pageKnownReleaseCount == pageReleaseCount {
 				stats.stopReason = "known_release_boundary"
-				break
+				releaseDone = true
 			}
 			if pageDownloadCandidateCount > 0 && pageDateBoundaryHitCount == pageDownloadCandidateCount {
 				stats.stopReason = "release_date_boundary"
-				break
+				releaseDone = true
 			}
 		}
+		if page >= strategy.maxPages {
+			releaseDone = true
+		}
+		if complete || (releaseDone && sample.sufficient(now)) {
+			break
+		}
 	}
+	observed := sample.snapshot(now.UTC())
+	observed.NextCheckAt, observed.Failures = state.Activity.NextCheckAt, state.Activity.Failures
+	state.Activity = observed
 	if stats.stopReason == "" {
 		stats.stopReason = "max_pages_reached"
 	}
@@ -729,7 +794,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		len(releases),
 		stats.stopReason,
 	)
-	return releases, nil
+	return releases, releaseErr
 }
 
 func (s *Service) SetReleasePolicy(policy ReleasePolicyConfig) {
@@ -779,6 +844,7 @@ func buildSubscribedPerformer(performer performer.Performer, state *PerformerSta
 		return item
 	}
 
+	item.Activity = state.Activity
 	item.LastCheckedAt = state.LastCheckedAt
 	item.LastError = state.LastError
 	item.PendingReleaseCount = len(state.PendingReleases)

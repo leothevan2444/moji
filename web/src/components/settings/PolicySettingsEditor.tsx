@@ -101,7 +101,7 @@ function encodePolicy(form: PolicySettingsForm, area: SettingsPolicyArea) {
   if (area === "tasks") return {tasks:{
     task_processing_enabled:form.taskProcessingEnabled,
     task_progress_sync_interval_seconds:numeric(form.taskProgressSyncIntervalSeconds),
-    subscription_poll_interval_hours:numeric(form.subscriptionPollIntervalHours),
+    subscription_check_enabled:form.subscriptionCheckEnabled,
     sourcing_retry_interval_hours:numeric(form.sourcingRetryIntervalHours),
     subscription_release_policy:{solo_behavior:form.subscriptionReleasePolicy.soloBehavior,group_behavior:form.subscriptionReleasePolicy.groupBehavior,compilation_behavior:form.subscriptionReleasePolicy.compilationBehavior,vr_behavior:form.subscriptionReleasePolicy.vrBehavior,max_group_performer_count:numeric(form.subscriptionReleasePolicy.maxGroupPerformerCount),release_date_range:form.subscriptionReleasePolicy.releaseDateRange}
   }};
@@ -212,7 +212,7 @@ export function PolicySettingsEditor({
       taskProcessingEnabled: runtimeSettings.policies.taskProcessingEnabled ?? true,
       taskProgressSyncIntervalSeconds: String([30,60,120,300].includes(runtimeSettings.policies.taskProgressSyncIntervalSeconds) ? runtimeSettings.policies.taskProgressSyncIntervalSeconds : 60),
       sourcingRetryIntervalHours: String(runtimeSettings.policies.sourcingRetryIntervalHours || 6),
-      subscriptionPollIntervalHours: String(runtimeSettings.policies.subscriptionPollIntervalHours || 1),
+      subscriptionCheckEnabled: runtimeSettings.policies.subscriptionCheckEnabled,
       stashBoxEndpoints:[...(runtimeSettings.policies.stashBoxEndpoints ?? [])],
       subscriptionReleasePolicy:{...runtimeSettings.policies.subscriptionReleasePolicy,vrBehavior:runtimeSettings.policies.subscriptionReleasePolicy.vrBehavior ?? SubscriptionReleaseBehavior.Review,maxGroupPerformerCount:String(runtimeSettings.policies.subscriptionReleasePolicy.maxGroupPerformerCount || 3)},
       torrentSelection:torrentSelectionFromRuntime(runtimeSettings)
@@ -429,14 +429,10 @@ export function PolicySettingsEditor({
               onChange={event => setPolicySettingsForm(current => ({ ...current, sourcingRetryIntervalHours: event.target.value }))} />
             <small>{t("resourceTracking.intervalHelp")}</small>
           </label>
-          <label className="settings-field">
-            <span>{t("taskSettings.pollInterval")}</span>
-            <input
-              value={policyForm.subscriptionPollIntervalHours}
-              onChange={(event) => setPolicySettingsForm((current) => ({ ...current, subscriptionPollIntervalHours: event.target.value }))}
-              placeholder="1"
-            />
-            <small>{t("taskSettings.pollIntervalHelp")}</small>
+          <label className="settings-toggle-row">
+            <input type="checkbox" checked={policyForm.subscriptionCheckEnabled}
+              onChange={event => setPolicySettingsForm(current => ({ ...current, subscriptionCheckEnabled: event.target.checked }))} />
+            <span>{t("performerActivity.automaticChecks")}</span>
           </label>
 
           </SettingsSubpanel>

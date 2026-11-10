@@ -54,7 +54,7 @@ func NewSQLiteStore(path string) (*SQLiteStore, error) {
 func (s *SQLiteStore) Get(ctx context.Context, performerID string) (*PerformerState, error) {
 	var stateRow sqlitePerformerStateRow
 	if err := s.db.GetContext(ctx, &stateRow, `
-SELECT performer_id, last_checked_at, last_error
+SELECT performer_id, last_checked_at, last_error, activity_json, next_check_at, check_failures
 FROM subscription_performer_state
 WHERE performer_id = ?`, performerID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -112,18 +112,28 @@ func (s *SQLiteStore) Put(ctx context.Context, state *PerformerState) error {
 		return errors.New("subscription: performer state is nil")
 	}
 
+	activityJSON, err := marshalActivityObservation(state.Activity)
+	if err != nil {
+		return err
+	}
 	return s.withWrite(ctx, func(tx *sqlx.Tx) error {
 
 		now := time.Now().UTC()
 		if _, err := tx.NamedExecContext(ctx, `
-INSERT INTO subscription_performer_state (performer_id, last_checked_at, last_error, created_at, updated_at)
-VALUES (:performer_id, :last_checked_at, :last_error, :created_at, :updated_at)
+INSERT INTO subscription_performer_state (performer_id, last_checked_at, last_error, activity_json, next_check_at, check_failures, created_at, updated_at)
+VALUES (:performer_id, :last_checked_at, :last_error, :activity_json, :next_check_at, :check_failures, :created_at, :updated_at)
 ON CONFLICT(performer_id) DO UPDATE SET
+  next_check_at = excluded.next_check_at,
+  check_failures = excluded.check_failures,
+  activity_json = excluded.activity_json,
   last_checked_at = excluded.last_checked_at,
   last_error = excluded.last_error,
   updated_at = excluded.updated_at
-WHERE subscription_performer_state.last_checked_at IS NOT excluded.last_checked_at OR subscription_performer_state.last_error IS NOT excluded.last_error`,
+WHERE subscription_performer_state.next_check_at IS NOT excluded.next_check_at OR subscription_performer_state.check_failures IS NOT excluded.check_failures OR subscription_performer_state.activity_json IS NOT excluded.activity_json OR subscription_performer_state.last_checked_at IS NOT excluded.last_checked_at OR subscription_performer_state.last_error IS NOT excluded.last_error`,
 			map[string]any{
+				"next_check_at":   formatCheckDeadline(state.Activity.NextCheckAt),
+				"check_failures":  state.Activity.Failures,
+				"activity_json":   string(activityJSON),
 				"performer_id":    state.PerformerID,
 				"last_checked_at": formatOptionalTimestamp(state.LastCheckedAt),
 				"last_error":      nullableStringParam(state.LastError),
@@ -215,7 +225,7 @@ func (s *SQLiteStore) List(ctx context.Context) ([]*PerformerState, error) {
 	}
 	defer tx.Rollback()
 	var rows []sqlitePerformerStateRow
-	if err := tx.SelectContext(ctx, &rows, "SELECT performer_id,last_checked_at,last_error FROM subscription_performer_state ORDER BY performer_id"); err != nil {
+	if err := tx.SelectContext(ctx, &rows, "SELECT performer_id,last_checked_at,last_error,activity_json,next_check_at,check_failures FROM subscription_performer_state ORDER BY performer_id"); err != nil {
 		return nil, err
 	}
 	states := make([]*PerformerState, 0, len(rows))
@@ -258,6 +268,9 @@ func (s *SQLiteStore) List(ctx context.Context) ([]*PerformerState, error) {
 }
 
 type sqlitePerformerStateRow struct {
+	NextCheckAt   sql.NullString `db:"next_check_at"`
+	CheckFailures int            `db:"check_failures"`
+	ActivityJSON  string         `db:"activity_json"`
 	PerformerID   string         `db:"performer_id"`
 	LastCheckedAt sql.NullString `db:"last_checked_at"`
 	LastError     sql.NullString `db:"last_error"`
@@ -268,7 +281,17 @@ func (r sqlitePerformerStateRow) toState() (*PerformerState, error) {
 	if err != nil {
 		return nil, fmt.Errorf("subscription: parse last_checked_at for %q: %w", r.PerformerID, err)
 	}
+	var activity ActivityState
+	if err := json.Unmarshal([]byte(r.ActivityJSON), &activity); err != nil {
+		return nil, fmt.Errorf("subscription: invalid activity for %q: %w", r.PerformerID, err)
+	}
+	next, err := parseOptionalTimestamp(r.NextCheckAt)
+	if err != nil {
+		return nil, err
+	}
+	activity.NextCheckAt, activity.Failures = next, r.CheckFailures
 	return &PerformerState{
+		Activity:      activity,
 		PerformerID:   r.PerformerID,
 		LastCheckedAt: lastCheckedAt,
 		LastError:     nullableStringValue(r.LastError),

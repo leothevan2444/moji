@@ -24,9 +24,9 @@ const graphqlOverrides = {
     if (options?.filter === "REVIEW") items = items.filter(actor => actor.id === "actor-24");
     if (options?.filter === "ERROR") items = items.filter(actor => actor.id === "actor-1");
     if (options?.sort === "NAME") items.sort((a, b) => a.name.localeCompare(b.name));
-    return { performers: { items: items.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: items.length, totalPages: Math.ceil(items.length / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < items.length }, subscribedPerformers: states };
+    return { activities: items.slice((page - 1) * pageSize, page * pageSize).map(actor=>{const rank=actor.id==="actor-0"?4:actor.id==="actor-2"?1:actor.id==="actor-3"?5:null;return {id:actor.id,value:rank===4?3.25:rank===1?0:rank===5?9:null,rank,lowerBound:false,evaluationStatus:rank?"READY":"NOT_CHECKED",observedAt:rank?"2026-01-15T12:00:00Z":null};}), performers: { items: items.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: items.length, totalPages: Math.ceil(items.length / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < items.length }, subscribedPerformers: states };
   },
-  stashPerformerDetail: { performer: actors[0], disambiguation: "Profile information remains readable on small screens.", birthdate: "2000-01-01", ethnicity: null, country: "JP", eyeColor: null, heightCm: 165, rating100: null, urls: [], matchedStashBox: { name: "Example StashBox", endpoint: "https://example.com/graphql", performerId: "remote-0", performerName: actors[0].name }, totalSceneCount: 30, stashSceneCount: 10, stashBoxSceneCount: 30, dedupedSceneCount: 30, activeTaskCount: 2, sceneStatsComplete: true, sceneStatsStale: false },
+  stashPerformerDetail: { latestRelease: {code:"NEW-001",title:"Latest source release, independent of check history",date:"2026-01-14"}, performer: actors[0], disambiguation: "Profile information remains readable on small screens.", birthdate: "2000-01-01", ethnicity: null, country: "JP", eyeColor: null, heightCm: 165, rating100: null, urls: [], matchedStashBox: { name: "Example StashBox", endpoint: "https://example.com/graphql", performerId: "remote-0", performerName: actors[0].name }, totalSceneCount: 30, stashSceneCount: 10, stashBoxSceneCount: 30, dedupedSceneCount: 30, activeTaskCount: 2, sceneStatsComplete: true, sceneStatsStale: false },
   stashPerformerScenes: ({ input }: { input: { page?: number; }; }) => { const page = input.page ?? 1; return { items: scenes.slice((page - 1) * 24, page * 24), page, pageSize: 24, totalCount: 30, totalPages: 2, hasPrevPage: page > 1, hasNextPage: page < 2, stashSceneCount: 10, stashBoxCount: 30, dedupedCount: 30, totalCountExact: true, stashBoxRemoteCount: 30, stashBoxLoadedCount: 30, cacheComplete: true, cacheUpdatedAt: "2026-01-15T11:30:00Z", cacheStale: false }; },
 };
 test.use({ graphqlOverrides: { ...graphqlOverrides, stashPerformerProfile: graphqlOverrides.stashPerformerDetail } });
@@ -38,6 +38,23 @@ for (const locale of ["zh-CN", "en"] as const) {
     await expect(page.locator(".profile-card")).toHaveCount(24);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(page.locator(".skeleton")).toHaveCount(0);
+    const cards=page.locator(".profile-card");
+    const known=cards.nth(0).locator(".performer-activity-icons");
+    await expect(known.locator("svg")).toHaveCount(5);
+    await expect(known.locator(".is-active")).toHaveCount(4);
+    await expect(known).toHaveAttribute("title",locale==="en"?"Activity level 4 / 5":"活跃度 4 / 5");
+    await expect(cards.nth(0)).not.toContainText("3.25");
+    const unknown=cards.nth(1).locator(".performer-activity-icons");
+    await expect(unknown).toHaveClass(/is-unknown/);
+    await expect(unknown.locator("svg")).toHaveCount(5);
+    await expect(unknown.locator(".is-active")).toHaveCount(0);
+    await expect(unknown).toHaveAttribute("aria-label",locale==="en"?"Activity level 0 / 5":"活跃度 0 / 5");
+    await expect(unknown).toHaveAttribute("title",locale==="en"?/Level 0 means no reliable rating/:/0 档：尚无可靠评分/);
+    expect(await unknown.evaluate(el=>getComputedStyle(el,"::after").borderTopWidth)).toBe("1px");
+    await expect(cards.nth(2).locator(".performer-activity-icons .is-active")).toHaveCount(1);
+    await expect(cards.nth(2).locator(".performer-activity-icons")).not.toHaveClass(/is-unknown/);
+    await expect(cards.nth(3).locator(".performer-activity-icons .is-active")).toHaveCount(5);
+    expect(await cards.evaluateAll(els=>els.every(card=>card.querySelector(".performer-activity-icons")!.getBoundingClientRect().right<=card.querySelector(".profile-actions")!.getBoundingClientRect().left))).toBe(true);
     const cardGeometry = await page.locator(".profile-card").evaluateAll(cards => cards.map(card => {
       const avatar = card.querySelector(".avatar")!;
       const style = getComputedStyle(card);
@@ -62,12 +79,25 @@ for (const locale of ["zh-CN", "en"] as const) {
     await expect(page.locator(".performer-scene-card")).toHaveCount(24);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(page.locator(".performer-detail-hero__name")).toHaveText(actors[0].name);
-    const checks = page.getByRole("region", { name: locale === "en" ? "Latest check" : "最近检查", exact: true });
+    const checks = page.getByRole("region", { name: locale === "en" ? "Checks" : "检查", exact: true });
     const works = page.getByRole("region", { name: locale === "en" ? "Scenes and tasks" : "作品与任务", exact: true });
-    await expect(checks.locator("dt")).toHaveCount(2);
+    const activity = page.getByRole("region", {name: locale === "en" ? "Activity level" : "活跃度", exact:true});
+    await expect(activity.locator("dt")).toHaveCount(2);
+    await expect(checks.locator("dt")).toHaveCount(3);
+    await expect(checks.locator("dt")).toContainText([locale === "en" ? "Estimated next check" : "预计下次检查",locale === "en" ? "Last check" : "上次检查"]);
+    await expect(activity.locator("dd").last()).toHaveText("3.25");
+    await expect(activity.locator("dd").last()).not.toHaveAttribute("title",/Rating updated|评分更新/);
+    await expect(page.locator(".performer-detail-hero__description")).toContainText("NEW-001");
+    await expect(page.locator(".performer-detail-hero__description")).not.toContainText("ABC-123");
+    await expect(activity.locator(".performer-activity-icons svg")).toHaveCount(5);
+    await expect(activity.locator(".performer-activity-icons .is-active")).toHaveCount(4);
     await expect(works.locator("dd")).toHaveText(["10", "30", "2"]);
-    expect(await checks.evaluate(el => el.getBoundingClientRect().height)).toBeLessThanOrEqual(50);
-    expect(await works.evaluate(el => el.getBoundingClientRect().height)).toBeLessThanOrEqual(50);
+    expect(await checks.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    expect(await works.evaluate(el => el.getBoundingClientRect().height)).toBeLessThanOrEqual(66);
+    if (page.viewportSize()!.width > 1100) {
+      expect(await checks.evaluate(el => el.getBoundingClientRect().height)).toBeLessThanOrEqual(66);
+      expect(await checks.evaluate(el => el.getBoundingClientRect().width)).toBeGreaterThan(await works.evaluate(el => el.getBoundingClientRect().width) * 1.25);
+    }
     const cardInsets = await page.locator(".performer-detail-card").evaluate(card => {
       const rect = card.getBoundingClientRect();
       const content = card.querySelector(".performer-detail-hero")!.getBoundingClientRect();
@@ -120,7 +150,7 @@ test.describe("failed performer check", () => {
     test(`${locale} check reason stays beside failure status`, async ({ page }) => {
       await page.addInitScript(value => localStorage.setItem("moji:locale", value), locale);
       await page.goto("/performers/actor-0");
-      const checks = page.getByRole("region", { name: locale === "en" ? "Latest check" : "最近检查", exact: true });
+      const checks = page.getByRole("region", { name: locale === "en" ? "Checks" : "检查", exact: true });
       const reason = checks.getByRole("button", { name: locale === "en" ? "View reason" : "查看原因" });
       await expect(reason).toBeVisible();
       const geometry = await checks.evaluate(el => {
@@ -128,11 +158,11 @@ test.describe("failed performer check", () => {
         const button = el.querySelector("button")!.getBoundingClientRect();
         return { height: el.getBoundingClientRect().height, sameLine: Math.abs(status.top - button.top) <= 1, beside: button.left >= status.right, fits: button.right <= el.getBoundingClientRect().right };
       });
-      expect(geometry).toEqual({ height: 48, sameLine: true, beside: true, fits: true });
+      expect(geometry).toMatchObject({ sameLine: true, beside: true, fits: true });
       await expect(page.locator(".performer-detail-card")).toHaveScreenshot(`${locale}-performer-check-failed.png`);
       await reason.click();
       await expect(page.getByRole("dialog")).toContainText(states[1].lastError!);
-      expect(await checks.evaluate(el => el.getBoundingClientRect().height)).toBe(48);
+      expect(await checks.evaluate(el => el.getBoundingClientRect().height)).toBe(geometry.height);
       await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);
       await expect(reason).toBeFocused();
@@ -297,3 +327,40 @@ for (const locale of ["zh-CN", "en"] as const) {
   });
  }
 }
+
+
+test.describe("activity observations",()=>{
+ test.use({graphqlOverrides:{...graphqlOverrides,stashPerformerProfile:graphqlOverrides.stashPerformerDetail,
+  performerActivity:({id}:{id:string})=>({id,evaluationStatus:"NOT_CHECKED",value:null,rank:null,lowerBound:false,observedAt:null,lastSuccessAt:null,nextCheckAt:"2026-01-17T12:00:00Z"})}});
+ test("unknown rating retains five unlit icons and a planned check",async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));
+  await page.goto("/performers/actor-0");
+  const icons=page.locator(".performer-activity-icons");
+  await expect(icons).toHaveAttribute("aria-label","Not assessed");
+  await expect(icons.locator("svg")).toHaveCount(5);
+  await expect(icons.locator(".is-active")).toHaveCount(0);
+  await expect(page.getByText("Estimated next check",{exact:true})).toBeVisible();
+  await expect(page.locator(".performer-summary-metrics--activity").getByText("Not assessed",{exact:true})).toBeVisible();
+ });
+});
+
+test("dark performer activity remains readable",async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));
+ await page.emulateMedia({colorScheme:"dark"});
+ await page.goto("/performers/actor-0");
+ await expect.poll(()=>page.locator("html").evaluate(el=>getComputedStyle(el).colorScheme)).toBe("dark");
+ await expect(page.locator(".performer-activity-icons .is-active")).toHaveCount(4);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await expect(page.locator(".performer-detail-card")).toHaveScreenshot("dark-performer-activity.png");
+});
+
+test("dark performer cards show saved levels and crossed-out unknown ratings",async({page})=>{
+ await page.addInitScript(()=>{localStorage.setItem("moji:locale","zh-CN");localStorage.setItem("moji:theme","dark");});
+ await page.goto("/performers");
+ const cards=page.locator(".profile-card");
+ await expect(cards).toHaveCount(24);
+ await expect(cards.nth(0).locator(".performer-activity-icons .is-active")).toHaveCount(4);
+ await expect(cards.nth(1).locator(".performer-activity-icons")).toHaveClass(/is-unknown/);
+ await expect(cards.nth(0)).toHaveScreenshot("dark-performer-card-rated.png");
+ await expect(cards.nth(1)).toHaveScreenshot("dark-performer-card-unknown.png");
+});

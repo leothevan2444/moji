@@ -13,6 +13,9 @@ import (
 // while holding the same lock used by all other settings writers. Lists replace.
 // It publishes neither memory nor disk state until validation and durable write succeed.
 func (s *Store) ApplyPatch(patch map[string]any) (*Config, error) {
+	if _, present := patchValue(patch, "tasks", "subscription_poll_interval_hours"); present {
+		return nil, fmt.Errorf("%w: automatic check intervals are determined by activity", ErrInvalidSettings)
+	}
 	for _, section := range []string{"instances", "network"} {
 		if _, present := patchValue(patch, "indexers", "builtin", section); present {
 			return nil, fmt.Errorf("%w: use scoped indexer commands", ErrInvalidSettings)

@@ -678,7 +678,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 		},
 		Automation: AutomationSettingsSnapshot{
 			TaskProgressSyncIntervalSeconds: 60,
-			SubscriptionPollIntervalHours:   6,
+			SubscriptionCheckEnabled:        true,
 			StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
 			TorrentSelection: TorrentSelectionSettingsSnapshot{
 				Enabled: true,
@@ -699,7 +699,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 		Automation: AutomationStatusSnapshot{
 			TaskProgressSyncIntervalSeconds: 60,
 			TaskProgressSyncEnabled:         true,
-			SubscriptionPollIntervalHours:   6,
+			SubscriptionCheckEnabled:        true,
 			SubscriptionPollEnabled:         true,
 		},
 	}
@@ -710,7 +710,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			ingest { downloads { qbRoot } library { stashRoot } }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled fastRules { type seeders { direction } } torrentRules { type } } }
+			automation { taskProgressSyncIntervalSeconds subscriptionCheckEnabled stashBoxEndpoints torrentSelection { enabled fastRules { type seeders { direction } } torrentRules { type } } }
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
@@ -785,7 +785,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		snapshot: &SettingsSnapshot{
 			Automation: AutomationSettingsSnapshot{
 				TaskProgressSyncIntervalSeconds: 60,
-				SubscriptionPollIntervalHours:   1,
+				SubscriptionCheckEnabled:        true,
 				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled: true,
@@ -804,13 +804,13 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 		statusSnapshot: &SettingsStatusSnapshot{
 			Automation: AutomationStatusSnapshot{
-				SubscriptionPollIntervalHours: 1,
-				SubscriptionPollEnabled:       true,
+				SubscriptionCheckEnabled: true,
+				SubscriptionPollEnabled:  true,
 			},
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } automation { subscriptionPollIntervalHours stashBoxEndpoints torrentSelection { enabled fastRules { type } torrentRules { type } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollIntervalHours subscriptionPollEnabled } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } automation { subscriptionCheckEnabled stashBoxEndpoints torrentSelection { enabled fastRules { type } torrentRules { type } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionCheckEnabled subscriptionPollEnabled } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -823,7 +823,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	if resp.Data.Settings.System.TaskDeletePolicy != "REMOVE_TORRENT" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
-	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.SubscriptionPollIntervalHours != 1 {
+	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.SubscriptionCheckEnabled != true {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
 	if len(resp.Data.Settings.Automation.TorrentSelection.FastRules) != 1 {
@@ -969,7 +969,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 			Automation: AutomationSettingsSnapshot{
 				TaskProcessingEnabled:           true,
 				TaskProgressSyncIntervalSeconds: 60,
-				SubscriptionPollIntervalHours:   1,
+				SubscriptionCheckEnabled:        true,
 				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
 				SubscriptionReleasePolicy: SubscriptionReleasePolicySnapshot{
 					SoloBehavior:           "DOWNLOAD",
@@ -994,7 +994,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 		updateAutomationSettings(input: {
  taskProcessingEnabled: true
 			taskProgressSyncIntervalSeconds: 60
-			subscriptionPollIntervalHours: 1
+			subscriptionCheckEnabled: true
 			stashBoxEndpoints: ["https://javstash.example.org/graphql"]
 				subscriptionReleasePolicy: {
 					soloBehavior: DOWNLOAD
@@ -1369,7 +1369,7 @@ type graphQLTaskResponse struct {
 			} `json:"qbittorrent"`
 			Automation struct {
 				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionPollIntervalHours   int      `json:"subscriptionPollIntervalHours"`
+				SubscriptionCheckEnabled        bool     `json:"subscriptionCheckEnabled"`
 				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
 				TorrentSelection                struct {
 					Enabled   bool `json:"enabled"`
@@ -1387,9 +1387,9 @@ type graphQLTaskResponse struct {
 		} `json:"settings"`
 		SettingsStatus struct {
 			Automation struct {
-				TaskProgressSyncEnabled       bool `json:"taskProgressSyncEnabled"`
-				SubscriptionPollIntervalHours int  `json:"subscriptionPollIntervalHours"`
-				SubscriptionPollEnabled       bool `json:"subscriptionPollEnabled"`
+				TaskProgressSyncEnabled  bool `json:"taskProgressSyncEnabled"`
+				SubscriptionCheckEnabled bool `json:"subscriptionCheckEnabled"`
+				SubscriptionPollEnabled  bool `json:"subscriptionPollEnabled"`
 			} `json:"automation"`
 		} `json:"settingsStatus"`
 		StashPerformers struct {
@@ -1447,7 +1447,7 @@ type graphQLTaskResponse struct {
 			Automation struct {
 				TaskProcessingEnabled           bool     `json:"taskProcessingEnabled"`
 				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionPollIntervalHours   int      `json:"subscriptionPollIntervalHours"`
+				SubscriptionCheckEnabled        bool     `json:"subscriptionCheckEnabled"`
 				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
 				SubscriptionReleasePolicy       struct {
 					VRBehavior string `json:"vrBehavior"`

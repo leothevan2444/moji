@@ -16,7 +16,7 @@ vi.mock("urql", async (importOriginal) => ({
     const name = query.definitions[0]?.name?.value;
     if (name === "TaskDeletionSettings") return [{data:{settings:{system:{taskDeletePolicy:"KEEP_ONLY"}}},fetching:false,error:null},vi.fn()];
     if (name === "SettingsPolicySection") return [{ data: { settings: { policies: {
-      taskProcessingEnabled: true, taskProgressSyncIntervalSeconds: 60, subscriptionPollIntervalHours: 48, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
+      taskProcessingEnabled: true, taskProgressSyncIntervalSeconds: 60, subscriptionCheckEnabled: true, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: { soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW", maxGroupPerformerCount: 3, releaseDateRange: "ALL" },
       torrentSelection: { enabled: true, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] }
     } }, settingsStatus: { taskProcessing: { taskProgressSyncEnabled: true, subscriptionPollEnabled: true }, metadataSources: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null } } }, fetching: false, error: null }, vi.fn()];

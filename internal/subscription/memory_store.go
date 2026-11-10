@@ -63,6 +63,7 @@ func cloneState(state *PerformerState) *PerformerState {
 	}
 
 	cloned := *state
+	cloned.Activity.Days = append([]ActivityDay(nil), state.Activity.Days...)
 	cloned.ProcessedReleases = append([]RecordedRelease(nil), state.ProcessedReleases...)
 	cloned.PendingReleases = append([]RecordedRelease(nil), state.PendingReleases...)
 	for i := range cloned.ProcessedReleases {

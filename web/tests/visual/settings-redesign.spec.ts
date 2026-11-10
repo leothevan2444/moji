@@ -39,11 +39,24 @@ test.describe("incremental autosave", () => {
     settings: () => current ?? settingsSnapshot,
     patchSettings: ({ input }: any) => {
       saves.push(input);
+      if(input.tasks?.subscription_check_enabled !== undefined) current.automation.subscriptionCheckEnabled=input.tasks.subscription_check_enabled;
       if(input.tasks?.sourcing_retry_interval_hours !== undefined) current.automation.sourcingRetryIntervalHours=input.tasks.sourcing_retry_interval_hours;
       if(input.tasks?.torrent_selection?.enabled !== undefined) current.automation.torrentSelection.enabled=input.tasks.torrent_selection.enabled;
       return current;
     }
   }});
+  test("automatic subscription checks expose a switch and retain it after reload",async({page})=>{
+    saves.length=0;current=structuredClone(settingsSnapshot);current.system.language="en";
+    await page.goto("/settings/tasks");
+    const toggle=page.getByRole("checkbox",{name:"Automatically check subscribed performers for releases",exact:true});
+    await expect(toggle).toBeChecked();
+    await expect(page.getByLabel("Subscription check interval (hours)")).toHaveCount(0);
+    await toggle.uncheck();
+    await expect.poll(()=>saves.length).toBe(1);
+    expect(saves[0]).toEqual({tasks:{subscription_check_enabled:false}});
+    await page.reload();
+    await expect(toggle).not.toBeChecked();
+  });
   test("debounces edits, saves independent fields, and continues across tab navigation", async ({ page }) => {
     saves.length=0;current=structuredClone(settingsSnapshot);current.system.language="en";
     await page.goto("/settings/tasks");

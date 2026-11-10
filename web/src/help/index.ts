@@ -2,6 +2,8 @@ import introductionEn from "./en/introduction.md?raw";
 import firstSetupEn from "./en/getting-started.md?raw";
 import homeEn from "./en/home.md?raw";
 import discoverEn from "./en/discover.md?raw";
+import performerActivityEn from "./en/performer-activity.md?raw";
+import performerActivityZh from "./zh/performer-activity.md?raw";
 import performersEn from "./en/performers.md?raw";
 import tasksEn from "./en/tasks.md?raw";
 import servicesDeliveryEn from "./en/services-and-delivery.md?raw";
@@ -50,6 +52,7 @@ export const HELP_CATEGORIES: readonly HelpCategory[] = [
       { id: "home", title: { en: "Home", zh: "主页" }, markdown: { en: homeEn, zh: homeZh } },
       { id: "discover", title: { en: "Discover", zh: "发现" }, markdown: { en: discoverEn, zh: discoverZh } },
       { id: "performers", title: { en: "Performers", zh: "演员" }, markdown: { en: performersEn, zh: performersZh } },
+      { id: "performer-activity", title: { en: "Activity levels and values", zh: "活跃度与活跃值" }, markdown: { en: performerActivityEn, zh: performerActivityZh } },
       { id: "tasks", title: { en: "Tasks", zh: "任务" }, markdown: { en: tasksEn, zh: tasksZh } }
     ]
   },

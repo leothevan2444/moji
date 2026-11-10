@@ -93,3 +93,28 @@ func TestHomeChecksUnavailableReturnsEmptyState(t *testing.T) {
 		t.Fatalf("invalid unavailable state: %+v", result)
 	}
 }
+
+func (s *checkAPIService) PerformerActivity(context.Context, string) (subscription.ActivityState, error) {
+	value, rank := 3.25, 4
+	return subscription.ActivityState{Value: &value, Rank: &rank, NextCheckAt: &s.run.StartedAt}, nil
+}
+func (s *checkAPIService) CheckHistory(ctx context.Context) ([]subscription.HomeCheckRun, error) {
+	home, err := s.HomeChecks(ctx)
+	return home.RecentRuns, err
+}
+func TestActivityAndHistoryGraphQLContract(t *testing.T) {
+	service := &checkAPIService{run: subscription.CheckRun{ID: "retained", Trigger: "SCHEDULED", Scope: "SINGLE", Status: "SUCCEEDED", StartedAt: time.Now().UTC()}}
+	resolver := NewResolver(nil, nil, nil, "test")
+	resolver.PerformerSubscription = service
+	var result struct {
+		Data struct {
+			Activity model.PerformerActivity           `json:"performerActivity"`
+			History  []*model.HomeSubscriptionCheckRun `json:"subscriptionCheckHistory"`
+		}
+		Errors []struct{ Message string }
+	}
+	executeGraphQLInto(t, resolver, `{performerActivity(id:"p"){id evaluationStatus value rank lowerBound nextCheckAt} subscriptionCheckHistory{id totalCount failedCount}}`, &result)
+	if len(result.Errors) > 0 || result.Data.Activity.ID != "p" || result.Data.Activity.EvaluationStatus != model.ActivityEvaluationStatusReady || result.Data.Activity.Value == nil || *result.Data.Activity.Value != 3.25 || result.Data.Activity.Rank == nil || *result.Data.Activity.Rank != 4 || len(result.Data.History) != 1 || result.Data.History[0].ID != "retained" {
+		t.Fatalf("invalid activity/history response: %+v", result)
+	}
+}

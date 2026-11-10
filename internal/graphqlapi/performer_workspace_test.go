@@ -72,6 +72,8 @@ type workspaceSubscriptionService struct {
 	batch         subscription.PerformerBatchPayload
 	buildCalls    int
 	receivedCount int
+	activityIDs   []string
+	activityCalls int
 }
 
 func (s *workspaceSubscriptionService) ListSubscribedPerformers(context.Context) ([]subscription.SubscribedPerformer, error) {
@@ -158,5 +160,33 @@ func TestPerformerListOptionsApplyAcrossPagesAndKeepReviewOnlyActors(t *testing.
 	}
 	if items[0].ID != "a" {
 		t.Fatal("options changed the shared input snapshot")
+	}
+}
+
+func (s *workspaceSubscriptionService) PerformerActivities(_ context.Context, ids []string) (map[string]subscription.ActivityState, error) {
+	s.activityIDs = append([]string(nil), ids...)
+	s.activityCalls++
+	value, rank := 0.0, 1
+	out := map[string]subscription.ActivityState{}
+	for _, id := range ids {
+		out[id] = subscription.ActivityState{Value: &value, Rank: &rank}
+	}
+	return out, nil
+}
+
+func TestPerformerWorkspaceProjectsActivityOnlyForVisibleActorsIncludingUnsubscribed(t *testing.T) {
+	performers := &workspacePerformerService{items: []performerdomain.Performer{{ID: "p1", Name: "Alpha", Subscribed: true}, {ID: "p2", Name: "Beta"}, {ID: "p3", Name: "Gamma"}}}
+	subscriptions := &workspaceSubscriptionService{}
+	resolver := &queryResolver{Resolver: &Resolver{Performer: performers, PerformerSubscription: subscriptions}}
+	page, size := 2, 1
+	snapshot, err := resolver.PerformerWorkspace(context.Background(), nil, &page, &size, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if subscriptions.activityCalls != 1 || len(subscriptions.activityIDs) != 1 || subscriptions.activityIDs[0] != "p2" {
+		t.Fatalf("unbounded activity projection: %+v", subscriptions)
+	}
+	if len(snapshot.Activities) != 1 || snapshot.Activities[0].ID != "p2" || snapshot.Activities[0].Rank == nil || *snapshot.Activities[0].Rank != 1 || snapshot.Performers.Items[0].Subscribed {
+		t.Fatalf("unsubscribed rating not preserved: %+v", snapshot)
 	}
 }

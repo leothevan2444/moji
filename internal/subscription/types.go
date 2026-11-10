@@ -33,6 +33,7 @@ type RecordedRelease struct {
 	DecisionReason string                `json:"decision_reason,omitempty"`
 }
 type PerformerState struct {
+	Activity          ActivityState     `json:"activity"`
 	PerformerID       string            `json:"performer_id"`
 	LastCheckedAt     *time.Time        `json:"last_checked_at,omitempty"`
 	LastError         string            `json:"last_error,omitempty"`
@@ -40,6 +41,7 @@ type PerformerState struct {
 	PendingReleases   []RecordedRelease `json:"pending_releases,omitempty"`
 }
 type SubscribedPerformer struct {
+	Activity                                                       ActivityState
 	Performer                                                      performer.Performer
 	LastCheckedAt                                                  *time.Time
 	LastError                                                      string

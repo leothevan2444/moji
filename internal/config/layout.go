@@ -13,8 +13,14 @@ import (
 // Config's Go fields represent runtime providers. The on-disk v2 layout groups
 // values by business ownership; legacy documents are read without rewriting.
 func (c *Config) UnmarshalYAML(node *yaml.Node) error {
+	for _, section := range []string{"tasks", "automation"} {
+		if group := existingMapValue(node, section); group != nil && existingMapValue(group, "subscription_poll_interval_hours") != nil {
+			return fmt.Errorf("%s.subscription_poll_interval_hours is no longer supported; use subscription_check_enabled (true or false)", section)
+		}
+	}
 	type plain Config
 	*c = Config{}
+	c.Automation.SubscriptionCheckEnabled = true
 	c.Automation.TorrentSelection = DefaultTorrentSelectionConfig()
 	c.Indexers = DefaultIndexersConfig()
 	var version struct {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"testing"
-	"time"
 )
 
 type upcomingWorkerService struct {
@@ -22,12 +21,12 @@ func TestUpcomingWorkerStartupAndDisabledSchedule(t *testing.T) {
 	for _, enabled := range []bool{true, false} {
 		ctx, cancel := context.WithCancel(context.Background())
 		service := &upcomingWorkerService{cancel: cancel}
-		runUpcomingWorker(ctx, service, func() time.Duration {
+		runUpcomingWorker(ctx, service, func() bool {
 			if !enabled {
 				cancel()
-				return 0
+				return false
 			}
-			return time.Hour
+			return true
 		})
 		cancel()
 		want := 0

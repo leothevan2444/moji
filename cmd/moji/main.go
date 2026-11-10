@@ -169,9 +169,9 @@ func main() {
 	taskSyncDone := startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
 	launch(func() { <-taskSyncDone })
 	launch(func() {
-		runUpcomingWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
+		runUpcomingWorker(ctx, runtime.subscriptionService, configureSubscriptionCheckProvider(configStore, cfg))
 	})
-	subscriptionDone := startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionPollIntervalProvider(configStore, cfg))
+	subscriptionDone := startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionCheckProvider(configStore, cfg))
 	launch(func() { <-subscriptionDone })
 	if runtime.stashBoxCacheService != nil {
 		runtime.stashBoxCacheService.StartCleanup(ctx)
@@ -743,7 +743,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			TaskProcessingEnabled:           cfg.Automation.EffectiveTaskProcessingEnabled(),
 			SourcingRetryIntervalHours:      cfg.Automation.EffectiveSourcingRetryIntervalHours(),
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
-			SubscriptionPollIntervalHours:   editableSubscriptionPollIntervalHours(cfg),
+			SubscriptionCheckEnabled:        cfg.Automation.SubscriptionCheckEnabled,
 			StashBoxEndpoints:               append([]string(nil), cfg.Automation.StashBoxEndpoints...),
 			SubscriptionReleasePolicy: graphqlapi.SubscriptionReleasePolicySnapshot{
 				SoloBehavior:           string(cfg.Automation.SubscriptionReleasePolicy.Effective().SoloBehavior),
@@ -872,8 +872,8 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderE
 		Automation: graphqlapi.AutomationStatusSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
 			TaskProgressSyncEnabled:         cfg.Automation.EffectiveTaskProcessingEnabled() && downloaderEnabled,
-			SubscriptionPollIntervalHours:   effectiveSubscriptionPollIntervalHours(cfg),
-			SubscriptionPollEnabled:         cfg.Automation.SubscriptionPollIntervalHours >= 0 && stashEnabled,
+			SubscriptionCheckEnabled:        cfg.Automation.SubscriptionCheckEnabled,
+			SubscriptionPollEnabled:         cfg.Automation.SubscriptionCheckEnabled && stashEnabled,
 		},
 		StashBox:                stashBoxStatus,
 		StashLibraries:          stashLibraries,
@@ -1129,24 +1129,8 @@ func configureSubscriptionStore(cfg *config.Config, managers ...*storage.Manager
 	return subscription.NewMemoryStore(), nil
 }
 
-func configureSubscriptionPollInterval(cfg *config.Config) time.Duration {
-	hours := cfg.Automation.SubscriptionPollIntervalHours
-	if hours < 0 {
-		return 0
-	}
-	if hours == 0 {
-		hours = 1
-	}
-	return time.Duration(hours) * time.Hour
-}
-
-// configureSubscriptionPollIntervalProvider returns the current subscription
-// poll interval, honoring the latest Web UI edit each time it is called.
-// A return value <= 0 disables the worker.
-func configureSubscriptionPollIntervalProvider(store *config.Store, cfg *config.Config) func() time.Duration {
-	return func() time.Duration {
-		return configureSubscriptionPollInterval(storeAutomation(cfg, store))
-	}
+func configureSubscriptionCheckProvider(store *config.Store, cfg *config.Config) func() bool {
+	return func() bool { return storeAutomation(cfg, store).Automation.SubscriptionCheckEnabled }
 }
 
 // storeAutomation returns the latest automation config block, falling back to
@@ -1158,123 +1142,10 @@ func storeAutomation(cfg *config.Config, store *config.Store) *config.Config {
 	return cfg
 }
 
-func startSubscriptionWorker(ctx context.Context, service graphqlapi.SubscriptionService, intervalProvider func() time.Duration) <-chan struct{} {
-	done := make(chan struct{})
-	if service == nil || intervalProvider == nil {
-		close(done)
-		return done
-	}
-	tracked, hasTracking := service.(interface {
-		ConfigureCheckRuntime(context.Context)
-		SetCheckSchedule(bool, *time.Time)
-		StartSubscriptionCheck(context.Context, []string, string) (*subscription.CheckRun, error)
-	})
-	if hasTracking {
-		tracked.ConfigureCheckRuntime(ctx)
-	}
-	current := intervalProvider()
-	var deadline *time.Time
-	publishSchedule := func(interval time.Duration) {
-		deadline = nil
-		if interval > 0 {
-			next := time.Now().Add(interval)
-			deadline = &next
-		}
-		if hasTracking {
-			tracked.SetCheckSchedule(interval > 0, deadline)
-		}
-	}
-	publishSchedule(current)
-	go func() {
-		defer close(done)
-		// Reconcile settings even while disabled, so enabling polling needs no restart.
-		settingsTicker := time.NewTicker(5 * time.Second)
-		defer settingsTicker.Stop()
-		timer := time.NewTimer(time.Hour)
-		if !timer.Stop() {
-			<-timer.C
-		}
-		defer timer.Stop()
-		arm := func() {
-			if !timer.Stop() {
-				select {
-				case <-timer.C:
-				default:
-				}
-			}
-			if deadline != nil {
-				timer.Reset(time.Until(*deadline))
-			}
-		}
-		arm()
-		for {
-			select {
-			case <-ctx.Done():
-				if hasTracking {
-					tracked.SetCheckSchedule(false, nil)
-				}
-				return
-			case <-settingsTicker.C:
-				next := intervalProvider()
-				if next != current {
-					current = next
-					publishSchedule(current)
-					arm()
-				}
-			case <-timer.C:
-				// Apply a just-disabled setting before dispatching another check.
-				current = intervalProvider()
-				delay := current
-				if current > 0 {
-					if hasTracking {
-						if _, err := tracked.StartSubscriptionCheck(ctx, nil, "SCHEDULED"); err != nil && !errors.Is(err, context.Canceled) {
-							var conflict *subscription.CheckConflictError
-							if errors.As(err, &conflict) {
-								// Retry soon after selected manual checks, instead of missing a whole polling interval.
-								delay = min(current, 30*time.Second)
-								logging.Infof("runtime: scheduled subscription check deferred by active run %s", conflict.RunID)
-							} else {
-								logging.Errorf("refresh subscription performers: %v", err)
-							}
-						}
-					} else {
-						syncCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-						if _, err := service.RefreshAll(syncCtx); err != nil && !errors.Is(err, context.Canceled) {
-							logging.Errorf("refresh subscription performers: %v", err)
-						}
-						cancel()
-					}
-				}
-				publishSchedule(delay)
-				arm()
-			}
-		}
-	}()
-	return done
-}
-
 func effectiveTaskProgressSyncIntervalSeconds(cfg *config.Config) int {
 	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds
 	if seconds <= 0 {
 		return 60
 	}
 	return seconds
-}
-
-func effectiveSubscriptionPollIntervalHours(cfg *config.Config) int {
-	hours := cfg.Automation.SubscriptionPollIntervalHours
-	if hours < 0 {
-		return 0
-	}
-	if hours == 0 {
-		return 1
-	}
-	return hours
-}
-
-func editableSubscriptionPollIntervalHours(cfg *config.Config) int {
-	if cfg.Automation.SubscriptionPollIntervalHours < 0 {
-		return cfg.Automation.SubscriptionPollIntervalHours
-	}
-	return effectiveSubscriptionPollIntervalHours(cfg)
 }

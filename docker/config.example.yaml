@@ -78,7 +78,8 @@ tasks:
     task_processing_enabled: true
     # Task heartbeat in seconds: 30, 60 (recommended), 120, or 300.
     task_progress_sync_interval_seconds: 60
-    subscription_poll_interval_hours: 24
+    # Per-performer check intervals are determined by release activity.
+    subscription_check_enabled: true
     sourcing_retry_interval_hours: 6
     subscription_release_policy:
         solo_behavior: REVIEW

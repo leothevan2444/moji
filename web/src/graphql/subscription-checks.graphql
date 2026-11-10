@@ -36,3 +36,10 @@ query SubscriptionCheckDetail($id: ID!) {
 mutation StartSubscriptionCheck($ids: [ID!]) {
   startSubscriptionCheck(ids: $ids) { id }
 }
+
+query PerformerActivity($id: ID!) {
+ performerActivity(id:$id) { id evaluationStatus value rank lowerBound observedAt lastSuccessAt nextCheckAt }
+}
+query SubscriptionCheckHistory {
+ subscriptionCheckHistory { ...HomeSubscriptionCheckRunFields }
+}

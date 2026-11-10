@@ -1,3 +1,10 @@
+import { createPortal } from "react-dom";
+import { useState } from "react";
+import { useQuery } from "urql";
+import { Drawer } from "../layout/Drawer";
+import { SubscriptionCheckHistoryDocument, HomeSubscriptionCheckRunFieldsFragmentDoc } from "../../graphql/generated/graphql";
+import { useFragment as readFragment } from "../../graphql/generated/fragment-masking";
+import { describeQueryError } from "../../services/queryError";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faBinoculars } from "@fortawesome/free-solid-svg-icons";
 import { useTranslation } from "react-i18next";
@@ -32,8 +39,9 @@ function RunRow({ run, onOpen }: { run: HomeCheckRunView; onOpen: (id: string) =
 export function HomeSubscriptionChecks({ snapshot, error, onRetry, onOpenRun }: { snapshot: HomeChecksView | null; error: string | null; onRetry: () => void; onOpenRun: (id: string) => void }) {
   const { t } = useTranslation();
   const latest = snapshot?.latestScheduled;
+  const [historyOpen,setHistoryOpen]=useState(false);
   return <section className="home-panel home-checks" id="subscription-checks" aria-labelledby="home-checks-title">
-    <div className="home-panel-heading"><h2 id="home-checks-title">{t("subscriptionChecks.title")}{snapshot?.activeCount ? <span className="home-count">{snapshot.activeCount}</span> : null}</h2><FontAwesomeIcon icon={faBinoculars} aria-hidden="true" /></div>
+    <div className="home-panel-heading"><h2 id="home-checks-title">{t("subscriptionChecks.title")}{snapshot?.activeCount ? <span className="home-count">{snapshot.activeCount}</span> : null}</h2><div className="home-check-heading-actions"><button type="button" className="home-inline-button" aria-haspopup="dialog" onClick={() => setHistoryOpen(true)}>{t("performerActivity.history")}</button><FontAwesomeIcon icon={faBinoculars} aria-hidden="true" /></div></div>
     {error ? <div className="home-module-error" role="alert"><p>{snapshot ? t("workbench.refreshFailed") : error}</p><button type="button" onClick={onRetry}>{t("common.retry")}</button></div> : null}
     {!snapshot ? !error && <div className="home-loading" aria-label={t("subscriptionChecks.loading")}><span /><span /><span /></div> : <>
       <dl className="home-check-schedule">
@@ -44,9 +52,21 @@ export function HomeSubscriptionChecks({ snapshot, error, onRetry, onOpenRun }: 
       </dl>
       {snapshot.activeRuns.length > 0 ? <div className="home-check-list" aria-label={t("subscriptionChecks.current")}>{snapshot.activeRuns.map(run => <RunRow key={run.id} run={run} onOpen={onOpenRun} />)}</div> : null}
       {snapshot.activeCount > snapshot.activeRuns.length ? <p className="home-muted home-check-more">{t("subscriptionChecks.moreActive", { count: snapshot.activeCount - snapshot.activeRuns.length })}</p> : null}
-      <details className="home-diagnostics home-check-history"><summary>{t("subscriptionChecks.history", { count: snapshot.recentRuns.length })}</summary>
-        {snapshot.recentRuns.length ? <div className="home-check-list">{snapshot.recentRuns.map(run => <RunRow key={run.id} run={run} onOpen={onOpenRun} />)}</div> : <p className="home-empty home-empty--compact">{t("subscriptionChecks.noHistory")}</p>}
-      </details>
+      <div className="home-check-history">
+        {snapshot.recentRuns.length ? <div className="home-check-list" aria-label={t("performerActivity.recentRuns")}>{snapshot.recentRuns.map(run => <RunRow key={run.id} run={run} onOpen={onOpenRun} />)}</div> : <p className="home-empty home-empty--compact">{t("subscriptionChecks.noHistory")}</p>}
+      </div>
     </>}
+    {historyOpen ? createPortal(<Drawer visibleDrawer="subscription-history" closing={false} title={t("performerActivity.history")} onClose={() => setHistoryOpen(false)}><CheckHistory onOpen={id => {setHistoryOpen(false);onOpenRun(id);}} /></Drawer>, document.body) : null}
   </section>;
+}
+
+function CheckHistory({onOpen}:{onOpen:(id:string)=>void}) {
+ const {t}=useTranslation();
+ const [{data,error,fetching},refresh]=useQuery({query:SubscriptionCheckHistoryDocument,requestPolicy:"network-only"});
+ return <div className="home-check-list">
+  {error ? <div role="alert"><p>{describeQueryError(error)}</p><button type="button" onClick={()=>refresh({requestPolicy:"network-only"})}>{t("common.retry")}</button></div> : null}
+  {fetching && !data ? <p role="status">{t("subscriptionChecks.loading")}</p> : null}
+  {data?.subscriptionCheckHistory.map(item=>{const run=readFragment(HomeSubscriptionCheckRunFieldsFragmentDoc,item);return <RunRow key={run.id} run={run} onOpen={onOpen}/>;})}
+  {data?.subscriptionCheckHistory.length===0 ? <p>{t("subscriptionChecks.noHistory")}</p> : null}
+ </div>;
 }

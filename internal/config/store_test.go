@@ -72,7 +72,7 @@ func TestResourceSearchIntervalPersistsAndRejectsInvalidValues(t *testing.T) {
 	if store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 6 {
 		t.Fatal("legacy configuration lost the default interval")
 	}
-	if _, err := store.UpdateAutomation(60, 48, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err != nil {
+	if _, err := store.UpdateAutomation(60, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err != nil {
 		t.Fatal(err)
 	}
 	reopened, err := OpenStore(path)
@@ -80,7 +80,7 @@ func TestResourceSearchIntervalPersistsAndRejectsInvalidValues(t *testing.T) {
 		t.Fatalf("resource interval not persisted: %v", err)
 	}
 	for _, value := range []int{0, -1, 169} {
-		if _, err := store.UpdateAutomation(60, 48, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), value); err == nil {
+		if _, err := store.UpdateAutomation(60, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), value); err == nil {
 			t.Fatalf("invalid interval %d accepted", value)
 		}
 	}
@@ -104,7 +104,7 @@ func TestVRReleasePolicyDefaultsAndPersists(t *testing.T) {
 	for _, behavior := range []SubscriptionReleaseBehavior{SubscriptionReleaseBehaviorDownload, SubscriptionReleaseBehaviorReview, SubscriptionReleaseBehaviorBlock} {
 		policy := DefaultSubscriptionReleasePolicyConfig()
 		policy.VRBehavior = behavior
-		if _, err := store.UpdateAutomation(60, 1, nil, policy, DefaultTorrentSelectionConfig(), 6); err != nil {
+		if _, err := store.UpdateAutomation(60, true, nil, policy, DefaultTorrentSelectionConfig(), 6); err != nil {
 			t.Fatal(err)
 		}
 		reloaded, err := OpenStore(path)
@@ -127,7 +127,7 @@ func TestStoreUpdateAutomationPersistsTorrentSelection(t *testing.T) {
     password: "pw"
 automation:
   task_progress_sync_interval_seconds: 60
-  subscription_poll_interval_hours: 1
+  subscription_check_enabled: true
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
@@ -138,7 +138,7 @@ automation:
 		t.Fatalf("open store: %v", err)
 	}
 
-	cfg, err := store.UpdateAutomation(60, 1, []string{"https://javstash.example.org/graphql"}, DefaultSubscriptionReleasePolicyConfig(), NewTorrentSelectionConfig(
+	cfg, err := store.UpdateAutomation(60, true, []string{"https://javstash.example.org/graphql"}, DefaultSubscriptionReleasePolicyConfig(), NewTorrentSelectionConfig(
 		true,
 		8,
 		[]TorrentSelectionRule{
@@ -410,7 +410,7 @@ func TestTaskProcessingSwitchPersistsAndRejectsUnsupportedIntervals(t *testing.T
 		t.Fatal("legacy negative interval should remain disabled")
 	}
 	for _, enabled := range []bool{false, true} {
-		cfg, err := store.UpdateAutomationProcessing(&enabled, 120, 1, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 6)
+		cfg, err := store.UpdateAutomationProcessing(&enabled, 120, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 6)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -424,7 +424,7 @@ func TestTaskProcessingSwitchPersistsAndRejectsUnsupportedIntervals(t *testing.T
 	}
 	enabled := false
 	for _, interval := range []int{-1, 0, 45, 600} {
-		if _, err := store.UpdateAutomationProcessing(&enabled, interval, 1, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err == nil {
+		if _, err := store.UpdateAutomationProcessing(&enabled, interval, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err == nil {
 			t.Fatalf("accepted interval %d", interval)
 		}
 		if !store.Config().Automation.EffectiveTaskProcessingEnabled() || store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 6 {

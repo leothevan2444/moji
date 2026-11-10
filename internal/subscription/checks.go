@@ -342,30 +342,33 @@ func (s *Service) StartSubscriptionCheck(ctx context.Context, ids []string, trig
 	}
 	// Capture eligibility once, before actors enter the run. Manual explicit IDs
 	// may include unsubscribed actors; automatic work and check-all never do.
-	if scope == "ALL" || trigger == "SCHEDULED" {
-		performers, err := s.ListSubscribedPerformers(ctx)
+	if scope == "ALL" {
+		performers, err := s.stash.AllPerformers(ctx)
 		if err != nil {
 			return nil, err
 		}
-		eligible := make(map[string]bool, len(performers))
-		for _, item := range performers {
-			eligible[item.Performer.ID] = true
-		}
-		if scope == "ALL" {
-			ids = make([]string, 0, len(performers))
-			for _, item := range performers {
-				ids = append(ids, item.Performer.ID)
+		ids = make([]string, 0, len(performers))
+		for _, raw := range performers {
+			actor := performerFromStash(raw, s.customFieldKey)
+			if actor.Subscribed {
+				ids = append(ids, actor.ID)
 			}
-		} else {
-			selected := make([]string, 0, len(ids))
-			for _, id := range ids {
-				if eligible[id] {
-					selected = append(selected, id)
-				}
-			}
-			ids = selected
 		}
+		sort.Strings(ids)
+	} else if trigger == "SCHEDULED" {
+		selected := make([]string, 0, len(ids))
+		for _, id := range ids {
+			raw, err := s.stash.FindPerformerByID(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			if performerFromStash(raw, s.customFieldKey).Subscribed {
+				selected = append(selected, id)
+			}
+		}
+		ids = selected
 	}
+
 	_, run, _, err := s.beginCheck(ctx, scope, ids, trigger)
 	if err != nil {
 		var conflict *CheckConflictError

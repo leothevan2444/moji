@@ -80,6 +80,7 @@ export function PerformersPage(props: PerformersPageProps) {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
   }, [subscribedPerformers]);
 
+  const activityByID = useMemo(() => new Map((props.performerActivities ?? []).map(activity => [activity.id,activity])), [props.performerActivities]);
   const performerSubscription = performerDetail ? (subscribedByID.get(performerDetail.performer.id) ?? null) : null;
   const { subscribedIDs: selectedSubscribedIds, unsubscribedIDs: selectedUnsubscribedIds } = performerBatchEligibility(selectedPerformerIds, subscribedPerformers.map((item) => item.performer.id));
   const hiddenSelectedPerformerCount = selectedPerformerIds.filter((id) => !stashPerformers.some((performer) => performer.id === id)).length;
@@ -255,7 +256,7 @@ export function PerformersPage(props: PerformersPageProps) {
             {subscriptionSearch || (props.listFilter && props.listFilter !== "all") ? <button type="button" className="ghost-button" onClick={() => { props.onClearListFilters?.(); }}>{t("performerWorkspace.clearFilters")}</button> : null}
           </article>
         ) : null}
-        {stashPerformers.map((performer) => <PerformerCard key={performer.id} performer={performer} subscription={subscribedByID.get(performer.id) ?? null} reviewCount={reviewCounts[performer.id] ?? subscribedByID.get(performer.id)?.reviewReleaseCount ?? 0} page={props} />)}
+        {stashPerformers.map((performer) => <PerformerCard key={performer.id} performer={performer} activity={activityByID.get(performer.id)} subscription={subscribedByID.get(performer.id) ?? null} reviewCount={reviewCounts[performer.id] ?? subscribedByID.get(performer.id)?.reviewReleaseCount ?? 0} page={props} />)}
       </div>
 
       <PerformerPagination page={props} />

@@ -1,3 +1,6 @@
+import { ActivityLevelIcons } from "./ActivityLevelIcons";
+import { activityDisplayStatus, activityRankForDisplay } from "./performerActivityStatus";
+import type { PerformerActivityQuery } from "../../graphql/generated/graphql";
 import { faBookmark, faClipboardQuestion, faHeart, faPlayCircle, faBinoculars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
@@ -9,9 +12,9 @@ import { formatDateTime, formatRelative, performerThumbnailURL, performerInitial
 import { performerCheckRun } from "../../hooks/useSubscriptionChecks";
 import type { PerformersPageProps, StashPerformerEntry, SubscribedPerformerEntry } from "./types";
 
-type CardPage = Pick<PerformersPageProps, "checkActivity" | "checksLoading" | "checksError" | "checkStarting" | "stashBaseURL" | "performerSelectionMode" | "selectedPerformerIds" | "performerBatchPending" | "pendingSubscriptionID" | "onTogglePerformerSelection" | "onOpenPerformer" | "onToggle" | "onRefreshOne">;
+type CardPage = Pick<PerformersPageProps, "checkActivity" | "checksLoading" | "checksError" | "checkStarting" | "stashBaseURL" | "performerSelectionMode" | "selectedPerformerIds" | "performerBatchPending" | "pendingSubscriptionID" | "onTogglePerformerSelection" | "onOpenPerformer" | "onToggle" | "onRefreshOne" | "stashPerformersError">;
 
-export function PerformerCard({ performer, subscription, reviewCount, page }: { performer: StashPerformerEntry; subscription: SubscribedPerformerEntry | null; reviewCount: number; page: CardPage; }) {
+export function PerformerCard({ performer, subscription, reviewCount, page, activity }: { activity?: PerformerActivityQuery["performerActivity"]; performer: StashPerformerEntry; subscription: SubscribedPerformerEntry | null; reviewCount: number; page: CardPage; }) {
   const { t } = useTranslation();
   const [showCheckError, setShowCheckError] = useState(false);
   const { stashBaseURL, performerSelectionMode, selectedPerformerIds, performerBatchPending, pendingSubscriptionID, onTogglePerformerSelection, onOpenPerformer, onToggle, onRefreshOne } = page;
@@ -20,6 +23,10 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
   const checkRun = performerCheckRun(page.checkActivity, performer.id);
   const checkItem = checkRun;
   const checkDisabled = pending || Boolean(checkRun || page.checkActivity?.allRunId || page.checkStarting || page.checksLoading || page.checksError);
+  const displayedRank = activityRankForDisplay(activity);
+  const ratingStatus = activityDisplayStatus(activity, Boolean(page.stashPerformersError), checkItem?.status);
+  const rankLabel = t("performerActivity.rankLabel", {rank:displayedRank});
+  const rankDescription = displayedRank ? rankLabel : `${t("performerActivity.cardUnknown")} ${t(`performerActivity.details.${ratingStatus}`)}`;
   const imageURL = performerThumbnailURL(performer.imagePath, stashBaseURL);
   const stashURL = stashPerformerURL(performer.id, stashBaseURL);
   const aliases = performer.aliasList.join(" / ");
@@ -72,6 +79,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page }: { 
             </div>
           </div>
           <div className="profile-card__footer">
+            <ActivityLevelIcons rank={displayedRank} label={rankLabel} title={rankDescription} crossedOut={displayedRank === 0} />
             {reviewCount > 0 || !performerSelectionMode ? <div className="profile-actions">
               {reviewCount > 0 ? <Link className="profile-action-icon profile-action-icon--count" aria-label={t("releaseReview.actorEntry", { count: reviewCount })} title={t("releaseReview.actorEntry", { count: reviewCount })} to={`/performers/review?performer=${encodeURIComponent(performer.id)}`}><FontAwesomeIcon icon={faClipboardQuestion} /><span aria-hidden="true">{reviewCount}</span></Link> : null}
               {!performerSelectionMode ? <>

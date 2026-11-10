@@ -89,7 +89,15 @@ type StashPerformerProfile {
   urls: [String!]!
 }
 
+type PerformerLatestRelease {
+ code: String!
+ title: String!
+ date: String!
+}
+
 type StashPerformerDetail {
+ "Newest already released work in the loaded preferred source snapshot"
+ latestRelease: PerformerLatestRelease
   performer: StashPerformer!
   disambiguation: String
   birthdate: String
@@ -130,6 +138,8 @@ type StashPerformerConnection {
 }
 
 type PerformerWorkspaceSnapshot {
+ "Saved activity for visible page actors only; never reads StashBox"
+ activities: [PerformerActivity!]!
   performers: StashPerformerConnection!
   subscribedPerformers: [SubscribedPerformer!]!
 }
@@ -229,6 +239,7 @@ type StashSceneID {
 }
 
 type SubscribedPerformer {
+ activity: PerformerActivity!
   performer: StashPerformer!
   lastCheckedAt: String
   lastError: String

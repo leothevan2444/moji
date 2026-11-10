@@ -8,7 +8,7 @@ import (
 	"github.com/leothevan2444/moji/internal/logging"
 )
 
-func runUpcomingWorker(ctx context.Context, service graphqlapi.SubscriptionService, interval func() time.Duration) {
+func runUpcomingWorker(ctx context.Context, service graphqlapi.SubscriptionService, interval func() bool) {
 	worker, ok := service.(interface{ ProcessDueUpcoming(context.Context) error })
 	if !ok {
 		return
@@ -16,7 +16,7 @@ func runUpcomingWorker(ctx context.Context, service graphqlapi.SubscriptionServi
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	for {
-		if interval() > 0 {
+		if interval() {
 			checkCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 			err := worker.ProcessDueUpcoming(checkCtx)
 			cancel()

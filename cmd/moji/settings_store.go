@@ -206,7 +206,7 @@ func (s *runtimeSettingsEditor) UpdateSettingsSection(input graphqlapi.SettingsS
 	cfg, err := s.store.UpdateAutomationSection(input.Section, config.AutomationConfig{
 		TaskProcessingEnabled:           input.TaskProcessingEnabled,
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
-		SubscriptionPollIntervalHours:   input.SubscriptionPollIntervalHours,
+		SubscriptionCheckEnabled:        input.SubscriptionCheckEnabled,
 		StashBoxEndpoints:               input.StashBoxEndpoints,
 		SubscriptionReleasePolicy:       subscriptionReleasePolicyConfigFromSnapshot(input.SubscriptionReleasePolicy),
 		TorrentSelection:                config.NewTorrentSelectionConfig(input.TorrentSelection.Enabled, input.TorrentSelection.InspectionCandidateLimit, torrentSelectionConfigRulesFromSnapshot(input.TorrentSelection)),
@@ -217,10 +217,10 @@ func (s *runtimeSettingsEditor) UpdateSettingsSection(input graphqlapi.SettingsS
 		return nil, err
 	}
 	logging.Infof(
-		"settings: policy section %s saved task_sync_interval=%d subscription_poll_interval_hours=%d selected_endpoints=%d",
+		"settings: policy section %s saved task_sync_interval=%d subscription_check_enabled=%t selected_endpoints=%d",
 		input.Section,
 		cfg.Automation.TaskProgressSyncIntervalSeconds,
-		cfg.Automation.SubscriptionPollIntervalHours,
+		cfg.Automation.SubscriptionCheckEnabled,
 		len(cfg.Automation.StashBoxEndpoints),
 	)
 	applyAutomationSettings(cfg, s.subscriptionService, s.metadataService)

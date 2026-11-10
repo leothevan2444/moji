@@ -6,7 +6,7 @@ const performer = { id: "avatar-test", name: "Avatar test", aliasList: [], favor
 const profile = { performer, disambiguation: null, birthdate: null, ethnicity: null, country: null, eyeColor: null, heightCm: null, rating100: null, urls: [], matchedStashBox: null, totalSceneCount: 0, stashSceneCount: 0, stashBoxSceneCount: 0, dedupedSceneCount: 0, activeTaskCount: 0, sceneStatsComplete: true, sceneStatsStale: false };
 
 test.use({ graphqlOverrides: {
-  performerWorkspace: { performers: { items: [performer], page: 1, pageSize: 24, totalCount: 1, totalPages: 1, hasPrevPage: false, hasNextPage: false }, subscribedPerformers: [] },
+  performerWorkspace: { activities: [], performers: { items: [performer], page: 1, pageSize: 24, totalCount: 1, totalPages: 1, hasPrevPage: false, hasNextPage: false }, subscribedPerformers: [] },
   stashPerformerProfile: profile,
   stashPerformerDetail: profile,
   stashPerformerScenes: { items: [], page: 1, pageSize: 24, totalCount: 0, totalPages: 1, hasPrevPage: false, hasNextPage: false, stashSceneCount: 0, stashBoxCount: 0, dedupedCount: 0, totalCountExact: true, stashBoxRemoteCount: 0, stashBoxLoadedCount: 0, cacheComplete: true, cacheStale: false },

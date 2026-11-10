@@ -57,7 +57,7 @@ ingest:
 automation:
   task_processing_enabled: false
   task_progress_sync_interval_seconds: 120
-  subscription_poll_interval_hours: 24
+  subscription_check_enabled: true
   selected_stash_box_endpoints: [second, first]
   torrent_selection:
     enabled: true
@@ -243,5 +243,23 @@ func TestRemovedChallengeTimeoutIsRejectedWithoutAutomaticMigration(t *testing.T
 	}
 	if err := yaml.Unmarshal([]byte("config_version: 4\nindexers:\n  builtin:\n    network:\n      flaresolverr:\n        max_timeout_ms: 45000\n"), &cfg); err != nil || cfg.Indexers.Builtin.Network.FlareSolverr.MaxTimeoutMS != 45000 {
 		t.Fatal("unified solver timeout failed", err)
+	}
+}
+
+func TestAutomaticChecksDefaultAndRemovedInterval(t *testing.T) {
+	for _, raw := range []string{"connection: {}\n", "config_version: 4\ntasks: {}\n"} {
+		var cfg Config
+		if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
+			t.Fatal(err)
+		}
+		if !cfg.Automation.SubscriptionCheckEnabled {
+			t.Fatal("automatic checks should default to enabled")
+		}
+	}
+	for _, raw := range []string{"automation:\n  subscription_poll_interval_hours: 48\n", "config_version: 4\ntasks:\n  subscription_poll_interval_hours: -1\n"} {
+		var cfg Config
+		if err := yaml.Unmarshal([]byte(raw), &cfg); err == nil {
+			t.Fatal("removed interval must not silently change disabled state")
+		}
 	}
 }

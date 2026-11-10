@@ -208,7 +208,7 @@ func (r *queryResolver) StashPerformers(ctx context.Context, search *string, pag
 // PerformerWorkspace is the resolver for the performerWorkspace field.
 func (r *queryResolver) PerformerWorkspace(ctx context.Context, search *string, page *int, pageSize *int, options *model.PerformerListOptions) (*model.PerformerWorkspaceSnapshot, error) {
 	if r.Performer == nil {
-		return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(buildStashPerformerPage(nil, "", page, pageSize)), SubscribedPerformers: []*model.SubscribedPerformer{}}, nil
+		return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(buildStashPerformerPage(nil, "", page, pageSize)), SubscribedPerformers: []*model.SubscribedPerformer{}, Activities: []*model.PerformerActivity{}}, nil
 	}
 	items, err := r.Performer.List(ctx, "")
 	if err != nil {
@@ -241,7 +241,25 @@ func (r *queryResolver) PerformerWorkspace(ctx context.Context, search *string, 
 		}
 	}
 	items = filterAndSortPerformers(items, subscribed, reviews, options)
-	return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(buildStashPerformerPage(items, needle, page, pageSize)), SubscribedPerformers: subscribed}, nil
+	visible := buildStashPerformerPage(items, needle, page, pageSize)
+	activities := make([]*model.PerformerActivity, 0, len(visible.Items))
+	ids := make([]string, 0, len(visible.Items))
+	for _, actor := range visible.Items {
+		ids = append(ids, actor.ID)
+	}
+	observations := map[string]subscription.ActivityState{}
+	if source, ok := r.PerformerSubscription.(interface {
+		PerformerActivities(context.Context, []string) (map[string]subscription.ActivityState, error)
+	}); ok {
+		observations, err = source.PerformerActivities(ctx, ids)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, id := range ids {
+		activities = append(activities, activityToModel(observations[id], id))
+	}
+	return &model.PerformerWorkspaceSnapshot{Performers: stashPerformerPageToModel(visible), SubscribedPerformers: subscribed, Activities: activities}, nil
 }
 
 // StashPerformerProfile is the resolver for the stashPerformerProfile field.

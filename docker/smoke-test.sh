@@ -57,7 +57,7 @@ config_version: 3
 tasks:
   task_processing_enabled: false
   task_progress_sync_interval_seconds: -1
-  subscription_poll_interval_hours: -1
+  subscription_check_enabled: false
 YAML
 
 # A fresh installation must serve its UI without Jackett or a rule download.

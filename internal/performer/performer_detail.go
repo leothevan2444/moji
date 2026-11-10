@@ -69,7 +69,7 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (D
 	}
 	// Summary counts use all sources and no scene filters. Keep the existing
 	// incremental cache policy rather than downloading the full source catalog.
-	scenes, stashCount, sourceCount, _, complete, stale, _, err := s.loadPerformerScenes(ctx, performer, SceneQuery{Source: SceneSourceFilterAll, InLibrary: LibraryFilterAll, Page: 1, PageSize: 12}, false, metadata.StaleWhileRevalidate)
+	scenes, stashCount, sourceCount, _, complete, stale, _, latest, err := s.loadPerformerScenes(ctx, performer, SceneQuery{Source: SceneSourceFilterAll, InLibrary: LibraryFilterAll, Page: 1, PageSize: 12}, false, metadata.StaleWhileRevalidate)
 	if err != nil {
 		return Detail{}, err
 	}
@@ -83,6 +83,7 @@ func (s *Service) GetPerformerDetail(ctx context.Context, performerID string) (D
 	detail.ActiveTaskCount = countActivePerformerSceneTasks(scenes)
 	detail.SceneStatsComplete = complete
 	detail.SceneStatsStale = stale
+	detail.LatestRelease = latest
 	return detail, nil
 }
 
@@ -122,7 +123,7 @@ func (s *Service) buildPerformerScenePage(ctx context.Context, performer *stashg
 func (s *Service) buildPerformerScenePageWithPolicy(ctx context.Context, performer *stashgraphql.PerformerFragment, query SceneQuery, policy metadata.CachePolicy) (ScenePage, error) {
 	query = normalizePerformerSceneQuery(query)
 
-	flat, stashSceneCount, stashBoxCount, cacheLoaded, cacheComplete, cacheStale, cacheUpdatedAt, err := s.loadPerformerScenes(ctx, performer, query, false, policy)
+	flat, stashSceneCount, stashBoxCount, cacheLoaded, cacheComplete, cacheStale, cacheUpdatedAt, _, err := s.loadPerformerScenes(ctx, performer, query, false, policy)
 	if err != nil {
 		return ScenePage{}, err
 	}
@@ -251,14 +252,14 @@ func (s *Service) attachPerformerSceneTasks(ctx context.Context, scenes []Scene)
 	return nil
 }
 
-func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraphql.PerformerFragment, query SceneQuery, forceAll bool, policy metadata.CachePolicy) ([]Scene, int, int, int, bool, bool, *time.Time, error) {
+func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraphql.PerformerFragment, query SceneQuery, forceAll bool, policy metadata.CachePolicy) ([]Scene, int, int, int, bool, bool, *time.Time, *LatestRelease, error) {
 	if performer == nil {
-		return nil, 0, 0, 0, true, false, nil, nil
+		return nil, 0, 0, 0, true, false, nil, nil, nil
 	}
 
 	stashScenes, err := s.fetchStashScenes(ctx, performer.ID)
 	if err != nil {
-		return nil, 0, 0, 0, false, false, nil, err
+		return nil, 0, 0, 0, false, false, nil, nil, err
 	}
 	if query.Source == SceneSourceFilterStash {
 		flat := make([]Scene, 0, len(stashScenes))
@@ -267,16 +268,16 @@ func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraph
 			item.ImageURL = s.proxyStashImage(ctx, item.ImageURL)
 			flat = append(flat, item)
 		}
-		return flat, len(stashScenes), 0, 0, true, false, nil, nil
+		return flat, len(stashScenes), 0, 0, true, false, nil, nil, nil
 	}
 
 	target, targetErr := s.metadata.ResolvePerformerWithPolicy(ctx, performer, policy)
 	if targetErr != nil && !errors.Is(targetErr, metadata.ErrNoPerformerMapping) {
-		return nil, 0, 0, 0, false, false, nil, targetErr
+		return nil, 0, 0, 0, false, false, nil, nil, targetErr
 	}
 	if target == nil || errors.Is(targetErr, metadata.ErrNoPerformerMapping) {
 		flat, _, _ := s.mergePerformerScenes(ctx, stashScenes, nil, "")
-		return flat, len(stashScenes), 0, 0, true, false, nil, nil
+		return flat, len(stashScenes), 0, 0, true, false, nil, nil, nil
 	}
 
 	minimum := query.Page*query.PageSize + 1
@@ -287,12 +288,12 @@ func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraph
 	for {
 		remoteResult, err = s.metadata.LoadPerformerScenes(ctx, target, minimum, policy)
 		if err != nil {
-			return nil, 0, 0, 0, false, false, nil, err
+			return nil, 0, 0, 0, false, false, nil, nil, err
 		}
 		flat, _, _ := s.mergePerformerScenes(ctx, stashScenes, remoteResult.Scenes, target.Endpoint)
 		if remoteResult.Complete {
 			updated := remoteResult.UpdatedAt
-			return flat, len(stashScenes), remoteResult.RemoteCount, remoteResult.LoadedCount, true, remoteResult.Stale, &updated, nil
+			return flat, len(stashScenes), remoteResult.RemoteCount, remoteResult.LoadedCount, true, remoteResult.Stale, &updated, s.latestSourceRelease(remoteResult.Scenes, time.Now()), nil
 		}
 		matched := 0
 		for _, item := range flat {
@@ -302,7 +303,7 @@ func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraph
 		}
 		if !forceAll && matched >= query.Page*query.PageSize+1 {
 			updated := remoteResult.UpdatedAt
-			return flat, len(stashScenes), remoteResult.RemoteCount, remoteResult.LoadedCount, remoteResult.Complete, remoteResult.Stale, &updated, nil
+			return flat, len(stashScenes), remoteResult.RemoteCount, remoteResult.LoadedCount, remoteResult.Complete, remoteResult.Stale, &updated, s.latestSourceRelease(remoteResult.Scenes, time.Now()), nil
 		}
 		minimum = remoteResult.LoadedCount + 40
 	}

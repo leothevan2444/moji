@@ -10,7 +10,9 @@ Filter the complete list by subscribed performers, Stash favorites, pending revi
 
 Enter selection mode to select performers with checkboxes. Selections persist across pages, searches, and filters; the action bar reports selections outside the current page. Exiting selection mode clears them. Performer names, subscription buttons, and check buttons support independent keyboard operation.
 
-Subscribing records the performer in Moji. **Check for updates** checks one performer; **Check all for updates** checks every subscription. Newly found scenes are handled according to subscription rules. Scheduled checks use the polling interval in **Settings > Tasks & subscriptions**. A subscription needs a matching performer identity on a configured StashBox. Expand check errors on a card or in the detail view to read the cause. Subscriptions that have never been checked are labeled separately.
+Subscribing records the performer in Moji. **Check for updates** checks one performer; **Check all for updates** checks every subscription. Newly found scenes are handled according to subscription rules. Activity levels 1–5 use automatic check intervals of 30, 14, 7, 3, and 1 day; an unavailable rating uses 48 hours. Enable or disable automatic checks in **Settings > Tasks & subscriptions**; intervals are determined automatically. Saved deadlines survive restarts. Checking needs a matching performer identity on a configured StashBox. Expand check errors on a card or in the detail view to read the cause. Subscriptions that have never been checked are labeled separately.
+
+**Activity level** shows five flame icons and a separate numeric activity value. **Checks** shows the next check, last check, and status. Open **About activity levels and values** for the detailed rules. The icons show the 1–5 level and the value uses two decimal places. All icons remain unlit until a reliable rating is available. Hover for the rating evidence or the reason it is unavailable. Retry a failed read with the icon beside the rating. A task count prefixed with ≥ covers loaded scenes only; its tooltip explains the limit. **Latest release** uses a valid release date from the loaded preferred StashBox catalog, never the time the release was discovered.
 
 ## Review and queue scenes
 
@@ -29,3 +31,7 @@ Only Download release creates a task. Do not download saves a persistent decisio
 Performer details load basic information directly from Stash, independently of scene statistics and the scene list. Existing StashBox data appears immediately while expired snapshots are refreshed in the background.
 
 Unsubscribed performers can be checked manually after confirmation. A manual check does not enable automatic checks. Scheduled runs only admit performers who are subscribed when the run is queued; admitted performers finish their current check even if they are later unsubscribed.
+
+The activity value uses release dates from the past year, with contributions halving every 60 days. Each release day contributes at most 1; explicit compilations contribute 0.2 and insufficient type metadata contributes 0.5. Five flame icons indicate the activity level; all remain unlit while no rating is available. Queues or failures can delay the estimated next check.
+
+Unavailable ratings distinguish loading, unassessed, waiting or active assessment, incomplete release coverage, invalid dates, unverified ownership, and unsuccessful checks. Hover over the value or icons for an explanation of the StashBox evidence.

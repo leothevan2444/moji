@@ -300,7 +300,7 @@ type AutomationSettings {
   taskProcessingEnabled: Boolean!
   sourcingRetryIntervalHours: Int!
   taskProgressSyncIntervalSeconds: Int!
-  subscriptionPollIntervalHours: Int!
+  subscriptionCheckEnabled: Boolean!
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
   stashBoxEndpoints: [String!]!
   subscriptionReleasePolicy: SubscriptionReleasePolicy!
@@ -385,7 +385,7 @@ type ServiceStatus {
 type AutomationStatus {
   taskProgressSyncIntervalSeconds: Int!
   taskProgressSyncEnabled: Boolean!
-  subscriptionPollIntervalHours: Int!
+  subscriptionCheckEnabled: Boolean!
   subscriptionPollEnabled: Boolean!
 }
 
@@ -503,7 +503,7 @@ input UpdateAutomationSettingsInput {
   taskProcessingEnabled: Boolean
   sourcingRetryIntervalHours: Int! = 6
   taskProgressSyncIntervalSeconds: Int!
-  subscriptionPollIntervalHours: Int!
+  subscriptionCheckEnabled: Boolean!
   stashBoxEndpoints: [String!]!
   subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
   torrentSelection: TorrentSelectionSettingsInput!
@@ -548,7 +548,7 @@ input UpdateSettingsSectionInput {
 input TaskSettingsInput {
  taskProcessingEnabled: Boolean!
  taskProgressSyncIntervalSeconds: Int!
- subscriptionPollIntervalHours: Int!
+ subscriptionCheckEnabled: Boolean!
  sourcingRetryIntervalHours: Int!
  subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
 }
@@ -627,7 +627,7 @@ input TasksPatchInput {
   task_processing_enabled: Boolean
   task_progress_sync_interval_seconds: Int
   sourcing_retry_interval_hours: Int
-  subscription_poll_interval_hours: Int
+  subscription_check_enabled: Boolean
   task_delete_policy: TaskDeletePolicy
   subscription_release_policy: ReleasePolicyPatchInput
   torrent_selection: ResourceRulesPatchInput

@@ -304,7 +304,7 @@ type AutomationConfig struct {
 	TaskProcessingEnabled           *bool                           `yaml:"task_processing_enabled,omitempty"`
 	SourcingRetryIntervalHours      int                             `yaml:"sourcing_retry_interval_hours"`
 	TaskProgressSyncIntervalSeconds int                             `yaml:"task_progress_sync_interval_seconds"`
-	SubscriptionPollIntervalHours   int                             `yaml:"subscription_poll_interval_hours"`
+	SubscriptionCheckEnabled        bool                            `yaml:"subscription_check_enabled"`
 	StashBoxEndpoints               []string                        `yaml:"selected_stash_box_endpoints"`
 	SubscriptionReleasePolicy       SubscriptionReleasePolicyConfig `yaml:"subscription_release_policy"`
 	TorrentSelection                TorrentSelectionConfig          `yaml:"torrent_selection"`

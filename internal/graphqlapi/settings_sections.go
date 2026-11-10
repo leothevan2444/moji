@@ -44,7 +44,7 @@ func settingsSectionInput(input model.UpdateSettingsSectionInput) (SettingsSecti
 		update.TaskProcessingEnabled = &task.TaskProcessingEnabled
 		update.TaskProgressSyncIntervalSeconds = task.TaskProgressSyncIntervalSeconds
 		update.SourcingRetryIntervalHours = task.SourcingRetryIntervalHours
-		update.SubscriptionPollIntervalHours = task.SubscriptionPollIntervalHours
+		update.SubscriptionCheckEnabled = task.SubscriptionCheckEnabled
 		policy := task.SubscriptionReleasePolicy
 		update.SubscriptionReleasePolicy = SubscriptionReleasePolicySnapshot{
 			SoloBehavior: string(policy.SoloBehavior), GroupBehavior: string(policy.GroupBehavior), CompilationBehavior: string(policy.CompilationBehavior),

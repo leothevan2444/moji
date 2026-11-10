@@ -166,7 +166,7 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 		TaskProcessingEnabled:           input.TaskProcessingEnabled,
 		SourcingRetryIntervalHours:      input.SourcingRetryIntervalHours,
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
-		SubscriptionPollIntervalHours:   input.SubscriptionPollIntervalHours,
+		SubscriptionCheckEnabled:        input.SubscriptionCheckEnabled,
 		StashBoxEndpoints:               append([]string(nil), input.StashBoxEndpoints...),
 		SubscriptionReleasePolicy: SubscriptionReleasePolicySnapshot{
 			SoloBehavior:           string(input.SubscriptionReleasePolicy.SoloBehavior),

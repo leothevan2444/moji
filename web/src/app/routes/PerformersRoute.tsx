@@ -28,7 +28,7 @@ export function Component() {
   const deferredSceneSearch = useDeferredValue(state.sceneQ);
   const navigate = useNavigate();
   const location = useLocation();
-  const { pushToast } = useOutletContext<AppOutletContext>();
+  const { pushToast, openHelp } = useOutletContext<AppOutletContext>();
   const [pendingSubscription, setPendingSubscription] = useState<string | null>(null);
   const [pendingKeys, setPendingKeys] = useState<string[]>([]);
   const [sceneSelectionPerformerId, setSceneSelectionPerformerId] = useState<string | null>(null);
@@ -138,6 +138,9 @@ export function Component() {
   };
 
   return <><PerformersPage
+    performerActivities={subscription.performerActivities}
+    onOpenActivityHelp={() => openHelp("performer-activity")}
+    performerActivity={subscription.performerActivity} performerActivityError={subscription.performerActivityError} onRefreshActivity={subscription.refreshActivity}
     checkActivity={subscription.checkActivity} checksLoading={subscription.checksLoading} checksError={subscription.checksError} checkStarting={subscription.startingCheck} onRefreshChecks={subscription.refreshChecks}
     sceneSelectionMode={sceneSelectionMode} onToggleSceneSelectionMode={toggleSceneSelectionMode}
     performerSummary={subscription.performerSummary} fetchingPerformerSummary={subscription.fetchingPerformerSummary} performerSummaryError={subscription.performerSummaryError ? new Error(describeQueryError(subscription.performerSummaryError)) : null} onRetrySummary={() => subscription.refreshPerformerSummary({ requestPolicy: "network-only" })} listFilter={state.filter} listSort={state.sort} onClearListFilters={() => update({ q: "", filter: "all", page: 1 })} onListFilterChange={(filter) => update({ filter, page: 1 })} onListSortChange={(sort) => update({ sort, page: 1 })} onRetryDetail={() => subscription.refreshPerformerDetail({ requestPolicy: "network-only" })} onRetryScenes={() => subscription.refreshPerformerScenes({ requestPolicy: "network-only" })} reviewPendingCount={reviewSummary?.releaseReviews?.pendingCount ?? 0} reviewCounts={Object.fromEntries((reviewSummary?.releaseReviews?.performers ?? []).map(actor => [actor.id, actor.pendingCount]))} stashBaseURL={config?.settings.stash.url ?? null} stashPerformerPage={subscription.stashPerformerPage} stashPerformers={subscription.stashPerformers} subscribedPerformers={subscription.subscribedPerformers}

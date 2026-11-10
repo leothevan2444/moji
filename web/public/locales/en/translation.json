@@ -1,4 +1,43 @@
 {
+  "performerActivity": {
+    "help": "About activity levels and values",
+    "latestSourceHelp": "Latest valid release among loaded works from the preferred StashBox. Future and unknown dates are excluded; the catalog may be incomplete.",
+    "value": "Activity value",
+    "rank": "Activity level",
+    "rankLabel": "Activity level {{rank}} / 5",
+    "nextCheck": "Estimated next check",
+    "lowerBound": "Confirmed minimum; level 5 is established.",
+    "automaticChecks": "Automatically check subscribed performers for releases",
+    "history": "History",
+    "recentRuns": "Recent runs",
+    "loadFailed": "Unable to update activity and check schedule.",
+    "states": {
+      "READY": "Rated",
+      "LOADING": "Loading",
+      "READ_FAILED": "Read failed",
+      "NOT_CHECKED": "Not assessed",
+      "CHECK_FAILED": "Check failed",
+      "INCOMPLETE_CATALOG": "Partial catalog",
+      "INVALID_DATES": "Incomplete dates",
+      "INVALID_MEMBERSHIP": "Unverified link",
+      "EVALUATING": "Assessing",
+      "WAITING_EVALUATION": "Awaiting assessment"
+    },
+    "details": {
+      "READY": "Rating available.",
+      "LOADING": "Reading the rating.",
+      "READ_FAILED": "Could not read the rating. Retry.",
+      "NOT_CHECKED": "Not assessed yet.",
+      "CHECK_FAILED": "Release check failed; rating unavailable.",
+      "INCOMPLETE_CATALOG": "Partial catalog; rating unavailable.",
+      "INVALID_DATES": "Release dates are incomplete.",
+      "INVALID_MEMBERSHIP": "Performer links are unverified.",
+      "EVALUATING": "Checking releases and assessing.",
+      "WAITING_EVALUATION": "Waiting for a release check."
+    },
+    "valueHelp": "Weighted total of recent releases.",
+    "cardUnknown": "Level 0 means no reliable rating yet."
+  },
   "indexerLogin": {
     "title": "Log in to site",
     "scope": "Use the saved site settings. The session is used for searches and resource acquisition; answers are not saved in settings. Reopen to restore a challenge that is still valid.",
@@ -474,7 +513,6 @@
     "pausedDetail": "Download progress will stop updating, and completed downloads will not be added to Stash automatically. Downloads and work already started may continue. Resource searches and subscription checks are unaffected.",
     "openSettings": "Open tasks & subscriptions settings",
     "syncInterval": "Check tasks every",
-    "pollInterval": "Subscription check interval (hours)",
     "policyTitle": "New-release download policy",
     "solo": "Single-performer releases",
     "group": "Multiple-performer releases",
@@ -482,8 +520,7 @@
     "compilationInfo": "Identified by compilation terms in the title, details or tags, or by having at least 10 performers.",
     "dateRange": "Release date range for automatic downloads",
     "dateRangeInfo": "Applies to single- and multiple-performer releases. Older releases or unknown dates go to review.",
-    "title": "Tasks & subscriptions",
-    "pollIntervalHelp": "A negative value disables scheduled checks; 0 means one hour."
+    "title": "Tasks & subscriptions"
   },
   "metadataSources": {
     "title": "Metadata source priority",
@@ -2013,8 +2050,8 @@
     }
   },
   "performerWorkspace": {
-    "recentCheck": "Latest check",
-    "checkTime": "Check time",
+    "checks": "Checks",
+    "checkTime": "Last check",
     "worksAndTasks": "Scenes and tasks",
     "libraryWorks": "Scenes in Stash",
     "sourceWorks": "Scenes at source",

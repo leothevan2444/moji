@@ -51,7 +51,7 @@ func (r *queryResolver) UpcomingReleases(ctx context.Context, input model.Upcomi
 		snapshot = r.SettingsEditor.Snapshot()
 	}
 	if snapshot != nil {
-		out.Automatic = snapshot.Automation.SubscriptionPollIntervalHours >= 0
+		out.Automatic = snapshot.Automation.SubscriptionCheckEnabled
 	}
 	for _, record := range page.Items {
 		out.Items = append(out.Items, upcomingToModel(record))

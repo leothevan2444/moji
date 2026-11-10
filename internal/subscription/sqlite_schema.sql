@@ -2,15 +2,15 @@ CREATE TABLE IF NOT EXISTS subscription_performer_state (
   performer_id TEXT PRIMARY KEY,
   last_checked_at TEXT,
   last_error TEXT,
+  activity_json TEXT NOT NULL DEFAULT '{}',
+  next_check_at TEXT,
+  check_failures INTEGER NOT NULL DEFAULT 0 CHECK(check_failures >= 0),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;
-
-CREATE INDEX IF NOT EXISTS idx_subscription_state_last_checked_at
-  ON subscription_performer_state (last_checked_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_subscription_state_updated_at
-  ON subscription_performer_state (updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_subscription_state_last_checked_at ON subscription_performer_state(last_checked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_subscription_state_updated_at ON subscription_performer_state(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_subscription_state_next_check ON subscription_performer_state(next_check_at,performer_id) WHERE next_check_at IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS subscription_release_entities (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

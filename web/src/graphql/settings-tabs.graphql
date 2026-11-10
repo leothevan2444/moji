@@ -40,7 +40,7 @@ query SettingsPolicySection {
     policies: automation {
       taskProcessingEnabled
       taskProgressSyncIntervalSeconds
-      subscriptionPollIntervalHours
+      subscriptionCheckEnabled
       sourcingRetryIntervalHours
       stashBoxEndpoints
       subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior vrBehavior maxGroupPerformerCount releaseDateRange }
@@ -63,7 +63,7 @@ query SettingsPolicySection {
     }
   }
   settingsStatus {
-    taskProcessing: automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled subscriptionPollIntervalHours subscriptionPollEnabled }
+    taskProcessing: automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled subscriptionCheckEnabled subscriptionPollEnabled }
     metadataSources: stashBox { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded stashBoxesLoadError }
   }
 }

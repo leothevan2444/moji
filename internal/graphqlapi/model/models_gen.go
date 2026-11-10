@@ -16,7 +16,7 @@ type AutomationSettings struct {
 	TaskProcessingEnabled           bool `json:"taskProcessingEnabled"`
 	SourcingRetryIntervalHours      int  `json:"sourcingRetryIntervalHours"`
 	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalHours   int  `json:"subscriptionPollIntervalHours"`
+	SubscriptionCheckEnabled        bool `json:"subscriptionCheckEnabled"`
 	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
 	StashBoxEndpoints         []string                   `json:"stashBoxEndpoints"`
 	SubscriptionReleasePolicy *SubscriptionReleasePolicy `json:"subscriptionReleasePolicy"`
@@ -26,7 +26,7 @@ type AutomationSettings struct {
 type AutomationStatus struct {
 	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
 	TaskProgressSyncEnabled         bool `json:"taskProgressSyncEnabled"`
-	SubscriptionPollIntervalHours   int  `json:"subscriptionPollIntervalHours"`
+	SubscriptionCheckEnabled        bool `json:"subscriptionCheckEnabled"`
 	SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
 }
 
@@ -790,6 +790,17 @@ type MatchedStashBox struct {
 type Mutation struct {
 }
 
+type PerformerActivity struct {
+	EvaluationStatus ActivityEvaluationStatus `json:"evaluationStatus"`
+	ID               string                   `json:"id"`
+	Value            *float64                 `json:"value,omitempty"`
+	Rank             *int                     `json:"rank,omitempty"`
+	LowerBound       bool                     `json:"lowerBound"`
+	ObservedAt       *string                  `json:"observedAt,omitempty"`
+	LastSuccessAt    *string                  `json:"lastSuccessAt,omitempty"`
+	NextCheckAt      *string                  `json:"nextCheckAt,omitempty"`
+}
+
 type PerformerBatchPayload struct {
 	BatchID string                  `json:"batchId"`
 	Summary *PerformerBatchSummary  `json:"summary"`
@@ -815,6 +826,12 @@ type PerformerCheckActivity struct {
 	PerformerID string                  `json:"performerId"`
 	RunID       string                  `json:"runId"`
 	Status      SubscriptionCheckStatus `json:"status"`
+}
+
+type PerformerLatestRelease struct {
+	Code  string `json:"code"`
+	Title string `json:"title"`
+	Date  string `json:"date"`
 }
 
 type PerformerListOptions struct {
@@ -849,6 +866,8 @@ type PerformerSubscriptionEvent struct {
 }
 
 type PerformerWorkspaceSnapshot struct {
+	// Saved activity for visible page actors only; never reads StashBox
+	Activities           []*PerformerActivity      `json:"activities"`
 	Performers           *StashPerformerConnection `json:"performers"`
 	SubscribedPerformers []*SubscribedPerformer    `json:"subscribedPerformers"`
 }
@@ -1244,20 +1263,22 @@ type StashPerformerConnection struct {
 }
 
 type StashPerformerDetail struct {
-	Performer          *StashPerformer  `json:"performer"`
-	Disambiguation     *string          `json:"disambiguation,omitempty"`
-	Birthdate          *string          `json:"birthdate,omitempty"`
-	Ethnicity          *string          `json:"ethnicity,omitempty"`
-	Country            *string          `json:"country,omitempty"`
-	EyeColor           *string          `json:"eyeColor,omitempty"`
-	HeightCm           *int             `json:"heightCm,omitempty"`
-	Rating100          *int             `json:"rating100,omitempty"`
-	Urls               []string         `json:"urls"`
-	MatchedStashBox    *MatchedStashBox `json:"matchedStashBox,omitempty"`
-	TotalSceneCount    int              `json:"totalSceneCount"`
-	StashSceneCount    int              `json:"stashSceneCount"`
-	StashBoxSceneCount int              `json:"stashBoxSceneCount"`
-	DedupedSceneCount  int              `json:"dedupedSceneCount"`
+	// Newest already released work in the loaded preferred source snapshot
+	LatestRelease      *PerformerLatestRelease `json:"latestRelease,omitempty"`
+	Performer          *StashPerformer         `json:"performer"`
+	Disambiguation     *string                 `json:"disambiguation,omitempty"`
+	Birthdate          *string                 `json:"birthdate,omitempty"`
+	Ethnicity          *string                 `json:"ethnicity,omitempty"`
+	Country            *string                 `json:"country,omitempty"`
+	EyeColor           *string                 `json:"eyeColor,omitempty"`
+	HeightCm           *int                    `json:"heightCm,omitempty"`
+	Rating100          *int                    `json:"rating100,omitempty"`
+	Urls               []string                `json:"urls"`
+	MatchedStashBox    *MatchedStashBox        `json:"matchedStashBox,omitempty"`
+	TotalSceneCount    int                     `json:"totalSceneCount"`
+	StashSceneCount    int                     `json:"stashSceneCount"`
+	StashBoxSceneCount int                     `json:"stashBoxSceneCount"`
+	DedupedSceneCount  int                     `json:"dedupedSceneCount"`
 	// Unfinished tasks associated with loaded performer scenes, counted once per task
 	ActiveTaskCount int `json:"activeTaskCount"`
 	// Whether the source catalog used for the task count is fully loaded
@@ -1359,6 +1380,7 @@ type StashStats struct {
 }
 
 type SubscribedPerformer struct {
+	Activity              *PerformerActivity     `json:"activity"`
 	Performer             *StashPerformer        `json:"performer"`
 	LastCheckedAt         *string                `json:"lastCheckedAt,omitempty"`
 	LastError             *string                `json:"lastError,omitempty"`
@@ -1581,7 +1603,7 @@ type TaskPageInput struct {
 type TaskSettingsInput struct {
 	TaskProcessingEnabled           bool                            `json:"taskProcessingEnabled"`
 	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalHours   int                             `json:"subscriptionPollIntervalHours"`
+	SubscriptionCheckEnabled        bool                            `json:"subscriptionCheckEnabled"`
 	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
 	SubscriptionReleasePolicy       *SubscriptionReleasePolicyInput `json:"subscriptionReleasePolicy"`
 }
@@ -1630,7 +1652,7 @@ type TasksPatchInput struct {
 	TaskProcessingEnabled           *bool                    `json:"task_processing_enabled,omitempty"`
 	TaskProgressSyncIntervalSeconds *int                     `json:"task_progress_sync_interval_seconds,omitempty"`
 	SourcingRetryIntervalHours      *int                     `json:"sourcing_retry_interval_hours,omitempty"`
-	SubscriptionPollIntervalHours   *int                     `json:"subscription_poll_interval_hours,omitempty"`
+	SubscriptionCheckEnabled        *bool                    `json:"subscription_check_enabled,omitempty"`
 	TaskDeletePolicy                *TaskDeletePolicy        `json:"task_delete_policy,omitempty"`
 	SubscriptionReleasePolicy       *ReleasePolicyPatchInput `json:"subscription_release_policy,omitempty"`
 	TorrentSelection                *ResourceRulesPatchInput `json:"torrent_selection,omitempty"`
@@ -1896,7 +1918,7 @@ type UpdateAutomationSettingsInput struct {
 	TaskProcessingEnabled           *bool                           `json:"taskProcessingEnabled,omitempty"`
 	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
 	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionPollIntervalHours   int                             `json:"subscriptionPollIntervalHours"`
+	SubscriptionCheckEnabled        bool                            `json:"subscriptionCheckEnabled"`
 	StashBoxEndpoints               []string                        `json:"stashBoxEndpoints"`
 	SubscriptionReleasePolicy       *SubscriptionReleasePolicyInput `json:"subscriptionReleasePolicy"`
 	TorrentSelection                *TorrentSelectionSettingsInput  `json:"torrentSelection"`
@@ -1946,6 +1968,70 @@ type UpdateSystemSettingsInput struct {
 	TaskDeletePolicy  *TaskDeletePolicy               `json:"taskDeletePolicy,omitempty"`
 	ImageCache        *ImageCacheSettingsInput        `json:"imageCache,omitempty"`
 	StashBoxDataCache *StashBoxDataCacheSettingsInput `json:"stashBoxDataCache,omitempty"`
+}
+
+// Confirmed activity observation; absent value/rank means evaluation is incomplete.
+type ActivityEvaluationStatus string
+
+const (
+	ActivityEvaluationStatusReady             ActivityEvaluationStatus = "READY"
+	ActivityEvaluationStatusNotChecked        ActivityEvaluationStatus = "NOT_CHECKED"
+	ActivityEvaluationStatusCheckFailed       ActivityEvaluationStatus = "CHECK_FAILED"
+	ActivityEvaluationStatusIncompleteCatalog ActivityEvaluationStatus = "INCOMPLETE_CATALOG"
+	ActivityEvaluationStatusInvalidDates      ActivityEvaluationStatus = "INVALID_DATES"
+	ActivityEvaluationStatusInvalidMembership ActivityEvaluationStatus = "INVALID_MEMBERSHIP"
+)
+
+var AllActivityEvaluationStatus = []ActivityEvaluationStatus{
+	ActivityEvaluationStatusReady,
+	ActivityEvaluationStatusNotChecked,
+	ActivityEvaluationStatusCheckFailed,
+	ActivityEvaluationStatusIncompleteCatalog,
+	ActivityEvaluationStatusInvalidDates,
+	ActivityEvaluationStatusInvalidMembership,
+}
+
+func (e ActivityEvaluationStatus) IsValid() bool {
+	switch e {
+	case ActivityEvaluationStatusReady, ActivityEvaluationStatusNotChecked, ActivityEvaluationStatusCheckFailed, ActivityEvaluationStatusIncompleteCatalog, ActivityEvaluationStatusInvalidDates, ActivityEvaluationStatusInvalidMembership:
+		return true
+	}
+	return false
+}
+
+func (e ActivityEvaluationStatus) String() string {
+	return string(e)
+}
+
+func (e *ActivityEvaluationStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ActivityEvaluationStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ActivityEvaluationStatus", str)
+	}
+	return nil
+}
+
+func (e ActivityEvaluationStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *ActivityEvaluationStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e ActivityEvaluationStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 // Legacy aggregate mutation input; new section mutations use SettingsSection.

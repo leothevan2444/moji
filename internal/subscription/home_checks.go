@@ -69,3 +69,17 @@ func summarizeHomeCheck(run CheckRun) HomeCheckRun {
 	}
 	return out
 }
+
+// CheckHistory is an explicitly requested, bounded local summary.
+func (s *Service) CheckHistory(context.Context) ([]HomeCheckRun, error) {
+	s.checks.mu.Lock()
+	defer s.checks.mu.Unlock()
+	out := []HomeCheckRun{}
+	for _, run := range s.checks.runs {
+		if len(out) == checkHistoryLimit {
+			break
+		}
+		out = append(out, summarizeHomeCheck(run))
+	}
+	return out, nil
+}

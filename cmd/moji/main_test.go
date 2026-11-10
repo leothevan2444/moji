@@ -144,7 +144,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			qbittorrent { configured url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured url apiKeyConfigured }
 			ingest { downloads { qbRoot mojiRoot } library { mojiRoot stashRoot } transfer { action } }
-			automation { taskProgressSyncIntervalSeconds subscriptionPollIntervalHours stashBoxEndpoints }
+			automation { taskProgressSyncIntervalSeconds subscriptionCheckEnabled stashBoxEndpoints }
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
@@ -345,7 +345,7 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	if snapshot.Jackett.URL != "http://jackett.invalid" || !snapshot.Jackett.APIKeyConfigured {
 		t.Fatalf("unexpected jackett snapshot: %+v", snapshot.Jackett)
 	}
-	if snapshot.Automation.TaskProgressSyncIntervalSeconds != 60 || snapshot.Automation.SubscriptionPollIntervalHours != 1 {
+	if snapshot.Automation.TaskProgressSyncIntervalSeconds != 60 || snapshot.Automation.SubscriptionCheckEnabled != true {
 		t.Fatalf("unexpected automation snapshot: %+v", snapshot.Automation)
 	}
 	if snapshot.System.TaskDeletePolicy != "KEEP_ONLY" {
@@ -484,7 +484,7 @@ type graphQLResponse struct {
 			} `json:"qbittorrent"`
 			Automation struct {
 				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionPollIntervalHours   int      `json:"subscriptionPollIntervalHours"`
+				SubscriptionCheckEnabled        bool     `json:"subscriptionCheckEnabled"`
 				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
 			} `json:"automation"`
 			System struct {
@@ -553,7 +553,7 @@ func testConfig() *config.Config {
 	cfg.Connection.Jackett.APIKey = "test-api-key"
 	cfg.Ingest.Downloads.QBRoot = "/downloads"
 	cfg.Ingest.Library.StashRoot = "/library"
-	cfg.Automation.SubscriptionPollIntervalHours = 1
+	cfg.Automation.SubscriptionCheckEnabled = true
 	return &cfg
 }
 
@@ -652,13 +652,13 @@ func (fakeConfiguredStashService) CurrentConfig() stashsync.IntegrationConfig {
 	return stashsync.IntegrationConfig{}
 }
 
-func TestEditableSubscriptionIntervalPreservesDisabledConfiguration(t *testing.T) {
+func TestSubscriptionCheckSwitchPreservesDisabledConfiguration(t *testing.T) {
 	cfg := &config.Config{}
-	cfg.Automation.SubscriptionPollIntervalHours = -1
-	if got := editableSubscriptionPollIntervalHours(cfg); got != -1 {
-		t.Fatalf("disabled configuration became %d", got)
+	if configureSubscriptionCheckProvider(nil, cfg)() {
+		t.Fatal("disabled checks became enabled")
 	}
-	if got := effectiveSubscriptionPollIntervalHours(cfg); got != 0 {
-		t.Fatalf("disabled runtime interval became %d", got)
+	cfg.Automation.SubscriptionCheckEnabled = true
+	if !configureSubscriptionCheckProvider(nil, cfg)() {
+		t.Fatal("enabled checks became disabled")
 	}
 }

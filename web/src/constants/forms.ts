@@ -60,7 +60,7 @@ export const EMPTY_POLICY_SETTINGS_FORM = {
   taskProcessingEnabled: true,
   sourcingRetryIntervalHours: "6",
   taskProgressSyncIntervalSeconds: "60",
-  subscriptionPollIntervalHours: "1",
+  subscriptionCheckEnabled: true,
   stashBoxEndpoints: [] as string[],
   subscriptionReleasePolicy: {
     soloBehavior: SubscriptionReleaseBehavior.Download,

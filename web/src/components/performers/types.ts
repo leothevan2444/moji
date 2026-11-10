@@ -10,6 +10,11 @@ export type StashPerformerSceneEntry = StashPerformerScenePage["items"][number];
 export type SubscribedPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["subscribedPerformers"][number];
 
 export interface PerformersPageProps {
+  performerActivities?: PerformerWorkspaceQuery["performerWorkspace"]["activities"];
+  onOpenActivityHelp?: () => void;
+  performerActivity?: import("../../graphql/generated/graphql").PerformerActivityQuery["performerActivity"] | null;
+  performerActivityError?: boolean;
+  onRefreshActivity?: () => void;
   checkActivity?: import("../../hooks/useSubscriptionChecks").SubscriptionCheckActivityView | null;
   checksLoading?: boolean;
   checksError?: string | null;

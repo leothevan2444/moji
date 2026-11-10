@@ -88,7 +88,7 @@ export function Component() {
       onInputFocus={() => { setFocused(true); setHistoryVisible(!draft.trim()); }} onInputBlur={() => { setFocused(false); setHistoryVisible(false); }}
       onSubmit={submit} onModeChange={source => update({ source, run: "", sort: "relevance", page: 1 })}
       onPickHistory={q => { setDraft(q); setHistoryVisible(false); if (mode === "indexers") void beginSearch(q); else { history.push(q); update({ q, page: 1 }, false); } }}
-      onRemoveHistory={history.remove} onClearHistory={history.clear} onDismissHistory={() => setHistoryVisible(false)} onOpenHelp={openHelp}/>
+      onRemoveHistory={history.remove} onClearHistory={history.clear} onDismissHistory={() => setHistoryVisible(false)} onOpenHelp={() => openHelp()}/>
     {mode === "indexers" && torrents.error && !state.q && !state.run ? <p className="inline-error">{describeQueryError(torrents.error)}</p> : null}
     {state.q || state.run ? <Drawer visibleDrawer="discovery" closing={false} title={t(mode === "stashbox" ? "discoverUi.stashResults" : "torrentSearch.results")} onClose={() => update({ q: "", run: "", page: 1 })}>
       <div className="drawer-stack"><article className="drawer-card"><div className="drawer-card__head"><h3>{t("discoverUi.query", { query: mode === "stashbox" ? query : keywords })}</h3></div>

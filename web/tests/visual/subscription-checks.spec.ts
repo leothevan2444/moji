@@ -21,11 +21,12 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
 });
 test.use({ graphqlOverrides: {
-  performerWorkspace: { performers: { items: actors, page: 1, pageSize: 24, totalCount: 2, totalPages: 1, hasPrevPage: false, hasNextPage: false }, subscribedPerformers: states },
+  performerWorkspace: { activities: [], performers: { items: actors, page: 1, pageSize: 24, totalCount: 2, totalPages: 1, hasPrevPage: false, hasNextPage: false }, subscribedPerformers: states },
   homeSubscriptionChecks: () => {
     const scheduled = active?.trigger === "SCHEDULED" ? active : recent.find(run => run.trigger === "SCHEDULED");
     return { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: active ? 1 : 0, latestScheduled: scheduled ? summarize(scheduled) : null, activeRuns: active ? [summarize(active)] : [], recentRuns: recent.slice(0, 3).map(summarize) };
   },
+  subscriptionCheckHistory: () => recent.map(summarize),
   subscriptionCheckActivity: ({ ids }: { ids: string[] }) => ({ activeCount: active ? 1 : 0, allRunId: active?.scope === "ALL" ? active.id : null, performers: active?.items.filter(item => ids.includes(item.performerId)).map(item => ({ performerId: item.performerId, runId: active!.id, status: item.status })) ?? [] }),
   subscriptionCheck: ({ id }: { id: string }) => { detailReads++; return active?.id === id ? active : recent.find(run => run.id === id) ?? null; },
   startSubscriptionCheck: ({ ids }: { ids?: string[] }) => { starts++; active ??= makeRun("check-manual-persisted", "MANUAL", ids ?? actors.map(actor => actor.id)); return active; }
@@ -61,8 +62,15 @@ test("manual check survives actor reload and is tracked in Home's drawer", async
   finished.items[0].status = "SUCCEEDED"; finished.items[0].finishedAt = finished.finishedAt;
   recent = [finished]; active = null;
   await expect(home.getByText("Idle", { exact: true })).toBeVisible();
-  await home.getByText("Recent runs (1)", { exact: true }).click();
   await expect(home.getByText("Completed", { exact: true })).toBeVisible();
+  const historyButton = home.getByRole("button", {name:"History",exact:true});
+  const readsBeforeHistory=detailReads;
+  await historyButton.click();
+  const history=page.getByRole("dialog",{name:"History",exact:true});
+  await expect(history.getByText("Succeeded 1 · Failed 0 · Skipped 0")).toBeVisible();
+  expect(detailReads).toBe(readsBeforeHistory);
+  await page.keyboard.press("Escape");
+  await expect(historyButton).toBeFocused();
   await page.goto("/performers");
   await expect(check).toBeEnabled();
 });

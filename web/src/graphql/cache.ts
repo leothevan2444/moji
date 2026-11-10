@@ -230,6 +230,7 @@ export const graphcacheKeys: KeyingConfig = {
     const performer = data.performer as { id?: unknown; } | undefined;
     return typeof performer?.id === "string" ? performer.id : null;
   },
+  PerformerLatestRelease: () => null,
   MatchedStashBox: (data) => typeof data.endpoint === "string" && typeof data.performerId === "string" ? `${data.endpoint}:${data.performerId}` : null,
   StashSceneID: (data) => typeof data.endpoint === "string" && typeof data.stashId === "string" ? `${data.endpoint}:${data.stashId}` : null,
   StashBoxEndpoint: (data) => typeof data.endpoint === "string" ? data.endpoint : null,

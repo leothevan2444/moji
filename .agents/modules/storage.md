@@ -1,5 +1,7 @@
 # 存储、迁移与恢复
 
+2026-11-10 按用户明确要求，本次活跃度功能不新增自动迁移或兼容代码，直接完善基础 schema，并在编码测试完成后备份、手动转换本地库及对齐 schema 基线。subscription_performer_state 的 activity_json 保存评分观测；next_check_at、check_failures 独立列，到期时间与 performer_id 建部分索引。评分/调度使用专用更新，避免重写作品关联；调度读取轻量投影及每批至多 128 项的到期 keyset。重启不重置截止时间，缺少安排时由订阅领域从既有检查时间初始化。这是本次获准的开发期人工调整，不改变通常的迁移/checksum 防护。契约见[活跃度与自动检查](../../docs/performer-activity.md)。
+
 2026-11-08 runtime v7 新增 indexer_executions 统一执行表，JSON 正文为真值、生成列负责索引与统计。只创建空表，不自动转换旧 diagnostics；详细保留规则见[集成与运维](operations.md)。历史、近期状态和搜索统计均查询此表，无独立聚合或近期快照。通用 diagnostics TTL 不影响此表。实现、验证和本地备份证据见[统一执行记录复核](../reviews/2026-11-08-indexer-executions.md)。
 
 2026-11-03 新增 [runtime v6](../../internal/storage/schema/runtime_v6.sql)：indexer_network_cooldowns 保存来源/代理出口的私有 SHA-256 key、失败次数（1–7）、冷却与过期毫秒时间，不保存 URL/账号/凭据。最多 8192 条，仅回收过期项，不驱逐有效冷却；普通成功请求不写该表，失败/已有失败后的成功/挑战解除才更新。到期冷却保留失败计数至额外 30 分钟，最长 Retry-After 24 小时；这不是查询缓存或任务真值。v5→v6 有序升级保留已有资源和搜索 run，重复迁移验证通过；未对实际库执行迁移。

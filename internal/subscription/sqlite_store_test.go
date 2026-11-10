@@ -133,6 +133,9 @@ CREATE TABLE subscription_performer_state (
   performer_id TEXT PRIMARY KEY,
   last_checked_at TEXT,
   last_error TEXT,
+  activity_json TEXT NOT NULL DEFAULT '{}',
+  next_check_at TEXT,
+  check_failures INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;

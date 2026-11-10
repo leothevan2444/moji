@@ -189,3 +189,7 @@ func TestRefreshAllPublishesOnlyPerformerEvents(t *testing.T) {
 		}
 	}
 }
+
+func (s failingPutStore) SaveCheckOutcome(ctx context.Context, state *PerformerState) error {
+	return context.Canceled
+}

@@ -5,6 +5,7 @@ export type HelpTopicId =
   | "home"
   | "discover"
   | "performers"
+  | "performer-activity"
   | "tasks"
   | "services-and-delivery"
   | "tasks-and-subscriptions"
