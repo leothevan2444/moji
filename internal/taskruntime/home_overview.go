@@ -9,8 +9,8 @@ import (
 
 // HomeOverview is a bounded operational snapshot, independent of task history.
 type HomeOverview struct {
-	Total, Attention, Active, Waiting, CompletedLast24Hours int
-	AttentionTasks, ActiveTasks, RecentTasks                []*Task
+	HomeStats
+	AttentionTasks, ActiveTasks, RecentTasks []*Task
 }
 
 type homeOverviewStore interface {
@@ -30,27 +30,20 @@ func (s *Service) HomeOverview(ctx context.Context, now time.Time) (HomeOverview
 }
 
 func summarizeHomeTasks(tasks []*Task, now time.Time) HomeOverview {
-	result := HomeOverview{}
+	result := HomeOverview{HomeStats: summarizeHomeStats(tasks, now)}
 	for _, task := range tasks {
 		if task == nil {
 			continue
 		}
-		result.Total++
-		switch {
-		case task.Stage == TaskStageCompleted:
+		switch classifyHomeTask(task) {
+		case homeCompleted:
 			if task.IngestCompletedAt != nil {
 				result.RecentTasks = append(result.RecentTasks, task)
-				if !task.IngestCompletedAt.Before(now.Add(-24*time.Hour)) && !task.IngestCompletedAt.After(now) {
-					result.CompletedLast24Hours++
-				}
 			}
-		case task.StageStatus == TaskStageStatusBlocked:
-			result.Attention++
+		case homeAttention:
 			result.AttentionTasks = append(result.AttentionTasks, task)
-		case task.Stage == TaskStageSourcing && task.StageStatus == TaskStageStatusPending && task.SourcingNextCheckAt != nil:
-			result.Waiting++
+		case homeWaiting:
 		default:
-			result.Active++
 			result.ActiveTasks = append(result.ActiveTasks, task)
 		}
 	}
@@ -81,22 +74,11 @@ func (s *SQLiteTaskStore) HomeOverview(ctx context.Context, now time.Time) (Home
 		return HomeOverview{}, err
 	}
 	defer tx.Rollback()
-	var counts struct {
-		Total     int `db:"total"`
-		Attention int `db:"attention"`
-		Waiting   int `db:"waiting"`
-		Completed int `db:"completed"`
-		Recent    int `db:"recent"`
-	}
-	err = tx.GetContext(ctx, &counts, `SELECT COUNT(*) total,
-		COUNT(CASE WHEN stage != 'COMPLETED' AND stage_status = 'BLOCKED' THEN 1 END) attention,
-		COUNT(CASE WHEN stage = 'SOURCING' AND stage_status = 'PENDING' AND sourcing_next_check_at IS NOT NULL THEN 1 END) waiting,
-		COUNT(CASE WHEN stage = 'COMPLETED' THEN 1 END) completed,
-		COUNT(CASE WHEN stage = 'COMPLETED' AND julianday(ingest_completed_at) BETWEEN julianday(?) AND julianday(?) THEN 1 END) recent FROM tasks`, now.Add(-24*time.Hour).UTC().Format(time.RFC3339Nano), now.UTC().Format(time.RFC3339Nano))
+	counts, err := queryHomeStats(ctx, tx, "tasks", now)
 	if err != nil {
 		return HomeOverview{}, err
 	}
-	result := HomeOverview{Total: counts.Total, Attention: counts.Attention, Waiting: counts.Waiting, Active: counts.Total - counts.Attention - counts.Waiting - counts.Completed, CompletedLast24Hours: counts.Recent}
+	result := HomeOverview{HomeStats: counts}
 	queries := []struct {
 		suffix string
 		target *[]*Task
@@ -130,22 +112,11 @@ func (s *RelationalTaskStore) HomeOverview(ctx context.Context, now time.Time) (
 		return HomeOverview{}, err
 	}
 	defer tx.Rollback()
-	var counts struct {
-		Total     int `db:"total"`
-		Attention int `db:"attention"`
-		Waiting   int `db:"waiting"`
-		Completed int `db:"completed"`
-		Recent    int `db:"recent"`
-	}
-	err = tx.GetContext(ctx, &counts, `SELECT COUNT(*) total,
-		COUNT(CASE WHEN stage != 'COMPLETED' AND stage_status = 'BLOCKED' THEN 1 END) attention,
-		COUNT(CASE WHEN stage = 'SOURCING' AND stage_status = 'PENDING' AND sourcing_next_check_at IS NOT NULL THEN 1 END) waiting,
-		COUNT(CASE WHEN stage = 'COMPLETED' THEN 1 END) completed,
-		COUNT(CASE WHEN stage = 'COMPLETED' AND julianday(ingest_completed_at) BETWEEN julianday(?) AND julianday(?) THEN 1 END) recent FROM tasks t LEFT JOIN task_checkpoints k ON k.task_id=t.id`, now.Add(-24*time.Hour).UTC().Format(time.RFC3339Nano), now.UTC().Format(time.RFC3339Nano))
+	counts, err := queryHomeStats(ctx, tx, "tasks t LEFT JOIN task_checkpoints k ON k.task_id=t.id", now)
 	if err != nil {
 		return HomeOverview{}, err
 	}
-	result := HomeOverview{Total: counts.Total, Attention: counts.Attention, Waiting: counts.Waiting, Active: counts.Total - counts.Attention - counts.Waiting - counts.Completed, CompletedLast24Hours: counts.Recent}
+	result := HomeOverview{HomeStats: counts}
 	queries := []struct {
 		suffix string
 		target *[]*Task

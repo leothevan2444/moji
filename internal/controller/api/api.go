@@ -17,6 +17,7 @@ type Handler struct {
 	tracker     tracker.Tracker
 	logFilePath string
 	downloads   preparedDownloads
+	homeStats   HomeStatsProvider
 }
 
 type Option func(*Handler)
@@ -38,6 +39,7 @@ func NewHandler(tr tracker.Tracker, options ...Option) *Handler {
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/v1/widget/homepage", h.handleHomepage)
 	mux.HandleFunc("GET /healthz", h.handleHealthz)
 	mux.HandleFunc("GET /api/tracker/search", h.handleTrackerSearch)
 	mux.HandleFunc("GET /api/logs/current", h.handleCurrentLogFile)

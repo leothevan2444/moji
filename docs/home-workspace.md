@@ -27,6 +27,14 @@ latest scheduled run. Each run includes at most three current actor names.
 check execution; `home.resolvers.go` only maps it to the GraphQL contract.
 Full actor outcomes are fetched through `subscriptionCheck(id)` on demand.
 
+## Homepage integration
+
+The external Homepage dashboard reads the same four counts through
+`GET /api/v1/widget/homepage`. Its counts-only query shares the aggregate with
+Home, without loading task samples or contacting upstream services. Home still
+reads its counts and bounded samples in one transaction. See
+[Homepage widget setup](homepage-widget.md) for configuration.
+
 ## Navigation and updates
 
 Check details use the `check` URL parameter and the same drawer and focus pattern

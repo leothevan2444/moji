@@ -30,6 +30,9 @@ those Stash operations rather than writing movie metadata itself.
 - A web UI in Simplified Chinese and English, with task updates, service status,
   logs, and runtime settings.
 
+Display task counts in Homepage with the built-in Custom API widget; see
+[Homepage widget setup](docs/homepage-widget.md).
+
 See [media delivery](docs/media-delivery.md) for classification, merging,
 subtitle handling, and recovery behavior.
 

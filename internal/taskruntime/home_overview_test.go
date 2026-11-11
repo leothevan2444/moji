@@ -60,6 +60,10 @@ func TestHomeOverviewSeparatesAttentionAndAutomaticWork(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			stats, err := service.HomeStats(ctx, now)
+			if err != nil || stats != got.HomeStats {
+				t.Fatalf("widget and home statistics differ: %+v %+v %v", stats, got.HomeStats, err)
+			}
 			if got.Total != 32 || got.Attention != 9 || got.Active != 16 || got.Waiting != 1 || got.CompletedLast24Hours != 3 {
 				t.Fatalf("incorrect counts: %+v", got)
 			}
@@ -73,7 +77,7 @@ func TestHomeOverviewSeparatesAttentionAndAutomaticWork(t *testing.T) {
 			if got.RecentTasks[0].ID != "completed-04" {
 				t.Fatal("recent order must use ingest completion")
 			}
-			counts := HomeOverview{Total: got.Total, Attention: got.Attention, Active: got.Active, Waiting: got.Waiting, CompletedLast24Hours: got.CompletedLast24Hours}
+			counts := HomeOverview{HomeStats: got.HomeStats}
 			if previous.Total != 0 && !reflect.DeepEqual(previous, counts) {
 				t.Fatalf("store summaries differ: %+v %+v", previous, counts)
 			}

@@ -289,7 +289,6 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 	if indexers != nil {
 		apiOptions = append(apiOptions, api.WithIndexerDownloads(indexers.downloads))
 	}
-	apiHandler := api.NewHandler(sourceTracker, apiOptions...)
 	qbittorrentClient, torrentClient := configureQBittorrent(cfg, configStore)
 	stashClient := configureStashClient(cfg, configStore)
 	taskEventBus := taskruntime.NewTaskEventBus(32)
@@ -298,6 +297,19 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 		taskIndexers = indexers.service
 	}
 	taskRuntimeService := configureTaskRuntimeWithIndexers(cfg, configStore, sourceTracker, taskIndexers, torrentClient, stashClient, taskEventBus, manager)
+	if provider, ok := taskRuntimeService.(api.HomeStatsProvider); ok {
+		apiOptions = append(apiOptions, api.WithHomeStats(provider))
+	} else {
+		// Statistics remain readable even when no downloader is configured.
+		store, err := configureTaskStore(cfg, manager)
+		if err != nil {
+			logging.Fatalf("configure widget task store: %v", err)
+		}
+		if provider, ok := store.(api.HomeStatsProvider); ok {
+			apiOptions = append(apiOptions, api.WithHomeStats(provider))
+		}
+	}
+	apiHandler := api.NewHandler(sourceTracker, apiOptions...)
 	releaseTimezone := func() string {
 		if configStore != nil {
 			return configStore.Config().System.EffectiveReleaseTimezone()

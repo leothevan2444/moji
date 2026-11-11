@@ -1,5 +1,9 @@
 # 任务、寻源与实时工作台
 
+## 首页与 Widget 共享统计
+
+2026-11-11 核对：`HomeOverview` 嵌入只含计数的 `HomeStats`；[实现](../../internal/taskruntime/home_stats.go) 将聚合与详情采样分离。生产 Relational/旧 SQLite 复用同一聚合函数；首页保留同事务样本一致性，Widget 仅执行聚合。开发内存路径与首页共用分类函数；未知存储能力返回错误，不回退全量 List。边界与生命周期回归见 [home_stats_test.go](../../internal/taskruntime/home_stats_test.go)，外部使用方式见 [Homepage 文档](../../docs/homepage-widget.md)。
+
 内置会话在登录/搜索/获取前统一解析规则默认地址：未设置镜像时采用冻结规则的首个 links 地址，HTTP 来源检查和 Cardigann 执行使用同一地址，账号会话 key 也随实际来源隔离。不会把空配置值直接交给 HTTP 层。生产 Cookie 按原逻辑持久化；显式诊断使用 NewTransientSessions 独立认证、只保留内存且关闭释放，不覆盖生产会话。
 
 公开索引操作统一采用持久 run/candidate 身份；旧 jackettSearch、previewJackettSelection、jackettIndexers、blockedTaskTorrentCandidates 查询及客户端可替换定位信息的预览类型已移除。GraphQL Resolver 不再注入旧 Tracker，预览服务只保留 PreviewTorrentSelectionContext。外部 Jackett 通过统一 indexer 适配器运行；明确手动磁力/上传仍是独立入口，未删除。
