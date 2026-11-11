@@ -60,6 +60,7 @@ func TestRelationalRestartPreservesRevisionAndAdvancesGeneration(t *testing.T) {
 	store, _ := relationalStore(t)
 	ctx := context.Background()
 	task := cloneTask(old)
+	task.TorrentName = "SNOS-184 CH"
 	if err := store.Create(ctx, task); err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +80,11 @@ func TestRelationalRestartPreservesRevisionAndAdvancesGeneration(t *testing.T) {
 		t.Fatal("stale pre-restart task accepted", err)
 	}
 	loaded, err := store.Find(ctx, task.ID)
-	if err != nil || loaded.Generation != 1 || loaded.FilePlanJSON != "" {
+	if err != nil || loaded.Generation != 1 || loaded.FilePlanJSON != "" || loaded.TorrentName != "" || loaded.StageStatus != TaskStageStatusPending || loaded.StageErrorCode != "" {
 		t.Fatal("restart generation not durable", err)
+	}
+	page, err := store.TaskPage(ctx, TaskPageInput{Search: "CH"})
+	if err != nil || page.TotalCount != 0 {
+		t.Fatalf("reset task still matches old name or manual-selection prompt: %+v %v", page, err)
 	}
 }

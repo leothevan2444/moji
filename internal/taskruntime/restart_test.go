@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/mediafiles"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -85,8 +86,8 @@ func TestRestartSourcingDeletesArtifactsAndReusesOriginalTask(t *testing.T) {
 	if next.ID != old.ID || next.Source != old.Source || !next.CreatedAt.Equal(old.CreatedAt) || next.SavePath != old.SavePath || next.Category != old.Category || next.Tags != old.Tags {
 		t.Fatal("restart lost task identity or download defaults")
 	}
-	if next.Stage != TaskStageSourcing || next.StageStatus != TaskStageStatusBlocked || next.StageErrorCode != TaskStageErrorManualSource {
-		t.Fatalf("not waiting for manual selection: %+v", next)
+	if next.Stage != TaskStageSourcing || next.StageStatus != TaskStageStatusPending || next.StageErrorCode != "" {
+		t.Fatalf("not queued for automatic sourcing: %+v", next)
 	}
 	if next.Progress != 0 || next.TorrentHash != "" || next.TorrentURL != "" || next.Candidate.Title != "" || next.FilePlanJSON != "" || next.TorrentFileData != nil || next.MojiTransferPath != "" || next.StashScanJobID != "" || next.StashSceneIDsJSON != "" || next.DownloadCompletedAt != nil || next.SourcingCompletedAt != nil || next.IngestCompletedAt != nil || next.SourcingNextCheckAt != nil || next.RestartStateJSON != "" {
 		t.Fatalf("stale checkpoint retained: %+v", next)
@@ -112,27 +113,24 @@ func TestRestartSourcingDeletesArtifactsAndReusesOriginalTask(t *testing.T) {
 	if scanner.removedPath != old.StashScanPath || len(scanner.removedIDs) != 1 || scanner.removedIDs[0] != "4525" {
 		t.Fatal("incorrect Stash cleanup scope")
 	}
-	if err := s.processQueuedSourcing(ctx, old.ID); err != nil {
-		t.Fatal(err)
-	}
-	stored, _ := store.Find(ctx, old.ID)
-	if stored.StageErrorCode != TaskStageErrorManualSource {
-		t.Fatal("worker auto-selected an old resource")
-	}
-	if _, err := s.RetryTask(ctx, old.ID, scanner); !errors.Is(err, ErrSourcingUnavailable) {
-		t.Fatal("retry bypassed manual torrent selection")
-	}
-	batch, err := s.RetryTasks(ctx, []string{old.ID}, scanner)
-	if err != nil || batch.Summary.SkippedCount != 1 {
-		t.Fatal("batch retry bypassed manual torrent selection")
-	}
-	// Duplicate clicks are harmless while waiting for a selection.
+	// Duplicate clicks before execution do not repeat destructive cleanup.
 	if _, err := s.RestartTaskSourcing(ctx, old.ID, scanner); err != nil {
 		t.Fatal(err)
 	}
-	resolved, err := s.ResolveBlockedSourcingTask(ctx, old.ID, ResolveBlockedSourcingRequest{URL: "magnet:?xt=urn:btih:new184&dn=SNOS184"})
-	if err != nil || resolved.Stage != TaskStageDownloading || resolved.ID != old.ID {
-		t.Fatalf("new selection did not advance original task: %+v %v", resolved, err)
+	if len(qbt.deleteHashes) != 1 {
+		t.Fatal("duplicate restart repeated downloader deletion")
+	}
+	search := &queuedTracker{results: []indexer.SelectionCandidate{{Title: "SNOS-184 new", MagnetURI: "magnet:?xt=urn:btih:new184&dn=SNOS-184", Seeders: 10}}}
+	worker, err := NewService(search, qbt, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := worker.processQueuedSourcing(ctx, old.ID); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := store.Find(ctx, old.ID)
+	if err != nil || stored.Stage != TaskStageDownloading || stored.ID != old.ID || search.calls.Load() != 1 || stored.Candidate.Title != "SNOS-184 new" {
+		t.Fatalf("restart did not search and automatically select a new resource: %+v %v", stored, err)
 	}
 }
 
@@ -170,7 +168,7 @@ func TestRestartCleanupResumesAfterSQLiteReload(t *testing.T) {
 	scanner.removeErr = nil
 	// Source files are already gone. Retry must finish Stash and delivery cleanup.
 	next, err := s.RetryTask(ctx, old.ID, scanner)
-	if err != nil || next.StageErrorCode != TaskStageErrorManualSource || next.RestartStateJSON != "" {
+	if err != nil || next.StageErrorCode != "" || next.StageStatus != TaskStageStatusPending || next.RestartStateJSON != "" {
 		t.Fatalf("restart did not resume: %+v %v", next, err)
 	}
 	if _, err := os.Stat(old.MojiTransferPath); !errors.Is(err, os.ErrNotExist) {
@@ -316,7 +314,7 @@ func TestRestartWaitsForDownloaderRemovalBeforeResetting(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if qbt.checks != 2 || !qbt.deleteFiles || next.StageErrorCode != TaskStageErrorManualSource {
+	if qbt.checks != 2 || !qbt.deleteFiles || next.StageErrorCode != "" || next.StageStatus != TaskStageStatusPending {
 		t.Fatal("task reset before downloader removal completed")
 	}
 }
@@ -342,7 +340,7 @@ func TestRestartDownloaderFailurePreservesFilesAndCanResume(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, _ := store.Find(ctx, old.ID)
-	if got.StageErrorCode != TaskStageErrorManualSource {
+	if got.StageErrorCode != "" || got.StageStatus != TaskStageStatusPending {
 		t.Fatal("cleanup did not resume")
 	}
 }
@@ -376,7 +374,7 @@ func TestRestartResumesAfterDeliveryFilesAndReceiptWereDeleted(t *testing.T) {
 		t.Fatal(err)
 	}
 	next, err := s.RetryTask(ctx, task.ID, &restartScanner{})
-	if err != nil || next.StageErrorCode != TaskStageErrorManualSource {
+	if err != nil || next.StageErrorCode != "" || next.StageStatus != TaskStageStatusPending {
 		t.Fatalf("deleted files prevented recovery: %+v %v", next, err)
 	}
 	if len(qbt.deleteHashes) != 0 {

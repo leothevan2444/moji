@@ -1067,7 +1067,7 @@ export type Mutation = {
   /** Choose main video files in playback order for a blocked download */
   resolveTaskFiles: Task;
   resolveTaskSourcingCandidate: Task;
-  /** Delete downloaded and delivered files and linked Stash scenes, clear execution state, and return to manual torrent selection */
+  /** Delete downloaded and delivered files and linked Stash scenes, clear execution state, and return to automatic torrent search and selection */
   restartTaskSourcing: Task;
   /** Retry a blocked task or immediately check a task waiting for resources */
   retryTask: Task;

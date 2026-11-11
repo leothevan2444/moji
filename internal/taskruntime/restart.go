@@ -19,7 +19,6 @@ var ErrRestartUnavailable = errors.New("task cannot restart sourcing while compl
 var ErrRestartCleanup = errors.New("task restart cleanup is incomplete; restart sourcing again to resume")
 
 const TaskStageErrorRestartPending = "TASK_RESTART_CLEANUP_PENDING"
-const TaskStageErrorManualSource = "MANUAL_SOURCE_REQUIRED"
 
 type restartState struct {
 	Version           int
@@ -34,7 +33,7 @@ type restartSceneCleaner interface {
 }
 
 // RestartTaskSourcing removes all task-owned execution artifacts and returns the
-// original task to manual selection. Cleanup checkpoints survive partial deletion.
+// original task to automatic sourcing. Cleanup checkpoints survive partial deletion.
 func (s *Service) RestartTaskSourcing(ctx context.Context, id string, scanner StashScanner) (*Task, error) {
 	unlock := s.lockTask(id)
 	defer unlock()
@@ -49,8 +48,10 @@ func (s *Service) RestartTaskSourcing(ctx context.Context, id string, scanner St
 }
 
 func (s *Service) restartTaskSourcingLocked(ctx context.Context, task *Task, scanner StashScanner) (*Task, error) {
-	if task.Stage == TaskStageSourcing && task.StageErrorCode == TaskStageErrorManualSource && task.RestartStateJSON == "" {
-		return task, nil
+	if task.Stage == TaskStageSourcing && task.RestartStateJSON == "" {
+		if task.StageStatus == TaskStageStatusPending && task.SourcingNextCheckAt == nil {
+			return task, nil
+		}
 	}
 	s.mediaMu.Lock()
 	_, active := s.mediaJobs[task.ID]
@@ -181,13 +182,22 @@ func (s *Service) restartTaskSourcingLocked(ctx context.Context, task *Task, sca
 	if err := ensureSourcingRequest(next); err != nil {
 		return fail(err)
 	}
-	setTaskStage(next, TaskStageSourcing, TaskStageStatusBlocked)
-	blockTask(next, TaskStageErrorManualSource, "choose a torrent to restart this task", now)
-	if err := s.store.Update(ctx, next); err != nil {
+	return s.queueRestartedSourcing(ctx, next)
+}
+
+func (s *Service) queueRestartedSourcing(ctx context.Context, task *Task) (*Task, error) {
+	setTaskStage(task, TaskStageSourcing, TaskStageStatusPending)
+	clearTaskStageError(task)
+	task.UpdatedAt = s.now().UTC()
+	if err := s.store.Update(ctx, task); err != nil {
 		return task, err
 	}
-	logging.Infof("taskruntime: cleared execution artifacts and restarted sourcing task=%s", task.ID)
-	return next, nil
+	select {
+	case s.sourcingWake <- struct{}{}:
+	default:
+	}
+	logging.Infof("taskruntime: restarted automatic sourcing task=%s", task.ID)
+	return task, nil
 }
 
 func restartTorrentHash(task *Task) string {

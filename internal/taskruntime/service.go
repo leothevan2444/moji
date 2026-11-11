@@ -482,9 +482,6 @@ func (s *Service) RetryTask(ctx context.Context, id string, scanner StashScanner
 	if task.RestartStateJSON != "" {
 		return s.restartTaskSourcingLocked(ctx, task, scanner)
 	}
-	if task.StageErrorCode == TaskStageErrorManualSource {
-		return task, ErrSourcingUnavailable
-	}
 	if task.Stage == TaskStageCompleted {
 		return nil, fmt.Errorf("taskruntime: task %q is already completed", id)
 	}

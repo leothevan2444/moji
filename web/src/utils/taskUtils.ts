@@ -175,7 +175,7 @@ export function taskPrimaryAction(task: DashboardTask): "resolve" | "files" | "r
 
 export function taskBatchEligibility(tasks: DashboardTask[]) {
   return {
-    retryIds: tasks.filter((task) => (task.stageStatus === "BLOCKED" || isWaitingForResource(task)) && task.stage !== "COMPLETED" && task.stageErrorCode !== "MANUAL_SOURCE_REQUIRED").map((task) => task.id)
+    retryIds: tasks.filter((task) => (task.stageStatus === "BLOCKED" || isWaitingForResource(task)) && task.stage !== "COMPLETED").map((task) => task.id)
   };
 }
 
@@ -192,7 +192,6 @@ function simplifyMessage(message: string) {
 export function taskFailureSummary(task: DashboardTask): TaskFailureSummary {
   if (task.stageErrorCode === "TORRENT_MISSING") return {title: qbittorrentStateLabel("missing"), detail: tr("downloader.missingHint"), tone: "tone-danger"};
   if (task.stageErrorCode === "TORRENT_ERROR") return {title: qbittorrentStateLabel(normalizeStatus(task.qbittorrentState) === "missingfiles" ? "missingFiles" : "error"), detail: tr("downloader.torrentErrorHint"), tone: "tone-danger"};
-  if (task.stageErrorCode === "MANUAL_SOURCE_REQUIRED") return { title: tr("taskRestart.choose"), detail: tr("taskRestart.chooseDetail"), tone: "tone-warn" };
   if (task.stageErrorCode === "TASK_RESTART_CLEANUP_PENDING") return { title: tr("taskRestart.cleanup"), detail: tr("taskRestart.cleanupDetail"), tone: "tone-danger" };
   const sourcingInfrastructure: Record<string, string> = { LIBRARY_CHECK_FAILED: "libraryCheck", SOURCING_STATE_UNAVAILABLE: "sourcingState" };
   const infrastructure = sourcingInfrastructure[task.stageErrorCode || ""];

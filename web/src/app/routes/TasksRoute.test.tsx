@@ -42,7 +42,7 @@ function renderRoute() {
   return router;
 }
 
-it("requires confirmation and opens manual selection only after restart succeeds", async () => {
+it("requires confirmation and returns to task details for automatic sourcing after restart succeeds", async () => {
   mocks.restart.mockResolvedValue({ data: { restartTaskSourcing: { id: "task-184", code: "SNOS-184" } } });
   const router = renderRoute();
   fireEvent.click(await screen.findByRole("button", { name: "Restart test task" }));
@@ -52,9 +52,9 @@ it("requires confirmation and opens manual selection only after restart succeeds
   expect(screen.getByText(/cannot be recovered/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Delete files and reselect torrent" }));
   await waitFor(() => expect(mocks.restart).toHaveBeenCalledExactlyOnceWith({ id: "task-184" }));
-  expect(mocks.toast).toHaveBeenCalledWith("tone-success", "SNOS-184 has been reset. Choose a torrent to start again.");
-  await waitFor(() => expect(router.state.location.pathname).toBe("/tasks/task-184/resolve"));
-  expect(await screen.findByText("Manual torrent selection")).toBeTruthy();
+  expect(mocks.toast).toHaveBeenCalledWith("tone-success", "SNOS-184 has been reset and queued for automatic torrent selection.");
+  await waitFor(() => expect(router.state.location.pathname).toBe("/tasks/task-184"));
+  expect(screen.queryByText("Manual torrent selection")).toBeNull();
 });
 
 it("keeps the task and restart confirmation open if cleanup fails", async () => {

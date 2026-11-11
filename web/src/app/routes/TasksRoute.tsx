@@ -152,7 +152,7 @@ export function Component() {
     setRestartTargetId(null);
     requery();
     pushToast("tone-success", t("taskRestart.ready", { task: taskSummary(restartedTask) }));
-    navigate(`/tasks/${encodeURIComponent(id)}/resolve${location.search}`, { replace: true, state: location.state });
+    navigate(`/tasks/${encodeURIComponent(id)}${location.search}`, { replace: true, state: location.state });
   };
   const runDelete = async (id: string, deleteStashScene: boolean) => {
     setPendingDelete(id);

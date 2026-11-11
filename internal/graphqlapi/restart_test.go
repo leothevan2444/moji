@@ -14,10 +14,10 @@ type restartRuntime struct {
 
 func (r *restartRuntime) RestartTaskSourcing(_ context.Context, id string, _ taskruntime.StashScanner) (*taskruntime.Task, error) {
 	r.restartedID = id
-	return &taskruntime.Task{ID: id, Code: "SNOS-184", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusBlocked, StageErrorCode: taskruntime.TaskStageErrorManualSource}, nil
+	return &taskruntime.Task{ID: id, Code: "SNOS-184", Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusPending}, nil
 }
 
-func TestRestartSourcingGraphQLReturnsOriginalTaskAtManualSelection(t *testing.T) {
+func TestRestartSourcingGraphQLReturnsOriginalTaskAtAutomaticSelection(t *testing.T) {
 	runtime := &restartRuntime{}
 	r := NewResolver(nil, runtime, nil, "test")
 	var response struct {
@@ -34,7 +34,7 @@ func TestRestartSourcingGraphQLReturnsOriginalTaskAtManualSelection(t *testing.T
 	}
 	executeGraphQLInto(t, r, "mutation { restartTaskSourcing(id:\"task-184\") { id stage stageStatus stageErrorCode progress files { index } stashSceneIds torrentHash } }", &response)
 	got := response.Data.RestartTaskSourcing
-	if len(response.Errors) > 0 || runtime.restartedID != "task-184" || got.ID != "task-184" || got.Stage != "SOURCING" || got.StageStatus != "BLOCKED" || got.StageErrorCode != "MANUAL_SOURCE_REQUIRED" || got.Progress != 0 || len(got.Files) != 0 || len(got.StashSceneIDs) != 0 || got.TorrentHash != nil {
+	if len(response.Errors) > 0 || runtime.restartedID != "task-184" || got.ID != "task-184" || got.Stage != "SOURCING" || got.StageStatus != "PENDING" || got.StageErrorCode != "" || got.Progress != 0 || len(got.Files) != 0 || len(got.StashSceneIDs) != 0 || got.TorrentHash != nil {
 		t.Fatalf("unexpected restart response: %+v", response)
 	}
 }

@@ -11829,7 +11829,7 @@ type Mutation {
   "Retry a blocked task or immediately check a task waiting for resources"
   retryTask(id: ID!): Task!
 
-  "Delete downloaded and delivered files and linked Stash scenes, clear execution state, and return to manual torrent selection"
+  "Delete downloaded and delivered files and linked Stash scenes, clear execution state, and return to automatic torrent search and selection"
   restartTaskSourcing(id: ID!): Task!
 
   "Resolve a blocked sourcing task with a manually selected torrent"
