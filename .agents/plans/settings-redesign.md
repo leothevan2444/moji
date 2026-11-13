@@ -14,7 +14,7 @@
 | 日志 | 读取、级别、下载、实时流 |
 | 关于 | 版本 |
 
-YAML v2 使用 indexers/downloader/stash/tasks/system/logging；字段映射与兼容/冲突规则在 [设置说明](../../docs/settings.md)。运行限速仍归 qB，清理策略仍在核心库。分区仅发送所属字段，store 锁内合并，避免跨 tab 快照覆盖。
+YAML 使用 indexers/downloader/stash/tasks/system/logging，当前版本为 v4；字段映射见 [设置说明](../../docs/settings.md)。qB 原生限速、做种限制和排队设置由 qB 保存；Moji 自动清理策略位于 YAML 的 `downloader.cleanup`，核心库仅保留执行状态与删除意图。分区仅发送所属字段，store 锁内合并，避免跨 tab 快照覆盖。
 
 ## 资源规则
 

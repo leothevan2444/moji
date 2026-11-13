@@ -2,7 +2,23 @@
 
 Settings are grouped into **Indexers**, **Downloader**, **Stash**, **Tasks & subscriptions**, **System**, **Logs**, and **About**. Service connections are edited in their business tab. Existing `/settings/connections`, `/settings/ingest`, and `/settings/automation` bookmarks redirect to Indexers, Stash, and Tasks & subscriptions respectively.
 
-Settings initialize from fresh GraphQL queries and save automatically after 500 ms without further edits. Only changed fields are sent through the typed `patchSettings` mutation. Objects merge recursively; lists replace. Pending edits survive tab changes and edits made during a request are submitted afterwards. A failed save retains pending edits and offers retry. Reopening settings reads fresh server data. Download speed limits remain qBittorrent settings and cleanup policies remain in Moji's core database.
+Settings initialize from fresh GraphQL queries and save automatically after 500 ms without further edits. Changed fields are sent through typed settings mutations. Objects merge recursively; lists replace. Pending edits survive tab changes and edits made during a request are submitted afterwards. A failed save retains pending edits and offers retry. Reopening settings reads fresh server data.
+
+## Where settings are saved
+
+| Settings or data | Storage |
+| --- | --- |
+| Indexer connections, sites, ordering, network, cache policy and definition update policy | `config.yaml`, under `indexers` |
+| Moji downloader connection/defaults and automatic cleanup policy | `config.yaml`, under `downloader.qbittorrent` and `downloader.cleanup` |
+| Stash connection, delivery paths, metadata priority and data cache policy | `config.yaml`, under `stash` |
+| Task and subscription policies, deletion policy, system preferences and logging configuration | `config.yaml`, under `tasks`, `system` and `logging` |
+| qBittorrent speed limits, seeding limits and torrent queueing | qBittorrent itself |
+| Task choices and accepted source snapshots, execution/recovery state, observations and cached data | Moji databases |
+| Theme, search history and remembered search controls | Browser storage |
+
+Interface language is saved in `system.language`; its browser copy is a display fallback. Database records containing a task's accepted configuration preserve that task's execution and recovery context; changing global settings does not turn these records into global configuration.
+
+Automatic cleanup has no database configuration fallback or automatic configuration conversion. See [Downloader](downloader.md#自动清理) for its YAML fields and when changes take effect. The configuration storage audit on 2026-11-13 found no additional application settings stored in databases that require relocation.
 
 ## Configuration v2
 
