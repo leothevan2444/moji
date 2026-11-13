@@ -59,24 +59,26 @@ for (const locale of ["en", "zh-CN"] as const) {
  });
 }
 
-test("downloader settings keep file removal selected and support cleanup immediately after ingest", async ({ page }) => {
+test("downloader settings select one cleanup trigger and native qB preferences", async ({ page }) => {
  await page.goto("/settings/downloader?panel=cleanup");
- await expect(page.getByLabel("Cleanup trigger")).toHaveCount(0);
- await page.getByText("Enable automatic cleanup", {exact:true}).click();
- await expect(page.getByRole("checkbox", { name: "Permanently delete downloaded files too" })).toBeChecked();
- await expect(page.locator(".downloader-cleanup .switch__thumb")).toHaveCount(2);
- const info=page.locator(".downloader-cleanup .settings-info").last();
- await info.hover();
- await expect(page.getByRole("tooltip")).toBeVisible();
- await expect(page.getByRole("tooltip")).toContainText("download source files");
- const saved = page.waitForResponse(response => response.url().endsWith("/graphql") && response.request().postDataJSON().operationName === "UpdateDownloaderPolicyDocument" && response.request().postDataJSON().variables.input.afterIngest === true);
- await page.getByLabel("Cleanup trigger").selectOption("AFTER_INGEST");
- await expect(page.getByLabel("Share ratio threshold")).toHaveCount(0);
- await expect(page.getByLabel("Seeding threshold (hours)")).toHaveCount(0);
+ await page.getByRole("switch",{name:"Enable automatic cleanup",exact:true}).check();
+ await expect(page.getByLabel("Cleanup trigger",{exact:true})).toHaveValue("AFTER_INGEST");
+ const saved = page.waitForResponse(response => response.url().endsWith("/graphql") && response.request().postDataJSON().operationName === "UpdateDownloaderPolicyDocument" && response.request().postDataJSON().variables.input.capacityEnabled === true);
+ await page.getByLabel("Cleanup trigger",{exact:true}).selectOption("CAPACITY");
+ await expect(page.getByLabel("Free space threshold (GB)")).toHaveValue("50");
+ await expect(page.getByRole("checkbox",{name:"Permanently delete downloaded files too"})).toBeDisabled();
+ await page.getByLabel("Cleanup order",{exact:true}).selectOption("RATIO");
  await saved;
  await expect(page.locator(".downloader-cleanup").getByRole("alert")).toHaveCount(0);
- await page.getByRole("tab", {name:"Speed limits",exact:true}).click();
+ await page.getByRole("tab", {name:"Transfer settings",exact:true}).click();
  await expect(page.getByLabel("Upload limit (KiB/s)")).toBeVisible();
+ await expect(page.getByLabel("Maximum active downloads (-1: unlimited)")).toHaveValue("3");
+ await page.getByRole("checkbox",{name:"Enable share ratio limit",exact:true}).check();
+ await page.getByLabel("When ratio reaches",{exact:true}).fill("2.5");
+ const patched = page.waitForResponse(response=>response.url().endsWith("/graphql")&&response.request().postDataJSON().operationName==="UpdateDownloaderTransferPreferencesDocument"&&response.request().postDataJSON().variables.input.maxRatio===2.5);
+ await page.getByLabel("Maximum active downloads (-1: unlimited)").fill("6");
+ await patched;
+ await expect(page.getByLabel("When ratio reaches",{exact:true})).toHaveValue("2.5");
 });
 
 test.describe("current qB sources", () => {
@@ -102,8 +104,10 @@ for (const locale of ["en", "zh-CN"] as const) {
  test(`${locale} enabled cleanup file removal tooltip`, async ({ page }) => {
   await page.goto("/settings/downloader?panel=cleanup");
   const enable = locale === "en" ? "Enable automatic cleanup" : "启用自动清理";
-  await page.getByText(enable, {exact:true}).click();
+  await page.getByRole("switch", {name:enable,exact:true}).check();
+  await expect(page.getByLabel(locale === "en" ? "Cleanup trigger" : "清理条件",{exact:true})).toBeVisible();
   const panel=page.locator(".downloader-cleanup");
+  await expect(panel.locator(".settings-save-status")).toHaveCount(0);
   await panel.locator(".settings-info").last().hover();
   const tooltip=page.getByRole("tooltip");
   await expect(tooltip).toBeVisible();
@@ -120,4 +124,21 @@ for (const locale of ["en", "zh-CN"] as const) {
   await page.evaluate(()=>document.fonts.ready);
   await expect(page).toHaveScreenshot(`${locale}-cleanup-enabled-tooltip.png`, {fullPage:true});
  });
+}
+
+for (const locale of ["en","zh-CN"] as const) {
+ for (const theme of ["light","dark"] as const) {
+  test(`${locale} ${theme} transfer preferences`,async({page})=>{
+   await page.addInitScript(value=>localStorage.setItem("moji:theme",value),theme);
+   await page.emulateMedia({colorScheme:theme});
+   await page.goto("/settings/downloader?panel=speed");
+   await expect(page.getByRole("heading",{name:locale==="en"?"Seeding limits":"做种限制",exact:true})).toBeVisible();
+   await expect(page.getByRole("heading",{name:locale==="en"?"Torrent queueing":"Torrent 排队",exact:true})).toBeVisible();
+   await page.evaluate(()=>document.fonts.ready);
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+   await expect(page).toHaveScreenshot(`${locale}-${theme}-transfer.png`,{fullPage:true});
+   await page.getByLabel(locale==="en"?"Torrent inactivity timer (seconds)":"种子非活跃计时（秒）",{exact:true}).scrollIntoViewIfNeeded();
+   await expect(page).toHaveScreenshot(`${locale}-${theme}-queue.png`,{fullPage:true});
+  });
+ }
 }

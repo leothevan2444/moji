@@ -7,6 +7,7 @@
   animation: home-appear 160ms ease-out;
   --home-success: light-dark(#0f766e, #5eead4);
   --home-warning: light-dark(#a45313, #fdba74);
+  --home-error: light-dark(#c2412f, #fca5a5);
 }
 .home-intro.section-band { padding: 0; background: transparent; border: 0; box-shadow: none; }
 .home-dot { width: 7px; height: 7px; display: inline-block; flex-shrink: 0; border-radius: 50%; background: var(--home-success); }
@@ -218,3 +219,13 @@
 .home-check-statistics dl > div { display: flex; gap: 6px; }
 .home-check-statistics dt { color: var(--muted); }
 .home-check-statistics dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+.home-downloader-metrics dd:has(.home-cleanup) { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.home-cleanup { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; gap: 4px; color: var(--muted); font-size: 11px; font-weight: 400; cursor: pointer; border-radius: 3px; }
+.home-cleanup--running { color: var(--accent); }
+.home-cleanup--warning { color: var(--home-warning); }
+.home-cleanup--error { color: var(--home-error); }
+.home-cleanup--running > svg { animation: cleanup-sweep 900ms ease-in-out infinite alternate; transform-origin: 70% 70%; }
+.home-cleanup:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@keyframes cleanup-sweep { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+@media (prefers-reduced-motion: reduce) { .home-cleanup--running > svg { animation: none; } }

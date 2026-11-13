@@ -128,6 +128,10 @@ func classifyError(err error) string {
 		return "SETTINGS_INVALID"
 	case errors.Is(err, downloader.ErrObservationPending):
 		return "TORRENT_COMMAND_UNCONFIRMED"
+	case errors.Is(err, downloader.ErrInvalidPreferences):
+		return "DOWNLOADER_PREFERENCES_INVALID"
+	case errors.Is(err, downloader.ErrPreferencesUnavailable):
+		return "DOWNLOADER_PREFERENCES_UNAVAILABLE"
 	case errors.Is(err, downloader.ErrInvalidPolicy):
 		return "DOWNLOADER_POLICY_INVALID"
 	case errors.Is(err, downloader.ErrInvalidLimit):

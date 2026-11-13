@@ -3,6 +3,7 @@ package downloader
 import (
 	"context"
 	"errors"
+	"github.com/leothevan2444/moji/internal/config"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,7 +25,7 @@ type fakeClient struct {
 }
 
 func (f *fakeClient) GetTorrentList(context.Context, *qbittorrent.TorrentListOptions) ([]qbittorrent.Torrent, error) {
-	return f.torrents, f.listErr
+	return append([]qbittorrent.Torrent{}, f.torrents...), f.listErr
 }
 func (f *fakeClient) GetDownloadServerState(context.Context) (*qbittorrent.DownloadServerState, error) {
 	space := int64(1024)
@@ -70,7 +71,7 @@ func newTest(t *testing.T) (*Service, *fakeClient, *fakeTasks, string) {
 	client := &fakeClient{torrents: []qbittorrent.Torrent{{Hash: testHash, Name: "ABCD-123", Progress: 1, State: qbittorrent.TorrentStateStalledUP, Ratio: 2, SeedingTime: 7200, ContentPath: "/downloads/ABCD-123"}}}
 	tasks := &fakeTasks{tasks: []*taskruntime.Task{{ID: "task", Code: "ABCD-123", TorrentHash: testHash, Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone}}}
 	path := filepath.Join(t.TempDir(), "state.db")
-	s, err := New(client, tasks, path)
+	s, err := New(client, tasks, path, newTestSettings(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,12 +86,10 @@ func TestRetentionRequiresCompletedManagedTasksAndThresholds(t *testing.T) {
 		other bool
 		want  int
 	}{
-		{"disabled", Policy{Ratio: 1}, taskruntime.TaskStageCompleted, false, 0},
-		{"any", Policy{Enabled: true, Ratio: 1, SeedHours: 10}, taskruntime.TaskStageCompleted, false, 1},
-		{"all not met", Policy{Enabled: true, Ratio: 1, SeedHours: 10, MatchAll: true}, taskruntime.TaskStageCompleted, false, 0},
-		{"all met", Policy{Enabled: true, Ratio: 1, SeedHours: 1, MatchAll: true}, taskruntime.TaskStageCompleted, false, 1},
-		{"ingest active", Policy{Enabled: true, Ratio: 1}, taskruntime.TaskStageScanning, false, 0},
-		{"shared active task", Policy{Enabled: true, Ratio: 1}, taskruntime.TaskStageCompleted, true, 0},
+		{"disabled", Policy{AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}, taskruntime.TaskStageCompleted, false, 0},
+		{"after ingest", Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}, taskruntime.TaskStageCompleted, false, 1},
+		{"ingest active", Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}, taskruntime.TaskStageScanning, false, 0},
+		{"shared active task", Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}, taskruntime.TaskStageCompleted, true, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s, q, tasks, _ := newTest(t)
@@ -144,10 +143,10 @@ func TestOutageRetainsLastSeenAndDoesNotMarkTorrentsMissing(t *testing.T) {
 	if err := s.Refresh(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 2}); err != nil {
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}); err != nil {
 		t.Fatal(err)
 	}
-	reopened, err := New(q, s.tasks, path)
+	reopened, err := New(q, s.tasks, path, s.settings)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +160,7 @@ func TestOutageRetainsLastSeenAndDoesNotMarkTorrentsMissing(t *testing.T) {
 func TestFileCleanupRequiresIndependentCopyAndNoCrossSeed(t *testing.T) {
 	s, q, tasks, _ := newTest(t)
 	ctx := context.Background()
-	if err := s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 1, DeleteFiles: true}); err != nil {
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE", DeleteFiles: true}); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Cycle(ctx); err != nil {
@@ -211,7 +210,7 @@ func TestActionValidationFailureAndRecovery(t *testing.T) {
 	}
 	tasks.tasks[0].Stage = taskruntime.TaskStageCompleted
 	q.errorDelete = errors.New("delete failed")
-	s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 1})
+	s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"})
 	if err := s.Cycle(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +231,7 @@ func TestActionValidationFailureAndRecovery(t *testing.T) {
 func TestUnmanagedAndCheckingTorrentsNeverAutoRemoved(t *testing.T) {
 	s, q, tasks, _ := newTest(t)
 	ctx := context.Background()
-	s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 1})
+	s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"})
 	tasks.tasks = nil
 	if err := s.Cycle(ctx); err != nil {
 		t.Fatal(err)
@@ -262,7 +261,7 @@ func TestImmediateRetentionAndDefaultFilePolicy(t *testing.T) {
 	}
 	q.torrents[0].Ratio = 0
 	q.torrents[0].SeedingTime = 0
-	if err := s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true}); err != nil {
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}); err != nil {
 		t.Fatal(err)
 	}
 	tasks.tasks[0].Stage = taskruntime.TaskStageScanning
@@ -312,7 +311,7 @@ func TestImmediateCleanupHandlesCompletedMoveWithMissingSourceFiles(t *testing.T
 	task.MojiTransferPath = target
 	q.torrents[0].State = qbittorrent.TorrentStateMissingFiles
 	q.torrents[0].Progress = 0
-	if err := s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, DeleteFiles: true}); err != nil {
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, DeleteFiles: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Cycle(ctx); err != nil {
@@ -335,7 +334,7 @@ func TestFreshQBListingSurvivesTaskDatabaseFailureWithoutCleanup(t *testing.T) {
 	if err := s.Refresh(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 1}); err != nil {
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}); err != nil {
 		t.Fatal(err)
 	}
 	s.tasks = &unavailableTasks{}
@@ -476,7 +475,7 @@ func TestCleanupNeverRunsWithoutDurableIntent(t *testing.T) {
 	if err := s.Refresh(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 1}); err != nil {
+	if err := s.SetPolicy(ctx, Policy{Enabled: true, AfterIngest: true, MinFreeGB: 50, CapacityOrder: "DISK_USAGE"}); err != nil {
 		t.Fatal(err)
 	}
 	s.client = &persistenceFailureClient{fakeClient: q, fail: func() { _ = s.db.Close() }}
@@ -492,26 +491,38 @@ func TestCleanupNeverRunsWithoutDurableIntent(t *testing.T) {
 	}
 }
 
-func TestPolicyPatchMergesOmittedThresholdsAndExplicitFalse(t *testing.T) {
+func TestPolicyPatchMergesAndRejectsInvalidCapacity(t *testing.T) {
 	s, _, _, _ := newTest(t)
 	ctx := context.Background()
-	if err := s.SetPolicy(ctx, Policy{Enabled: true, Ratio: 2, SeedHours: 72, MatchAll: true, DeleteFiles: true}); err != nil {
+	p := DefaultPolicy()
+	p.Enabled = true
+	if err := s.SetPolicy(ctx, p); err != nil {
 		t.Fatal(err)
 	}
 	disabled := false
-	p, err := s.PatchPolicy(ctx, nil, nil, nil, &disabled, nil, nil)
+	got, err := s.PatchPolicy(ctx, nil, nil, &disabled, nil, nil, nil)
+	if err != nil || got.DeleteFiles || !got.Enabled || got.MinFreeGB != 50 {
+		t.Fatal(got, err)
+	}
+	enabled := true
+	if _, err = s.PatchPolicy(ctx, nil, nil, nil, &enabled, nil, nil); err == nil {
+		t.Fatal("capacity cleanup without files accepted")
+	}
+	retained, _ := s.Policy(ctx)
+	if retained != got {
+		t.Fatal("invalid patch changed persisted policy")
+	}
+}
+
+func newTestSettings(t *testing.T) *config.Store {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("config_version: 4\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := config.OpenStore(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.DeleteFiles || !p.Enabled || p.Ratio != 2 || p.SeedHours != 72 || !p.MatchAll {
-		t.Fatalf("partial update lost fields: %+v", p)
-	}
-	zero := 0.0
-	if _, err = s.PatchPolicy(ctx, nil, nil, nil, nil, &zero, &zero); err == nil {
-		t.Fatal("invalid thresholds accepted")
-	}
-	retained, err := s.Policy(ctx)
-	if err != nil || retained != p {
-		t.Fatalf("invalid patch changed policy: %+v %v", retained, err)
-	}
+	return store
 }

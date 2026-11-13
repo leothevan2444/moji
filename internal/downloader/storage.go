@@ -11,13 +11,17 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/storage"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
-// NewManaged separates durable policy/commands from replaceable observations.
-func NewManaged(client Client, tasks Tasks, m *storage.Manager) (*Service, error) {
-	s := &Service{manager: m, client: client, tasks: tasks, now: time.Now, observations: make(chan []qbittorrent.Torrent, 1)}
+// NewManaged separates durable commands from replaceable observations.
+func NewManaged(client Client, tasks Tasks, m *storage.Manager, settings *config.Store) (*Service, error) {
+	if settings == nil {
+		return nil, errors.New("downloader: configuration store is required")
+	}
+	s := &Service{settings: settings, manager: m, client: client, tasks: tasks, now: time.Now, observations: make(chan []qbittorrent.Torrent, 1)}
 	if err := s.readManaged(context.Background(), "snapshot", &s.snapshot); err != nil {
 		return nil, err
 	}
@@ -29,13 +33,14 @@ func NewManaged(client Client, tasks Tasks, m *storage.Manager) (*Service, error
 }
 
 func (s *Service) readManaged(ctx context.Context, key string, out any) error {
-	if key == "policy" {
-		p, ok := out.(*Policy)
-		if !ok {
-			return errors.New("downloader: invalid policy destination")
+	if key == "cleanup" {
+		var raw string
+		if err := s.manager.Core.Reader.GetContext(ctx, &raw, "SELECT payload_json FROM downloader_cleanup_state WHERE id=1"); err != nil {
+			return err
 		}
-		return s.manager.Core.Reader.QueryRowContext(ctx, `SELECT after_ingest,enabled,ratio,seed_hours,match_all,delete_files FROM download_policies WHERE id=1`).Scan(&p.AfterIngest, &p.Enabled, &p.Ratio, &p.SeedHours, &p.MatchAll, &p.DeleteFiles)
+		return json.Unmarshal([]byte(raw), out)
 	}
+
 	if key != "snapshot" {
 		return errors.New("downloader: unknown runtime key")
 	}
@@ -50,16 +55,24 @@ func (s *Service) readManaged(ctx context.Context, key string, out any) error {
 	return json.Unmarshal([]byte(raw), out)
 }
 func (s *Service) writeManaged(ctx context.Context, key string, value any) error {
-	if key == "policy" {
-		p, ok := value.(Policy)
-		if !ok {
-			return errors.New("downloader: invalid policy value")
+	if key == "cleanup" {
+		raw, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		var previous string
+		if err := s.manager.Core.Reader.GetContext(ctx, &previous, "SELECT payload_json FROM downloader_cleanup_state WHERE id=1"); err != nil {
+			return err
+		}
+		if previous == string(raw) {
+			return nil
 		}
 		return s.manager.Core.WithWrite(ctx, func(tx *sqlx.Tx) error {
-			_, err := tx.ExecContext(ctx, `UPDATE download_policies SET after_ingest=?,enabled=?,ratio=?,seed_hours=?,match_all=?,delete_files=?,revision=revision+1 WHERE id=1 AND (after_ingest IS NOT ? OR enabled IS NOT ? OR ratio IS NOT ? OR seed_hours IS NOT ? OR match_all IS NOT ? OR delete_files IS NOT ?)`, p.AfterIngest, p.Enabled, p.Ratio, p.SeedHours, p.MatchAll, p.DeleteFiles, p.AfterIngest, p.Enabled, p.Ratio, p.SeedHours, p.MatchAll, p.DeleteFiles)
+			_, err := tx.ExecContext(ctx, "UPDATE downloader_cleanup_state SET payload_json=? WHERE id=1 AND payload_json IS NOT ?", string(raw), string(raw))
 			return err
 		})
 	}
+
 	if key != "snapshot" {
 		return errors.New("downloader: unknown runtime key")
 	}
@@ -89,11 +102,24 @@ func (s *Service) writeManaged(ctx context.Context, key string, value any) error
 // the response was lost after execution, so it remains UNCERTAIN until observed.
 func (s *Service) removeTorrent(ctx context.Context, hash string, deleteFiles bool, reason string) error {
 	if s.manager == nil {
+		if reason == "POLICY" {
+			var c cleanupControl
+			if err := s.read(ctx, "cleanup", &c); err != nil {
+				return errors.Join(ErrCleanupPersistence, err)
+			}
+			c.Step = "CONFIRMING"
+			c.Reason = "CONFIRMING"
+			if err := s.saveCleanup(ctx, c); err != nil {
+				return err
+			}
+		}
 		return s.client.DeleteTorrents(ctx, []string{hash}, deleteFiles)
 	}
 	id := uuid.NewString()
 	now := s.now().UTC().Format(time.RFC3339Nano)
-	payload, err := json.Marshal(map[string]any{"reason": reason, "delete_files": deleteFiles})
+	payloadValues := map[string]any{"reason": reason, "delete_files": deleteFiles}
+
+	payload, err := json.Marshal(payloadValues)
 	if err != nil {
 		return err
 	}
@@ -102,10 +128,15 @@ func (s *Service) removeTorrent(ctx context.Context, hash string, deleteFiles bo
 		if err != nil {
 			return err
 		}
+		if reason == "POLICY" {
+			if _, err := tx.ExecContext(ctx, `UPDATE downloader_cleanup_state SET payload_json=json_set(payload_json,'$.Step','CONFIRMING','$.Reason','CONFIRMING') WHERE id=1`); err != nil {
+				return err
+			}
+		}
 		_, err = tx.ExecContext(ctx, `INSERT INTO audit_events(operation_id,subject_id,event_type,level,message,payload_json,created_at) VALUES(?,?,'torrent-remove-intent','info','torrent removal requested',?,?)`, id, hash, string(payload), now)
 		return err
 	}); err != nil {
-		return fmt.Errorf("persist removal intent: %w", err)
+		return errors.Join(ErrCleanupPersistence, fmt.Errorf("persist removal intent: %w", err))
 	}
 	mutationErr := s.client.DeleteTorrents(ctx, []string{hash}, deleteFiles)
 	if mutationErr != nil {
@@ -113,7 +144,12 @@ func (s *Service) removeTorrent(ctx context.Context, hash string, deleteFiles bo
 		resultCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		saveErr := s.manager.Core.WithWrite(resultCtx, func(tx *sqlx.Tx) error {
-			_, err := tx.ExecContext(resultCtx, `UPDATE external_commands SET state='UNCERTAIN',last_error=?,updated_at=? WHERE id=?`, mutationErr.Error(), s.now().UTC().Format(time.RFC3339Nano), id)
+			state := "UNCERTAIN"
+			var rejected *qbittorrent.CommandRejectedError
+			if errors.As(mutationErr, &rejected) {
+				state = "FAILED"
+			}
+			_, err := tx.ExecContext(resultCtx, `UPDATE external_commands SET state=?,last_error=?,updated_at=? WHERE id=?`, state, mutationErr.Error(), s.now().UTC().Format(time.RFC3339Nano), id)
 			return err
 		})
 		return errors.Join(mutationErr, saveErr)
@@ -160,6 +196,14 @@ func (s *Service) restoreRemovalHistory(ctx context.Context) error {
 		return err
 	}
 	for _, cmd := range commands {
+		if cmd.State == "FAILED" {
+			for i := range s.snapshot.Torrents {
+				if s.snapshot.Torrents[i].Hash == cmd.Hash {
+					s.snapshot.Torrents[i].RemovalReason = ""
+				}
+			}
+			continue
+		}
 		var payload struct {
 			Reason string `json:"reason"`
 		}
@@ -188,26 +232,15 @@ func (s *Service) restoreRemovalHistory(ctx context.Context) error {
 	return nil
 }
 
-// ImportLegacyState transfers policy and provenance into a fresh generation.
+// ImportLegacyState transfers removal provenance into a fresh generation.
 // It never constructs a qB client or replays an external operation.
 func ImportLegacyState(ctx context.Context, m *storage.Manager, records map[string]string) error {
 	for key := range records {
-		if key != "policy" && key != "snapshot" {
+		if key != "snapshot" {
 			return fmt.Errorf("downloader: unsupported legacy state key %q", key)
 		}
 	}
 	s := &Service{manager: m, now: time.Now}
-	policy := DefaultPolicy()
-	if raw := records["policy"]; raw != "" {
-		decoder := json.NewDecoder(strings.NewReader(raw))
-		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&policy); err != nil {
-			return err
-		}
-	}
-	if err := s.writeManaged(ctx, "policy", policy); err != nil {
-		return err
-	}
 	var snapshot Snapshot
 	if raw := records["snapshot"]; raw != "" {
 		decoder := json.NewDecoder(strings.NewReader(raw))

@@ -1,25 +1,32 @@
 query DownloaderDocument($offset: Int = 0, $limit: Int = 50, $search: String, $taskId: ID, $attentionOnly: Boolean = false) {
   downloader(offset: $offset, limit: $limit, search: $search, taskId: $taskId, attentionOnly: $attentionOnly) {
-    checkedAt connected stale storageAvailable freeSpace downloadSpeed uploadSpeed downloadLimit uploadLimit connectionStatus dhtNodes completedBytes remainingBytes total attentionCount
-    policy { enabled ratio seedHours matchAll deleteFiles afterIngest }
+    checkedAt connected stale storageAvailable cleanup {enabled phase reason hash name updatedAt} freeSpace downloadSpeed uploadSpeed downloadLimit uploadLimit connectionStatus dhtNodes completedBytes remainingBytes total attentionCount
+    policy { enabled deleteFiles afterIngest capacityEnabled minFreeGb capacityOrder }
     torrents {
       hash name state present taskIds taskCodes allCompleted canDeleteFiles progress downloadSpeed uploadSpeed size completedBytes downloaded uploaded ratio seedingSeconds eta seeds peers availability savePath category tags lastSeenAt removedAt removalReason cleanupError needsAttention
     }
   }
 }
 mutation RefreshDownloaderDocument { refreshDownloader }
-mutation UpdateDownloaderPolicyDocument($input: DownloaderPolicyInput!) { updateDownloaderPolicy(input: $input) { enabled ratio seedHours matchAll deleteFiles afterIngest } }
+mutation UpdateDownloaderPolicyDocument($input: DownloaderPolicyInput!) { updateDownloaderPolicy(input: $input) { enabled deleteFiles afterIngest capacityEnabled minFreeGb capacityOrder } }
 mutation ControlTorrentDocument($hash: String!, $action: TorrentAction!) { controlTorrent(hash: $hash, action: $action) }
 mutation SetDownloaderSpeedLimitDocument($upload: Boolean!, $kibPerSecond: Int!) { setDownloaderSpeedLimit(upload: $upload, kibPerSecond: $kibPerSecond) }
 
 query DownloaderSummaryDocument {
  downloader {
-  checkedAt connected stale storageAvailable freeSpace downloadSpeed uploadSpeed completedBytes remainingBytes total attentionCount connectionStatus
+  checkedAt connected stale storageAvailable cleanup {enabled phase reason hash name updatedAt} freeSpace downloadSpeed uploadSpeed completedBytes remainingBytes total attentionCount connectionStatus
  }
 }
 query DownloaderSettingsDocument {
  downloader {
   stale downloadLimit uploadLimit storageAvailable
-  policy {enabled ratio seedHours matchAll deleteFiles afterIngest}
+  policy {enabled deleteFiles afterIngest capacityEnabled minFreeGb capacityOrder}
  }
 }
+
+query DownloaderTransferPreferencesDocument { downloaderTransferPreferences {
+queueingEnabled maxActiveDownloads maxActiveUploads maxActiveTorrents dontCountSlowTorrents slowTorrentDlRateThreshold slowTorrentUlRateThreshold slowTorrentInactiveTimer maxRatioEnabled maxRatio maxRatioAction maxSeedingTimeEnabled maxSeedingTime maxInactiveSeedingTimeEnabled maxInactiveSeedingTime shareLimitMode
+} }
+mutation UpdateDownloaderTransferPreferencesDocument($input: DownloaderTransferPreferencesInput!) { updateDownloaderTransferPreferences(input: $input) {
+queueingEnabled maxActiveDownloads maxActiveUploads maxActiveTorrents dontCountSlowTorrents slowTorrentDlRateThreshold slowTorrentUlRateThreshold slowTorrentInactiveTimer maxRatioEnabled maxRatio maxRatioAction maxSeedingTimeEnabled maxSeedingTime maxInactiveSeedingTimeEnabled maxInactiveSeedingTime shareLimitMode
+} }

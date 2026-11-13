@@ -47,6 +47,14 @@ func (c *Client) GetDownloadServerState(ctx context.Context) (*DownloadServerSta
 	}
 	return data.ServerState, nil
 }
+
+// CommandRejectedError means qB explicitly rejected the request before execution.
+type CommandRejectedError struct{ StatusCode int }
+
+func (e *CommandRejectedError) Error() string {
+	return fmt.Sprintf("qB command rejected: HTTP %d", e.StatusCode)
+}
+
 func (c *Client) postDownloadCommand(ctx context.Context, path string, values url.Values) (int, error) {
 	base, httpClient := c.resolve()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/api/v2/"+path, strings.NewReader(values.Encode()))
@@ -60,6 +68,9 @@ func (c *Client) postDownloadCommand(ctx context.Context, path string, values ur
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != 408 {
+			return resp.StatusCode, &CommandRejectedError{StatusCode: resp.StatusCode}
+		}
 		return resp.StatusCode, fmt.Errorf("qB command: HTTP %d", resp.StatusCode)
 	}
 	return resp.StatusCode, nil

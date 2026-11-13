@@ -307,6 +307,7 @@ func (s *Store) updateConfigNode() (resultErr error) {
 	setIntScalar(mapValue(top, "automation"), "sourcing_retry_interval_hours", s.cfg.Automation.EffectiveSourcingRetryIntervalHours())
 	setBoolScalar(mapValue(top, "automation"), "subscription_check_enabled", s.cfg.Automation.SubscriptionCheckEnabled)
 	setStringList(mapValue(top, "automation"), "selected_stash_box_endpoints", s.cfg.Automation.StashBoxEndpoints)
+	setNodeValue(mapValue(top, "downloader"), "cleanup", s.cfg.Downloader.Cleanup)
 	setNodeValue(mapValue(top, "automation"), "subscription_release_policy", s.cfg.Automation.SubscriptionReleasePolicy.Effective())
 	setNodeValue(mapValue(top, "automation"), "torrent_selection", s.cfg.Automation.TorrentSelection.Effective())
 	system := mapValue(top, "system")

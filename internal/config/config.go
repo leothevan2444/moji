@@ -385,6 +385,7 @@ type LoggingConfig struct {
 }
 
 type Config struct {
+	Downloader DownloaderConfig `yaml:"downloader"`
 	Indexers   IndexersConfig   `yaml:"indexers"`
 	Connection ConnectionConfig `yaml:"connection"`
 	Ingest     IngestConfig     `yaml:"ingest"`

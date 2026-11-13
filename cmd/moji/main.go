@@ -365,9 +365,9 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 	}
 	if qbittorrentClient != nil {
 		if manager != nil {
-			resolver.Downloader, err = downloader.NewManaged(qbittorrentClient, taskRuntimeService, manager)
+			resolver.Downloader, err = downloader.NewManaged(qbittorrentClient, taskRuntimeService, manager, configStore)
 		} else {
-			resolver.Downloader, err = downloader.New(qbittorrentClient, taskRuntimeService, ":memory:")
+			resolver.Downloader, err = downloader.New(qbittorrentClient, taskRuntimeService, ":memory:", configStore)
 		}
 		if err != nil {
 			logging.Fatalf("configure downloader: %v", err)

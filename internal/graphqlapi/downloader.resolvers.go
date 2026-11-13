@@ -12,7 +12,20 @@ import (
 
 	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
+
+// UpdateDownloaderTransferPreferences is the resolver for the updateDownloaderTransferPreferences field.
+func (r *mutationResolver) UpdateDownloaderTransferPreferences(ctx context.Context, input model.DownloaderTransferPreferencesInput) (*model.DownloaderTransferPreferences, error) {
+	if r.Resolver.Downloader == nil {
+		return nil, downloader.ErrPreferencesUnavailable
+	}
+	p, err := r.Resolver.Downloader.PatchTransferPreferences(ctx, qbittorrent.TransferPreferences{QueueingEnabled: input.QueueingEnabled, MaxActiveDownloads: input.MaxActiveDownloads, MaxActiveUploads: input.MaxActiveUploads, MaxActiveTorrents: input.MaxActiveTorrents, DontCountSlowTorrents: input.DontCountSlowTorrents, SlowTorrentDLRateThreshold: input.SlowTorrentDlRateThreshold, SlowTorrentULRateThreshold: input.SlowTorrentUlRateThreshold, SlowTorrentInactiveTimer: input.SlowTorrentInactiveTimer, MaxRatioEnabled: input.MaxRatioEnabled, MaxRatio: input.MaxRatio, MaxRatioAction: input.MaxRatioAction, MaxSeedingTimeEnabled: input.MaxSeedingTimeEnabled, MaxSeedingTime: input.MaxSeedingTime, MaxInactiveSeedingTimeEnabled: input.MaxInactiveSeedingTimeEnabled, MaxInactiveSeedingTime: input.MaxInactiveSeedingTime, ShareLimitMode: input.ShareLimitMode})
+	if err != nil {
+		return nil, err
+	}
+	return transferPreferencesModel(p), nil
+}
 
 // RefreshDownloader is the resolver for the refreshDownloader field.
 func (r *mutationResolver) RefreshDownloader(ctx context.Context) (bool, error) {
@@ -28,7 +41,12 @@ func (r *mutationResolver) UpdateDownloaderPolicy(ctx context.Context, input mod
 	if r.Resolver.Downloader == nil {
 		return nil, errors.New("qBittorrent client is not configured")
 	}
-	p, err := r.Resolver.Downloader.PatchPolicy(ctx, input.Enabled, input.AfterIngest, input.MatchAll, input.DeleteFiles, input.Ratio, input.SeedHours)
+	var order *string
+	if input.CapacityOrder != nil {
+		v := string(*input.CapacityOrder)
+		order = &v
+	}
+	p, err := r.Resolver.Downloader.PatchPolicy(ctx, input.Enabled, input.AfterIngest, input.DeleteFiles, input.CapacityEnabled, input.MinFreeGb, order)
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +71,21 @@ func (r *mutationResolver) SetDownloaderSpeedLimit(ctx context.Context, upload b
 	return err == nil, err
 }
 
+// DownloaderTransferPreferences is the resolver for the downloaderTransferPreferences field.
+func (r *queryResolver) DownloaderTransferPreferences(ctx context.Context) (*model.DownloaderTransferPreferences, error) {
+	if r.Resolver.Downloader == nil {
+		return nil, downloader.ErrPreferencesUnavailable
+	}
+	p, err := r.Resolver.Downloader.TorrentPreferences(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return transferPreferencesModel(p), nil
+}
+
 // Downloader is the resolver for the downloader field.
 func (r *queryResolver) Downloader(ctx context.Context, offset *int, limit *int, search *string, taskID *string, attentionOnly *bool) (*model.DownloaderOverview, error) {
-	out := &model.DownloaderOverview{Stale: true, Torrents: []*model.ManagedTorrent{}, Policy: downloaderPolicyModel(downloader.DefaultPolicy())}
+	out := &model.DownloaderOverview{Stale: true, Torrents: []*model.ManagedTorrent{}, Policy: downloaderPolicyModel(downloader.DefaultPolicy()), Cleanup: downloaderCleanupModel(downloader.CleanupStatus{})}
 	if r.Resolver.Downloader == nil {
 		return out, nil
 	}
@@ -68,7 +98,7 @@ func (r *queryResolver) Downloader(ctx context.Context, offset *int, limit *int,
 		return nil, err
 	}
 	at, _ := time.Parse(time.RFC3339, snap.CheckedAt)
-	out = &model.DownloaderOverview{CheckedAt: snap.CheckedAt, Connected: snap.Connected, Stale: !snap.Connected || at.IsZero() || time.Since(at) > 15*time.Second, StorageAvailable: snap.StorageAvailable, FreeSpace: snap.FreeSpace, DownloadSpeed: snap.DownloadSpeed, UploadSpeed: snap.UploadSpeed, DownloadLimit: snap.DownloadLimit, UploadLimit: snap.UploadLimit, ConnectionStatus: snap.ConnectionStatus, DhtNodes: snap.DHTNodes, CompletedBytes: snap.CompletedBytes, RemainingBytes: snap.RemainingBytes, Torrents: []*model.ManagedTorrent{}, Policy: downloaderPolicyModel(policy)}
+	out = &model.DownloaderOverview{CheckedAt: snap.CheckedAt, Connected: snap.Connected, Stale: !snap.Connected || at.IsZero() || time.Since(at) > 15*time.Second, StorageAvailable: snap.StorageAvailable, Cleanup: downloaderCleanupModel(snap.Cleanup), FreeSpace: snap.FreeSpace, DownloadSpeed: snap.DownloadSpeed, UploadSpeed: snap.UploadSpeed, DownloadLimit: snap.DownloadLimit, UploadLimit: snap.UploadLimit, ConnectionStatus: snap.ConnectionStatus, DhtNodes: snap.DHTNodes, CompletedBytes: snap.CompletedBytes, RemainingBytes: snap.RemainingBytes, Torrents: []*model.ManagedTorrent{}, Policy: downloaderPolicyModel(policy)}
 	filtered := []downloader.Torrent{}
 	for _, t := range snap.Torrents {
 		// The downloader list is a qB view. Missing observations belong only

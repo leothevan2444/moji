@@ -8,12 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/storage"
 	"github.com/leothevan2444/moji/internal/taskruntime"
@@ -23,7 +25,7 @@ import (
 
 var (
 	ErrObservationPending = errors.New("command accepted; observation pending")
-	ErrInvalidPolicy      = errors.New("invalid retention thresholds")
+	ErrInvalidPolicy      = errors.New("invalid cleanup policy")
 	ErrInvalidLimit       = errors.New("invalid speed limit")
 	ErrNotFound           = errors.New("torrent no longer exists")
 	ErrIngestActive       = errors.New("ingest is not complete")
@@ -46,15 +48,21 @@ type Tasks interface {
 
 const SyncInterval = 3 * time.Second
 
-func DefaultPolicy() Policy { return Policy{DeleteFiles: true} }
+func DefaultPolicy() Policy {
+	return policyFromConfig(config.DefaultDownloaderCleanup())
+}
+
+func policyFromConfig(c config.DownloaderCleanupConfig) Policy {
+	return Policy{Enabled: c.Enabled, AfterIngest: c.Trigger == "AFTER_INGEST", CapacityEnabled: c.Trigger == "CAPACITY", DeleteFiles: c.DeleteFiles, MinFreeGB: c.MinFreeGB, CapacityOrder: c.CapacityOrder}
+}
 
 type Policy struct {
-	AfterIngest bool
-	Enabled     bool
-	Ratio       float64
-	SeedHours   float64
-	MatchAll    bool
-	DeleteFiles bool
+	AfterIngest     bool
+	Enabled         bool
+	DeleteFiles     bool
+	CapacityEnabled bool
+	MinFreeGB       float64
+	CapacityOrder   string
 }
 type Torrent struct {
 	Hash           string
@@ -97,11 +105,13 @@ type Snapshot struct {
 	UploadLimit      int64
 	ConnectionStatus string
 	DHTNodes         int64
+	Cleanup          CleanupStatus
 	CompletedBytes   int64
 	RemainingBytes   int64
 	Torrents         []Torrent
 }
 type Service struct {
+	settings     *config.Store
 	manager      *storage.Manager
 	mu           sync.Mutex
 	stateMu      sync.RWMutex
@@ -114,7 +124,10 @@ type Service struct {
 	now          func() time.Time
 }
 
-func New(client Client, tasks Tasks, path string) (*Service, error) {
+func New(client Client, tasks Tasks, path string, settings *config.Store) (*Service, error) {
+	if settings == nil {
+		return nil, errors.New("downloader: configuration store is required")
+	}
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
@@ -128,7 +141,7 @@ func New(client Client, tasks Tasks, path string) (*Service, error) {
 		db.Close()
 		return nil, err
 	}
-	s := &Service{db: db, client: client, tasks: tasks, now: time.Now, observations: make(chan []qbittorrent.Torrent, 1)}
+	s := &Service{settings: settings, db: db, client: client, tasks: tasks, now: time.Now, observations: make(chan []qbittorrent.Torrent, 1)}
 	if err := s.read(context.Background(), "snapshot", &s.snapshot); err != nil {
 		db.Close()
 		return nil, err
@@ -186,9 +199,10 @@ func (s *Service) publishSnapshot(ctx context.Context, snapshot Snapshot) error 
 }
 
 func (s *Service) Policy(ctx context.Context) (Policy, error) {
-	p := DefaultPolicy()
-	err := s.read(ctx, "policy", &p)
-	return p, err
+	if err := ctx.Err(); err != nil {
+		return Policy{}, err
+	}
+	return policyFromConfig(s.settings.DownloaderCleanup()), nil
 }
 func (s *Service) SetPolicy(ctx context.Context, p Policy) error {
 	s.mu.Lock()
@@ -197,10 +211,18 @@ func (s *Service) SetPolicy(ctx context.Context, p Policy) error {
 }
 
 func (s *Service) setPolicyLocked(ctx context.Context, p Policy) error {
-	if math.IsNaN(p.Ratio) || math.IsInf(p.Ratio, 0) || math.IsNaN(p.SeedHours) || math.IsInf(p.SeedHours, 0) || p.Ratio < 0 || p.Ratio > 9999 || p.SeedHours < 0 || p.SeedHours > 87600 || (p.Enabled && !p.AfterIngest && p.Ratio == 0 && p.SeedHours == 0) {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if math.IsNaN(p.MinFreeGB) || math.IsInf(p.MinFreeGB, 0) || p.MinFreeGB <= 0 || p.MinFreeGB > 1e8 || (p.CapacityOrder != "DISK_USAGE" && p.CapacityOrder != "RATIO" && p.CapacityOrder != "SEED_TIME") || (p.AfterIngest == p.CapacityEnabled) || (p.CapacityEnabled && !p.DeleteFiles) {
 		return ErrInvalidPolicy
 	}
-	return s.write(ctx, "policy", p)
+
+	trigger := "AFTER_INGEST"
+	if p.CapacityEnabled {
+		trigger = "CAPACITY"
+	}
+	return s.settings.UpdateDownloaderCleanup(config.DownloaderCleanupConfig{Enabled: p.Enabled, Trigger: trigger, DeleteFiles: p.DeleteFiles, MinFreeGB: p.MinFreeGB, CapacityOrder: p.CapacityOrder})
 }
 
 // Snapshot reads the last observation without waiting for network calls or task writes.
@@ -262,7 +284,9 @@ func independentDelivery(t *taskruntime.Task) bool {
 	if e1 != nil || e2 != nil {
 		return false
 	}
-	return !within(source, target) && !within(target, source)
+	sourceInfo, e1 := os.Stat(source)
+	targetInfo, e2 := os.Stat(target)
+	return e1 == nil && e2 == nil && !os.SameFile(sourceInfo, targetInfo) && !within(source, target) && !within(target, source)
 }
 func within(root, path string) bool {
 	rel, err := filepath.Rel(root, path)
@@ -279,30 +303,6 @@ func attach(t *Torrent, tasks []*taskruntime.Task) {
 		t.AllCompleted = t.AllCompleted && task.Stage == taskruntime.TaskStageCompleted && task.StageStatus == taskruntime.TaskStageStatusDone
 		t.CanDeleteFiles = t.CanDeleteFiles && independentDelivery(task)
 	}
-}
-func threshold(p Policy, t Torrent) bool {
-	if p.AfterIngest {
-		return true
-	}
-	checks := []bool{}
-	if p.Ratio > 0 {
-		checks = append(checks, t.Ratio >= p.Ratio)
-	}
-	if p.SeedHours > 0 {
-		checks = append(checks, float64(t.SeedingSeconds) >= p.SeedHours*3600)
-	}
-	if len(checks) == 0 {
-		return false
-	}
-	result := p.MatchAll
-	for _, c := range checks {
-		if p.MatchAll {
-			result = result && c
-		} else {
-			result = result || c
-		}
-	}
-	return result
 }
 func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 	previous, err := s.Snapshot(ctx)
@@ -328,10 +328,7 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 		logging.Infof("downloader: task associations recovered")
 	}
 	s.groupsFailed = groupErr != nil
-	policy := DefaultPolicy()
-	policyCtx, cancelPolicy := context.WithTimeout(ctx, time.Second)
-	policyErr := s.read(policyCtx, "policy", &policy)
-	cancelPolicy()
+	policy, policyErr := s.Policy(ctx)
 	if policyErr != nil {
 		cleanup = false
 	}
@@ -368,6 +365,7 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 	for _, t := range previous.Torrents {
 		old[t.Hash] = t
 	}
+	isolation := newContentIsolation(ctx, s.client, torrents)
 	for _, raw := range torrents {
 		hash := strings.ToLower(raw.Hash)
 		seen[hash] = true
@@ -380,56 +378,19 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 			t.TaskIDs = append([]string{}, old[hash].TaskIDs...)
 			t.TaskCodes = append([]string{}, old[hash].TaskCodes...)
 		}
-		t.CanDeleteFiles = t.CanDeleteFiles && isolatedContent(raw, torrents)
+		independentCopy := t.CanDeleteFiles
+		isolated := contentIsolated
+		if independentCopy {
+			isolated = isolation.check(raw)
+		}
+		t.CanDeleteFiles = independentCopy && isolated == contentIsolated
 		if serverErr != nil {
 			out.DownloadSpeed += raw.DLSpeed
 			out.UploadSpeed += raw.UPSpeed
 		}
 		out.CompletedBytes += raw.Completed
 		out.RemainingBytes += raw.AmountLeft
-		if cleanup && groupErr == nil && policy.Enabled && t.AllCompleted && (raw.Progress >= 1 || policy.AfterIngest) && threshold(policy, t) && (!policy.DeleteFiles || t.CanDeleteFiles) && (removableState(t.State) || policy.AfterIngest && raw.State == qbittorrent.TorrentStateMissingFiles) {
-			// Persist intent before the external mutation. If qB is unavailable after
-			// deletion, the following cycle can still distinguish our removal from a missing torrent.
-			t.RemovalReason = "POLICY_PENDING"
-			previousIntent := t
-			previousIntent.CleanupError = false
-			old[hash] = previousIntent
-			intentSnapshot := previous
-			intentSnapshot.Torrents = append([]Torrent{}, out.Torrents...)
-			for key, saved := range old {
-				if !seen[key] || key == hash {
-					intentSnapshot.Torrents = append(intentSnapshot.Torrents, saved)
-				}
-			}
-			if err = s.write(ctx, "snapshot", intentSnapshot); err != nil {
-				return err
-			}
-			if deleteErr := s.removeTorrent(ctx, hash, policy.DeleteFiles, "POLICY"); deleteErr != nil {
-				t.CleanupError = true
-				if s.manager == nil {
-					t.RemovalReason = ""
-				}
-			} else {
-				t.RemovalReason = "POLICY_PENDING"
-				observed, observeErr := s.client.GetTorrentList(ctx, &qbittorrent.TorrentListOptions{Hashes: []string{hash}})
-				if observeErr == nil {
-					exists := false
-					for _, item := range observed {
-						if strings.EqualFold(item.Hash, hash) {
-							exists = true
-						}
-					}
-					if !exists {
-						t.Present = false
-						t.State = "removed"
-						t.RemovedAt = now
-						t.RemovalReason = "POLICY"
-						t.DownloadSpeed = 0
-						t.UploadSpeed = 0
-					}
-				}
-			}
-		}
+
 		out.Torrents = append(out.Torrents, t)
 	}
 	for hash, tasks := range groups {
@@ -476,6 +437,7 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 		}
 	}
 
+	cleanupErr := s.advanceCleanup(ctx, &out, policy, cleanup && groupErr == nil && policyErr == nil, torrents, groupErr != nil || policyErr != nil, isolation)
 	sort.Slice(out.Torrents, func(i, j int) bool { return out.Torrents[i].Hash < out.Torrents[j].Hash })
 	err = s.publishSnapshot(ctx, out)
 	// Keep only the latest listing while the task observer is busy.
@@ -487,7 +449,7 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 	case s.observations <- torrents:
 	default:
 	}
-	return err
+	return errors.Join(err, cleanupErr)
 }
 func (s *Service) runTaskObserver(ctx context.Context) {
 	observer, ok := s.tasks.(interface {
@@ -623,7 +585,22 @@ func (s *Service) Action(ctx context.Context, hash, action string) error {
 			if lookupErr != nil {
 				return lookupErr
 			}
-			t.CanDeleteFiles = t.CanDeleteFiles && isolatedContent(current, all)
+			found = false
+			for _, latest := range all {
+				if !strings.EqualFold(latest.Hash, hash) {
+					continue
+				}
+				if latest.ContentPath != current.ContentPath || latest.SavePath != current.SavePath {
+					return ErrUnsafeFiles
+				}
+				current = latest
+				found = true
+				break
+			}
+			if !found {
+				return ErrNotFound
+			}
+			t.CanDeleteFiles = t.CanDeleteFiles && newContentIsolation(ctx, s.client, all).check(current) == contentIsolated
 		}
 		if action == "REMOVE_FILES" && !t.CanDeleteFiles {
 			return ErrUnsafeFiles
@@ -690,26 +667,6 @@ func (s *Service) SpeedLimit(ctx context.Context, upload bool, kib int) error {
 	return nil
 }
 
-// Cross-seeded content must stay on disk while any other torrent refers to it.
-// qB paths are compared lexically on the qB host, separately from local mount checks.
-func isolatedContent(target qbittorrent.Torrent, all []qbittorrent.Torrent) bool {
-	if target.ContentPath == "" {
-		return false
-	}
-	for _, other := range all {
-		if strings.EqualFold(other.Hash, target.Hash) {
-			continue
-		}
-		if other.ContentPath == "" {
-			return false
-		}
-		if within(target.ContentPath, other.ContentPath) || within(other.ContentPath, target.ContentPath) {
-			return false
-		}
-	}
-	return true
-}
-
 // Completed tasks may legitimately lose their download source after cleanup.
 // Keep those observations visible without treating them as operational errors.
 func (t Torrent) NeedsAttention() bool {
@@ -720,7 +677,7 @@ func (t Torrent) NeedsAttention() bool {
 }
 
 // PatchPolicy serializes read/merge/write with full policy updates.
-func (s *Service) PatchPolicy(ctx context.Context, enabled, afterIngest, matchAll, deleteFiles *bool, ratio, seedHours *float64) (Policy, error) {
+func (s *Service) PatchPolicy(ctx context.Context, enabled, afterIngest, deleteFiles, capacityEnabled *bool, minFreeGB *float64, capacityOrder *string) (Policy, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p, err := s.Policy(ctx)
@@ -733,17 +690,17 @@ func (s *Service) PatchPolicy(ctx context.Context, enabled, afterIngest, matchAl
 	if afterIngest != nil {
 		p.AfterIngest = *afterIngest
 	}
-	if matchAll != nil {
-		p.MatchAll = *matchAll
-	}
 	if deleteFiles != nil {
 		p.DeleteFiles = *deleteFiles
 	}
-	if ratio != nil {
-		p.Ratio = *ratio
+	if capacityEnabled != nil {
+		p.CapacityEnabled = *capacityEnabled
 	}
-	if seedHours != nil {
-		p.SeedHours = *seedHours
+	if minFreeGB != nil {
+		p.MinFreeGB = *minFreeGB
+	}
+	if capacityOrder != nil {
+		p.CapacityOrder = *capacityOrder
 	}
 	return p, s.setPolicyLocked(ctx, p)
 }

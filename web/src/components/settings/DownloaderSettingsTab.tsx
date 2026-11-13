@@ -1,49 +1,51 @@
+import { SettingsSwitch } from "./SettingsSwitch";
+import { SettingsInfoTooltip } from "./SettingsInfoTooltip";
+import DownloaderSwitch from "./DownloaderSwitch";
+import QBTransferSettings from "./QBTransferSettings";
 import { SettingsSubpanel } from "./SettingsPanels";
 import ServiceConnectionSettings from "./ServiceConnectionSettings";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery } from "urql";
-import { DownloaderSettingsDocumentDocument, SetDownloaderSpeedLimitDocumentDocument, UpdateDownloaderPolicyDocumentDocument, type DownloaderSettingsDocumentQuery } from "../../graphql/generated/graphql";
+import { DownloaderSettingsDocumentDocument, SetDownloaderSpeedLimitDocumentDocument, UpdateDownloaderPolicyDocumentDocument, CapacityCleanupOrder, type DownloaderSettingsDocumentQuery } from "../../graphql/generated/graphql";
 import { useSettingsAutosave } from "./useSettingsAutosave";
 import { FieldLabel, SettingsCard, SettingsSaveStatus, SettingsError, SettingsLoading } from "./SettingsTabCommon";
 import "../../styles/settings.scss";
 
 type Snapshot = DownloaderSettingsDocumentQuery["downloader"];
-type Trigger = "RATIO" | "SEED_TIME" | "ANY" | "ALL" | "AFTER_INGEST";
-interface PolicyDraft { enabled: boolean; trigger: Trigger; ratio: string; hours: string; deleteFiles: boolean }
+interface PolicyDraft { enabled: boolean; afterIngest: boolean; capacityEnabled: boolean; minFreeGb: string; capacityOrder: CapacityCleanupOrder; deleteFiles: boolean }
 export default function DownloaderSettingsTab() {
   const { t } = useTranslation();
   const [{ data, fetching, error }, refresh] = useQuery({ query: DownloaderSettingsDocumentDocument, requestPolicy: "network-only" });
   if (fetching && !data) return <SettingsLoading title={t("settings.tabs.downloader")} />;
   if (error && !data) return <><SettingsSubpanel id="connection"><ServiceConnectionSettings service="qbittorrent" /></SettingsSubpanel><SettingsSubpanel id={["cleanup","speed"]}><SettingsError title={t("settings.tabs.downloader")} error={error} onRetry={() => refresh({ requestPolicy: "network-only" })} /></SettingsSubpanel></>;
   if (!data) return null;
-  return <div className="drawer-stack"><SettingsSubpanel id="connection"><ServiceConnectionSettings service="qbittorrent" /></SettingsSubpanel><SettingsSubpanel id="cleanup"><CleanupSettings snapshot={data.downloader} onSaved={() => refresh({ requestPolicy: "network-only" })} /></SettingsSubpanel><SettingsSubpanel id="speed"><SettingsCard title={t("downloader.speedLimits")}><p className="settings-note">{t("downloader.limitHelp")}</p><div className="settings-grid"><SpeedLimit snapshot={data.downloader} upload={false} /><SpeedLimit snapshot={data.downloader} upload /></div></SettingsCard></SettingsSubpanel></div>;
+  return <div className="drawer-stack"><SettingsSubpanel id="connection"><ServiceConnectionSettings service="qbittorrent" /></SettingsSubpanel><SettingsSubpanel id="cleanup"><CleanupSettings snapshot={data.downloader} onSaved={() => refresh({ requestPolicy: "network-only" })} /></SettingsSubpanel><SettingsSubpanel id="speed"><SettingsCard title={t("downloader.speedLimits")}><p className="settings-note">{t("downloader.limitHelp")}</p><div className="settings-grid"><SpeedLimit snapshot={data.downloader} upload={false} /><SpeedLimit snapshot={data.downloader} upload /></div></SettingsCard><QBTransferSettings /></SettingsSubpanel></div>;
 }
 function CleanupSettings({ snapshot, onSaved }: { snapshot: Snapshot; onSaved: () => void }) {
   const { t } = useTranslation();
   const initial = useMemo<PolicyDraft>(() => {
     const p = snapshot.policy;
-    const trigger: Trigger = p.afterIngest ? "AFTER_INGEST" : p.ratio > 0 && p.seedHours > 0 ? p.matchAll ? "ALL" : "ANY" : p.seedHours > 0 ? "SEED_TIME" : "RATIO";
-    return { enabled: p.enabled, trigger, ratio: String(p.ratio), hours: String(p.seedHours), deleteFiles: p.deleteFiles };
+    return { enabled: p.enabled, afterIngest: p.afterIngest, capacityEnabled: p.capacityEnabled, minFreeGb: String(p.minFreeGb), capacityOrder: p.capacityOrder, deleteFiles: p.deleteFiles };
   }, [snapshot.policy]);
   const [,save] = useMutation(UpdateDownloaderPolicyDocumentDocument);
   const autosave = useSettingsAutosave("downloader:policy",initial,value=>({
-    enabled:value.enabled,afterIngest:value.trigger==="AFTER_INGEST",ratio:["RATIO","ANY","ALL"].includes(value.trigger)?(value.ratio.trim()?Number(value.ratio):NaN):0,
-    seedHours:["SEED_TIME","ANY","ALL"].includes(value.trigger)?(value.hours.trim()?Number(value.hours):NaN):0,matchAll:value.trigger==="ALL",deleteFiles:value.deleteFiles
+    enabled:value.enabled, afterIngest:value.afterIngest, capacityEnabled:value.capacityEnabled,
+    minFreeGb:value.minFreeGb.trim()?Number(value.minFreeGb):NaN, capacityOrder:value.capacityOrder, deleteFiles:value.deleteFiles
   }),{persist:async patch=>{const result=await save({input:patch});if(result.error)throw result.error;},onSaved:()=>onSaved()});
   const {value:draft,setValue:setDraft}=autosave;
-  const ratioEnabled = ["RATIO", "ANY", "ALL"].includes(draft.trigger);
-  const timeEnabled = ["SEED_TIME", "ANY", "ALL"].includes(draft.trigger);
   const patch = (value: Partial<PolicyDraft>) => setDraft(current => ({ ...current, ...value }));
-  return <SettingsCard title={t("downloader.policy")}><form className="settings-form downloader-cleanup" onSubmit={event => event.preventDefault()}>
-    <label className="switch-row"><span className="switch-row__label"><FieldLabel text={t("downloader.enablePolicy")} info={t("downloader.policyScope")} /></span><span className="switch" role="switch" aria-checked={draft.enabled}><input type="checkbox" aria-label={t("downloader.enablePolicy")} checked={draft.enabled} onChange={event => patch({ enabled: event.target.checked, ...(event.target.checked ? { ratio: Number(draft.ratio) > 0 ? draft.ratio : "2", hours: Number(draft.hours) > 0 ? draft.hours : "72" } : {}) })} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></span></label>
+  return <SettingsCard title={t("downloader.policy")} actions={<><SettingsInfoTooltip info={t("downloader.policyScope")} /><SettingsSwitch label={t("downloader.enablePolicy")} checked={draft.enabled} onChange={enabled=>patch({enabled,...(enabled&&!draft.afterIngest&&!draft.capacityEnabled?{afterIngest:true}:{})})} /></>}><form className="settings-form downloader-cleanup" onSubmit={event => event.preventDefault()}>
     {draft.enabled ? <>
-    <label className="settings-field"><FieldLabel text={t("downloader.trigger")} info={draft.trigger === "AFTER_INGEST" ? t("downloader.afterIngestHint") : undefined} /><select value={draft.trigger} onChange={event => patch({ trigger: event.target.value as Trigger })}>{(["RATIO", "SEED_TIME", "ANY", "ALL", "AFTER_INGEST"] as const).map(mode => <option key={mode} value={mode}>{t(`downloader.triggers.${mode}`)}</option>)}</select></label>
-    <div className="settings-grid">
-      {ratioEnabled ? <label className="settings-field"><FieldLabel text={t("downloader.ratioLimit")} /><input type="number" min={0.1} max={9999} step="0.1" required value={draft.ratio} onChange={event => patch({ ratio: event.target.value })} /></label> : null}
-      {timeEnabled ? <label className="settings-field"><FieldLabel text={t("downloader.seedHoursLimit")} /><input type="number" min={0.1} max={87600} step="0.1" required value={draft.hours} onChange={event => patch({ hours: event.target.value })} /></label> : null}
-    </div>
-    <div className="switch-row"><span className="switch-row__label"><FieldLabel text={t("downloader.policyDeleteFiles")} info={t("downloader.copyGuard")} /></span><label className="switch" role="switch" aria-checked={draft.deleteFiles}><input type="checkbox" aria-label={t("downloader.policyDeleteFiles")} checked={draft.deleteFiles} onChange={event => patch({ deleteFiles: event.target.checked })} /><span className="switch__track" aria-hidden="true" /><span className="switch__thumb" aria-hidden="true" /></label></div>
+      <label className="settings-field"><FieldLabel text={t("downloader.cleanupTrigger")} info={t(draft.capacityEnabled ? "downloader.capacityHint" : "downloader.afterIngestHint")} /><select aria-label={t("downloader.cleanupTrigger")} value={draft.capacityEnabled ? "CAPACITY" : "AFTER_INGEST"} onChange={event=>{
+        const capacityEnabled=event.target.value==="CAPACITY";
+        patch({afterIngest:!capacityEnabled,capacityEnabled,...(capacityEnabled?{deleteFiles:true}:{})});
+      }}><option value="AFTER_INGEST">{t("downloader.cleanupAfterIngest")}</option><option value="CAPACITY">{t("downloader.cleanupCapacity")}</option></select></label>
+      {draft.capacityEnabled ? <div className="settings-grid">
+        <label className="settings-field"><FieldLabel text={t("downloader.minFreeGb")} /><input type="number" min={0.1} max={100000000} step="0.1" required value={draft.minFreeGb} onChange={event=>patch({minFreeGb:event.target.value})}/></label>
+        <label className="settings-field"><FieldLabel text={t("downloader.capacityOrder")} info={t("downloader.capacityOrderHint")} /><select aria-label={t("downloader.capacityOrder")} value={draft.capacityOrder} onChange={event=>patch({capacityOrder:event.target.value as CapacityCleanupOrder})}>{Object.values(CapacityCleanupOrder).map(order=><option key={order} value={order}>{t(`downloader.cleanupOrders.${order}`)}</option>)}</select></label>
+      </div> : null}
+      <DownloaderSwitch label={t("downloader.policyDeleteFiles")} info={t("downloader.copyGuard")} checked={draft.deleteFiles} disabled={draft.capacityEnabled} onChange={deleteFiles=>patch({deleteFiles})}/>
     </> : null}
     <SettingsSaveStatus {...autosave} />
   </form></SettingsCard>;

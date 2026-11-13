@@ -27,11 +27,12 @@ export const homeOverview = {
 };
 // Execute the real queries against the schema so missing non-null fields fail
 // the test instead of silently producing an error page or a loading skeleton.
+export const transferPreferences = {queueingEnabled:true,maxActiveDownloads:3,maxActiveUploads:3,maxActiveTorrents:5,dontCountSlowTorrents:true,slowTorrentDlRateThreshold:2,slowTorrentUlRateThreshold:2,slowTorrentInactiveTimer:60,maxRatioEnabled:false,maxRatio:1,maxRatioAction:0,maxSeedingTimeEnabled:false,maxSeedingTime:1440,maxInactiveSeedingTimeEnabled:false,maxInactiveSeedingTime:1440,shareLimitMode:"MatchAny"};
 export const downloaderSnapshot = {
     checkedAt: now, connected: true, stale: false, storageAvailable: true, freeSpace: 230000000000,
     downloadSpeed: 12500000, uploadSpeed: 2400000, downloadLimit: 0, uploadLimit: 0,
     connectionStatus: "connected", dhtNodes: 230, completedBytes: 19440000000, remainingBytes: 4560000000,
-    total: 2, attentionCount: 0, policy: { enabled: false, ratio: 2, seedHours: 72, matchAll: true, deleteFiles: true, afterIngest: false },
+    total: 2, attentionCount: 0, cleanup:{enabled:false,phase:"IDLE",reason:"",hash:"",name:"",updatedAt:""}, policy: { enabled: false, capacityEnabled: false, minFreeGb: 50, capacityOrder: "DISK_USAGE", deleteFiles: true, afterIngest: false },
     torrents: [
       { hash: "a".repeat(40), name: "MOJI-301 - Completed and seeding", state: "uploading", present: true,
         taskIds: ["MOJI-301"], taskCodes: ["MOJI-301"], allCompleted: true, canDeleteFiles: true,
@@ -102,6 +103,8 @@ const rootValue = {
   controlTorrent: true,
   updateDownloaderPolicy: ({input}: {input: Record<string,unknown>}) => ({...downloaderSnapshot.policy,...input}),
   downloader: downloaderSnapshot,
+ downloaderTransferPreferences: transferPreferences,
+ updateDownloaderTransferPreferences: ({input}:{input:Record<string,unknown>})=>({...transferPreferences,...input}),
   homeIndexerSummary: ({hours=72}:{hours?:number})=>({revision:"indexers-config-1",total:2,hours,statisticsErrorCode:"",statistics:{windowStartedAt:new Date(Date.parse(now)-hours*3600000).toISOString(),windowEndedAt:now,searches:120,successRate:95,averageElapsedMs:2400,records:240}}),
   homeOverview,
   homeSubscriptionSummary: { total: 24, attention: 1, unchecked: 0, lastCheckedAt: "2026-01-15T11:30:00Z", attentionPerformerIds: ["p1"] },

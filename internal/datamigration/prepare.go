@@ -158,7 +158,7 @@ func Prepare(ctx context.Context, sourcePath, cachePath, destination string) (re
 		return result, err
 	}
 	var stateRows []struct{ Key, Value string }
-	if err := source.SelectContext(ctx, &stateRows, "SELECT key,value FROM downloader_state"); err != nil {
+	if err := source.SelectContext(ctx, &stateRows, "SELECT key,value FROM downloader_state WHERE key='snapshot'"); err != nil {
 		return result, err
 	}
 	state := map[string]string{}

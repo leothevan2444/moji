@@ -28,14 +28,15 @@ const (
 	TorrentStateCheckingUP TorrentState = "checkingUP" // Torrent has finished downloading and is being checked
 	TorrentStateForcedUP   TorrentState = "forcedUP"   // Torrent is forced to uploading and ignore queue limit
 
-	TorrentStateAllocating  TorrentState = "allocating"  // Torrent is allocating disk space for download
-	TorrentStateDownloading TorrentState = "downloading" // Torrent is being downloaded and data is being transferred
-	TorrentStateMetaDL      TorrentState = "metaDL"      // Torrent has just started downloading and is fetching metadata
-	TorrentStatePausedDL    TorrentState = "pausedDL"    // Torrent is paused and has NOT finished downloading
-	TorrentStateQueuedDL    TorrentState = "queuedDL"    // Queuing is enabled and torrent is queued for download
-	TorrentStateStalledDL   TorrentState = "stalledDL"   // Torrent is being downloaded, but no connection were made
-	TorrentStateCheckingDL  TorrentState = "checkingDL"  // Same as checkingUP, but torrent has NOT finished downloading
-	TorrentStateForcedDL    TorrentState = "forcedDL"    // Torrent is forced to downloading to ignore queue limit
+	TorrentStateAllocating   TorrentState = "allocating"   // Torrent is allocating disk space for download
+	TorrentStateDownloading  TorrentState = "downloading"  // Torrent is being downloaded and data is being transferred
+	TorrentStateForcedMetaDL TorrentState = "forcedMetaDL" // Forced torrent fetching metadata
+	TorrentStateMetaDL       TorrentState = "metaDL"       // Torrent has just started downloading and is fetching metadata
+	TorrentStatePausedDL     TorrentState = "pausedDL"     // Torrent is paused and has NOT finished downloading
+	TorrentStateQueuedDL     TorrentState = "queuedDL"     // Queuing is enabled and torrent is queued for download
+	TorrentStateStalledDL    TorrentState = "stalledDL"    // Torrent is being downloaded, but no connection were made
+	TorrentStateCheckingDL   TorrentState = "checkingDL"   // Same as checkingUP, but torrent has NOT finished downloading
+	TorrentStateForcedDL     TorrentState = "forcedDL"     // Torrent is forced to downloading to ignore queue limit
 
 	TorrentStateCheckingResumeData TorrentState = "checkingResumeData" // Checking resume data on qBt startup
 	TorrentStateMoving             TorrentState = "moving"             // Torrent is moving to another location

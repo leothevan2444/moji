@@ -20,6 +20,7 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 	}
 	type plain Config
 	*c = Config{}
+	c.Downloader.Cleanup = DefaultDownloaderCleanup()
 	c.Automation.SubscriptionCheckEnabled = true
 	c.Automation.TorrentSelection = DefaultTorrentSelectionConfig()
 	c.Indexers = DefaultIndexersConfig()

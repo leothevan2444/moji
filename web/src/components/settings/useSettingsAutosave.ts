@@ -25,9 +25,9 @@ export function useSettingsAutosave<T>(key: string, initial: T, encode: (value: 
   current.encode = encode;
   current.persist = async patch => {
     const valid = (value: unknown): boolean => typeof value === "number" ? Number.isFinite(value) && Number.isInteger(value) : value !== null && typeof value === "object" ? Object.values(value).every(valid) : true;
-    // Floating point cleanup thresholds are intentionally supported.
+    // Capacity thresholds and qB share ratios support fractional values.
     const finite = (value: unknown): boolean => typeof value === "number" ? Number.isFinite(value) : value !== null && typeof value === "object" ? Object.values(value).every(finite) : true;
-    if (!(key === "downloader:policy" ? finite(patch) : valid(patch))) throw new Error(t("settings.autosave.invalid"));
+    if (!((key === "downloader:policy" || key === "downloader:transfer") ? finite(patch) : valid(patch))) throw new Error(t("settings.autosave.invalid"));
     if (options.persist) {
       const revision = await options.persist(patch, current.sourceRevision);
       if (revision !== undefined) current.sourceRevision = revision;

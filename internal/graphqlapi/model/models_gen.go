@@ -140,46 +140,94 @@ type DownloadRootsPatchInput struct {
 	MojiRoot *string `json:"moji_root,omitempty"`
 }
 
+type DownloaderCleanupStatus struct {
+	Enabled   bool         `json:"enabled"`
+	Phase     CleanupPhase `json:"phase"`
+	Reason    string       `json:"reason"`
+	Hash      string       `json:"hash"`
+	Name      string       `json:"name"`
+	UpdatedAt string       `json:"updatedAt"`
+}
+
 type DownloaderConnectionPatchInput struct {
 	Qbittorrent *QBConnectionPatchInput `json:"qbittorrent,omitempty"`
 }
 
 type DownloaderOverview struct {
-	CheckedAt        string            `json:"checkedAt"`
-	Connected        bool              `json:"connected"`
-	Stale            bool              `json:"stale"`
-	StorageAvailable bool              `json:"storageAvailable"`
-	FreeSpace        *int64            `json:"freeSpace,omitempty"`
-	DownloadSpeed    int64             `json:"downloadSpeed"`
-	UploadSpeed      int64             `json:"uploadSpeed"`
-	DownloadLimit    int64             `json:"downloadLimit"`
-	UploadLimit      int64             `json:"uploadLimit"`
-	ConnectionStatus string            `json:"connectionStatus"`
-	DhtNodes         int64             `json:"dhtNodes"`
-	CompletedBytes   int64             `json:"completedBytes"`
-	RemainingBytes   int64             `json:"remainingBytes"`
-	Total            int               `json:"total"`
-	AttentionCount   int               `json:"attentionCount"`
-	Torrents         []*ManagedTorrent `json:"torrents"`
-	Policy           *DownloaderPolicy `json:"policy"`
+	CheckedAt        string                   `json:"checkedAt"`
+	Connected        bool                     `json:"connected"`
+	Stale            bool                     `json:"stale"`
+	StorageAvailable bool                     `json:"storageAvailable"`
+	Cleanup          *DownloaderCleanupStatus `json:"cleanup"`
+	FreeSpace        *int64                   `json:"freeSpace,omitempty"`
+	DownloadSpeed    int64                    `json:"downloadSpeed"`
+	UploadSpeed      int64                    `json:"uploadSpeed"`
+	DownloadLimit    int64                    `json:"downloadLimit"`
+	UploadLimit      int64                    `json:"uploadLimit"`
+	ConnectionStatus string                   `json:"connectionStatus"`
+	DhtNodes         int64                    `json:"dhtNodes"`
+	CompletedBytes   int64                    `json:"completedBytes"`
+	RemainingBytes   int64                    `json:"remainingBytes"`
+	Total            int                      `json:"total"`
+	AttentionCount   int                      `json:"attentionCount"`
+	Torrents         []*ManagedTorrent        `json:"torrents"`
+	Policy           *DownloaderPolicy        `json:"policy"`
 }
 
 type DownloaderPolicy struct {
-	AfterIngest bool    `json:"afterIngest"`
-	Enabled     bool    `json:"enabled"`
-	Ratio       float64 `json:"ratio"`
-	SeedHours   float64 `json:"seedHours"`
-	MatchAll    bool    `json:"matchAll"`
-	DeleteFiles bool    `json:"deleteFiles"`
+	AfterIngest     bool                 `json:"afterIngest"`
+	Enabled         bool                 `json:"enabled"`
+	DeleteFiles     bool                 `json:"deleteFiles"`
+	CapacityEnabled bool                 `json:"capacityEnabled"`
+	MinFreeGb       float64              `json:"minFreeGb"`
+	CapacityOrder   CapacityCleanupOrder `json:"capacityOrder"`
 }
 
 type DownloaderPolicyInput struct {
-	AfterIngest *bool    `json:"afterIngest,omitempty"`
-	Enabled     *bool    `json:"enabled,omitempty"`
-	Ratio       *float64 `json:"ratio,omitempty"`
-	SeedHours   *float64 `json:"seedHours,omitempty"`
-	MatchAll    *bool    `json:"matchAll,omitempty"`
-	DeleteFiles *bool    `json:"deleteFiles,omitempty"`
+	AfterIngest     *bool                 `json:"afterIngest,omitempty"`
+	Enabled         *bool                 `json:"enabled,omitempty"`
+	DeleteFiles     *bool                 `json:"deleteFiles,omitempty"`
+	CapacityEnabled *bool                 `json:"capacityEnabled,omitempty"`
+	MinFreeGb       *float64              `json:"minFreeGb,omitempty"`
+	CapacityOrder   *CapacityCleanupOrder `json:"capacityOrder,omitempty"`
+}
+
+type DownloaderTransferPreferences struct {
+	QueueingEnabled               *bool    `json:"queueingEnabled,omitempty"`
+	MaxActiveDownloads            *int     `json:"maxActiveDownloads,omitempty"`
+	MaxActiveUploads              *int     `json:"maxActiveUploads,omitempty"`
+	MaxActiveTorrents             *int     `json:"maxActiveTorrents,omitempty"`
+	DontCountSlowTorrents         *bool    `json:"dontCountSlowTorrents,omitempty"`
+	SlowTorrentDlRateThreshold    *int     `json:"slowTorrentDlRateThreshold,omitempty"`
+	SlowTorrentUlRateThreshold    *int     `json:"slowTorrentUlRateThreshold,omitempty"`
+	SlowTorrentInactiveTimer      *int     `json:"slowTorrentInactiveTimer,omitempty"`
+	MaxRatioEnabled               *bool    `json:"maxRatioEnabled,omitempty"`
+	MaxRatio                      *float64 `json:"maxRatio,omitempty"`
+	MaxRatioAction                *int     `json:"maxRatioAction,omitempty"`
+	MaxSeedingTimeEnabled         *bool    `json:"maxSeedingTimeEnabled,omitempty"`
+	MaxSeedingTime                *int     `json:"maxSeedingTime,omitempty"`
+	MaxInactiveSeedingTimeEnabled *bool    `json:"maxInactiveSeedingTimeEnabled,omitempty"`
+	MaxInactiveSeedingTime        *int     `json:"maxInactiveSeedingTime,omitempty"`
+	ShareLimitMode                *string  `json:"shareLimitMode,omitempty"`
+}
+
+type DownloaderTransferPreferencesInput struct {
+	QueueingEnabled               *bool    `json:"queueingEnabled,omitempty"`
+	MaxActiveDownloads            *int     `json:"maxActiveDownloads,omitempty"`
+	MaxActiveUploads              *int     `json:"maxActiveUploads,omitempty"`
+	MaxActiveTorrents             *int     `json:"maxActiveTorrents,omitempty"`
+	DontCountSlowTorrents         *bool    `json:"dontCountSlowTorrents,omitempty"`
+	SlowTorrentDlRateThreshold    *int     `json:"slowTorrentDlRateThreshold,omitempty"`
+	SlowTorrentUlRateThreshold    *int     `json:"slowTorrentUlRateThreshold,omitempty"`
+	SlowTorrentInactiveTimer      *int     `json:"slowTorrentInactiveTimer,omitempty"`
+	MaxRatioEnabled               *bool    `json:"maxRatioEnabled,omitempty"`
+	MaxRatio                      *float64 `json:"maxRatio,omitempty"`
+	MaxRatioAction                *int     `json:"maxRatioAction,omitempty"`
+	MaxSeedingTimeEnabled         *bool    `json:"maxSeedingTimeEnabled,omitempty"`
+	MaxSeedingTime                *int     `json:"maxSeedingTime,omitempty"`
+	MaxInactiveSeedingTimeEnabled *bool    `json:"maxInactiveSeedingTimeEnabled,omitempty"`
+	MaxInactiveSeedingTime        *int     `json:"maxInactiveSeedingTime,omitempty"`
+	ShareLimitMode                *string  `json:"shareLimitMode,omitempty"`
 }
 
 type DownloadsIngestSettings struct {
@@ -2104,6 +2152,122 @@ func (e *AutomationSettingsSection) UnmarshalJSON(b []byte) error {
 }
 
 func (e AutomationSettingsSection) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type CapacityCleanupOrder string
+
+const (
+	CapacityCleanupOrderDiskUsage CapacityCleanupOrder = "DISK_USAGE"
+	CapacityCleanupOrderRatio     CapacityCleanupOrder = "RATIO"
+	CapacityCleanupOrderSeedTime  CapacityCleanupOrder = "SEED_TIME"
+)
+
+var AllCapacityCleanupOrder = []CapacityCleanupOrder{
+	CapacityCleanupOrderDiskUsage,
+	CapacityCleanupOrderRatio,
+	CapacityCleanupOrderSeedTime,
+}
+
+func (e CapacityCleanupOrder) IsValid() bool {
+	switch e {
+	case CapacityCleanupOrderDiskUsage, CapacityCleanupOrderRatio, CapacityCleanupOrderSeedTime:
+		return true
+	}
+	return false
+}
+
+func (e CapacityCleanupOrder) String() string {
+	return string(e)
+}
+
+func (e *CapacityCleanupOrder) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CapacityCleanupOrder(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CapacityCleanupOrder", str)
+	}
+	return nil
+}
+
+func (e CapacityCleanupOrder) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CapacityCleanupOrder) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CapacityCleanupOrder) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type CleanupPhase string
+
+const (
+	CleanupPhaseIdle    CleanupPhase = "IDLE"
+	CleanupPhaseRunning CleanupPhase = "RUNNING"
+	CleanupPhaseWarning CleanupPhase = "WARNING"
+	CleanupPhaseError   CleanupPhase = "ERROR"
+)
+
+var AllCleanupPhase = []CleanupPhase{
+	CleanupPhaseIdle,
+	CleanupPhaseRunning,
+	CleanupPhaseWarning,
+	CleanupPhaseError,
+}
+
+func (e CleanupPhase) IsValid() bool {
+	switch e {
+	case CleanupPhaseIdle, CleanupPhaseRunning, CleanupPhaseWarning, CleanupPhaseError:
+		return true
+	}
+	return false
+}
+
+func (e CleanupPhase) String() string {
+	return string(e)
+}
+
+func (e *CleanupPhase) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CleanupPhase(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CleanupPhase", str)
+	}
+	return nil
+}
+
+func (e CleanupPhase) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CleanupPhase) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CleanupPhase) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

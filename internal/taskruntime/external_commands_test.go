@@ -26,7 +26,7 @@ func TestTaskCommandIntentionPrecedesExternalActionAndRetainsAmbiguity(t *testin
 			t.Fatal("network action ran before durable intention", err)
 		}
 		// A concurrent core write succeeds: no transaction spans the external call.
-		if err := m.Core.WithWrite(ctx, func(tx *sqlx.Tx) error { _, err := tx.Exec("UPDATE download_policies SET ratio=1"); return err }); err != nil {
+		if err := m.Core.WithWrite(ctx, func(tx *sqlx.Tx) error { _, err := tx.Exec("UPDATE tasks SET updated_at=updated_at"); return err }); err != nil {
 			t.Fatal(err)
 		}
 		return actionErr

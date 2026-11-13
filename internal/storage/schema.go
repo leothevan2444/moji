@@ -20,6 +20,15 @@ var coreV5 string
 //go:embed schema/core_v6.sql
 var coreV6 string
 
+//go:embed schema/core_v7.sql
+var coreV7 string
+
+//go:embed schema/core_v8.sql
+var coreV8 string
+
+//go:embed schema/core_v9.sql
+var coreV9 string
+
 //go:embed schema/runtime.sql
 var runtimeSchema string
 
@@ -45,7 +54,7 @@ var runtimeV7 string
 var cacheSchema string
 
 func CoreMigrations() []Migration {
-	return []Migration{{1, "normalized durable workflow", coreSchema}, {2, "durable resolved download location", coreV2}, {3, "upcoming subscription releases", coreV3}, {4, "runtime indexer definition bundles", coreV4}, {5, "durable selected indexer provenance", coreV5}, {6, "accepted indexer resource snapshots", coreV6}}
+	return []Migration{{1, "normalized durable workflow", coreSchema}, {2, "durable resolved download location", coreV2}, {3, "upcoming subscription releases", coreV3}, {4, "runtime indexer definition bundles", coreV4}, {5, "durable selected indexer provenance", coreV5}, {6, "accepted indexer resource snapshots", coreV6}, {7, "download capacity cleanup policy", coreV7}, {8, "durable cleanup execution state", coreV8}, {9, "cleanup policy belongs to configuration", coreV9}}
 }
 func RuntimeMigrations() []Migration {
 	return []Migration{{1, "replaceable observations", runtimeSchema}, {2, "isolated indexer sessions", runtimeV2}, {3, "server-owned indexer resources", runtimeV3}, {4, "scoped indexer observations", runtimeV4}, {5, "persistent interactive torrent searches", runtimeV5}, {6, "persistent origin egress cooldowns", runtimeV6}, {7, "unified indexer executions", runtimeV7}}

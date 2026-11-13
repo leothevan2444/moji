@@ -2,11 +2,14 @@ package graphqlapi
 
 import (
 	"context"
+	"github.com/leothevan2444/moji/internal/config"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -34,7 +37,7 @@ func TestDownloaderGraphQLFilteringPolicyAndCommands(t *testing.T) {
 	hash := strings.Repeat("a", 40)
 	q := &apiDownloadClient{torrents: []qbittorrent.Torrent{{Hash: hash, Name: "ABCD-123", Progress: 1, State: qbittorrent.TorrentStateUploading, Ratio: 2.5, SeedingTime: 7200}}}
 	tasks := &fakeTaskRuntime{listTasks: []*taskruntime.Task{{ID: "linked", Code: "ABCD-123", TorrentHash: hash, Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone}, {ID: "missing", Code: "EFGH-456", TorrentHash: strings.Repeat("b", 40), Stage: taskruntime.TaskStageDownloading}}}
-	service, err := downloader.New(q, tasks, filepath.Join(t.TempDir(), "test.db"))
+	service, err := downloader.New(q, tasks, filepath.Join(t.TempDir(), "test.db"), newDownloaderSettings(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,8 +64,8 @@ func TestDownloaderGraphQLFilteringPolicyAndCommands(t *testing.T) {
 	if response.Data.Downloader.Total != 0 || response.Data.Downloader.AttentionCount != 0 {
 		t.Fatalf("wrong issue filtering: %+v", response)
 	}
-	executeGraphQLInto(t, resolver, `mutation {updateDownloaderPolicy(input:{enabled:true,ratio:3,seedHours:24,matchAll:true,deleteFiles:false}) {enabled ratio seedHours matchAll deleteFiles}}`, &response)
-	if len(response.Errors) > 0 || !response.Data.UpdateDownloaderPolicy.MatchAll || response.Data.UpdateDownloaderPolicy.Ratio != 3 {
+	executeGraphQLInto(t, resolver, `mutation {updateDownloaderPolicy(input:{enabled:true,afterIngest:true,deleteFiles:false}) {enabled afterIngest deleteFiles minFreeGb capacityOrder}}`, &response)
+	if len(response.Errors) > 0 || !response.Data.UpdateDownloaderPolicy.AfterIngest || response.Data.UpdateDownloaderPolicy.MinFreeGb != 50 {
 		t.Fatalf("policy failed: %+v", response)
 	}
 	executeGraphQLInto(t, resolver, `mutation {controlTorrent(hash:"`+hash+`",action:PAUSE)}`, &response)
@@ -79,7 +82,7 @@ func TestDownloaderCompletedMissingSourcesAreExcludedFromAttention(t *testing.T)
 	done, active := strings.Repeat("c", 40), strings.Repeat("d", 40)
 	q := &apiDownloadClient{torrents: []qbittorrent.Torrent{{Hash: done, Name: "ABCD-123", State: qbittorrent.TorrentStateMissingFiles}}}
 	tasks := &fakeTaskRuntime{listTasks: []*taskruntime.Task{{ID: "done", TorrentHash: done, Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone}, {ID: "active", TorrentHash: active, Stage: taskruntime.TaskStageDownloading}}}
-	service, err := downloader.New(q, tasks, filepath.Join(t.TempDir(), "test.db"))
+	service, err := downloader.New(q, tasks, filepath.Join(t.TempDir(), "test.db"), newDownloaderSettings(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +122,7 @@ func TestDownloaderListUsesCurrentQBTorrentsBeforeFilteringAndPagination(t *test
 	matched, orphan, unlinked := strings.Repeat("a", 40), strings.Repeat("b", 40), strings.Repeat("c", 40)
 	q := &apiDownloadClient{torrents: []qbittorrent.Torrent{{Hash: matched, Name: "Matched seed", State: qbittorrent.TorrentStateDownloading}, {Hash: unlinked, Name: "Independent seed", State: qbittorrent.TorrentStateError}}}
 	tasks := &fakeTaskRuntime{listTasks: []*taskruntime.Task{{ID: "match", Code: "ABCD-123", TorrentHash: matched, Stage: taskruntime.TaskStageDownloading}, {ID: "orphan", Code: "EFGH-456", TorrentHash: orphan, Stage: taskruntime.TaskStageDownloading}}}
-	service, err := downloader.New(q, tasks, filepath.Join(t.TempDir(), "test.db"))
+	service, err := downloader.New(q, tasks, filepath.Join(t.TempDir(), "test.db"), newDownloaderSettings(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,4 +161,67 @@ func TestDownloaderListUsesCurrentQBTorrentsBeforeFilteringAndPagination(t *test
 	if result.Data.Downloader.Total != 1 || result.Data.Downloader.Torrents[0].Present {
 		t.Fatal("task monitoring stopped after qB removal")
 	}
+}
+
+type preferencesAPIClient struct {
+	*apiDownloadClient
+	preferences qbittorrent.TorrentPreferences
+	patch       qbittorrent.TransferPreferences
+}
+
+func (c *preferencesAPIClient) GetTorrentPreferences(context.Context) (*qbittorrent.TorrentPreferences, error) {
+	return &c.preferences, nil
+}
+func (c *preferencesAPIClient) PatchTransferPreferences(_ context.Context, p qbittorrent.TransferPreferences) error {
+	c.patch = p
+	if p.MaxRatio != nil {
+		c.preferences.MaxRatio = p.MaxRatio
+	}
+	return nil
+}
+func TestQBTorrentPreferencesGraphQLUsesSparseRemotePatch(t *testing.T) {
+	ratio := 1.0
+	enabled := false
+	action := 0
+	queue := true
+	q := &preferencesAPIClient{apiDownloadClient: &apiDownloadClient{}, preferences: qbittorrent.TorrentPreferences{TransferPreferences: qbittorrent.TransferPreferences{MaxRatio: &ratio, MaxRatioEnabled: &enabled, MaxRatioAction: &action, QueueingEnabled: &queue}}}
+	service, err := downloader.New(q, &fakeTaskRuntime{}, filepath.Join(t.TempDir(), "test.db"), newDownloaderSettings(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close()
+	resolver := NewResolver(nil, nil, nil, "test")
+	resolver.Downloader = service
+	var response struct {
+		Data struct {
+			UpdateDownloaderTransferPreferences model.DownloaderTransferPreferences
+			DownloaderTransferPreferences       model.DownloaderTransferPreferences
+		}
+		Errors []struct{ Message string }
+	}
+	executeGraphQLInto(t, resolver, `{downloaderTransferPreferences{maxRatio queueingEnabled shareLimitMode}}`, &response)
+	if len(response.Errors) != 0 || response.Data.DownloaderTransferPreferences.MaxRatio == nil || response.Data.DownloaderTransferPreferences.ShareLimitMode != nil {
+		t.Fatal(response)
+	}
+	executeGraphQLInto(t, resolver, `mutation{updateDownloaderTransferPreferences(input:{maxRatio:2.5}){maxRatio queueingEnabled}}`, &response)
+	if len(response.Errors) != 0 || *response.Data.UpdateDownloaderTransferPreferences.MaxRatio != 2.5 || q.patch.QueueingEnabled != nil {
+		t.Fatal(response)
+	}
+	schema := generated.NewExecutableSchema(generated.Config{Resolvers: resolver}).Schema()
+	if schema.Types["DownloaderPolicyInput"].Fields.ForName("ratio") != nil {
+		t.Fatal("removed Moji ratio accepted")
+	}
+}
+
+func newDownloaderSettings(t *testing.T) *config.Store {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("config_version: 4\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := config.OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return store
 }

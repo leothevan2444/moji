@@ -1,5 +1,19 @@
 # 下载器、配置与运行交付
 
+## 下载器清理与传输设置
+
+2026-11-13：按[已确认设计及验证记录](../plans/download-capacity-protection.md)在当前工作树实施，最新修复只用临时实例验证，未更新用户手动运行的开发实例。Moji 不再以分享率或做种时长触发删除；只清理精确关联且全部已入库的种子。清理条件用单一下拉框选择立刻清理或容量清理，前后端均保证互斥，切换保留容量参数。容量单位为十进制 GB，支持磁盘占用/分享率/做种时长降序。容量每轮最多清一项，不自动暂停下载。
+
+容量只覆盖 qB 默认保存目录，不推断自定义目录属于同盘。“传输设置”保留 panel=speed，分为全局限速、qB 做种限制、Torrent 排队。后两组直读 qB，经认证后发送 typed 稀疏 form/json patch，回读不一致返回未确认；缺少的能力不伪造默认值。qB 自身删除动作独立于 Moji 入库保护。前端沿用串行自动保存、失败草稿保护及区域错误隔离。
+
+共用内容检查由 [content_isolation](../../internal/downloader/content_isolation.go) 统一处理。未知路径的 metaDL/forcedMetaDL 只有进度、已完成数据量及大小均为零，且文件接口明确返回非 null 的空列表时，才不阻塞其他候选；普通未知路径、非空文件列表和查询失败仍拦截。单次完整列表的核对最多 16 个文件请求、共享 2 秒预算，证据仅用于本次列表，不跨刷新复用。真正删除文件前再读完整 qB 列表及文件信息，路径变化或新共用内容会阻止删除。容量状态分别报告 CONTENT_PATH_UNKNOWN、SHARED_SOURCE_FILES、LIBRARY_COPY_UNVERIFIED，不再将它们混为没有已入库候选。验证只使用临时数据和模拟服务，不更新用户手动运行的开发实例。
+
+两种策略共用 [cleanup 执行器](../../internal/downloader/cleanup.go) 和四种公开阶段：IDLE/RUNNING/WARNING/ERROR。删除前准备状态先落核心库；删除意图和 CONFIRMING 阶段在同一核心事务中提交，随后调用 qB。结果不明只核对同一 hash；15 秒后转为静止警告，不无限播放动画。确认容量种子移除后观察 6 秒，再决定下一项；连续 3 项未观察到净空间增长才暂停。预算、截止及在途身份保存在核心库，runtime 丢失不重置；空间回升或关闭策略可重置保护，空间恢复至阈值以上也重置预算。4xx 明确拒绝（不含 408）记为失败并冷却 30 秒；超时、5xx 和未知结果不冒充失败。重复不变状态不占核心写事务。
+
+主页剩余空间旁由 [CleanupIndicator](../../web/src/components/home/CleanupIndicator.tsx) 展示扫帚图标，只有实际执行及有限确认期间动画。warning/error 分色并配短文案，详细原因、种子和操作时间点击查看，悬停/键盘聚焦提供说明；失联和 reduced-motion 均停止动画。GraphQL 的 cleanup 对象统一提供两种策略状态，不再公开容量专用状态。
+
+无旧配置自动转换或兼容分支；schema v7 调整策略结构，v8 新增独立清理执行状态并移除旧空间索引，不转换策略值。本次未修改本地配置或数据。主要源码：[观测](../../internal/downloader/service.go)、[持久化](../../internal/downloader/storage.go)、[qB 配置](../../internal/downloader/preferences.go)、[协议](../../pkg/qbittorrent/transfer_preferences.go)、[页面](../../web/src/components/settings/QBTransferSettings.tsx)。
+
 ## Homepage Widget
 
 核对日期：2026-11-11；代码基线：`47ec468` 后的本功能工作树；状态：已实现，尚未部署。
@@ -64,9 +78,9 @@ qB 明确 403 时重新认证再试；写操作超时可能已被执行，不能
 
 支持启停、校验、重新汇报、限速和移除。命令接受后以实际后续观测确认，不乐观伪造 qB 状态；断连不代表全体消失。缺失/错误只阻塞相关活动下载，不回退已完成入库。
 
-策略及删除命令在核心库，快照在 runtime；意图保存失败时不发送删除。结果不明保持 UNCERTAIN，完整成功 listing 确认消失后记来源。不能只读兼容构造器的 `downloader_state` 推断生产策略位置。
+自动清理配置仅在 `config.yaml` 的 `downloader.cleanup`，页面保存后下一轮读取生效；无数据库配置回退或自动转换。核心库 schema v9 删除 `download_policies`，保留清理执行状态和删除命令；快照在 runtime。意图保存失败时不发送删除。结果不明保持 UNCERTAIN，完整成功 listing 确认消失后记来源。
 
-自动清理默认关闭，仅对下载完成、全部关联 Moji 任务完成的种子运行；不自动清理未关联种子。删除文件必须验证本地独立库副本和没有其他 qB 种子引用重叠内容路径；保护不满足则保留。手动移除未完成入库的关联种子同样受限。完整规则见 [下载器说明](../../docs/downloader.md)，其中旧的策略/runtime 存放描述以本模块和 managed storage 为准。
+自动清理默认关闭，仅对下载完成、全部关联 Moji 任务完成的种子运行；不自动清理未关联种子。删除文件必须验证本地独立库副本和没有其他 qB 种子引用重叠内容路径；保护不满足则保留。手动移除未完成入库的关联种子同样受限。完整规则及 YAML 示例见 [下载器说明](../../docs/downloader.md)。
 
 全项目 qB 状态使用 [qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)，逐字保持官方中英文，包括 `[F]`、空格、大小写；来源 fixture 在 [官方状态依据](../../web/src/utils/__fixtures__/qbittorrent-statuses.json)。Moji 的 missing/removed 与自己的生命周期不冒充 qB 状态。
 

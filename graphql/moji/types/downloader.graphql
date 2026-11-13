@@ -1,20 +1,24 @@
 extend type Query {
+  downloaderTransferPreferences: DownloaderTransferPreferences
   downloader(offset: Int = 0, limit: Int = 50, search: String, taskId: ID, attentionOnly: Boolean = false): DownloaderOverview!
 }
 extend type Mutation {
+  updateDownloaderTransferPreferences(input: DownloaderTransferPreferencesInput!): DownloaderTransferPreferences!
   refreshDownloader: Boolean!
   updateDownloaderPolicy(input: DownloaderPolicyInput!): DownloaderPolicy!
   controlTorrent(hash: String!, action: TorrentAction!): Boolean!
   setDownloaderSpeedLimit(upload: Boolean!, kibPerSecond: Int!): Boolean!
 }
 enum TorrentAction { PAUSE RESUME RECHECK REANNOUNCE REMOVE REMOVE_FILES }
-input DownloaderPolicyInput { afterIngest: Boolean, enabled: Boolean, ratio: Float, seedHours: Float, matchAll: Boolean, deleteFiles: Boolean }
-type DownloaderPolicy { afterIngest: Boolean!, enabled: Boolean!, ratio: Float!, seedHours: Float!, matchAll: Boolean!, deleteFiles: Boolean! }
+enum CapacityCleanupOrder { DISK_USAGE RATIO SEED_TIME }
+input DownloaderPolicyInput { afterIngest: Boolean, enabled: Boolean, deleteFiles: Boolean, capacityEnabled: Boolean, minFreeGb: Float, capacityOrder: CapacityCleanupOrder }
+type DownloaderPolicy { afterIngest: Boolean!, enabled: Boolean!, deleteFiles: Boolean!, capacityEnabled: Boolean!, minFreeGb: Float!, capacityOrder: CapacityCleanupOrder! }
 type DownloaderOverview {
   checkedAt: String!
   connected: Boolean!
   stale: Boolean!
   storageAvailable: Boolean!
+  cleanup: DownloaderCleanupStatus!
   freeSpace: Long
   downloadSpeed: Long!
   uploadSpeed: Long!
@@ -59,4 +63,52 @@ type ManagedTorrent {
   removalReason: String!
   cleanupError: Boolean!
   needsAttention: Boolean!
+}
+
+type DownloaderTransferPreferences {
+  queueingEnabled: Boolean
+  maxActiveDownloads: Int
+  maxActiveUploads: Int
+  maxActiveTorrents: Int
+  dontCountSlowTorrents: Boolean
+  slowTorrentDlRateThreshold: Int
+  slowTorrentUlRateThreshold: Int
+  slowTorrentInactiveTimer: Int
+  maxRatioEnabled: Boolean
+  maxRatio: Float
+  maxRatioAction: Int
+  maxSeedingTimeEnabled: Boolean
+  maxSeedingTime: Int
+  maxInactiveSeedingTimeEnabled: Boolean
+  maxInactiveSeedingTime: Int
+  shareLimitMode: String
+}
+
+input DownloaderTransferPreferencesInput {
+  queueingEnabled: Boolean
+  maxActiveDownloads: Int
+  maxActiveUploads: Int
+  maxActiveTorrents: Int
+  dontCountSlowTorrents: Boolean
+  slowTorrentDlRateThreshold: Int
+  slowTorrentUlRateThreshold: Int
+  slowTorrentInactiveTimer: Int
+  maxRatioEnabled: Boolean
+  maxRatio: Float
+  maxRatioAction: Int
+  maxSeedingTimeEnabled: Boolean
+  maxSeedingTime: Int
+  maxInactiveSeedingTimeEnabled: Boolean
+  maxInactiveSeedingTime: Int
+  shareLimitMode: String
+}
+
+enum CleanupPhase { IDLE RUNNING WARNING ERROR }
+type DownloaderCleanupStatus {
+ enabled: Boolean!
+ phase: CleanupPhase!
+ reason: String!
+ hash: String!
+ name: String!
+ updatedAt: String!
 }

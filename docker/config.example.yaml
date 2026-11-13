@@ -34,6 +34,14 @@ indexers:
         empty_ttl_seconds: 30
         max_size_mb: 32
 downloader:
+    cleanup:
+        enabled: false
+        # AFTER_INGEST or CAPACITY. Capacity cleanup requires delete_files: true.
+        trigger: AFTER_INGEST
+        delete_files: true
+        min_free_gb: 50
+        # DISK_USAGE, RATIO, or SEED_TIME
+        capacity_order: DISK_USAGE
     qbittorrent:
         url: http://host.docker.internal:8080
         username: ""

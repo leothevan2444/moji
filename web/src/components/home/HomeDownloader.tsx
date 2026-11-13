@@ -1,3 +1,4 @@
+import { CleanupIndicator } from "./CleanupIndicator";
 import { useEffect } from "react";
 import { Provider, useMutation, useQuery } from "urql";
 import { useTranslation } from "react-i18next";
@@ -37,7 +38,7 @@ function Summary({ onOpenList }: { onOpenList: () => void }) {
     {error || refreshError ? <div className="home-module-error" role="status"><p>{describeQueryError(error || refreshError)}</p></div> : null}
     {!snap ? <div className="home-loading" role="status" aria-label={t("common.loading")}><div className="skeleton" /><div className="skeleton" /></div> : <>
       {snap.stale ? <p className="home-warning home-downloader-status" role="status">{t("downloader.stale")}</p> : null}
-      <dl className="home-downloader-metrics">{metrics.map(([key, value]) => <div key={key}><dt>{t(`downloader.${key}`)}{["freeSpace", "completedBytes"].includes(key) ? <button type="button" className="home-inline-button home-downloader-info" title={t("downloader.spaceHint")} aria-label={`${t(`downloader.${key}`)} · ${t("downloader.details")}`}><FontAwesomeIcon icon={faCircleInfo} aria-hidden="true" /></button> : null}</dt><dd>{value}</dd></div>)}</dl>
+      <dl className="home-downloader-metrics">{metrics.map(([key, value]) => <div key={key}><dt>{t(`downloader.${key}`)}{["freeSpace", "completedBytes"].includes(key) ? <button type="button" className="home-inline-button home-downloader-info" title={t("downloader.spaceHint")} aria-label={`${t(`downloader.${key}`)} · ${t("downloader.details")}`}><FontAwesomeIcon icon={faCircleInfo} aria-hidden="true" /></button> : null}</dt><dd>{value}{key==="freeSpace"?<CleanupIndicator status={snap.cleanup} unavailable={snap.stale||!snap.connected||Boolean(error)}/>:null}</dd></div>)}</dl>
       <div className="home-downloader-footer"><div className="home-downloader-status"><span>{t("downloader.total", { count: snap.total })}</span>{snap.attentionCount ? <span className="home-warning">{t("downloader.issuesCount", { count: snap.attentionCount })}</span> : null}</div><button type="button" className="home-more home-inline-button" onClick={onOpenList}>{t("downloader.viewTorrents")}<FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></button></div>
 
     </>}
