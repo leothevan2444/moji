@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faCheck, faCircleExclamation, faMagnifyingGlass, faRotate, faBookmark, faArrowUpRightFromSquare, faBolt } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faCheck, faCircleExclamation, faMagnifyingGlass, faRotate, faArrowUpRightFromSquare, faBolt } from "@fortawesome/free-solid-svg-icons";
 import { HomeSubscriptionChecks, type HomeChecksView } from "../components/home/HomeSubscriptionChecks";
 import { IngestCard, ServiceCard } from "../components/home";
 import { TaskPrimaryAction } from "../components/tasks/TaskPrimaryAction";
@@ -121,14 +121,14 @@ export function HomePage(props: HomePageProps) {
       </div>
       <aside className="home-sidebar">
       <section className="home-panel home-subscriptions" aria-labelledby="home-subscriptions-title">
-        <div className="home-panel-heading"><h2 id="home-subscriptions-title">{t("workbench.subscriptions")}</h2><FontAwesomeIcon icon={faBookmark} aria-hidden="true" /></div>
+        <div className="home-panel-heading"><h2 id="home-subscriptions-title">{t("workbench.subscriptions")}</h2><Link to="/performers" aria-label={t("workbench.manageSubscriptions")}>{t("workbench.manageShort")} <FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></Link></div>
         {error(props.subscriptionError, props.onRefreshSubscription, Boolean(subscription))}
-        {!subscription ? !props.subscriptionError && loading : <><p className="home-big-number">{subscription.total}<span>{t("workbench.subscribedUnit")}</span></p><p className="home-muted">{t(subscription.total ? "workbench.subscriptionHelp" : "workbench.subscriptionEmpty")}</p>
-          {subscription.attention > 0 ? <p className="home-subscription-warning"><FontAwesomeIcon icon={faCircleExclamation} aria-hidden="true" />{t("workbench.subscriptionIssues", { count: subscription.attention })}</p> : null}
+        {!subscription ? !props.subscriptionError && loading : <>
+          <p className="home-big-number">{subscription.total}<span>{t("workbench.subscribedUnit")}</span></p>
           {subscription.unchecked > 0 ? <p className="home-muted">{t("workbench.unchecked", { count: subscription.unchecked })}</p> : null}
-          {subscription.lastCheckedAt ? <p className="home-muted"><time dateTime={subscription.lastCheckedAt} title={formatDateTime(subscription.lastCheckedAt)}>{t("workbench.lastChecked", { time: formatRelative(subscription.lastCheckedAt) })}</time></p> : null}
-          {subscription.attentionPerformerIds.map((id, index) => <Link className="home-subscription-issue" key={id} to={`/performers/${encodeURIComponent(id)}`}>{t("workbench.reviewSubscription", { number: index + 1 })}<FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></Link>)}
-          <Link className="home-more" to="/performers">{t("workbench.manageSubscriptions")} <FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></Link></>}
+          {subscription.total === 0 ? <p className="home-muted">{t("workbench.subscriptionEmpty")}</p> : null}
+        </>}
+
       </section>
 
       <HomeSubscriptionChecks snapshot={props.checks ?? null} error={props.checksError ?? null} onRetry={props.onRefreshChecks ?? props.onRefresh} onOpenRun={id => props.onOpenCheck?.(id)} />

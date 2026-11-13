@@ -70,7 +70,7 @@ func (r *queryResolver) HomeSubscriptionSummary(ctx context.Context) (*model.Hom
 
 // HomeSubscriptionChecks is the resolver for the homeSubscriptionChecks field.
 func (r *queryResolver) HomeSubscriptionChecks(ctx context.Context) (*model.HomeSubscriptionChecks, error) {
-	result := &model.HomeSubscriptionChecks{ActiveRuns: []*model.HomeSubscriptionCheckRun{}, RecentRuns: []*model.HomeSubscriptionCheckRun{}}
+	result := &model.HomeSubscriptionChecks{Statistics: &model.HomeSubscriptionCheckStatistics{}, ActiveRuns: []*model.HomeSubscriptionCheckRun{}, RecentRuns: []*model.HomeSubscriptionCheckRun{}}
 	if r.PerformerSubscription == nil {
 		return result, nil
 	}
@@ -87,6 +87,10 @@ func (r *queryResolver) HomeSubscriptionChecks(ctx context.Context) (*model.Home
 	result.Enabled, result.NextRunAt, result.ActiveCount = snapshot.Enabled, checkTime(snapshot.NextRunAt), snapshot.ActiveCount
 	if snapshot.LatestScheduled != nil {
 		result.LatestScheduled = homeCheckRunToModel(*snapshot.LatestScheduled)
+	}
+	result.Statistics = &model.HomeSubscriptionCheckStatistics{RunCount: snapshot.Statistics.RunCount, SucceededCount: snapshot.Statistics.SucceededCount, FailedCount: snapshot.Statistics.FailedCount, SkippedCount: snapshot.Statistics.SkippedCount}
+	if snapshot.LatestFinishedScheduled != nil {
+		result.LatestFinishedScheduled = homeCheckRunToModel(*snapshot.LatestFinishedScheduled)
 	}
 	for _, run := range snapshot.ActiveRuns {
 		result.ActiveRuns = append(result.ActiveRuns, homeCheckRunToModel(run))

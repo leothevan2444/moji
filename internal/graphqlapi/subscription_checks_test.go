@@ -29,7 +29,7 @@ func (s *checkAPIService) SubscriptionCheck(_ context.Context, id string) (*subs
 }
 func (s *checkAPIService) HomeChecks(context.Context) (subscription.HomeChecks, error) {
 	run := subscription.HomeCheckRun{ID: s.run.ID, Trigger: s.run.Trigger, Scope: s.run.Scope, Status: s.run.Status, StartedAt: s.run.StartedAt, TotalCount: 3, CompletedCount: 3, SucceededCount: 1, FailedCount: 1, SkippedCount: 1}
-	return subscription.HomeChecks{Enabled: true, LatestScheduled: &run, ActiveRuns: []subscription.HomeCheckRun{}, RecentRuns: []subscription.HomeCheckRun{run}}, nil
+	return subscription.HomeChecks{Enabled: true, LatestScheduled: &run, LatestFinishedScheduled: &run, Statistics: subscription.HomeCheckStatistics{RunCount: 10, SucceededCount: 81, FailedCount: 5, SkippedCount: 2}, ActiveRuns: []subscription.HomeCheckRun{}, RecentRuns: []subscription.HomeCheckRun{run}}, nil
 }
 func (s *checkAPIService) CheckActivity(_ context.Context, ids []string) (subscription.CheckActivity, error) {
 	s.activityIDs = ids
@@ -54,9 +54,14 @@ func TestHomeSubscriptionCheckGraphQLContract(t *testing.T) {
 		}
 		Errors []struct{ Message string }
 	}
-	executeGraphQLInto(t, resolver, `{homeSubscriptionChecks { enabled activeCount latestScheduled{id trigger status} activeRuns{id} recentRuns{id status totalCount completedCount succeededCount failedCount skippedCount currentPerformers{performerId name}} } subscriptionCheckActivity(ids:["p1"]){activeCount allRunId performers{performerId runId status}} }`, &result)
+	executeGraphQLInto(t, resolver, `{homeSubscriptionChecks { enabled activeCount latestScheduled{id trigger status} latestFinishedScheduled{id status} statistics{runCount succeededCount failedCount skippedCount} activeRuns{id} recentRuns{id status totalCount completedCount succeededCount failedCount skippedCount currentPerformers{performerId name}} } subscriptionCheckActivity(ids:["p1"]){activeCount allRunId performers{performerId runId status}} }`, &result)
 	if len(result.Errors) > 0 || !result.Data.HomeSubscriptionChecks.Enabled {
 		t.Fatalf("invalid Home query result: %+v", result)
+	}
+	stats := result.Data.HomeSubscriptionChecks.Statistics
+	finished := result.Data.HomeSubscriptionChecks.LatestFinishedScheduled
+	if stats == nil || stats.RunCount != 10 || stats.SucceededCount != 81 || stats.FailedCount != 5 || stats.SkippedCount != 2 || finished == nil || finished.ID != "check-1" {
+		t.Fatalf("incorrect statistics or latest finished result: %+v", result.Data.HomeSubscriptionChecks)
 	}
 	run := result.Data.HomeSubscriptionChecks.RecentRuns[0]
 	if run.TotalCount != 3 || run.CompletedCount != 3 || run.FailedCount != 1 || run.SucceededCount != 1 || run.SkippedCount != 1 {
@@ -88,7 +93,10 @@ func TestHomeChecksUnavailableReturnsEmptyState(t *testing.T) {
 		}
 		Errors []struct{ Message string }
 	}
-	executeGraphQLInto(t, resolver, `{homeSubscriptionChecks{enabled activeCount activeRuns{id} recentRuns{id}} subscriptionCheckActivity(ids:[]){activeCount performers{performerId}}}`, &result)
+	executeGraphQLInto(t, resolver, `{homeSubscriptionChecks{enabled activeCount activeRuns{id} recentRuns{id} latestFinishedScheduled{id} statistics{runCount succeededCount failedCount skippedCount}} subscriptionCheckActivity(ids:[]){activeCount performers{performerId}}}`, &result)
+	if result.Data.Checks.Statistics == nil || result.Data.Checks.Statistics.RunCount != 0 || result.Data.Checks.LatestFinishedScheduled != nil {
+		t.Fatalf("unconfigured checks must retain an empty non-null statistics object: %+v", result)
+	}
 	if len(result.Errors) > 0 || result.Data.Checks.Enabled || result.Data.Checks.ActiveRuns == nil || result.Data.Checks.RecentRuns == nil || result.Data.Activity.Performers == nil {
 		t.Fatalf("invalid unavailable state: %+v", result)
 	}

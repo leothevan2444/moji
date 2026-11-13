@@ -27,6 +27,25 @@ latest scheduled run. Each run includes at most three current actor names.
 check execution; `home.resolvers.go` only maps it to the GraphQL contract.
 Full actor outcomes are fetched through `subscriptionCheck(id)` on demand.
 
+Home retains the large subscription total and the heading's management link,
+without showing subscription issues. First-check counts remain visible.
+The check panel shows automatic scheduling and the next deadline; its History
+button uses a success or warning icon and color for the latest retained finished
+scheduled run. Its title and accessible name include the result and timestamp.
+An active run does not replace that result. With no finished scheduled run, the
+button stays neutral. Active runs retain progress and actor names. Recent runs
+are available in the History drawer rather than repeated on Home.
+On narrow screens, release checks follow the subscription summary.
+
+`latestFinishedScheduled` is separate from `latestScheduled`, which can be active.
+`statistics` counts successful, failed (including interrupted), and skipped actor
+attempts across up to 100 most recently started retained finished runs, including
+manual and scheduled checks. Repeated actors count separately; active runs and
+pending items are excluded. `runCount` reports the actual number of included runs.
+This is a retained-history summary, not a complete time-window metric. The UI uses
+these backend aggregates rather than the three recent-run samples. Empty history
+has zero counts; a failed read retains the previous snapshot with its error notice.
+
 ## Homepage integration
 
 The external Homepage dashboard reads the same four counts through

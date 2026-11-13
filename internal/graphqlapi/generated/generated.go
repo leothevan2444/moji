@@ -236,13 +236,22 @@ type ComplexityRoot struct {
 		Trigger           func(childComplexity int) int
 	}
 
+	HomeSubscriptionCheckStatistics struct {
+		FailedCount    func(childComplexity int) int
+		RunCount       func(childComplexity int) int
+		SkippedCount   func(childComplexity int) int
+		SucceededCount func(childComplexity int) int
+	}
+
 	HomeSubscriptionChecks struct {
-		ActiveCount     func(childComplexity int) int
-		ActiveRuns      func(childComplexity int) int
-		Enabled         func(childComplexity int) int
-		LatestScheduled func(childComplexity int) int
-		NextRunAt       func(childComplexity int) int
-		RecentRuns      func(childComplexity int) int
+		ActiveCount             func(childComplexity int) int
+		ActiveRuns              func(childComplexity int) int
+		Enabled                 func(childComplexity int) int
+		LatestFinishedScheduled func(childComplexity int) int
+		LatestScheduled         func(childComplexity int) int
+		NextRunAt               func(childComplexity int) int
+		RecentRuns              func(childComplexity int) int
+		Statistics              func(childComplexity int) int
 	}
 
 	HomeSubscriptionSummary struct {
@@ -2601,6 +2610,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.HomeSubscriptionCheckRun.Trigger(childComplexity), true
 
+	case "HomeSubscriptionCheckStatistics.failedCount":
+		if e.complexity.HomeSubscriptionCheckStatistics.FailedCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckStatistics.FailedCount(childComplexity), true
+
+	case "HomeSubscriptionCheckStatistics.runCount":
+		if e.complexity.HomeSubscriptionCheckStatistics.RunCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckStatistics.RunCount(childComplexity), true
+
+	case "HomeSubscriptionCheckStatistics.skippedCount":
+		if e.complexity.HomeSubscriptionCheckStatistics.SkippedCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckStatistics.SkippedCount(childComplexity), true
+
+	case "HomeSubscriptionCheckStatistics.succeededCount":
+		if e.complexity.HomeSubscriptionCheckStatistics.SucceededCount == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionCheckStatistics.SucceededCount(childComplexity), true
+
 	case "HomeSubscriptionChecks.activeCount":
 		if e.complexity.HomeSubscriptionChecks.ActiveCount == nil {
 			break
@@ -2622,6 +2659,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.HomeSubscriptionChecks.Enabled(childComplexity), true
 
+	case "HomeSubscriptionChecks.latestFinishedScheduled":
+		if e.complexity.HomeSubscriptionChecks.LatestFinishedScheduled == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionChecks.LatestFinishedScheduled(childComplexity), true
+
 	case "HomeSubscriptionChecks.latestScheduled":
 		if e.complexity.HomeSubscriptionChecks.LatestScheduled == nil {
 			break
@@ -2642,6 +2686,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.HomeSubscriptionChecks.RecentRuns(childComplexity), true
+
+	case "HomeSubscriptionChecks.statistics":
+		if e.complexity.HomeSubscriptionChecks.Statistics == nil {
+			break
+		}
+
+		return e.complexity.HomeSubscriptionChecks.Statistics(childComplexity), true
 
 	case "HomeSubscriptionSummary.attention":
 		if e.complexity.HomeSubscriptionSummary.Attention == nil {
@@ -9956,6 +10007,9 @@ type HomeSubscriptionChecks {
   nextRunAt: String
   activeCount: Int!
   latestScheduled: HomeSubscriptionCheckRun
+  "Latest retained scheduled run that has finished, including interrupted runs."
+  latestFinishedScheduled: HomeSubscriptionCheckRun
+  statistics: HomeSubscriptionCheckStatistics!
   activeRuns: [HomeSubscriptionCheckRun!]!
   recentRuns: [HomeSubscriptionCheckRun!]!
 }
@@ -9978,6 +10032,14 @@ type HomeSubscriptionCheckRun {
 type HomeCheckPerformer {
   performerId: ID!
   name: String!
+}
+
+"Actor outcomes from at most 100 most recently started retained finished runs; manual and scheduled, repeated actors counted per attempt. Interrupted items count as failed."
+type HomeSubscriptionCheckStatistics {
+  runCount: Int!
+  succeededCount: Int!
+  failedCount: Int!
+  skippedCount: Int!
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/home_indexers.graphql", Input: `extend type Query { homeIndexerSummary(hours: Int! = 72): HomeIndexerSummary! }
@@ -22026,6 +22088,182 @@ func (ec *executionContext) fieldContext_HomeSubscriptionCheckRun_currentPerform
 	return fc, nil
 }
 
+func (ec *executionContext) _HomeSubscriptionCheckStatistics_runCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckStatistics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckStatistics_runCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RunCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckStatistics_runCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckStatistics_succeededCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckStatistics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckStatistics_succeededCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SucceededCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckStatistics_succeededCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckStatistics_failedCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckStatistics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckStatistics_failedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FailedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckStatistics_failedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionCheckStatistics_skippedCount(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionCheckStatistics) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionCheckStatistics_skippedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SkippedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionCheckStatistics_skippedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionCheckStatistics",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _HomeSubscriptionChecks_enabled(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_HomeSubscriptionChecks_enabled(ctx, field)
 	if err != nil {
@@ -22217,6 +22455,127 @@ func (ec *executionContext) fieldContext_HomeSubscriptionChecks_latestScheduled(
 				return ec.fieldContext_HomeSubscriptionCheckRun_currentPerformers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type HomeSubscriptionCheckRun", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionChecks_latestFinishedScheduled(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionChecks_latestFinishedScheduled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LatestFinishedScheduled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.HomeSubscriptionCheckRun)
+	fc.Result = res
+	return ec.marshalOHomeSubscriptionCheckRun2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckRun(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionChecks_latestFinishedScheduled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionChecks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HomeSubscriptionCheckRun_id(ctx, field)
+			case "trigger":
+				return ec.fieldContext_HomeSubscriptionCheckRun_trigger(ctx, field)
+			case "scope":
+				return ec.fieldContext_HomeSubscriptionCheckRun_scope(ctx, field)
+			case "status":
+				return ec.fieldContext_HomeSubscriptionCheckRun_status(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_HomeSubscriptionCheckRun_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_HomeSubscriptionCheckRun_finishedAt(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_totalCount(ctx, field)
+			case "completedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_completedCount(ctx, field)
+			case "succeededCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_succeededCount(ctx, field)
+			case "failedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_failedCount(ctx, field)
+			case "skippedCount":
+				return ec.fieldContext_HomeSubscriptionCheckRun_skippedCount(ctx, field)
+			case "currentPerformers":
+				return ec.fieldContext_HomeSubscriptionCheckRun_currentPerformers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeSubscriptionCheckRun", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HomeSubscriptionChecks_statistics(ctx context.Context, field graphql.CollectedField, obj *model.HomeSubscriptionChecks) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HomeSubscriptionChecks_statistics(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Statistics, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.HomeSubscriptionCheckStatistics)
+	fc.Result = res
+	return ec.marshalNHomeSubscriptionCheckStatistics2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckStatistics(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_HomeSubscriptionChecks_statistics(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HomeSubscriptionChecks",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "runCount":
+				return ec.fieldContext_HomeSubscriptionCheckStatistics_runCount(ctx, field)
+			case "succeededCount":
+				return ec.fieldContext_HomeSubscriptionCheckStatistics_succeededCount(ctx, field)
+			case "failedCount":
+				return ec.fieldContext_HomeSubscriptionCheckStatistics_failedCount(ctx, field)
+			case "skippedCount":
+				return ec.fieldContext_HomeSubscriptionCheckStatistics_skippedCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HomeSubscriptionCheckStatistics", field.Name)
 		},
 	}
 	return fc, nil
@@ -44421,6 +44780,10 @@ func (ec *executionContext) fieldContext_Query_homeSubscriptionChecks(_ context.
 				return ec.fieldContext_HomeSubscriptionChecks_activeCount(ctx, field)
 			case "latestScheduled":
 				return ec.fieldContext_HomeSubscriptionChecks_latestScheduled(ctx, field)
+			case "latestFinishedScheduled":
+				return ec.fieldContext_HomeSubscriptionChecks_latestFinishedScheduled(ctx, field)
+			case "statistics":
+				return ec.fieldContext_HomeSubscriptionChecks_statistics(ctx, field)
 			case "activeRuns":
 				return ec.fieldContext_HomeSubscriptionChecks_activeRuns(ctx, field)
 			case "recentRuns":
@@ -76608,6 +76971,60 @@ func (ec *executionContext) _HomeSubscriptionCheckRun(ctx context.Context, sel a
 	return out
 }
 
+var homeSubscriptionCheckStatisticsImplementors = []string{"HomeSubscriptionCheckStatistics"}
+
+func (ec *executionContext) _HomeSubscriptionCheckStatistics(ctx context.Context, sel ast.SelectionSet, obj *model.HomeSubscriptionCheckStatistics) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, homeSubscriptionCheckStatisticsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HomeSubscriptionCheckStatistics")
+		case "runCount":
+			out.Values[i] = ec._HomeSubscriptionCheckStatistics_runCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "succeededCount":
+			out.Values[i] = ec._HomeSubscriptionCheckStatistics_succeededCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "failedCount":
+			out.Values[i] = ec._HomeSubscriptionCheckStatistics_failedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "skippedCount":
+			out.Values[i] = ec._HomeSubscriptionCheckStatistics_skippedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var homeSubscriptionChecksImplementors = []string{"HomeSubscriptionChecks"}
 
 func (ec *executionContext) _HomeSubscriptionChecks(ctx context.Context, sel ast.SelectionSet, obj *model.HomeSubscriptionChecks) graphql.Marshaler {
@@ -76633,6 +77050,13 @@ func (ec *executionContext) _HomeSubscriptionChecks(ctx context.Context, sel ast
 			}
 		case "latestScheduled":
 			out.Values[i] = ec._HomeSubscriptionChecks_latestScheduled(ctx, field, obj)
+		case "latestFinishedScheduled":
+			out.Values[i] = ec._HomeSubscriptionChecks_latestFinishedScheduled(ctx, field, obj)
+		case "statistics":
+			out.Values[i] = ec._HomeSubscriptionChecks_statistics(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "activeRuns":
 			out.Values[i] = ec._HomeSubscriptionChecks_activeRuns(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -86678,6 +87102,16 @@ func (ec *executionContext) marshalNHomeSubscriptionCheckRun2ᚖgithubᚗcomᚋl
 		return graphql.Null
 	}
 	return ec._HomeSubscriptionCheckRun(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHomeSubscriptionCheckStatistics2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionCheckStatistics(ctx context.Context, sel ast.SelectionSet, v *model.HomeSubscriptionCheckStatistics) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._HomeSubscriptionCheckStatistics(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNHomeSubscriptionChecks2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐHomeSubscriptionChecks(ctx context.Context, sel ast.SelectionSet, v model.HomeSubscriptionChecks) graphql.Marshaler {

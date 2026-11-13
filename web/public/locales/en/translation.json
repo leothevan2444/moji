@@ -813,6 +813,16 @@
     "policyScope": "Only torrents whose linked Moji tasks have all completed import are eligible. Unlinked torrents are not cleaned up."
   },
   "subscriptionChecks": {
+    "historyLatest": "Latest scheduled result: {{status}} · {{time}}",
+    "historyNone": "No finished scheduled checks recorded",
+    "historyUnavailable": "Check status has not loaded",
+    "recentStatistics": "Recent checks",
+    "statSucceeded": "Succeeded",
+    "statFailed": "Issues",
+    "statSkipped": "Skipped",
+    "statisticsHelp": "Actor outcomes from {{count}} recent retained finished runs (up to 100), including manual and automatic checks. Repeat checks count separately; interruptions count as issues.",
+    "automaticEnabled": "Automatic checks enabled",
+    "automaticDisabled": "Automatic checks disabled",
     "allBusy": "A check of all subscriptions is running. Please try again shortly.",
     "title": "Release checks",
     "followRun": "Follow this check on Home",
@@ -967,6 +977,7 @@
     }
   },
   "workbench": {
+    "manageShort": "Manage",
     "nextTask": "Review next task",
     "queueHint": "Continue when ready. Unsubmitted choices are kept while you review the queue.",
     "handledTitle": "{{task}} handled",

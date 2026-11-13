@@ -182,7 +182,7 @@ const rootValue = {
       databasePath: "/data/stashbox.db", lastCleanupAt: null, lastError: null,
     },
   },
-  homeSubscriptionChecks: { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: 0, latestScheduled: null, activeRuns: [], recentRuns: [] },
+  homeSubscriptionChecks: { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: 0, latestScheduled: null, latestFinishedScheduled: null, statistics: { runCount: 0, succeededCount: 0, failedCount: 0, skippedCount: 0 }, activeRuns: [], recentRuns: [] },
   subscriptionCheckActivity: { activeCount: 0, allRunId: null, performers: [] },
   subscriptionCheck: null,
   subscriptionCheckHistory: [],

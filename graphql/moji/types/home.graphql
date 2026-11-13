@@ -34,6 +34,9 @@ type HomeSubscriptionChecks {
   nextRunAt: String
   activeCount: Int!
   latestScheduled: HomeSubscriptionCheckRun
+  "Latest retained scheduled run that has finished, including interrupted runs."
+  latestFinishedScheduled: HomeSubscriptionCheckRun
+  statistics: HomeSubscriptionCheckStatistics!
   activeRuns: [HomeSubscriptionCheckRun!]!
   recentRuns: [HomeSubscriptionCheckRun!]!
 }
@@ -56,4 +59,12 @@ type HomeSubscriptionCheckRun {
 type HomeCheckPerformer {
   performerId: ID!
   name: String!
+}
+
+"Actor outcomes from at most 100 most recently started retained finished runs; manual and scheduled, repeated actors counted per attempt. Interrupted items count as failed."
+type HomeSubscriptionCheckStatistics {
+  runCount: Int!
+  succeededCount: Int!
+  failedCount: Int!
+  skippedCount: Int!
 }

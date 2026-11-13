@@ -50,6 +50,8 @@ query HomeSubscriptionChecks {
     nextRunAt
     activeCount
     latestScheduled { ...HomeSubscriptionCheckRunFields }
+    latestFinishedScheduled { ...HomeSubscriptionCheckRunFields }
+    statistics { runCount succeededCount failedCount skippedCount }
     activeRuns { ...HomeSubscriptionCheckRunFields }
     recentRuns { ...HomeSubscriptionCheckRunFields }
   }

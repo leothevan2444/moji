@@ -59,11 +59,9 @@
 .home-empty p { margin: 0; line-height: 1.7; font-size: 13px; max-width: 360px; }
 .home-empty button { margin-block-start: 8px; font-size: 12px; }
 .home-empty--compact { font-size: 13px; align-items: flex-start; text-align: start; padding: 0 22px 22px; }
-.home-big-number { padding-inline: 22px; margin: 0 0 12px; font-size: 38px; line-height: 1; font-weight: 650; font-variant-numeric: tabular-nums; }
+.home-big-number { padding-inline: 16px; margin: 0 0 16px; font-size: 38px; line-height: 1; font-weight: 650; font-variant-numeric: tabular-nums; }
 .home-big-number span { color: var(--muted); font-size: 12px; font-weight: 400; padding-inline-start: 10px; }
-.home-subscriptions > .home-muted { margin: 0 22px 15px; }
-.home-subscription-warning { display: flex; align-items: center; gap: 8px; margin: 16px 22px; color: var(--home-warning); font-size: 12px; }
-.home-subscription-issue { display: flex; justify-content: space-between; gap: 12px; margin: 0 22px 12px; text-decoration: none; color: var(--accent); font-size: 12px; }
+.home-subscriptions > .home-muted { margin: 0 16px 16px; }
 .home-service-list { list-style: none; margin: 0; padding: 0 22px; }
 .home-service-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 12px; font-size: 12px; border-block-start: 1px solid var(--line); }
 .home-service-list li > span:last-child { display: flex; align-items: center; gap: 7px; }
@@ -99,12 +97,13 @@
 
 @keyframes home-appear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 960px) {
-  .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "attention" "active" "subscriptions" "recent" "system" "indexers" "downloader"; }
+  .home-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "attention" "active" "subscriptions" "checks" "recent" "system" "indexers" "downloader"; }
   .home-main, .home-sidebar { display: contents; }
   .home-attention { grid-area: attention; }
   .home-active { grid-area: active; }
   .home-recent { grid-area: recent; }
   .home-subscriptions { grid-area: subscriptions; }
+  .home-checks { grid-area: checks; }
   .home-system { grid-area: system; }
   .home-indexers { grid-area: indexers; }
   .home-downloader { grid-area: downloader; }
@@ -195,3 +194,27 @@
  color: var(--muted-2);
  button { font-size: 12px; }
 }
+
+.home-subscriptions, .home-checks {
+  .home-panel-heading { padding: 16px; gap: 8px; }
+  .home-panel-heading h2 { flex-wrap: wrap; gap: 8px; min-width: 0; }
+  .home-panel-heading > a { flex-shrink: 0; }
+}
+.home-check-summary { display: grid; gap: 8px; padding: 0 16px 16px; font-size: 12px; }
+.home-check-status-line, .home-check-next { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
+.home-checks > .home-check-list { padding-inline: 16px; }
+.home-check-row--compact { padding-block: 12px 16px; }
+.home-check-row--compact .home-check-open { flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.home-check-row--compact .home-check-open > strong { min-width: 0; flex: 1 1 120px; }
+.home-check-row--compact .home-check-open > span:last-child { flex-wrap: wrap; flex-shrink: 1; }
+.home-check-row--compact .home-progress { width: 100%; margin-top: 8px; }
+.home-checks > .home-check-more { margin: 0 16px 16px; padding: 0; text-align: start; }
+
+.home-check-history-button { display: inline-flex; align-items: center; gap: 6px; }
+.home-check-history-button.home-warning { color: var(--home-warning); }
+.home-check-history-button.home-success { color: var(--home-success); }
+.home-check-statistics { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 12px; margin: 0 16px 16px; font-size: 12px; }
+.home-check-statistics dl { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; }
+.home-check-statistics dl > div { display: flex; gap: 6px; }
+.home-check-statistics dt { color: var(--muted); }
+.home-check-statistics dd { margin: 0; font-variant-numeric: tabular-nums; }

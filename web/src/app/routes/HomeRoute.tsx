@@ -52,6 +52,7 @@ export function Component() {
   const checkRun = loadedCheckRun?.id === checkId ? loadedCheckRun : null;
   const checks = useMemo(() => checkData?.homeSubscriptionChecks ? {
     ...checkData.homeSubscriptionChecks,
+    latestFinishedScheduled: checkData.homeSubscriptionChecks.latestFinishedScheduled ? readFragment(HomeSubscriptionCheckRunFieldsFragmentDoc, checkData.homeSubscriptionChecks.latestFinishedScheduled) : null,
     latestScheduled: checkData.homeSubscriptionChecks.latestScheduled ? readFragment(HomeSubscriptionCheckRunFieldsFragmentDoc, checkData.homeSubscriptionChecks.latestScheduled) : null,
     activeRuns: checkData.homeSubscriptionChecks.activeRuns.map(run => readFragment(HomeSubscriptionCheckRunFieldsFragmentDoc, run)),
     recentRuns: checkData.homeSubscriptionChecks.recentRuns.map(run => readFragment(HomeSubscriptionCheckRunFieldsFragmentDoc, run))

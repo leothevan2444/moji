@@ -79,3 +79,39 @@ func TestCheckActivityOnlyReturnsRequestedActorReservations(t *testing.T) {
 		t.Fatal("unbounded actor query accepted")
 	}
 }
+
+func TestHomeChecksStatisticsExcludeActiveRunsAndKeepLatestFinishedScheduled(t *testing.T) {
+	now := time.Now().UTC()
+	tracker := &checkTracker{runs: []CheckRun{{ID: "active", Trigger: "SCHEDULED", Status: "RUNNING", StartedAt: now, Items: []CheckItem{{PerformerID: "same-actor", Status: "SUCCEEDED"}}}}}
+	for i := 0; i < 102; i++ {
+		tracker.runs = append(tracker.runs, CheckRun{ID: fmt.Sprintf("finished-%d", i), Trigger: "MANUAL", Status: "PARTIAL", StartedAt: now.Add(-time.Duration(i+1) * time.Minute), FinishedAt: &now, Items: []CheckItem{
+			{PerformerID: "same-actor", Status: "SUCCEEDED"},
+			{PerformerID: "failed", Status: "FAILED"},
+			{PerformerID: "interrupted", Status: "INTERRUPTED"},
+			{PerformerID: "skipped", Status: "SKIPPED"},
+			{PerformerID: "pending", Status: "PENDING"},
+		}})
+	}
+	tracker.runs[102].Trigger = "SCHEDULED"
+	service := &Service{checks: tracker}
+	got, err := service.HomeChecks(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Statistics != (HomeCheckStatistics{RunCount: 100, SucceededCount: 100, FailedCount: 200, SkippedCount: 100}) {
+		t.Fatalf("statistics must count all outcomes across 100 finished attempts, including repeated actors: %+v", got.Statistics)
+	}
+	if got.LatestScheduled == nil || got.LatestScheduled.ID != "active" || got.LatestFinishedScheduled == nil || got.LatestFinishedScheduled.ID != "finished-101" {
+		t.Fatalf("active scheduling must not replace the last finished result, even outside the statistics window: %+v", got)
+	}
+	tracker.runs = tracker.runs[:1]
+	got, err = service.HomeChecks(context.Background())
+	if err != nil || got.Statistics != (HomeCheckStatistics{}) || got.LatestFinishedScheduled != nil {
+		t.Fatalf("active-only history must not manufacture finished results: %+v, %v", got, err)
+	}
+	tracker.runs = nil
+	got, err = service.HomeChecks(context.Background())
+	if err != nil || got.Statistics != (HomeCheckStatistics{}) || got.LatestFinishedScheduled != nil {
+		t.Fatalf("empty history must have empty statistics: %+v, %v", got, err)
+	}
+}

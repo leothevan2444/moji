@@ -122,13 +122,13 @@ describe("Home release checks", () => {
     totalCount: 10, completedCount: 4, succeededCount: 3, failedCount: 1, skippedCount: 0,
     currentPerformers: [{ performerId: "p1", name: "Alpha" }]
   } as NonNullable<HomePageProps["checks"]>["activeRuns"][number];
-  const checks = { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: 1, latestScheduled: run, activeRuns: [run], recentRuns: [] };
+  const checks = { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: 1, latestScheduled: run, latestFinishedScheduled: null, statistics: { runCount: 7, succeededCount: 81, failedCount: 5, skippedCount: 2 }, activeRuns: [run], recentRuns: [] };
 
   it("shows schedule and true progress and opens a run through Home's detail action", async () => {
     const onOpenCheck = vi.fn();
     setup({ checks, onOpenCheck });
     const region = screen.getByRole("region", { name: /Release checks/ });
-    expect(within(region).getByText("Latest scheduled run")).toBeTruthy();
+    expect(within(region).queryByText("Latest scheduled run")).toBeNull();
     expect(within(region).getByText("Next scheduled run")).toBeTruthy();
     expect(within(region).getByText("Checked 4 / 10 performers")).toBeTruthy();
     expect(within(region).getByText("Checking: Alpha")).toBeTruthy();
@@ -136,6 +136,23 @@ describe("Home release checks", () => {
     expect(within(region).queryByText("Run ID")).toBeNull();
     await userEvent.setup().click(within(region).getByRole("button", { name: /View Scheduled check/ }));
     expect(onOpenCheck).toHaveBeenCalledWith("check-home");
+  });
+
+  it.each(["SUCCEEDED", "FAILED", "PARTIAL", "INTERRUPTED"])("retains the %s scheduled result while a new run is active", status => {
+    const finished = { ...run, id: "older-scheduled", status, finishedAt: "2026-01-15T11:50:00Z" } as typeof run;
+    setup({ checks: { ...checks, latestFinishedScheduled: finished } });
+    const history = within(screen.getByRole("region", { name: /Release checks/ })).getByRole("button", { name: /^History/ });
+    expect(history.classList.contains(status === "SUCCEEDED" ? "home-success" : "home-warning")).toBe(true);
+    expect(history.getAttribute("aria-label")).toContain(i18n.t(`subscriptionChecks.states.${status}`));
+    expect(history.title).toContain("Latest scheduled result");
+  });
+
+  it("uses a neutral history button when no finished scheduled result exists", () => {
+    setup({ checks });
+    const history = within(screen.getByRole("region", { name: /Release checks/ })).getByRole("button", { name: /^History/ });
+    expect(history.classList.contains("home-success")).toBe(false);
+    expect(history.classList.contains("home-warning")).toBe(false);
+    expect(history.title).toBe("No finished scheduled checks recorded");
   });
 
   it("isolates failed check reads from task lists and retries only that module", async () => {
@@ -148,15 +165,32 @@ describe("Home release checks", () => {
     expect(onRefreshChecks).toHaveBeenCalledOnce();
   });
 
-  it("shows recent outcomes directly and retains a history button", () => {
+  it("shows the latest finished scheduled result on History and renders backend statistics", () => {
     const finished = { ...run, status: "PARTIAL", failedCount: 1 } as typeof run;
-    setup({ checks: { ...checks, activeCount: 0, activeRuns: [], latestScheduled: finished, recentRuns: [finished] } });
+    setup({ checks: { ...checks, activeCount: 0, activeRuns: [], latestScheduled: run, latestFinishedScheduled: finished, recentRuns: [finished] } });
     const region = screen.getByRole("region", { name: /Release checks/ });
     expect(within(region).getByText("Idle")).toBeTruthy();
     expect(region.querySelector("details")).toBeNull();
-    const recent = within(region).getByLabelText("Recent runs");
-    expect(within(recent).getByText("Partially failed")).toBeTruthy();
-    expect(within(recent).getByText("Succeeded 3 · Failed 1 · Skipped 0")).toBeTruthy();
-    expect(within(region).getByRole("button", {name:"History"})).toBeTruthy();
+    expect(within(region).queryByLabelText("Recent runs")).toBeNull();
+    const history = within(region).getByRole("button", { name: /^History/ });
+    expect(history.title).toContain("Partially failed");
+    expect(history.classList.contains("home-warning")).toBe(true);
+    const statistics = region.querySelector(".home-check-statistics")!;
+    expect(statistics.textContent).toContain("Succeeded81");
+    expect(statistics.textContent).toContain("Issues5");
+    expect(statistics.textContent).toContain("Skipped2");
+    expect(statistics.getAttribute("title")).toContain("7 recent retained finished runs");
+    expect(within(region).queryByText("Succeeded 3 · Failed 1 · Skipped 0")).toBeNull();
+    expect(within(region).getByRole("button", {name:/^History/})).toBeTruthy();
   });
+});
+
+it("keeps the large subscription total without subscription issue information", () => {
+  setup({ subscription: { total: 128, attention: 12, unchecked: 3, lastCheckedAt: "2026-01-15T12:00:00Z", attentionPerformerIds: ["actor/1", "actor2"] } });
+  const region = screen.getByRole("region", { name: /My subscriptions/ });
+  expect(region.querySelector(".home-big-number")?.textContent).toContain("128");
+  expect(within(region).getByRole("link", { name: "Manage performers & subscriptions" }).getAttribute("href")).toBe("/performers");
+  expect(region.querySelector("details")).toBeNull();
+  expect(within(region).queryByText(/subscription checks need attention/)).toBeNull();
+  expect(within(region).queryByRole("link", { name: /Review subscription issue/ })).toBeNull();
 });

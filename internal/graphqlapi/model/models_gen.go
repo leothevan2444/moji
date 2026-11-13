@@ -263,13 +263,24 @@ type HomeSubscriptionCheckRun struct {
 	CurrentPerformers []*HomeCheckPerformer    `json:"currentPerformers"`
 }
 
+// Actor outcomes from at most 100 most recently started retained finished runs; manual and scheduled, repeated actors counted per attempt. Interrupted items count as failed.
+type HomeSubscriptionCheckStatistics struct {
+	RunCount       int `json:"runCount"`
+	SucceededCount int `json:"succeededCount"`
+	FailedCount    int `json:"failedCount"`
+	SkippedCount   int `json:"skippedCount"`
+}
+
 type HomeSubscriptionChecks struct {
-	Enabled         bool                        `json:"enabled"`
-	NextRunAt       *string                     `json:"nextRunAt,omitempty"`
-	ActiveCount     int                         `json:"activeCount"`
-	LatestScheduled *HomeSubscriptionCheckRun   `json:"latestScheduled,omitempty"`
-	ActiveRuns      []*HomeSubscriptionCheckRun `json:"activeRuns"`
-	RecentRuns      []*HomeSubscriptionCheckRun `json:"recentRuns"`
+	Enabled         bool                      `json:"enabled"`
+	NextRunAt       *string                   `json:"nextRunAt,omitempty"`
+	ActiveCount     int                       `json:"activeCount"`
+	LatestScheduled *HomeSubscriptionCheckRun `json:"latestScheduled,omitempty"`
+	// Latest retained scheduled run that has finished, including interrupted runs.
+	LatestFinishedScheduled *HomeSubscriptionCheckRun        `json:"latestFinishedScheduled,omitempty"`
+	Statistics              *HomeSubscriptionCheckStatistics `json:"statistics"`
+	ActiveRuns              []*HomeSubscriptionCheckRun      `json:"activeRuns"`
+	RecentRuns              []*HomeSubscriptionCheckRun      `json:"recentRuns"`
 }
 
 type HomeSubscriptionSummary struct {

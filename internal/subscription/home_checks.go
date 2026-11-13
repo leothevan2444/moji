@@ -17,12 +17,20 @@ type HomeCheckRun struct {
 	CurrentPerformers                                                     []CheckItem
 }
 
+// HomeCheckStatistics counts actor outcomes from at most 100 retained finished
+// runs, including manual and scheduled checks. Repeated actors count per attempt.
+type HomeCheckStatistics struct {
+	RunCount, SucceededCount, FailedCount, SkippedCount int
+}
+
 type HomeChecks struct {
-	Enabled                bool
-	NextRunAt              *time.Time
-	ActiveCount            int
-	LatestScheduled        *HomeCheckRun
-	ActiveRuns, RecentRuns []HomeCheckRun
+	Enabled                 bool
+	NextRunAt               *time.Time
+	ActiveCount             int
+	LatestScheduled         *HomeCheckRun
+	LatestFinishedScheduled *HomeCheckRun
+	Statistics              HomeCheckStatistics
+	ActiveRuns, RecentRuns  []HomeCheckRun
 }
 
 // HomeChecks reads local run state only, without fetching upstream catalogues or full run history.
@@ -39,6 +47,19 @@ func (s *Service) HomeChecks(context.Context) (HomeChecks, error) {
 			}
 		} else if len(out.RecentRuns) < homeCheckRunLimit {
 			out.RecentRuns = append(out.RecentRuns, summarizeHomeCheck(run))
+		}
+		if run.Status != "RUNNING" {
+			if out.Statistics.RunCount < checkHistoryLimit {
+				summary := summarizeHomeCheck(run)
+				out.Statistics.RunCount++
+				out.Statistics.SucceededCount += summary.SucceededCount
+				out.Statistics.FailedCount += summary.FailedCount
+				out.Statistics.SkippedCount += summary.SkippedCount
+			}
+			if out.LatestFinishedScheduled == nil && run.Trigger == "SCHEDULED" {
+				summary := summarizeHomeCheck(run)
+				out.LatestFinishedScheduled = &summary
+			}
 		}
 		if out.LatestScheduled == nil && run.Trigger == "SCHEDULED" {
 			value := summarizeHomeCheck(run)

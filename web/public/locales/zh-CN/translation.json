@@ -810,6 +810,16 @@
     "policyScope": "只清理关联任务已全部入库的种子；未关联的种子不会自动清理。"
   },
   "subscriptionChecks": {
+    "historyLatest": "最近定时检查：{{status}} · {{time}}",
+    "historyNone": "尚无已结束的定时检查记录",
+    "historyUnavailable": "尚未读取检查状态",
+    "recentStatistics": "近期检查",
+    "statSucceeded": "成功",
+    "statFailed": "异常",
+    "statSkipped": "跳过",
+    "statisticsHelp": "统计最近保留的 {{count}} 次已结束运行（最多 100 次）中的演员检查结果，包含手动和自动检查。重复检查分别计数，中断计入异常。",
+    "automaticEnabled": "自动检查已启用",
+    "automaticDisabled": "自动检查已关闭",
     "allBusy": "全部订阅检查正在运行，请稍后再试。",
     "title": "作品检查",
     "followRun": "在主页查看本次检查进度",
@@ -964,6 +974,7 @@
     }
   },
   "workbench": {
+    "manageShort": "管理",
     "nextTask": "处理下一项",
     "queueHint": "处理完成后点击继续，未提交的选择会保留。",
     "handledTitle": "{{task}} 已处理",
