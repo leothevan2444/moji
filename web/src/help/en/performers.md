@@ -14,6 +14,8 @@ Subscribing records the performer in Moji. **Check for updates** checks one perf
 
 **Activity level** shows five flame icons and a separate numeric activity value. **Checks** shows the next check, last check, and status. Open **About activity levels and values** for the detailed rules. The icons show the 1–5 level and the value uses two decimal places. All icons remain unlit until a reliable rating is available. Hover for the rating evidence or the reason it is unavailable. Retry a failed read with the icon beside the rating. A task count prefixed with ≥ covers loaded scenes only; its tooltip explains the limit. **Latest release** uses a valid release date from the loaded preferred StashBox catalog, never the time the release was discovered.
 
+Filter works by All, Single or Multiple, together with source, library status and search. Single means one performer in the metadata; Multiple means two or more. Unknown cast counts appear only under All. This filter does not distinguish co-starring releases from compilations. Changing the filter returns to the first page, reloading retains the filter, and existing selections survive filter changes.
+
 ## Review and queue scenes
 
 The detail view can filter scenes by text, source, and library state. Scenes appearing in both sources are merged. **In library** means Moji matched the scene to Stash; an existing task is shown with its current stage.

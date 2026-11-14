@@ -11825,11 +11825,18 @@ type PerformerWorkspaceSnapshot {
 }
 
 input StashPerformerScenesInput {
+  cast: SceneCastFilter = ALL
   search: String
   source: SceneSourceFilter = ALL
   inLibrary: LibraryFilter = ALL
   page: Int = 1
   pageSize: Int = 24
+}
+
+enum SceneCastFilter {
+ ALL
+ SOLO
+ GROUP
 }
 
 enum SceneSourceFilter {
@@ -75699,6 +75706,9 @@ func (ec *executionContext) unmarshalInputStashPerformerScenesInput(ctx context.
 		asMap[k] = v
 	}
 
+	if _, present := asMap["cast"]; !present {
+		asMap["cast"] = "ALL"
+	}
 	if _, present := asMap["source"]; !present {
 		asMap["source"] = "ALL"
 	}
@@ -75712,13 +75722,20 @@ func (ec *executionContext) unmarshalInputStashPerformerScenesInput(ctx context.
 		asMap["pageSize"] = 24
 	}
 
-	fieldsInOrder := [...]string{"search", "source", "inLibrary", "page", "pageSize"}
+	fieldsInOrder := [...]string{"cast", "search", "source", "inLibrary", "page", "pageSize"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "cast":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cast"))
+			data, err := ec.unmarshalOSceneCastFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneCastFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Cast = data
 		case "search":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -93472,6 +93489,22 @@ func (ec *executionContext) unmarshalOResourceRulesPatchInput2ᚖgithubᚗcomᚋ
 	}
 	res, err := ec.unmarshalInputResourceRulesPatchInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOSceneCastFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneCastFilter(ctx context.Context, v any) (*model.SceneCastFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.SceneCastFilter)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSceneCastFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneCastFilter(ctx context.Context, sel ast.SelectionSet, v *model.SceneCastFilter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOSceneSourceFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneSourceFilter(ctx context.Context, v any) (*model.SceneSourceFilter, error) {

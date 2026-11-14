@@ -145,11 +145,18 @@ type PerformerWorkspaceSnapshot {
 }
 
 input StashPerformerScenesInput {
+  cast: SceneCastFilter = ALL
   search: String
   source: SceneSourceFilter = ALL
   inLibrary: LibraryFilter = ALL
   page: Int = 1
   pageSize: Int = 24
+}
+
+enum SceneCastFilter {
+ ALL
+ SOLO
+ GROUP
 }
 
 enum SceneSourceFilter {

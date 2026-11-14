@@ -41,6 +41,14 @@ const (
 	LibraryFilterNotInLibrary LibraryFilter = "NOT_IN_LIBRARY"
 )
 
+type SceneCastFilter string
+
+const (
+	SceneCastFilterAll   SceneCastFilter = "ALL"
+	SceneCastFilterSolo  SceneCastFilter = "SOLO"
+	SceneCastFilterGroup SceneCastFilter = "GROUP"
+)
+
 type Scene struct {
 	UpcomingState                                string
 	Key                                          string
@@ -70,6 +78,7 @@ type SceneTask struct {
 	Progress                     float64
 }
 type SceneQuery struct {
+	Cast           SceneCastFilter
 	Search         string
 	Source         SceneSourceFilter
 	InLibrary      LibraryFilter

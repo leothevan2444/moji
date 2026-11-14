@@ -80,7 +80,7 @@
   .performer-check-reason:hover { color: var(--text); text-decoration: underline; }
   .performer-summary-metrics .tone-danger dd { color: var(--danger, #b54332); }
   .performer-summary-note { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 14px; }
-  .performer-scene-filters { display: grid; grid-template-columns: minmax(200px, 1fr) repeat(3, minmax(120px, 160px)) auto; }
+  .performer-scene-filters { display: grid; grid-template-columns: minmax(180px, 1fr) repeat(4, minmax(110px, 150px)) auto; }
   .performer-toolbar { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
   .performer-toolbar__main { padding: 10px; }
   .performer-toolbar__toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
@@ -134,6 +134,7 @@
     .performer-scene-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .performer-scene-filters input { grid-column: 1 / -1; }
     .performer-scene-filters select { min-width: 0; }
+    .performer-scene-filters .performer-toolbar__toggle { grid-column: 2; justify-self: end; }
     .performer-scene-selection .primary-button { flex: 1 1 100%; margin: 0; }
     .performer-detail-hero__identity { flex-basis: 100%; }
     .performer-summary-groups { grid-template-columns: 1fr; row-gap: 10px; }

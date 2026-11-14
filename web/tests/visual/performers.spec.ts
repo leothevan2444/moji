@@ -364,3 +364,47 @@ test("dark performer cards show saved levels and crossed-out unknown ratings",as
  await expect(cards.nth(0)).toHaveScreenshot("dark-performer-card-rated.png");
  await expect(cards.nth(1)).toHaveScreenshot("dark-performer-card-unknown.png");
 });
+
+test.describe("cast filter", () => {
+  const castScenes = scenes.map((scene, index) => ({ ...scene, performerCount: index % 3 === 0 ? 0 : index % 2 === 0 ? 1 : 2 }));
+  const pageForCast = ({ input }: { input: { cast?: string; page?: number; pageSize?: number } }) => {
+    const filtered = castScenes.filter(scene => input.cast === "SOLO" ? scene.performerCount === 1 : input.cast === "GROUP" ? scene.performerCount > 1 : true);
+    const page = input.page ?? 1, pageSize = input.pageSize ?? 24;
+    return { items: filtered.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: filtered.length, totalPages: Math.ceil(filtered.length / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < filtered.length, stashSceneCount: 10, stashBoxCount: 30, dedupedCount: filtered.length, totalCountExact: true, stashBoxRemoteCount: 30, stashBoxLoadedCount: 30, cacheComplete: true, cacheUpdatedAt: "2026-01-15T11:30:00Z", cacheStale: false };
+  };
+  test.use({ graphqlOverrides: { ...graphqlOverrides, stashPerformerProfile: graphqlOverrides.stashPerformerDetail, stashPerformerScenes: pageForCast, refreshStashPerformerScenes: pageForCast } });
+  for (const locale of ["en", "zh-CN"] as const) {
+    for (const theme of ["light", "dark"] as const) {
+      test(`${locale} ${theme} filters before paging and preserves URL and selection`, async ({ page }) => {
+        await page.addInitScript(({ locale, theme }) => { localStorage.setItem("moji:locale", locale); localStorage.setItem("moji:theme", theme); }, { locale, theme });
+        const requests: string[] = [];
+        page.on("request", request => { if (request.method() === "POST" && request.url().endsWith("/graphql")) { const body = request.postDataJSON(); if (body.operationName === "StashPerformerScenes") requests.push(body.variables.input.cast); } });
+        await page.goto("/performers/actor-0?scenePage=2");
+        await expect(page.locator(".performer-scene-card")).toHaveCount(6);
+        const cast = page.getByRole("combobox", { name: locale === "en" ? "Cast type" : "出演类型", exact: true });
+        await expect(cast.locator("option")).toHaveText(locale === "en" ? ["All", "Single", "Multiple"] : ["全部", "单人作品", "多人作品"]);
+        await cast.selectOption("SOLO");
+        await expect(page).toHaveURL(/cast=solo/);
+        expect(new URL(page.url()).searchParams.has("scenePage")).toBe(false);
+        await expect(page.locator(".performer-scene-card")).toHaveCount(10);
+        await expect.poll(() => requests.at(-1)).toBe("SOLO");
+        await cast.selectOption("GROUP");
+        await expect(page.locator(".performer-scene-card")).toHaveCount(10);
+        await expect.poll(() => requests.at(-1)).toBe("GROUP");
+        await page.getByRole("button", { name: locale === "en" ? "Select scenes" : "多选作品", exact: true }).click();
+        const selected = page.locator(".performer-scene-card").filter({ has: page.getByText("ABC-105", { exact: true }) });
+        await selected.click();
+        await cast.selectOption("SOLO");
+        await expect(page.locator(".performer-scene-card")).toHaveCount(10);
+        await cast.selectOption("GROUP");
+        await expect(selected.locator(".performer-scene-card__selector")).toHaveAttribute("aria-pressed", "true");
+        await page.evaluate(() => document.fonts.ready);
+        await expect(page.locator(".performer-scene-filters")).toHaveScreenshot(`${locale}-${theme}-cast-filter.png`);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+        await page.reload();
+        await expect(cast).toHaveValue("GROUP");
+        await expect(page.locator(".performer-scene-card")).toHaveCount(10);
+      });
+    }
+  }
+});

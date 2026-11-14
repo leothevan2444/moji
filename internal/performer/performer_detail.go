@@ -130,13 +130,7 @@ func (s *Service) buildPerformerScenePageWithPolicy(ctx context.Context, perform
 
 	filtered := make([]Scene, 0, len(flat))
 	for _, item := range flat {
-		if !matchesPerformerSceneSearch(item, query.Search) {
-			continue
-		}
-		if !matchesPerformerSceneSource(item, query.Source) {
-			continue
-		}
-		if !matchesPerformerSceneLibrary(item, query.InLibrary) {
+		if !matchesPerformerScene(item, query) {
 			continue
 		}
 		filtered = append(filtered, item)
@@ -164,7 +158,7 @@ func (s *Service) buildPerformerScenePageWithPolicy(ctx context.Context, perform
 
 	totalCount := len(filtered)
 	totalCountExact := cacheComplete || query.Source == SceneSourceFilterStash
-	if query.Source == SceneSourceFilterStashBox && query.Search == "" && query.InLibrary == LibraryFilterAll {
+	if query.Source == SceneSourceFilterStashBox && query.Search == "" && query.InLibrary == LibraryFilterAll && query.Cast == SceneCastFilterAll {
 		totalCount = stashBoxCount
 		totalCountExact = true
 	}
@@ -297,7 +291,7 @@ func (s *Service) loadPerformerScenes(ctx context.Context, performer *stashgraph
 		}
 		matched := 0
 		for _, item := range flat {
-			if matchesPerformerSceneSearch(item, query.Search) && matchesPerformerSceneSource(item, query.Source) && matchesPerformerSceneLibrary(item, query.InLibrary) {
+			if matchesPerformerScene(item, query) {
 				matched++
 			}
 		}
@@ -392,6 +386,9 @@ func (s *Service) fetchStashScenesUnshared(ctx context.Context, performerID stri
 
 func normalizePerformerSceneQuery(query SceneQuery) SceneQuery {
 	query.Search = strings.TrimSpace(query.Search)
+	if query.Cast == "" {
+		query.Cast = SceneCastFilterAll
+	}
 	if query.Source == "" {
 		query.Source = SceneSourceFilterAll
 	}
@@ -408,6 +405,21 @@ func normalizePerformerSceneQuery(query SceneQuery) SceneQuery {
 		query.PageSize = 100
 	}
 	return query
+}
+
+func matchesPerformerScene(item Scene, query SceneQuery) bool {
+	return matchesPerformerSceneSearch(item, query.Search) && matchesPerformerSceneSource(item, query.Source) && matchesPerformerSceneLibrary(item, query.InLibrary) && matchesPerformerSceneCast(item, query.Cast)
+}
+
+func matchesPerformerSceneCast(item Scene, filter SceneCastFilter) bool {
+	switch filter {
+	case SceneCastFilterSolo:
+		return item.PerformerCount == 1
+	case SceneCastFilterGroup:
+		return item.PerformerCount > 1
+	default:
+		return true
+	}
 }
 
 func matchesPerformerSceneSearch(item Scene, search string) bool {
@@ -446,6 +458,7 @@ func stashSceneToPerformerScene(scene *stashgraphql.SceneFragment) Scene {
 	if scene == nil {
 		return Scene{}
 	}
+	people := stashScenePerformers(scene.Performers)
 	item := Scene{
 		Key:               "stash:" + scene.ID,
 		PrimarySource:     SceneSourceStash,
@@ -453,9 +466,9 @@ func stashSceneToPerformerScene(scene *stashgraphql.SceneFragment) Scene {
 		Title:             stringValue(scene.Title),
 		Code:              stringValue(scene.Code),
 		Date:              stringValue(scene.Date),
-		PerformerCount:    len(scene.Performers),
+		PerformerCount:    len(people),
 		TagCount:          len(scene.Tags),
-		Performers:        stashScenePerformers(scene.Performers),
+		Performers:        people,
 		Tags:              stashSceneTags(scene.Tags),
 		ImageURL:          stashSceneImageURL(scene),
 		ImageSource:       SceneSourceStash,
@@ -473,6 +486,7 @@ func stashSceneToPerformerScene(scene *stashgraphql.SceneFragment) Scene {
 }
 
 func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoint string) Scene {
+	people := stashBoxScenePerformers(scene.Performers)
 	item := Scene{
 		Key:               "stashbox:" + endpointKey(endpoint) + ":" + scene.ID,
 		PrimarySource:     SceneSourceStashBox,
@@ -480,9 +494,9 @@ func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoin
 		Title:             stringValue(scene.Title),
 		Code:              stringValue(scene.Code),
 		Date:              stringValue(scene.Date),
-		PerformerCount:    len(scene.Performers),
+		PerformerCount:    len(people),
 		TagCount:          len(scene.Tags),
-		Performers:        stashBoxScenePerformers(scene.Performers),
+		Performers:        people,
 		Tags:              stashBoxSceneTags(scene.Tags),
 		ImageURL:          stashBoxSceneImageURL(scene),
 		ImageSource:       SceneSourceStashBox,

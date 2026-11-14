@@ -54,6 +54,7 @@ export interface PerformerSearchState {
   page: number;
   pageSize: number;
   sceneQ: string;
+  cast: "all" | "solo" | "group";
   source: "all" | "stash" | "stashbox";
   library: "all" | "in-library" | "not-in-library";
   scenePage: number;
@@ -80,6 +81,7 @@ export function parsePerformerSearchParams(params: URLSearchParams): PerformerSe
     page: positiveInt(params.get("page"), 1),
     pageSize: PAGE_SIZES.includes(pageSize as (typeof PAGE_SIZES)[number]) ? pageSize : 24,
     sceneQ: params.get("sceneQ")?.trim() ?? "",
+    cast: params.get("cast") === "solo" ? "solo" : params.get("cast") === "group" ? "group" : "all",
     source: source === "stash" || source === "stashbox" ? source : "all",
     library: library === "in-library" || library === "not-in-library" ? library : "all",
     scenePage: positiveInt(params.get("scenePage"), 1),
@@ -95,6 +97,7 @@ export function serializePerformerSearchParams(state: PerformerSearchState): URL
   if (state.page !== 1) params.set("page", String(state.page));
   if (state.pageSize !== 24) params.set("pageSize", String(state.pageSize));
   if (state.sceneQ) params.set("sceneQ", state.sceneQ);
+  if (state.cast !== "all") params.set("cast", state.cast);
   if (state.source !== "all") params.set("source", state.source);
   if (state.library !== "all") params.set("library", state.library);
   if (state.scenePage !== 1) params.set("scenePage", String(state.scenePage));

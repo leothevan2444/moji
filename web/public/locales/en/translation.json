@@ -2117,7 +2117,11 @@
     "libraryFilter": "Library status",
     "summaryLoading": "Updating results…",
     "filterEmpty": "No performers match the current filters",
-    "clearFilters": "Clear search and filters"
+    "clearFilters": "Clear search and filters",
+    "castFilter": "Cast type",
+    "castAll": "All",
+    "castSolo": "Single",
+    "castGroup": "Multiple"
   },
   "performerUi": {
     "upcoming": "Upcoming",

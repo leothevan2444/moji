@@ -1,4 +1,4 @@
-import type { StashPerformerProfileQuery, PerformerWorkspaceQuery, StashPerformerDetailQuery, StashPerformerScenesQuery, SceneSourceFilter, LibraryFilter } from "../../graphql/generated/graphql";
+import type { StashPerformerProfileQuery, PerformerWorkspaceQuery, StashPerformerDetailQuery, StashPerformerScenesQuery, SceneSourceFilter, SceneCastFilter, LibraryFilter } from "../../graphql/generated/graphql";
 import type { PerformerSearchState } from "../../app/searchParams";
 
 export type StashPerformerEntry = PerformerWorkspaceQuery["performerWorkspace"]["performers"]["items"][number];
@@ -53,6 +53,7 @@ export interface PerformersPageProps {
   selectedPerformerId: string | null;
   performerSceneSearch: string;
   performerSceneSourceFilter: SceneSourceFilter;
+  performerSceneCastFilter: SceneCastFilter;
   performerSceneLibraryFilter: LibraryFilter;
   performerScenePageSize: number;
   selectedSceneKeys: string[];
@@ -87,6 +88,7 @@ export interface PerformersPageProps {
   onOpenTask: (taskId: string) => void;
   onBackToList: () => void;
   onPerformerSceneSearchChange: (value: string) => void;
+  onPerformerSceneCastChange: (value: SceneCastFilter) => void;
   onPerformerSceneSourceChange: (value: SceneSourceFilter) => void;
   onPerformerSceneLibraryChange: (value: LibraryFilter) => void;
   onPerformerScenePageSizeChange: (value: number) => void;

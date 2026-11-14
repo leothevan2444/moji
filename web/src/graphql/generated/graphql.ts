@@ -2134,6 +2134,12 @@ export type ResourceRulesPatchInput = {
   torrent_rules?: InputMaybe<FileRulesPatchInput>;
 };
 
+export enum SceneCastFilter {
+  All = 'ALL',
+  Group = 'GROUP',
+  Solo = 'SOLO'
+}
+
 export enum SceneSource {
   Stash = 'STASH',
   Stashbox = 'STASHBOX'
@@ -2428,6 +2434,7 @@ export type StashPerformerSceneConnection = {
 };
 
 export type StashPerformerScenesInput = {
+  cast?: InputMaybe<SceneCastFilter>;
   inLibrary?: InputMaybe<LibraryFilter>;
   page?: InputMaybe<Scalars['Int']['input']>;
   pageSize?: InputMaybe<Scalars['Int']['input']>;

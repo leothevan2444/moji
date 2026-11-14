@@ -347,3 +347,19 @@ describe("PerformersRoute mutation integration", () => {
     );
   });
 });
+
+
+it("restores cast from the URL and resets the scene page without changing other filters", async () => {
+  await i18n.changeLanguage("en");
+  mocks.workspace.mockImplementation((options: { performerScenePage: number }) => workspaceForPage(options.performerScenePage));
+  const router = createMemoryRouter([{ element: <TestLayout />, children: [{ path: "/performers/:performerId", element: <PerformersRoute /> }] }], { initialEntries: ["/performers/performer-1?cast=group&scenePage=2&source=stashbox&library=not-in-library"] });
+  render(<RouterProvider router={router} />);
+  const select = await screen.findByRole("combobox", { name: "Cast type" });
+  expect((select as HTMLSelectElement).value).toBe("GROUP");
+  fireEvent.change(select, { target: { value: "SOLO" } });
+  await waitFor(() => expect(new URLSearchParams(router.state.location.search).get("cast")).toBe("solo"));
+  expect(new URLSearchParams(router.state.location.search).has("scenePage")).toBe(false);
+  expect(new URLSearchParams(router.state.location.search).get("source")).toBe("stashbox");
+  expect(new URLSearchParams(router.state.location.search).get("library")).toBe("not-in-library");
+  expect(mocks.workspace).toHaveBeenLastCalledWith(expect.objectContaining({ performerSceneCast: "SOLO", performerScenePage: 1 }));
+});

@@ -43,8 +43,9 @@ func TestSubscribePerformersResolverMapsBatchPayload(t *testing.T) {
 }
 
 type workspacePerformerService struct {
-	items     []performerdomain.Performer
-	listCalls int
+	sceneQueries []performerdomain.SceneQuery
+	items        []performerdomain.Performer
+	listCalls    int
 }
 
 func (s *workspacePerformerService) GetPerformerProfile(ctx context.Context, id string) (performerdomain.Detail, error) {
@@ -61,10 +62,12 @@ func (s *workspacePerformerService) QueuePerformerScenes(context.Context, string
 func (s *workspacePerformerService) GetPerformerDetail(context.Context, string) (performerdomain.Detail, error) {
 	return performerdomain.Detail{}, nil
 }
-func (s *workspacePerformerService) ListPerformerScenes(context.Context, string, performerdomain.SceneQuery) (performerdomain.ScenePage, error) {
+func (s *workspacePerformerService) ListPerformerScenes(_ context.Context, _ string, query performerdomain.SceneQuery) (performerdomain.ScenePage, error) {
+	s.sceneQueries = append(s.sceneQueries, query)
 	return performerdomain.ScenePage{}, nil
 }
-func (s *workspacePerformerService) RefreshPerformerScenes(context.Context, string, performerdomain.SceneQuery) (performerdomain.ScenePage, error) {
+func (s *workspacePerformerService) RefreshPerformerScenes(_ context.Context, _ string, query performerdomain.SceneQuery) (performerdomain.ScenePage, error) {
+	s.sceneQueries = append(s.sceneQueries, query)
 	return performerdomain.ScenePage{}, nil
 }
 
@@ -188,5 +191,20 @@ func TestPerformerWorkspaceProjectsActivityOnlyForVisibleActorsIncludingUnsubscr
 	}
 	if len(snapshot.Activities) != 1 || snapshot.Activities[0].ID != "p2" || snapshot.Activities[0].Rank == nil || *snapshot.Activities[0].Rank != 1 || snapshot.Performers.Items[0].Subscribed {
 		t.Fatalf("unsubscribed rating not preserved: %+v", snapshot)
+	}
+}
+
+func TestPerformerCastFilterReachesListAndRefresh(t *testing.T) {
+	service := &workspacePerformerService{}
+	resolver := NewResolver(nil, nil, nil, "test")
+	resolver.Performer = service
+	for _, operation := range []string{`query { stashPerformerScenes(id:"p1",input:{cast:SOLO}) {totalCount} }`, `mutation { refreshStashPerformerScenes(id:"p1",input:{cast:GROUP}) {totalCount} }`} {
+		response := executeGraphQL(t, resolver, operation)
+		if len(response.Errors) > 0 {
+			t.Fatal(response.Errors)
+		}
+	}
+	if len(service.sceneQueries) != 2 || service.sceneQueries[0].Cast != performerdomain.SceneCastFilterSolo || service.sceneQueries[1].Cast != performerdomain.SceneCastFilterGroup {
+		t.Fatal("cast filter lost at API boundary", service.sceneQueries)
 	}
 }

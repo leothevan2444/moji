@@ -5,7 +5,7 @@ import { fireEvent, render as baseRender, screen, within } from "@testing-librar
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { SceneSource, LibraryFilter, SceneSourceFilter, TaskStage, TaskStageStatus, SubscriptionCheckTrigger, SubscriptionCheckScope, SubscriptionCheckStatus } from "../graphql/generated/graphql";
+import { SceneSource, LibraryFilter, SceneCastFilter, SceneSourceFilter, TaskStage, TaskStageStatus, SubscriptionCheckTrigger, SubscriptionCheckScope, SubscriptionCheckStatus } from "../graphql/generated/graphql";
 import i18n from "../i18n/i18n";
 import { PerformerSceneCard } from "../components/performers/PerformerSceneCard";
 import type { StashPerformerSceneEntry } from "../components/performers/types";
@@ -36,6 +36,7 @@ function props(overrides: Partial<ComponentProps<typeof PerformersPage>> = {}): 
     selectedPerformerId: null,
     performerSceneSearch: "",
     performerSceneSourceFilter: SceneSourceFilter.All,
+    performerSceneCastFilter: SceneCastFilter.All,
     performerSceneLibraryFilter: LibraryFilter.All,
     performerScenePageSize: 24,
     selectedSceneKeys: [],
@@ -71,6 +72,7 @@ function props(overrides: Partial<ComponentProps<typeof PerformersPage>> = {}): 
     onBackToList: noop,
     onPerformerSceneSearchChange: noop,
     onPerformerSceneSourceChange: noop,
+    onPerformerSceneCastChange: noop,
     onPerformerSceneLibraryChange: noop,
     onPerformerScenePageSizeChange: noop,
     onPrevPerformerScenePage: noop,

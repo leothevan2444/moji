@@ -1,4 +1,4 @@
-import { RefreshStashPerformerScenesDocument, type LibraryFilter, type SceneSourceFilter } from "../graphql/generated/graphql";
+import { RefreshStashPerformerScenesDocument, type SceneCastFilter, type LibraryFilter, type SceneSourceFilter } from "../graphql/generated/graphql";
 import { usePerformerActivity } from "./usePerformerActivity";
 import { performerCheckRun } from "./useSubscriptionChecks";
 import { useEffect, useRef } from "react";
@@ -19,6 +19,7 @@ interface Options {
   performerId: string | null;
   performerSceneSearch: string | null;
   performerSceneSource: SceneSourceFilter;
+  performerSceneCast: SceneCastFilter;
   performerSceneLibrary: LibraryFilter;
   performerScenePage: number;
   performerScenePageSize: number;
@@ -32,6 +33,7 @@ export function usePerformersWorkspace(options: Options) {
     performerId: options.performerId,
     search: options.performerSceneSearch,
     source: options.performerSceneSource,
+    cast: options.performerSceneCast,
     library: options.performerSceneLibrary,
     page: options.performerScenePage,
     pageSize: options.performerScenePageSize
@@ -56,7 +58,7 @@ export function usePerformersWorkspace(options: Options) {
 
   const reloadSubscription = async () => {
     if (options.performerId) {
-      const cacheResult = await refreshPerformerCache({ id: options.performerId, input: { search: options.performerSceneSearch, source: options.performerSceneSource, inLibrary: options.performerSceneLibrary, page: options.performerScenePage, pageSize: options.performerScenePageSize } });
+      const cacheResult = await refreshPerformerCache({ id: options.performerId, input: { cast: options.performerSceneCast, search: options.performerSceneSearch, source: options.performerSceneSource, inLibrary: options.performerSceneLibrary, page: options.performerScenePage, pageSize: options.performerScenePageSize } });
       performers.refreshPerformerDetail({ requestPolicy: "network-only" });
       performers.refreshPerformerSummary({ requestPolicy: "network-only" });
       scenes.refreshPerformerScenes({ requestPolicy: "network-only" });

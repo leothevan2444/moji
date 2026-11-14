@@ -1401,6 +1401,7 @@ type StashPerformerSceneConnection struct {
 }
 
 type StashPerformerScenesInput struct {
+	Cast      *SceneCastFilter   `json:"cast,omitempty"`
 	Search    *string            `json:"search,omitempty"`
 	Source    *SceneSourceFilter `json:"source,omitempty"`
 	InLibrary *LibraryFilter     `json:"inLibrary,omitempty"`
@@ -3449,6 +3450,63 @@ func (e *ReleaseReviewStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e ReleaseReviewStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SceneCastFilter string
+
+const (
+	SceneCastFilterAll   SceneCastFilter = "ALL"
+	SceneCastFilterSolo  SceneCastFilter = "SOLO"
+	SceneCastFilterGroup SceneCastFilter = "GROUP"
+)
+
+var AllSceneCastFilter = []SceneCastFilter{
+	SceneCastFilterAll,
+	SceneCastFilterSolo,
+	SceneCastFilterGroup,
+}
+
+func (e SceneCastFilter) IsValid() bool {
+	switch e {
+	case SceneCastFilterAll, SceneCastFilterSolo, SceneCastFilterGroup:
+		return true
+	}
+	return false
+}
+
+func (e SceneCastFilter) String() string {
+	return string(e)
+}
+
+func (e *SceneCastFilter) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SceneCastFilter(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SceneCastFilter", str)
+	}
+	return nil
+}
+
+func (e SceneCastFilter) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SceneCastFilter) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SceneCastFilter) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

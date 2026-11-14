@@ -18,7 +18,7 @@ import type { PerformersPageProps } from "../components/performers/types";
 import { SUBSCRIPTION_PAGE_SIZE_OPTIONS } from "../constants";
 import {
   LibraryFilter,
-  SceneSourceFilter
+  SceneSourceFilter, SceneCastFilter
 } from "../graphql/generated/graphql";
 import {
   formatDateTime,
@@ -42,7 +42,7 @@ export function PerformersPage(props: PerformersPageProps) {
     subscriptionSearch,
     selectedPerformerId,
     performerSceneSearch,
-    performerSceneSourceFilter,
+    performerSceneSourceFilter, performerSceneCastFilter,
     performerSceneLibraryFilter,
     performerScenePageSize,
     selectedSceneKeys,
@@ -63,7 +63,7 @@ export function PerformersPage(props: PerformersPageProps) {
     onBatchRefreshPerformers,
     onBackToList,
     onPerformerSceneSearchChange,
-    onPerformerSceneSourceChange,
+    onPerformerSceneSourceChange, onPerformerSceneCastChange,
     onPerformerSceneLibraryChange,
     onPerformerScenePageSizeChange,
     onPrevPerformerScenePage,
@@ -122,6 +122,11 @@ export function PerformersPage(props: PerformersPageProps) {
               <option value={SceneSourceFilter.All}>{t("performerUi.allSources")}</option>
               <option value={SceneSourceFilter.Stash}>Stash</option>
               <option value={SceneSourceFilter.Stashbox}>StashBox</option>
+            </select>
+            <select aria-label={t("performerWorkspace.castFilter")} value={performerSceneCastFilter} onChange={event => onPerformerSceneCastChange(event.target.value as SceneCastFilter)}>
+              <option value={SceneCastFilter.All}>{t("performerWorkspace.castAll")}</option>
+              <option value={SceneCastFilter.Solo}>{t("performerWorkspace.castSolo")}</option>
+              <option value={SceneCastFilter.Group}>{t("performerWorkspace.castGroup")}</option>
             </select>
             <select aria-label={t("performerWorkspace.libraryFilter")} value={performerSceneLibraryFilter} onChange={(event) => onPerformerSceneLibraryChange(event.target.value as LibraryFilter)}>
               <option value={LibraryFilter.All}>{t("performerUi.allStates")}</option>

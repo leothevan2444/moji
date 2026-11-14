@@ -133,6 +133,9 @@ func (r *mutationResolver) RefreshStashPerformerScenes(ctx context.Context, id s
 	if input.Source != nil {
 		query.Source = performer.SceneSourceFilter(*input.Source)
 	}
+	if input.Cast != nil {
+		query.Cast = performer.SceneCastFilter(*input.Cast)
+	}
 	if input.InLibrary != nil {
 		query.InLibrary = performer.LibraryFilter(*input.InLibrary)
 	}
@@ -307,6 +310,9 @@ func (r *queryResolver) StashPerformerScenes(ctx context.Context, id string, inp
 	}
 	if input.Source != nil {
 		query.Source = performer.SceneSourceFilter(*input.Source)
+	}
+	if input.Cast != nil {
+		query.Cast = performer.SceneCastFilter(*input.Cast)
 	}
 	if input.InLibrary != nil {
 		query.InLibrary = performer.LibraryFilter(*input.InLibrary)

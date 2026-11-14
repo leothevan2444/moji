@@ -74,6 +74,14 @@ func TestListPerformerScenesLoadsFortyItemBatchesOnDemand(t *testing.T) {
 		2: sceneFragments(41, 40),
 		3: sceneFragments(81, 5),
 	}}
+	for _, batch := range client.pages {
+		for i, scene := range batch {
+			scene.Performers = []*stashboxgraphql.PerformerAppearanceFragment{{Performer: clientPerformer}}
+			if i%2 == 1 {
+				scene.Performers = append(scene.Performers, &stashboxgraphql.PerformerAppearanceFragment{Performer: &stashboxgraphql.PerformerFragment{ID: "other", Name: "Beth"}})
+			}
+		}
+	}
 	oldDate, newDate, title := "2000-01-01", "2000-02-01", "Latest source work"
 	client.pages[1][0].Date = &oldDate
 	client.pages[1][30].Date = &newDate
@@ -114,6 +122,17 @@ func TestListPerformerScenesLoadsFortyItemBatchesOnDemand(t *testing.T) {
 	}
 	if len(reader.keys) != 24 || first.Items[0].UpcomingState != "WAITING" || first.Items[1].UpcomingState != "" {
 		t.Fatalf("upcoming lookup must be bounded to visible page: keys=%v items=%+v", reader.keys, first.Items)
+	}
+	for _, cast := range []SceneCastFilter{SceneCastFilterSolo, SceneCastFilterGroup} {
+		filtered, err := service.ListPerformerScenes(context.Background(), stashPerformer.ID, SceneQuery{Source: SceneSourceFilterStashBox, Cast: cast, Page: 1, PageSize: 12})
+		if err != nil || len(filtered.Items) != 12 || filtered.TotalCount != 20 || filtered.TotalCountExact || filtered.TotalPages != 0 || len(client.inputs) != 1 {
+			t.Fatalf("filtered partial catalog reported the unfiltered remote total: %+v err=%v", filtered, err)
+		}
+		for _, item := range filtered.Items {
+			if !matchesPerformerSceneCast(item, cast) {
+				t.Fatal("unexpected cast in filtered page", item)
+			}
+		}
 	}
 	detail, err := service.GetPerformerDetail(context.Background(), stashPerformer.ID)
 	if err != nil {
@@ -179,4 +198,41 @@ type testUpcomingStateReader struct{ keys []string }
 func (r *testUpcomingStateReader) UpcomingReleaseStates(_ context.Context, keys []string) (map[string]string, error) {
 	r.keys = append([]string(nil), keys...)
 	return map[string]string{keys[0]: "WAITING"}, nil
+}
+
+func TestPerformerCastFiltersBeforePagination(t *testing.T) {
+	actor := &stashgraphql.PerformerFragment{ID: "actor", Name: "Alice"}
+	scenes := make([]*stashgraphql.SceneFragment, 7)
+	for i := range scenes {
+		people := []*stashgraphql.SceneFragment_Performers{{ID: "actor", Name: "Alice"}}
+		if i%2 == 1 {
+			people = append(people, &stashgraphql.SceneFragment_Performers{ID: "other", Name: "Beth"})
+		}
+		if i == 6 {
+			people = []*stashgraphql.SceneFragment_Performers{nil}
+		}
+		scenes[i] = &stashgraphql.SceneFragment{ID: fmt.Sprint(i), Performers: people}
+	}
+	service, err := NewService(testStashClient{performer: actor, scenes: scenes}, metadata.NewService(nil, metadata.NewRegistry(nil)), nil, nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, cast := range []SceneCastFilter{SceneCastFilterAll, SceneCastFilterSolo, SceneCastFilterGroup} {
+		page, err := service.ListPerformerScenes(context.Background(), actor.ID, SceneQuery{Source: SceneSourceFilterStash, Cast: cast, Page: 2, PageSize: 2})
+		expected := 3
+		if cast == SceneCastFilterAll {
+			expected = 7
+		}
+		if err != nil || page.TotalCount != expected || !page.TotalCountExact || page.Page != 2 {
+			t.Fatal(cast, page, err)
+		}
+		for _, item := range page.Items {
+			if !matchesPerformerSceneCast(item, cast) {
+				t.Fatal("wrong cast", item)
+			}
+		}
+		if cast != SceneCastFilterAll && len(page.Items) != 1 {
+			t.Fatal("filter applied after pagination", page)
+		}
+	}
 }

@@ -31,8 +31,15 @@ describe("performer search params", () => {
     expect(state.sort).toBe("default");
   });
 
+  it("defaults invalid cast choices to all and omits the default from URLs", () => {
+    const state = parsePerformerSearchParams(new URLSearchParams("cast=invalid"));
+    expect(state.cast).toBe("all");
+    expect(serializePerformerSearchParams(state).has("cast")).toBe(false);
+    expect(parsePerformerSearchParams(new URLSearchParams("cast=group")).cast).toBe("group");
+  });
+
   it("round trips shareable list and scene state", () => {
-    const state = parsePerformerSearchParams(new URLSearchParams("q=a&filter=review&sort=last_checked&page=2&sceneQ=b&source=stashbox&library=not-in-library&scenePage=3"));
+    const state = parsePerformerSearchParams(new URLSearchParams("q=a&filter=review&sort=last_checked&page=2&sceneQ=b&source=stashbox&library=not-in-library&cast=solo&scenePage=3"));
     expect(parsePerformerSearchParams(serializePerformerSearchParams(state))).toEqual(state);
   });
 });
