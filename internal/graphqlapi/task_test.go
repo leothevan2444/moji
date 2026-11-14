@@ -698,7 +698,6 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	resolver.RuntimeStatus = &SettingsStatusSnapshot{
 		Automation: AutomationStatusSnapshot{
 			TaskProgressSyncIntervalSeconds: 60,
-			TaskProgressSyncEnabled:         true,
 			SubscriptionCheckEnabled:        true,
 			SubscriptionPollEnabled:         true,
 		},
@@ -714,7 +713,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
-			automation { taskProgressSyncEnabled }
+			automation { taskProgressSyncIntervalSeconds }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
@@ -744,7 +743,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	if resp.Data.Settings.System.TaskDeletePolicy != "KEEP_ONLY" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
-	if !resp.Data.SettingsStatus.Automation.TaskProgressSyncEnabled {
+	if resp.Data.SettingsStatus.Automation.TaskProgressSyncIntervalSeconds != 60 {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
 }
@@ -967,7 +966,6 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateAutomationSnapshot: &SettingsSnapshot{
 			Automation: AutomationSettingsSnapshot{
-				TaskProcessingEnabled:           true,
 				TaskProgressSyncIntervalSeconds: 60,
 				SubscriptionCheckEnabled:        true,
 				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
@@ -992,7 +990,6 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateAutomationSettings(input: {
- taskProcessingEnabled: true
 			taskProgressSyncIntervalSeconds: 60
 			subscriptionCheckEnabled: true
 			stashBoxEndpoints: ["https://javstash.example.org/graphql"]
@@ -1018,7 +1015,6 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 				}
 		}) {
 			automation {
- taskProcessingEnabled
 				stashBoxEndpoints
 				subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior vrBehavior maxGroupPerformerCount releaseDateRange }
 				torrentSelection { enabled fastRules { type } torrentRules { type } }
@@ -1030,12 +1026,6 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 	}
 	if editor.automationInput.SubscriptionReleasePolicy.VRBehavior != "REVIEW" || resp.Data.UpdateAutomationSettings.Automation.SubscriptionReleasePolicy.VRBehavior != "REVIEW" {
 		t.Fatal("VR policy missing from settings input or output")
-	}
-	if editor.automationInput.TaskProcessingEnabled == nil || !*editor.automationInput.TaskProcessingEnabled {
-		t.Fatal("processing switch was not passed to settings editor")
-	}
-	if !resp.Data.UpdateAutomationSettings.Automation.TaskProcessingEnabled {
-		t.Fatal("processing switch missing from settings response")
 	}
 	if len(editor.automationInput.StashBoxEndpoints) != 1 || editor.automationInput.StashBoxEndpoints[0] != "https://javstash.example.org/graphql" {
 		t.Fatalf("unexpected automation input: %+v", editor.automationInput)
@@ -1387,9 +1377,9 @@ type graphQLTaskResponse struct {
 		} `json:"settings"`
 		SettingsStatus struct {
 			Automation struct {
-				TaskProgressSyncEnabled  bool `json:"taskProgressSyncEnabled"`
-				SubscriptionCheckEnabled bool `json:"subscriptionCheckEnabled"`
-				SubscriptionPollEnabled  bool `json:"subscriptionPollEnabled"`
+				TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
+				SubscriptionCheckEnabled        bool `json:"subscriptionCheckEnabled"`
+				SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
 			} `json:"automation"`
 		} `json:"settingsStatus"`
 		StashPerformers struct {
@@ -1445,7 +1435,6 @@ type graphQLTaskResponse struct {
 		} `json:"updateJackettSettings"`
 		UpdateAutomationSettings struct {
 			Automation struct {
-				TaskProcessingEnabled           bool     `json:"taskProcessingEnabled"`
 				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
 				SubscriptionCheckEnabled        bool     `json:"subscriptionCheckEnabled"`
 				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`

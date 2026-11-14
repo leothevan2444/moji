@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n/i18n";
 import { HomePage, type HomePageProps } from "./HomePage";
+import { TaskDeletePolicy } from "../graphql/generated/graphql";
 import type { DashboardTask } from "../utils";
 
 const baseTask = { id: "task-1", source: "MANUAL", code: "DEMO-101", stage: "DOWNLOADING", stageStatus: "RUNNING", progress: .62, files: [], stashSceneIds: [], createdAt: "2026-10-22T12:00:00Z", updatedAt: "2026-10-22T12:00:00Z" } as unknown as DashboardTask;
@@ -94,16 +95,15 @@ describe("Home workspace", () => {
   });
 
   it("distinguishes a missing configuration from a configured but unavailable dependency", async () => {
-    const status = { stash: { configured: true, ready: false }, qbittorrent: { configured: true, ready: true }, ingest: { configured: true }, stashStats: {pendingMojiScanCount:0} } satisfies NonNullable<HomePageProps["runtimeStatus"]>;
-    const props = setup({ runtimeStatus: status });
-    expect(screen.getByText(/Stash is unavailable/)).toBeTruthy();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Check connections" }));
-    expect(props.onOpenSettings).toHaveBeenCalledWith("stash");
+    const status = { stash: { configured: true, ready: false }, qbittorrent: { configured: true, ready: true }, ingest: { configured: true }, stashStats: {lastError:"connection refused", pendingMojiScanCount:0} } satisfies NonNullable<HomePageProps["runtimeStatus"]>;
+    setup({ runtimeStatus: status });
+    expect(screen.getByText(/Stash scanning, identification and ingest verification are affected/)).toBeTruthy();
+    expect(within(screen.getByRole("region", { name: "Stash" })).getByRole("link", { name: "Stash settings" }).getAttribute("href")).toBe("/settings/stash?panel=connection");
     expect(screen.queryByText("Finish setup to start processing")).toBeNull();
   });
 
   it("offers configured milestones in first-run setup and never infers readiness from configuration", () => {
-    setup({ runtimeStatus: { stash: { configured: true, ready: false }, qbittorrent: { configured: false, ready: false }, ingest: { configured: false }, stashStats: {pendingMojiScanCount:0} } satisfies NonNullable<HomePageProps["runtimeStatus"]> });
+    setup({ runtimeStatus: { stash: { configured: true, ready: false }, qbittorrent: { configured: false, ready: false }, ingest: { configured: false }, stashStats: {lastError:"connection refused", pendingMojiScanCount:0} } satisfies NonNullable<HomePageProps["runtimeStatus"]> });
     expect(screen.getByRole("region", { name: "Finish setup to start processing" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Stash · Configured" })).toBeTruthy();
     expect(screen.getByText("Unavailable")).toBeTruthy();
@@ -193,4 +193,75 @@ it("keeps the large subscription total without subscription issue information", 
   expect(region.querySelector("details")).toBeNull();
   expect(within(region).queryByText(/subscription checks need attention/)).toBeNull();
   expect(within(region).queryByRole("link", { name: /Review subscription issue/ })).toBeNull();
+});
+
+
+describe("Home Stash overview", () => {
+  const status = { stash: { configured: true, ready: true }, qbittorrent: { configured: true, ready: true }, ingest: { configured: true }, stashStats: { version: "0.28.0", sceneCount: 1234, pendingMojiScanCount: 2, okAt: "2026-11-14T00:00:00Z", lastError: null } } satisfies NonNullable<HomePageProps["runtimeStatus"]>;
+  const settings = { system: { taskDeletePolicy: TaskDeletePolicy.KeepOnly }, stash: { url: "http://stash.invalid" } } satisfies NonNullable<HomePageProps["runtimeSettings"]>;
+
+  it("shows only Stash metrics with connection settings and a safe external link", () => {
+    setup({ runtimeStatus: status, runtimeSettings: settings });
+    const region = screen.getByRole("region", { name: "Stash" });
+    expect(within(region).getByText("Connected")).toBeTruthy();
+    expect(within(region).getByText("0.28.0")).toBeTruthy();
+    expect(within(region).getByText("1,234")).toBeTruthy();
+    expect(within(region).getByText("2")).toBeTruthy();
+    expect(within(region).getByRole("link", { name: "Stash settings" }).getAttribute("href")).toBe("/settings/stash?panel=connection");
+    const open = within(region).getByRole("link", { name: "Open Stash" });
+    expect(open.getAttribute("href")).toBe("http://stash.invalid/");
+    expect(open.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(region.textContent).not.toMatch(/Task processing|Delivery|qBittorrent/);
+    expect(region.querySelector("details, .home-dot")).toBeNull();
+  });
+
+  it("does not include qB or delivery failures in Stash status", () => {
+    setup({ runtimeStatus: { ...status, qbittorrent: { configured: true, ready: false }, ingest: { configured: false } }, runtimeSettings: settings });
+    const region = screen.getByRole("region", { name: "Stash" });
+    expect(within(region).getByText("Connected")).toBeTruthy();
+    expect(region.textContent).not.toMatch(/Delivery|qBittorrent/);
+  });
+
+  it("keeps retained metrics but marks a failed refresh as unknown and retries only Stash status", async () => {
+    const props = setup({ runtimeStatus: status, runtimeSettings: settings, statusError: "Status read failed" });
+    const region = screen.getByRole("region", { name: "Stash" });
+    expect(within(region).getByText("Status unknown")).toBeTruthy();
+    expect(within(region).queryByText("Connected")).toBeNull();
+    expect(within(region).getByText("1,234")).toBeTruthy();
+    await userEvent.setup().click(within(region).getByRole("button", { name: "Retry" }));
+    expect(props.onRefreshStatus).toHaveBeenCalledOnce();
+    expect(props.onRefresh).not.toHaveBeenCalled();
+    expect(screen.getByText("DEMO-101")).toBeTruthy();
+  });
+
+  it("shows unknown measurements before the first successful observation instead of zeroes", () => {
+    setup({ runtimeStatus: { ...status, stash: { configured: true, ready: false }, stashStats: { version: null, sceneCount: null, pendingMojiScanCount: 0, okAt: null, lastError: null } } });
+    const region = screen.getByRole("region", { name: "Stash" });
+    expect(within(region).getByText("Status unknown")).toBeTruthy();
+    expect(within(region).getAllByText("—")).toHaveLength(3);
+    expect(within(region).queryByText("0")).toBeNull();
+    expect(within(region).queryByText("Unavailable")).toBeNull();
+  });
+
+  it("refreshes only Stash status and disables its refresh button while a read is pending", async () => {
+    const props = setup({ runtimeStatus: status, statusFetching: true });
+    const region = screen.getByRole("region", { name: "Stash" });
+    const refresh = within(region).getByRole("button", { name: "Refresh Stash status" }) as HTMLButtonElement;
+    expect(refresh.disabled).toBe(true);
+    props.rerender(<MemoryRouter><HomePage {...props} statusFetching={false} /></MemoryRouter>);
+    await userEvent.setup().click(refresh);
+    expect(props.onRefreshStatus).toHaveBeenCalledOnce();
+    expect(props.onRefresh).not.toHaveBeenCalled();
+  });
+
+  it("opens the Stash UI from a GraphQL endpoint while retaining a reverse proxy path", () => {
+    setup({ runtimeStatus: status, runtimeSettings: { ...settings, stash: { url: "http://stash.invalid/library/graphql" } } });
+    const region = screen.getByRole("region", { name: "Stash" });
+    expect(within(region).getByRole("link", { name: "Open Stash" }).getAttribute("href")).toBe("http://stash.invalid/library/");
+  });
+
+  it("does not create an external link from an unsafe or absent URL", () => {
+    setup({ runtimeStatus: status, runtimeSettings: { ...settings, stash: { url: "javascript:alert(1)" } } });
+    expect(within(screen.getByRole("region", { name: "Stash" })).queryByRole("link", { name: "Open Stash" })).toBeNull();
+  });
 });

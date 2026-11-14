@@ -38,7 +38,6 @@ interface TasksPageProps {
   selectedTaskIds: string[];
   batchPending: boolean;
   refreshing: boolean;
-  autoSyncEnabled: boolean;
   autoSyncIntervalSeconds: number;
   lastRefreshedAt: Date | null;
   onSearchChange: (value: string) => void;
@@ -71,7 +70,6 @@ export function TasksPage({
   selectedTaskIds,
   batchPending,
   refreshing,
-  autoSyncEnabled,
   autoSyncIntervalSeconds,
   lastRefreshedAt,
   onSearchChange,
@@ -225,10 +223,10 @@ export function TasksPage({
         <button type="button" className="ghost-button" disabled={refreshing || serverPage.page >= serverPage.totalPages} onClick={() => onPageChange?.(serverPage.page + 1)}>{t("performerUi.next")}</button>
         {updatesPending ? <button type="button" className="ghost-button" disabled={refreshing} onClick={onRefresh}>{t("taskList.updates")}</button> : null}
       </div> : null}
-      <p className="task-sync-meta">
-        {t(autoSyncEnabled ? "taskBatch.autoSyncOn" : "taskBatch.autoSyncOff", { seconds: autoSyncIntervalSeconds })}
+      {autoSyncIntervalSeconds > 0 || lastRefreshedAt ? <p className="task-sync-meta">
+        {autoSyncIntervalSeconds > 0 ? t("taskBatch.autoSyncOn", { seconds: autoSyncIntervalSeconds }) : null}
         {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}
-      </p>
+      </p> : null}
 
       {!visibleTasks.length ? (
         <div className="task-grid">

@@ -12,7 +12,6 @@ import { useTheme } from "../hooks/useTheme";
 import { useToast } from "../hooks/useToast";
 import type { HelpTopicId } from "../help/types";
 import { useTranslation } from "react-i18next";
-import { TaskProcessingNotice } from "../components/layout/TaskProcessingNotice";
 import { TaskEventBridge } from "../components/events/TaskEventBridge";
 
 const PerformanceDrawer = lazy(() => import("../components/drawers/PerformanceDrawer"));
@@ -60,7 +59,6 @@ export function AppLayout() {
       <div className="ambient ambient-c" />
       <Header developerMode={interfaceSettings.developerMode} onOpenPerformance={() => setPerformanceOpen(true)} onOpenHelp={() => setHelpOpen(true)} theme={theme} />
       <main className="content">
-        <TaskProcessingNotice />
         <Suspense fallback={<div className="skeleton skeleton-card" aria-label={t("common.loading")} />}>
           <Outlet context={{ pushToast, copyText, openHelp, onDeveloperModeChange: interfaceSettings.updateDeveloperMode, onLanguageChange: interfaceSettings.updateLanguage, localeLoadError, retryLocale } satisfies AppOutletContext} />
         </Suspense>

@@ -12,8 +12,6 @@ import (
 )
 
 type AutomationSettings struct {
-	// Whether automatic download and ingest processing is enabled
-	TaskProcessingEnabled           bool `json:"taskProcessingEnabled"`
 	SourcingRetryIntervalHours      int  `json:"sourcingRetryIntervalHours"`
 	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionCheckEnabled        bool `json:"subscriptionCheckEnabled"`
@@ -25,7 +23,6 @@ type AutomationSettings struct {
 
 type AutomationStatus struct {
 	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
-	TaskProgressSyncEnabled         bool `json:"taskProgressSyncEnabled"`
 	SubscriptionCheckEnabled        bool `json:"subscriptionCheckEnabled"`
 	SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
 }
@@ -1660,7 +1657,6 @@ type TaskPageInput struct {
 }
 
 type TaskSettingsInput struct {
-	TaskProcessingEnabled           bool                            `json:"taskProcessingEnabled"`
 	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionCheckEnabled        bool                            `json:"subscriptionCheckEnabled"`
 	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
@@ -1708,7 +1704,6 @@ type TaskSummary struct {
 }
 
 type TasksPatchInput struct {
-	TaskProcessingEnabled           *bool                    `json:"task_processing_enabled,omitempty"`
 	TaskProgressSyncIntervalSeconds *int                     `json:"task_progress_sync_interval_seconds,omitempty"`
 	SourcingRetryIntervalHours      *int                     `json:"sourcing_retry_interval_hours,omitempty"`
 	SubscriptionCheckEnabled        *bool                    `json:"subscription_check_enabled,omitempty"`
@@ -1972,9 +1967,7 @@ type UpcomingReleaseQueryInput struct {
 }
 
 type UpdateAutomationSettingsInput struct {
-	Section *AutomationSettingsSection `json:"section,omitempty"`
-	// Independent switch; omitted by legacy clients to preserve the current setting
-	TaskProcessingEnabled           *bool                           `json:"taskProcessingEnabled,omitempty"`
+	Section                         *AutomationSettingsSection      `json:"section,omitempty"`
 	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
 	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
 	SubscriptionCheckEnabled        bool                            `json:"subscriptionCheckEnabled"`

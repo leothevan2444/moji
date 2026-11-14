@@ -397,38 +397,31 @@ func TestLoadRejectsUnsupportedIngestAction(t *testing.T) {
 	}
 }
 
-func TestTaskProcessingSwitchPersistsAndRejectsUnsupportedIntervals(t *testing.T) {
+func TestTaskProcessingIntervalPersistsAndRejectsUnsupportedIntervals(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.yaml")
-	if err := os.WriteFile(path, []byte("automation:\n  task_progress_sync_interval_seconds: -1\n"), 0600); err != nil {
+	if err := os.WriteFile(path, []byte("config_version: 4\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	store, err := OpenStore(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if store.Config().Automation.EffectiveTaskProcessingEnabled() {
-		t.Fatal("legacy negative interval should remain disabled")
-	}
-	for _, enabled := range []bool{false, true} {
-		cfg, err := store.UpdateAutomationProcessing(&enabled, 120, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 6)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if cfg.Automation.EffectiveTaskProcessingEnabled() != enabled || cfg.Automation.TaskProgressSyncIntervalSeconds != 120 {
-			t.Fatal("switch and interval are not independent")
+	for _, interval := range []int{30, 60, 120, 300} {
+		cfg, err := store.UpdateAutomation(interval, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 6)
+		if err != nil || cfg.Automation.TaskProgressSyncIntervalSeconds != interval {
+			t.Fatal("interval lost", interval, err)
 		}
 		reopened, err := OpenStore(path)
-		if err != nil || reopened.Config().Automation.EffectiveTaskProcessingEnabled() != enabled {
-			t.Fatalf("switch was not persisted: %v", err)
+		if err != nil || reopened.Config().Automation.TaskProgressSyncIntervalSeconds != interval {
+			t.Fatal("interval was not persisted", err)
 		}
 	}
-	enabled := false
 	for _, interval := range []int{-1, 0, 45, 600} {
-		if _, err := store.UpdateAutomationProcessing(&enabled, interval, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err == nil {
-			t.Fatalf("accepted interval %d", interval)
+		if _, err := store.UpdateAutomation(interval, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err == nil {
+			t.Fatal("invalid interval accepted", interval)
 		}
-		if !store.Config().Automation.EffectiveTaskProcessingEnabled() || store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 6 {
-			t.Fatal("failed validation mutated configuration")
+		if store.Config().Automation.TaskProgressSyncIntervalSeconds != 300 || store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 6 {
+			t.Fatal("invalid save changed configuration")
 		}
 	}
 }

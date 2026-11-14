@@ -120,7 +120,6 @@ type UpdateAutomationSettingsInput = SettingsSectionUpdate
 type SettingsSectionUpdate struct {
 	TaskDeletePolicy                *string
 	Section                         string
-	TaskProcessingEnabled           *bool
 	SourcingRetryIntervalHours      int
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionCheckEnabled        bool
@@ -253,7 +252,6 @@ type QBittorrentSettingsSnapshot struct {
 }
 
 type AutomationSettingsSnapshot struct {
-	TaskProcessingEnabled           bool
 	SourcingRetryIntervalHours      int
 	TaskProgressSyncIntervalSeconds int
 	SubscriptionCheckEnabled        bool
@@ -313,7 +311,6 @@ type ServiceStatusSnapshot struct {
 
 type AutomationStatusSnapshot struct {
 	TaskProgressSyncIntervalSeconds int
-	TaskProgressSyncEnabled         bool
 	SubscriptionCheckEnabled        bool
 	SubscriptionPollEnabled         bool
 }

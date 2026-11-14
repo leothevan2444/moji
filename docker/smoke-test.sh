@@ -55,7 +55,6 @@ docker run --rm -i --network none --entrypoint sh \
     -c 'cat > /data/config.yaml' <<'YAML'
 config_version: 3
 tasks:
-  task_processing_enabled: false
   task_progress_sync_interval_seconds: -1
   subscription_check_enabled: false
 YAML

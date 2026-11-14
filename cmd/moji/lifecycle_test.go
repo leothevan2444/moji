@@ -29,7 +29,7 @@ func TestHTTPRuntimeProcessHelper(t *testing.T) {
 }
 func TestHTTPRuntimeStopsWithOpenWebsocketAndReleasesStorage(t *testing.T) {
 	t.Run("jackett", func(t *testing.T) {
-		assertHTTPRuntimeLifecycle(t, []byte("connection:\n  jackett:\n    url: http://127.0.0.1:9\n    api_key: local-test\nautomation:\n  task_processing_enabled: false\n  subscription_check_enabled: false\nsystem:\n  developer_mode: true\n"))
+		assertHTTPRuntimeLifecycle(t, []byte("connection:\n  jackett:\n    url: http://127.0.0.1:9\n    api_key: local-test\nautomation:\n  subscription_check_enabled: false\nsystem:\n  developer_mode: true\n"))
 	})
 	t.Run("no-indexers", func(t *testing.T) {
 		assertHTTPRuntimeLifecycle(t, []byte("config_version: 3\nsystem: {developer_mode: true}\n"))

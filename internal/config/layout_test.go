@@ -55,7 +55,6 @@ ingest:
   library: {moji_root: /lib, stash_root: /stash}
   transfer: {action: COPY}
 automation:
-  task_processing_enabled: false
   task_progress_sync_interval_seconds: 120
   subscription_check_enabled: true
   selected_stash_box_endpoints: [second, first]
@@ -100,8 +99,8 @@ custom: {untouched: true}
 		t.Fatal(err)
 	}
 	after := reopened.Config()
-	if before.Connection != after.Connection || before.Ingest != after.Ingest || before.Logging != after.Logging || after.Automation.EffectiveTaskProcessingEnabled() || after.System.StashBoxDataCache.TTLHours != 36 {
-		t.Fatalf("migration lost settings: connection=%v ingest=%v logging=%v processing=%v cache=%v", before.Connection == after.Connection, before.Ingest == after.Ingest, before.Logging == after.Logging, after.Automation.EffectiveTaskProcessingEnabled(), after.System.StashBoxDataCache.TTLHours)
+	if before.Connection != after.Connection || before.Ingest != after.Ingest || before.Logging != after.Logging || after.System.StashBoxDataCache.TTLHours != 36 {
+		t.Fatalf("migration lost settings: connection=%v ingest=%v logging=%v cache=%v", before.Connection == after.Connection, before.Ingest == after.Ingest, before.Logging == after.Logging, after.System.StashBoxDataCache.TTLHours)
 	}
 	if _, err := reopened.UpdateAutomationSection("METADATA", AutomationConfig{StashBoxEndpoints: []string{"third"}}); err != nil {
 		t.Fatal(err)
@@ -113,7 +112,7 @@ custom: {untouched: true}
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Automation.StashBoxEndpoints[0] != "third" || got.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs[0] != "b" || got.Automation.TaskProgressSyncIntervalSeconds != 120 || got.Automation.EffectiveTaskProcessingEnabled() {
+	if got.Automation.StashBoxEndpoints[0] != "third" || got.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs[0] != "b" || got.Automation.TaskProgressSyncIntervalSeconds != 120 {
 		t.Fatal("section save overwrote another section")
 	}
 	// Subsequent writes must also preserve logging and unrelated fields.

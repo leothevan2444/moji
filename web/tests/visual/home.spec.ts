@@ -16,9 +16,9 @@ test("indexers and downloader are peers and fixed gateway cards are removed", as
   await expect(indexers.getByRole("button", {name:"View indexer records"})).toBeVisible();
   await expect(indexers.locator("..")).toHaveClass("home-sidebar");
   await expect(downloader.locator("..")).toHaveClass("home-sidebar");
-  await page.locator(".home-system .home-diagnostics summary").click();
-  await expect(page.locator(".home-system").getByText("Jackett", { exact: true })).toHaveCount(0);
-  await expect(page.locator(".home-system").getByText("qBittorrent", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".home-stash details, .home-stash .home-dot")).toHaveCount(0);
+  await expect(page.locator(".home-stash").getByText("Jackett", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".home-stash").getByText("qBittorrent", { exact: true })).toHaveCount(0);
   await downloader.getByRole("link", { name: "Configure", exact: true }).click();
   await expect(page).toHaveURL(/settings\/downloader/);
 });

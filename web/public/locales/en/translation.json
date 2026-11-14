@@ -501,17 +501,12 @@
     "behaviorHelp": "Manual review records the release without starting a download.",
     "priorityHelp": "When policies overlap, Skip takes precedence, followed by Manual review.",
     "reviewHelp": "Handle pending releases in Release review on the Performers page. Policy changes do not reprocess recorded releases.",
-    "processingEnabled": "Process tasks automatically",
-    "processingHelp": "Disabling pauses task progress updates and automatic imports. Downloads and processing already started may continue.",
     "intervalOptions": {
       "30": "30 seconds",
       "60": "1 minute (recommended)",
       "120": "2 minutes",
       "300": "5 minutes"
     },
-    "pausedTitle": "Automatic task processing is paused",
-    "pausedDetail": "Download progress will stop updating, and completed downloads will not be added to Stash automatically. Downloads and work already started may continue. Resource searches and subscription checks are unaffected.",
-    "openSettings": "Open tasks & subscriptions settings",
     "syncInterval": "Check tasks every",
     "policyTitle": "New-release download policy",
     "solo": "Single-performer releases",
@@ -1031,6 +1026,27 @@
       "SAVE_FAILED": "Could not save the result. Refresh and try again."
     }
   },
+  "homeStash": {
+    "settings": "Stash settings",
+    "refresh": "Refresh Stash status",
+    "open": "Open Stash",
+    "connection": "Connection",
+    "version": "Version",
+    "scenes": "Scenes",
+    "pendingScans": "Moji tasks awaiting scan",
+    "lastSuccess": "Last successful connection: {{time}}",
+    "states": {
+      "connected": "Connected",
+      "unknown": "Status unknown",
+      "unavailable": "Unavailable",
+      "unconfigured": "Not configured"
+    },
+    "impacts": {
+      "unavailable": "Stash scanning, identification and ingest verification are affected.",
+      "unknown": "Cannot confirm whether Stash is available.",
+      "unconfigured": "Configure the Stash connection first."
+    }
+  },
   "workbench": {
     "manageShort": "Manage",
     "nextTask": "Review next task",
@@ -1062,7 +1078,6 @@
     "active": "In progress",
     "subscriptions": "My subscriptions",
     "recent": "Recently added",
-    "system": "System status",
     "handleQueue": "Review queue",
     "allAttention": "View all attention items",
     "allTasks": "All active tasks",
@@ -1086,14 +1101,8 @@
     "delivery": "Delivery configuration",
     "configured": "Configured",
     "configure": "Configure",
-    "unconfigured": "Not configured",
-    "ready": "Ready",
-    "unavailable": "Unavailable",
-    "systemDetails": "Service & delivery details",
     "setupTitle": "Finish setup to start processing",
     "setupDetail": "Connect the three services and configure delivery paths to advance tasks automatically.",
-    "checkConnection": "Check connections",
-    "moreProblems": "{{count}} services are unavailable. See system status for details.",
     "openTaskCenter": "View in task center",
     "recentFilter": "Completed in the last 24 hours",
     "clearRecentFilter": "Show all time",
@@ -1104,13 +1113,7 @@
       "active": "In progress",
       "waiting": "Waiting for resources",
       "completed": "Added in last 24h"
-    },
-    "impacts": {
-      "stash": "Stash is unavailable. Scanning, identification and ingest verification are affected.",
-      "qbittorrent": "qBittorrent is unavailable. Download submission and progress sync are affected."
-    },
-    "taskProcessingEnabled": "Automatic task processing enabled",
-    "taskProcessingPaused": "Automatic task processing paused"
+    }
   },
   "taskProcessingQueue": {
     "currentTask": "Current task",
@@ -1530,58 +1533,17 @@
     "noTodos": "Nothing requires attention",
     "noTodosDetail": "Failed, pending-scan, and abnormal tasks are prioritized here.",
     "configure": "Configure",
-    "adjust": "Adjust",
-    "noData": "No data",
     "loadFailed": "Home failed to load",
     "retryNoResult": "The retry failed because the server returned no task record.",
     "retried": "Retried task: {{task}}.",
-    "status": {
-      "unconfigured": "Not configured",
-      "stale": "Stale data",
-      "enabled": "Enabled",
-      "error": "Runtime error",
-      "pending": "Pending check",
-      "configuredDisabled": "Configured but disabled"
-    },
     "diagnostics": {
       "stashError": "Configured but recently unreachable. Check the Stash service.",
       "stashMissing": "Configure Stash before using ingest and performer updates.",
       "stashPending": "Stash is configured and waiting for its first check, or its status is stale."
     },
-    "stats": {
-      "scenes": "{{count}} scene",
-      "scenes_other": "{{count}} scenes",
-      "stashMissing": "Stash has not reported data",
-      "pendingScans": "{{count}} Moji task pending scan",
-      "pendingScans_other": "{{count}} Moji tasks pending scan",
-      "indexers": "{{configured}} / {{total}} indexers configured",
-      "slowest": "Slowest recent search: {{latency}} ms",
-      "transfer": "Download {{download}} · Upload {{upload}}",
-      "active": "{{count}} active task · {{status}}",
-      "active_other": "{{count}} active tasks · {{status}}"
-    },
-    "config": {
-      "user": "User",
-      "savePath": "Save path",
-      "action": "Delivery action",
-      "qbRoot": "qB download root",
-      "mojiDownloadRoot": "Moji download root",
-      "mojiLibraryRoot": "Moji library root",
-      "stashRoot": "Stash library root"
-    },
     "ingest": {
-      "title": "Ingest",
-      "missing": "Missing: {{fields}}",
-      "incomplete": "Configure all four roots and choose Copy or Move.",
-      "none": "Not selected",
-      "transfer": "File delivery",
       "copy": "Copy",
-      "move": "Move",
-      "guideTransfer": "Moji filters and deduplicates downloaded files, preserves single-file formats, and merges parts into MKV before asking Stash to scan.",
-      "cautionTransfer": "Configure qB download, Moji download, Moji library, and Stash library roots with matching mounts. Existing movies are not overwritten.",
-      "blockerQb": "qB download root is not mapped",
-      "blockerStash": "Stash library root is not mapped",
-      "blockerScan": "Completed tasks cannot resolve a scan path"
+      "move": "Move"
     }
   },
   "taskList": {
@@ -1673,7 +1635,6 @@
     "syncHelp": "Sync downloads and advance file preparation and Stash ingest",
     "syncComplete": "Download status synced and ingest workflow advanced.",
     "autoSyncOn": "Check tasks automatically every {{seconds}} seconds",
-    "autoSyncOff": "Automatic task processing is paused. Enable it in automation settings to resume.",
     "updatedAt": "List updated at {{time}}",
     "selectionActions": "Selected task actions",
     "selectTask": "Select task: {{task}}",

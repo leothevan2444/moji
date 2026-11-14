@@ -54,7 +54,6 @@ type ComplexityRoot struct {
 		StashBoxEndpoints               func(childComplexity int) int
 		SubscriptionCheckEnabled        func(childComplexity int) int
 		SubscriptionReleasePolicy       func(childComplexity int) int
-		TaskProcessingEnabled           func(childComplexity int) int
 		TaskProgressSyncIntervalSeconds func(childComplexity int) int
 		TorrentSelection                func(childComplexity int) int
 	}
@@ -62,7 +61,6 @@ type ComplexityRoot struct {
 	AutomationStatus struct {
 		SubscriptionCheckEnabled        func(childComplexity int) int
 		SubscriptionPollEnabled         func(childComplexity int) int
-		TaskProgressSyncEnabled         func(childComplexity int) int
 		TaskProgressSyncIntervalSeconds func(childComplexity int) int
 	}
 
@@ -1761,13 +1759,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AutomationSettings.SubscriptionReleasePolicy(childComplexity), true
 
-	case "AutomationSettings.taskProcessingEnabled":
-		if e.complexity.AutomationSettings.TaskProcessingEnabled == nil {
-			break
-		}
-
-		return e.complexity.AutomationSettings.TaskProcessingEnabled(childComplexity), true
-
 	case "AutomationSettings.taskProgressSyncIntervalSeconds":
 		if e.complexity.AutomationSettings.TaskProgressSyncIntervalSeconds == nil {
 			break
@@ -1795,13 +1786,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AutomationStatus.SubscriptionPollEnabled(childComplexity), true
-
-	case "AutomationStatus.taskProgressSyncEnabled":
-		if e.complexity.AutomationStatus.TaskProgressSyncEnabled == nil {
-			break
-		}
-
-		return e.complexity.AutomationStatus.TaskProgressSyncEnabled(childComplexity), true
 
 	case "AutomationStatus.taskProgressSyncIntervalSeconds":
 		if e.complexity.AutomationStatus.TaskProgressSyncIntervalSeconds == nil {
@@ -11240,8 +11224,6 @@ type QBittorrentSettings {
 }
 
 type AutomationSettings {
-  "Whether automatic download and ingest processing is enabled"
-  taskProcessingEnabled: Boolean!
   sourcingRetryIntervalHours: Int!
   taskProgressSyncIntervalSeconds: Int!
   subscriptionCheckEnabled: Boolean!
@@ -11328,7 +11310,6 @@ type ServiceStatus {
 
 type AutomationStatus {
   taskProgressSyncIntervalSeconds: Int!
-  taskProgressSyncEnabled: Boolean!
   subscriptionCheckEnabled: Boolean!
   subscriptionPollEnabled: Boolean!
 }
@@ -11443,8 +11424,6 @@ enum AutomationSettingsSection { ALL TASKS RESOURCES METADATA INDEXERS TASK_DELE
 
 input UpdateAutomationSettingsInput {
   section: AutomationSettingsSection = ALL
-  "Independent switch; omitted by legacy clients to preserve the current setting"
-  taskProcessingEnabled: Boolean
   sourcingRetryIntervalHours: Int! = 6
   taskProgressSyncIntervalSeconds: Int!
   subscriptionCheckEnabled: Boolean!
@@ -11490,7 +11469,6 @@ input UpdateSettingsSectionInput {
  queryOrder: [String!]
 }
 input TaskSettingsInput {
- taskProcessingEnabled: Boolean!
  taskProgressSyncIntervalSeconds: Int!
  subscriptionCheckEnabled: Boolean!
  sourcingRetryIntervalHours: Int!
@@ -11568,7 +11546,6 @@ input StashCachePatchInput {
 }
 
 input TasksPatchInput {
-  task_processing_enabled: Boolean
   task_progress_sync_interval_seconds: Int
   sourcing_retry_interval_hours: Int
   subscription_check_enabled: Boolean
@@ -16166,50 +16143,6 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _AutomationSettings_taskProcessingEnabled(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AutomationSettings_taskProcessingEnabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TaskProcessingEnabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AutomationSettings_taskProcessingEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AutomationSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _AutomationSettings_sourcingRetryIntervalHours(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AutomationSettings_sourcingRetryIntervalHours(ctx, field)
 	if err != nil {
@@ -16537,50 +16470,6 @@ func (ec *executionContext) fieldContext_AutomationStatus_taskProgressSyncInterv
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AutomationStatus_taskProgressSyncEnabled(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AutomationStatus_taskProgressSyncEnabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TaskProgressSyncEnabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AutomationStatus_taskProgressSyncEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AutomationStatus",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -52060,8 +51949,6 @@ func (ec *executionContext) fieldContext_Settings_automation(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "taskProcessingEnabled":
-				return ec.fieldContext_AutomationSettings_taskProcessingEnabled(ctx, field)
 			case "sourcingRetryIntervalHours":
 				return ec.fieldContext_AutomationSettings_sourcingRetryIntervalHours(ctx, field)
 			case "taskProgressSyncIntervalSeconds":
@@ -52332,8 +52219,6 @@ func (ec *executionContext) fieldContext_SettingsStatus_automation(_ context.Con
 			switch field.Name {
 			case "taskProgressSyncIntervalSeconds":
 				return ec.fieldContext_AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field)
-			case "taskProgressSyncEnabled":
-				return ec.fieldContext_AutomationStatus_taskProgressSyncEnabled(ctx, field)
 			case "subscriptionCheckEnabled":
 				return ec.fieldContext_AutomationStatus_subscriptionCheckEnabled(ctx, field)
 			case "subscriptionPollEnabled":
@@ -76077,20 +75962,13 @@ func (ec *executionContext) unmarshalInputTaskSettingsInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskProcessingEnabled", "taskProgressSyncIntervalSeconds", "subscriptionCheckEnabled", "sourcingRetryIntervalHours", "subscriptionReleasePolicy"}
+	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionCheckEnabled", "sourcingRetryIntervalHours", "subscriptionReleasePolicy"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "taskProcessingEnabled":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProcessingEnabled"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TaskProcessingEnabled = data
 		case "taskProgressSyncIntervalSeconds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProgressSyncIntervalSeconds"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -76132,20 +76010,13 @@ func (ec *executionContext) unmarshalInputTasksPatchInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"task_processing_enabled", "task_progress_sync_interval_seconds", "sourcing_retry_interval_hours", "subscription_check_enabled", "task_delete_policy", "subscription_release_policy", "torrent_selection"}
+	fieldsInOrder := [...]string{"task_progress_sync_interval_seconds", "sourcing_retry_interval_hours", "subscription_check_enabled", "task_delete_policy", "subscription_release_policy", "torrent_selection"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "task_processing_enabled":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task_processing_enabled"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TaskProcessingEnabled = data
 		case "task_progress_sync_interval_seconds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task_progress_sync_interval_seconds"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -76882,7 +76753,7 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 		asMap["sourcingRetryIntervalHours"] = 6
 	}
 
-	fieldsInOrder := [...]string{"section", "taskProcessingEnabled", "sourcingRetryIntervalHours", "taskProgressSyncIntervalSeconds", "subscriptionCheckEnabled", "stashBoxEndpoints", "subscriptionReleasePolicy", "torrentSelection"}
+	fieldsInOrder := [...]string{"section", "sourcingRetryIntervalHours", "taskProgressSyncIntervalSeconds", "subscriptionCheckEnabled", "stashBoxEndpoints", "subscriptionReleasePolicy", "torrentSelection"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -76896,13 +76767,6 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 				return it, err
 			}
 			it.Section = data
-		case "taskProcessingEnabled":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProcessingEnabled"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TaskProcessingEnabled = data
 		case "sourcingRetryIntervalHours":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourcingRetryIntervalHours"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -77286,11 +77150,6 @@ func (ec *executionContext) _AutomationSettings(ctx context.Context, sel ast.Sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AutomationSettings")
-		case "taskProcessingEnabled":
-			out.Values[i] = ec._AutomationSettings_taskProcessingEnabled(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "sourcingRetryIntervalHours":
 			out.Values[i] = ec._AutomationSettings_sourcingRetryIntervalHours(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -77357,11 +77216,6 @@ func (ec *executionContext) _AutomationStatus(ctx context.Context, sel ast.Selec
 			out.Values[i] = graphql.MarshalString("AutomationStatus")
 		case "taskProgressSyncIntervalSeconds":
 			out.Values[i] = ec._AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "taskProgressSyncEnabled":
-			out.Values[i] = ec._AutomationStatus_taskProgressSyncEnabled(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

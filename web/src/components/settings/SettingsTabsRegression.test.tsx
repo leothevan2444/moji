@@ -16,10 +16,10 @@ vi.mock("urql", async (importOriginal) => ({
     const name = query.definitions[0]?.name?.value;
     if (name === "TaskDeletionSettings") return [{data:{settings:{system:{taskDeletePolicy:"KEEP_ONLY"}}},fetching:false,error:null},vi.fn()];
     if (name === "SettingsPolicySection") return [{ data: { settings: { policies: {
-      taskProcessingEnabled: true, taskProgressSyncIntervalSeconds: 60, subscriptionCheckEnabled: true, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
+      taskProgressSyncIntervalSeconds: 60, subscriptionCheckEnabled: true, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: { soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW", maxGroupPerformerCount: 3, releaseDateRange: "ALL" },
       torrentSelection: { enabled: true, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] }
-    } }, settingsStatus: { taskProcessing: { taskProgressSyncEnabled: true, subscriptionPollEnabled: true }, metadataSources: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null } } }, fetching: false, error: null }, vi.fn()];
+    } }, settingsStatus: { metadataSources: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null } } }, fetching: false, error: null }, vi.fn()];
     if (name === "LibraryDeliverySettings") return [{ data: { settings: { delivery: { keepSubtitles: true, downloads: { qbRoot: "/q/downloads", mojiRoot: "/moji/downloads" }, library: { mojiRoot: "/moji/library", stashRoot: "/stash/library" }, transfer: { action: "COPY" } }, qbittorrent: { defaultSavePath: "" } }, settingsStatus: { stashLibraries: [{ path: "/stash/library" }] } }, fetching: false, error: null }, vi.fn()];
     if (name === "SystemSettingsTab") return [{ data: { settings: { system: { taskDeletePolicy: "KEEP_ONLY", imageCache: { enabled: true, maxSizeMb: 1024, retentionDays: 30 } } }, settingsStatus: { imageCache: { usedBytes: 0, entryCount: 0, cacheDirectory: "", lastCleanupAt: null, lastError: null } } }, fetching: false, error: null }, vi.fn()];
     return [{ data: { logs: [{ sequence: 2, time: "2026-07-13T10:00:00Z", level: "INFO", message: "second" }, { sequence: 1, time: "2026-07-13T09:00:00Z", level: "WARNING", message: "first" }] }, fetching: false, error: null }, vi.fn()];
@@ -129,21 +129,15 @@ describe("settings tab visual contracts", () => {
     await flush();
     expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{sourcing_retry_interval_hours:12}}});
   });
-  it("offers preset heartbeat intervals and saves the processing switch independently", async () => {
+  it("offers preset task intervals without a processing switch", async () => {
     updateSettings.mockClear();
     render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
-    const toggle = screen.getByLabelText("taskSettings.processingEnabled") as HTMLInputElement;
     const interval = screen.getByLabelText(/taskSettings.syncInterval/) as HTMLSelectElement;
-    expect(toggle.closest('[role="switch"]')).toBeTruthy();
-    expect(toggle.checked).toBe(true);
     expect(Array.from(interval.options, option => option.value)).toEqual(["30", "60", "120", "300"]);
+    expect(interval.disabled).toBe(false);
     fireEvent.change(interval, { target: { value: "120" } });
-    fireEvent.click(toggle);
-    expect(interval.disabled).toBe(true);
-    expect(interval.value).toBe("120");
-    expect(screen.getByText("taskSettings.processingHelp")).toBeTruthy();
     await flush();
-    expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{task_processing_enabled:false,task_progress_sync_interval_seconds:120}}});
+    expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{task_progress_sync_interval_seconds:120}}});
   });
 
   it("offers four roots and Copy or Move, and saves without an ingest mode", async () => {

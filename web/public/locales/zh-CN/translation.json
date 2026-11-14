@@ -499,17 +499,12 @@
     "behaviorHelp": "人工复核只记录作品，不启动下载。",
     "priorityHelp": "同时命中多项策略时，优先跳过，其次人工复核。",
     "reviewHelp": "待复核作品在演员页的“发行复核”中处理。修改策略不会重新处理已记录的作品。",
-    "processingEnabled": "自动处理任务",
-    "processingHelp": "关闭后暂停任务进度同步和自动入库，不停止已经开始的下载或处理。",
     "intervalOptions": {
       "30": "30 秒",
       "60": "1 分钟",
       "120": "2 分钟",
       "300": "5 分钟"
     },
-    "pausedTitle": "任务自动处理已暂停",
-    "pausedDetail": "下载进度暂时停止更新，已下载的影片不会自动入库。正在下载或处理的内容可能继续完成，资源搜索和订阅检查不受影响。",
-    "openSettings": "打开任务与订阅设置",
     "syncInterval": "任务检查间隔",
     "policyTitle": "新发行下载策略",
     "solo": "单人作品",
@@ -1028,6 +1023,27 @@
       "SAVE_FAILED": "保存结果失败，请刷新后重试。"
     }
   },
+  "homeStash": {
+    "settings": "Stash 设置",
+    "refresh": "刷新 Stash 状态",
+    "open": "打开 Stash",
+    "connection": "连接状态",
+    "version": "版本",
+    "scenes": "影片数",
+    "pendingScans": "Moji 待扫描任务",
+    "lastSuccess": "最近连接成功：{{time}}",
+    "states": {
+      "connected": "已连接",
+      "unknown": "状态未知",
+      "unavailable": "不可用",
+      "unconfigured": "未配置"
+    },
+    "impacts": {
+      "unavailable": "Stash 扫描、识别和入库校验受到影响。",
+      "unknown": "暂时无法确认 Stash 是否可用。",
+      "unconfigured": "请先配置 Stash 连接。"
+    }
+  },
   "workbench": {
     "manageShort": "管理",
     "nextTask": "处理下一项",
@@ -1059,7 +1075,6 @@
     "active": "正在进行",
     "subscriptions": "我的订阅",
     "recent": "最近入库",
-    "system": "系统状态",
     "handleQueue": "连续处理",
     "allAttention": "查看全部待处理",
     "allTasks": "全部进行中任务",
@@ -1083,14 +1098,8 @@
     "delivery": "交付配置",
     "configured": "已配置",
     "configure": "去配置",
-    "unconfigured": "未配置",
-    "ready": "正常",
-    "unavailable": "暂不可用",
-    "systemDetails": "服务与交付详情",
     "setupTitle": "完善设置，开始自动处理",
     "setupDetail": "连接三个依赖服务并配置入库路径。配置完成后，任务会自动推进。",
-    "checkConnection": "检查连接",
-    "moreProblems": "共有 {{count}} 个服务暂不可用，可在系统状态中查看。",
     "openTaskCenter": "在任务中心查看",
     "recentFilter": "仅显示近 24 小时完成",
     "clearRecentFilter": "查看全部时间",
@@ -1101,13 +1110,7 @@
       "active": "进行中",
       "waiting": "等待资源",
       "completed": "近 24h 入库"
-    },
-    "impacts": {
-      "stash": "Stash 暂时无法连接，扫描、识别和入库校验受影响。",
-      "qbittorrent": "qBittorrent 暂时无法连接，下载提交与进度同步受影响。"
-    },
-    "taskProcessingEnabled": "自动任务处理已启用",
-    "taskProcessingPaused": "自动任务处理已暂停"
+    }
   },
   "taskProcessingQueue": {
     "currentTask": "当前任务",
@@ -1524,55 +1527,17 @@
     "noTodos": "暂无待处理项",
     "noTodosDetail": "这里会优先显示失败、待扫和异常任务。",
     "configure": "去配置",
-    "adjust": "去调整",
-    "noData": "暂无数据",
     "loadFailed": "首页加载失败",
     "retryNoResult": "任务重试失败，后端没有返回任务记录。",
     "retried": "已重试任务：{{task}}。",
-    "status": {
-      "unconfigured": "未配置",
-      "stale": "数据陈旧",
-      "enabled": "已启用",
-      "error": "运行异常",
-      "pending": "待检测",
-      "configuredDisabled": "已配置未启用"
-    },
     "diagnostics": {
       "stashError": "已配置但最近未联通，请检查 Stash 服务状态。",
       "stashMissing": "Stash 必须先配置，否则入库与演员更新流程无法展开。",
       "stashPending": "Stash 已配置，等待首次探测或最近状态已过期。"
     },
-    "stats": {
-      "scenes": "{{count}} 部影片",
-      "stashMissing": "Stash 尚未回报数据",
-      "pendingScans": "Moji 待扫任务 {{count}} 项",
-      "indexers": "索引器 {{configured}} / {{total}} 已配置",
-      "slowest": "上次搜索最慢 {{latency}} ms",
-      "transfer": "下载 {{download}} · 上传 {{upload}}",
-      "active": "活跃任务 {{count}} · 连接 {{status}}"
-    },
-    "config": {
-      "user": "用户",
-      "savePath": "保存路径",
-      "action": "交付动作",
-      "qbRoot": "qB 下载根",
-      "mojiDownloadRoot": "Moji 下载根",
-      "mojiLibraryRoot": "Moji 媒体库根",
-      "stashRoot": "Stash 媒体库根"
-    },
     "ingest": {
-      "title": "入库",
-      "missing": "缺少：{{fields}}",
-      "incomplete": "请补齐四个根目录，并选择复制或移动。",
-      "none": "未选择",
-      "transfer": "文件交付",
       "copy": "复制",
-      "move": "移动",
-      "guideTransfer": "Moji 筛选、去重下载文件，单文件保留原格式，多分段合并为 MKV，再通知 Stash 扫描。",
-      "cautionTransfer": "请配置 qB 下载、Moji 下载、Moji 媒体库和 Stash 媒体库四个根目录，确保挂载对应；已有影片不会被覆盖。",
-      "blockerQb": "qB 下载根路径未映射",
-      "blockerStash": "Stash 媒体库根路径未映射",
-      "blockerScan": "任务完成后无法闭环换算扫描路径"
+      "move": "移动"
     }
   },
   "taskList": {
@@ -1664,7 +1629,6 @@
     "syncHelp": "同步下载状态并推进文件整理与 Stash 入库",
     "syncComplete": "已同步下载状态并推进入库流程。",
     "autoSyncOn": "每 {{seconds}} 秒自动检查任务",
-    "autoSyncOff": "任务自动处理已暂停，请在“任务与订阅”中重新开启。",
     "updatedAt": "列表更新于 {{time}}",
     "selectionActions": "所选任务操作",
     "selectTask": "选择任务：{{task}}",

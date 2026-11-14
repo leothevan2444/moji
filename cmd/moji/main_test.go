@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -151,7 +150,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			stash { configured ready }
 			jackett { configured ready }
 			qbittorrent { configured ready }
-			automation { taskProgressSyncEnabled subscriptionPollEnabled }
+			automation { subscriptionPollEnabled }
 				stashBox { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded }
 		}
 	}`)
@@ -170,7 +169,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if resp.Data.Settings.System.TaskDeletePolicy != "KEEP_ONLY" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
-	if resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.TaskProgressSyncEnabled {
+	if resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled {
 		t.Fatalf("expected automation workers to be disabled in bare handler test config, got %+v", resp.Data.SettingsStatus.Automation)
 	}
 	if len(resp.Data.SettingsStatus.StashBox.StashBoxes) != 0 || len(resp.Data.Settings.Automation.StashBoxEndpoints) != 0 {
@@ -334,8 +333,8 @@ func TestConfigureProgressSyncInterval(t *testing.T) {
 	}
 
 	cfg.Automation.TaskProgressSyncIntervalSeconds = -1
-	if got := configureProgressSyncInterval(cfg); got != 0 {
-		t.Fatalf("expected disabled interval, got %s", got)
+	if got := configureProgressSyncInterval(cfg); got != time.Minute {
+		t.Fatalf("expected default interval for a nonpositive value, got %s", got)
 	}
 }
 
@@ -366,61 +365,39 @@ func TestIngestTranscodeSettingReachesSnapshotAndRuntime(t *testing.T) {
 	}
 }
 
-func TestTaskProcessingWorkerCanPauseAndResumeWithoutRestart(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	var interval atomic.Int64
-	service := &fakeProgressSyncService{called: make(chan struct{}, 1)}
-	startTaskSyncWorker(ctx, service, nil, func() time.Duration { return time.Duration(interval.Load()) })
-	select {
-	case <-service.called:
-		t.Fatal("disabled worker ran")
-	case <-time.After(25 * time.Millisecond):
-	}
-	interval.Store(int64(time.Millisecond))
-	select {
-	case <-service.called:
-	case <-time.After(2 * time.Second):
-		t.Fatal("worker did not start after enabling")
-	}
-	interval.Store(0)
-	// Allow an operation already started to finish, then discard its notification.
-	time.Sleep(25 * time.Millisecond)
-	for {
-		select {
-		case <-service.called:
-		default:
-			goto drained
-		}
-	}
-drained:
-	select {
-	case <-service.called:
-		t.Fatal("paused worker continued processing")
-	case <-time.After(50 * time.Millisecond):
-	}
-	interval.Store(int64(time.Millisecond))
-	select {
-	case <-service.called:
-	case <-time.After(2 * time.Second):
-		t.Fatal("worker did not resume")
+func TestTaskProcessingStartsImmediatelyAndCannotBeDisabledByInterval(t *testing.T) {
+	for _, value := range []time.Duration{0, -time.Second, time.Hour} {
+		t.Run(value.String(), func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			service := &fakeProgressSyncService{called: make(chan struct{}, 1)}
+			done := startTaskSyncWorker(ctx, service, nil, func() time.Duration { return value })
+			select {
+			case <-service.called:
+			case <-time.After(time.Second):
+				cancel()
+				t.Fatal("task worker did not run on startup")
+			}
+			cancel()
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+				t.Fatal("worker did not stop with application")
+			}
+		})
 	}
 }
 
-func TestTaskProcessingSwitchIsIndependentFromInterval(t *testing.T) {
+func TestTaskProcessingIntervalCannotStopProcessing(t *testing.T) {
 	cfg := testConfig()
-	enabled := false
-	cfg.Automation.TaskProcessingEnabled = &enabled
-	cfg.Automation.TaskProgressSyncIntervalSeconds = 120
-	if configureProgressSyncInterval(cfg) != 0 {
-		t.Fatal("switch did not pause processing")
-	}
-	if effectiveTaskProgressSyncIntervalSeconds(cfg) != 120 {
-		t.Fatal("pausing lost the configured interval")
-	}
-	enabled = true
-	if configureProgressSyncInterval(cfg) != 120*time.Second {
-		t.Fatal("enabling did not restore the interval")
+	for _, seconds := range []int{-1, 0, 120} {
+		cfg.Automation.TaskProgressSyncIntervalSeconds = seconds
+		want := 60 * time.Second
+		if seconds > 0 {
+			want = time.Duration(seconds) * time.Second
+		}
+		if configureProgressSyncInterval(cfg) != want {
+			t.Fatal("invalid task processing interval", seconds)
+		}
 	}
 }
 
@@ -505,7 +482,6 @@ type graphQLResponse struct {
 				Ready      bool `json:"ready"`
 			} `json:"qbittorrent"`
 			Automation struct {
-				TaskProgressSyncEnabled bool `json:"taskProgressSyncEnabled"`
 				SubscriptionPollEnabled bool `json:"subscriptionPollEnabled"`
 			} `json:"automation"`
 			StashBox struct {

@@ -99,7 +99,6 @@ function encodePolicy(form: PolicySettingsForm, area: SettingsPolicyArea) {
   if (area === "metadata") return {stash:{metadata_priority:form.stashBoxEndpoints}};
   const rules = form.torrentSelection.fastRules;
   if (area === "tasks") return {tasks:{
-    task_processing_enabled:form.taskProcessingEnabled,
     task_progress_sync_interval_seconds:numeric(form.taskProgressSyncIntervalSeconds),
     subscription_check_enabled:form.subscriptionCheckEnabled,
     sourcing_retry_interval_hours:numeric(form.sourcingRetryIntervalHours),
@@ -209,7 +208,6 @@ export function PolicySettingsEditor({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const initial = useMemo<PolicySettingsForm>(() => runtimeSettings ? ({
-      taskProcessingEnabled: runtimeSettings.policies.taskProcessingEnabled ?? true,
       taskProgressSyncIntervalSeconds: String([30,60,120,300].includes(runtimeSettings.policies.taskProgressSyncIntervalSeconds) ? runtimeSettings.policies.taskProgressSyncIntervalSeconds : 60),
       sourcingRetryIntervalHours: String(runtimeSettings.policies.sourcingRetryIntervalHours || 6),
       subscriptionCheckEnabled: runtimeSettings.policies.subscriptionCheckEnabled,
@@ -404,19 +402,9 @@ export function PolicySettingsEditor({
           <SettingsSaveStatus {...autosave} />
           <SettingsSubpanel id="schedule">
           <section className="task-processing-settings">
-            <label className="switch-row">
-              <span className="switch-row__label">{t("taskSettings.processingEnabled")}</span>
-              <span className="switch" role="switch" aria-checked={policyForm.taskProcessingEnabled}>
-                <input type="checkbox" aria-label={t("taskSettings.processingEnabled")} checked={policyForm.taskProcessingEnabled}
-                  onChange={event => setPolicySettingsForm(current => ({ ...current, taskProcessingEnabled: event.target.checked }))} />
-                <span className="switch__track" aria-hidden="true" />
-                <span className="switch__thumb" aria-hidden="true" />
-              </span>
-            </label>
-            <p className="settings-section__hint">{t("taskSettings.processingHelp")}</p>
             <label className="settings-field">
               <span>{t("taskSettings.syncInterval")}</span>
-              <select value={policyForm.taskProgressSyncIntervalSeconds} disabled={!policyForm.taskProcessingEnabled}
+              <select value={policyForm.taskProgressSyncIntervalSeconds}
                 onChange={event => setPolicySettingsForm(current => ({ ...current, taskProgressSyncIntervalSeconds: event.target.value }))}>
                 {[30, 60, 120, 300].map(seconds => <option value={seconds} key={seconds}>{t(`taskSettings.intervalOptions.${seconds}`)}</option>)}
               </select>

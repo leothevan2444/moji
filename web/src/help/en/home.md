@@ -23,10 +23,10 @@ Review queue opens the task center workbench for all attention items. Unsubmitte
 
 In progress shows up to five tasks. Download percentages use real progress; other stages show their current step. Recently added shows the latest three tasks with recorded ingest completion times. Linked scenes can open in Stash in a new tab.
 
-## Subscriptions and services
+## Subscriptions and Stash
 
-Subscription health comes from persisted check results. It includes subscribed performers, failed checks, first checks still pending, and links to affected performers. Reading Home does not trigger subscription checks.
+The subscription summary shows the subscribed total and first checks still pending, with a management entry. Release checks show the schedule, progress, latest result and retained statistics separately. Reading Home does not trigger subscription checks.
 
-Healthy services use a compact summary. Expand Service & delivery details for paths and diagnostics. **Configured** means required fields exist; **Ready** means a recent probe succeeded. First-run guidance links to connection and delivery settings.
+The Stash panel shows connection status, version, scene count, and Moji tasks awaiting a Stash scan. It provides connection settings, a status refresh, and a link to open Stash. Unknown measurements appear as a dash; failed status reads retain the last observations without presenting the connection as healthy. Delivery paths remain in Stash settings.
 
-Paused automatic processing remains visible. Home hides connection details, the global update time, and manual refresh during normal operation. An interrupted connection shows a notice and retry action until recovery. Home refreshes snapshots every 30 seconds. Background tabs pause polling and refresh when visible again. A failed module leaves other modules usable and retains available data with a retry notice.
+Task processing starts automatically with Moji and has no global pause switch. Home hides global connection details, the global update time, and a page-wide refresh during normal operation. Service panels retain their own refresh actions. An interrupted connection shows a notice and retry action until recovery. Home refreshes snapshots every 30 seconds. Background tabs pause polling and refresh when visible again. A failed module leaves other modules usable and retains available data with a retry notice.

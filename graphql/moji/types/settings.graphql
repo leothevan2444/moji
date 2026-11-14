@@ -296,8 +296,6 @@ type QBittorrentSettings {
 }
 
 type AutomationSettings {
-  "Whether automatic download and ingest processing is enabled"
-  taskProcessingEnabled: Boolean!
   sourcingRetryIntervalHours: Int!
   taskProgressSyncIntervalSeconds: Int!
   subscriptionCheckEnabled: Boolean!
@@ -384,7 +382,6 @@ type ServiceStatus {
 
 type AutomationStatus {
   taskProgressSyncIntervalSeconds: Int!
-  taskProgressSyncEnabled: Boolean!
   subscriptionCheckEnabled: Boolean!
   subscriptionPollEnabled: Boolean!
 }
@@ -499,8 +496,6 @@ enum AutomationSettingsSection { ALL TASKS RESOURCES METADATA INDEXERS TASK_DELE
 
 input UpdateAutomationSettingsInput {
   section: AutomationSettingsSection = ALL
-  "Independent switch; omitted by legacy clients to preserve the current setting"
-  taskProcessingEnabled: Boolean
   sourcingRetryIntervalHours: Int! = 6
   taskProgressSyncIntervalSeconds: Int!
   subscriptionCheckEnabled: Boolean!
@@ -546,7 +541,6 @@ input UpdateSettingsSectionInput {
  queryOrder: [String!]
 }
 input TaskSettingsInput {
- taskProcessingEnabled: Boolean!
  taskProgressSyncIntervalSeconds: Int!
  subscriptionCheckEnabled: Boolean!
  sourcingRetryIntervalHours: Int!
@@ -624,7 +618,6 @@ input StashCachePatchInput {
 }
 
 input TasksPatchInput {
-  task_processing_enabled: Boolean
   task_progress_sync_interval_seconds: Int
   sourcing_retry_interval_hours: Int
   subscription_check_enabled: Boolean

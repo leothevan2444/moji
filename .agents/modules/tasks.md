@@ -1,5 +1,7 @@
 # 任务、寻源与实时工作台
 
+2026-11-14：任务推进随应用启动立即执行，并按当前检查间隔持续运行；不再提供用户可关闭的全局自动处理开关。配置、GraphQL、设置表单及暂停提示中对应字段已删除。非正间隔回到默认一分钟，不关闭 worker；关闭应用时仍取消并等待 worker 退出。订阅检查保持自己的启用开关，任务受阻和文件确认等业务保护不受此变更影响。
+
 ## 首页与 Widget 共享统计
 
 2026-11-11 核对：`HomeOverview` 嵌入只含计数的 `HomeStats`；[实现](../../internal/taskruntime/home_stats.go) 将聚合与详情采样分离。生产 Relational/旧 SQLite 复用同一聚合函数；首页保留同事务样本一致性，Widget 仅执行聚合。开发内存路径与首页共用分类函数；未知存储能力返回错误，不回退全量 List。边界与生命周期回归见 [home_stats_test.go](../../internal/taskruntime/home_stats_test.go)，外部使用方式见 [Homepage 文档](../../docs/homepage-widget.md)。

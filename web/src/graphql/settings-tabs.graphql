@@ -38,7 +38,6 @@ query LibraryDeliverySettings {
 query SettingsPolicySection {
   settings {
     policies: automation {
-      taskProcessingEnabled
       taskProgressSyncIntervalSeconds
       subscriptionCheckEnabled
       sourcingRetryIntervalHours
@@ -63,7 +62,6 @@ query SettingsPolicySection {
     }
   }
   settingsStatus {
-    taskProcessing: automation { taskProgressSyncIntervalSeconds taskProgressSyncEnabled subscriptionCheckEnabled subscriptionPollEnabled }
     metadataSources: stashBox { stashBoxes { name endpoint apiKeyConfigured } stashBoxesLoaded stashBoxesLoadError }
   }
 }

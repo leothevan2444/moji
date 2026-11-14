@@ -1,33 +1,10 @@
 query HomePageDocument {
   settings {
     system { taskDeletePolicy }
-    automation { taskProcessingEnabled }
     stash {
       url
     }
-    ingest {
-      keepSubtitles
 
-      downloads {
-        qbRoot
-        mojiRoot
-      }
-      library {
-        mojiRoot
-        stashRoot
-      }
-      transfer {
-        action
-      }
-    }
-    jackett {
-      url
-    }
-    qbittorrent {
-      url
-      username
-      defaultSavePath
-    }
   }
   homeOverview: homeTaskSnapshot {
     sequence streamId

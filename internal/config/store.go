@@ -146,23 +146,16 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 }
 
 func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds int, subscriptionCheckEnabled bool, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
-	return s.UpdateAutomationProcessing(nil, taskProgressSyncIntervalSeconds, subscriptionCheckEnabled, stashBoxEndpoints, subscriptionReleasePolicy, torrentSelection, sourcingRetryIntervalHours...)
-}
-
-func (s *Store) UpdateAutomationProcessing(enabled *bool, taskProgressSyncIntervalSeconds int, subscriptionCheckEnabled bool, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	return s.updateAutomationLocked(enabled, taskProgressSyncIntervalSeconds, subscriptionCheckEnabled, stashBoxEndpoints, subscriptionReleasePolicy, torrentSelection, sourcingRetryIntervalHours...)
+	return s.updateAutomationLocked(taskProgressSyncIntervalSeconds, subscriptionCheckEnabled, stashBoxEndpoints, subscriptionReleasePolicy, torrentSelection, sourcingRetryIntervalHours...)
 }
 
-func (s *Store) updateAutomationLocked(enabled *bool, taskProgressSyncIntervalSeconds int, subscriptionCheckEnabled bool, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
-	if enabled != nil {
-		switch taskProgressSyncIntervalSeconds {
-		case 30, 60, 120, 300:
-		default:
-			return nil, fmt.Errorf("task processing interval must be 30, 60, 120 or 300 seconds")
-		}
+func (s *Store) updateAutomationLocked(taskProgressSyncIntervalSeconds int, subscriptionCheckEnabled bool, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
+	switch taskProgressSyncIntervalSeconds {
+	case 30, 60, 120, 300:
+	default:
+		return nil, fmt.Errorf("task processing interval must be 30, 60, 120 or 300 seconds")
 	}
 
 	if err := torrentSelection.Validate(); err != nil {
@@ -175,10 +168,6 @@ func (s *Store) updateAutomationLocked(enabled *bool, taskProgressSyncIntervalSe
 		s.cfg.Automation.SourcingRetryIntervalHours = sourcingRetryIntervalHours[0]
 	}
 
-	if enabled != nil {
-		value := *enabled
-		s.cfg.Automation.TaskProcessingEnabled = &value
-	}
 	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
 	s.cfg.Automation.SubscriptionCheckEnabled = subscriptionCheckEnabled
 	s.cfg.Automation.StashBoxEndpoints = cleanStrings(stashBoxEndpoints)
@@ -300,9 +289,6 @@ func (s *Store) updateConfigNode() (resultErr error) {
 		"category":          s.cfg.Connection.QBittorrent.Category,
 		"tags":              s.cfg.Connection.QBittorrent.Tags,
 	})
-	if s.cfg.Automation.TaskProcessingEnabled != nil {
-		setBoolScalar(mapValue(top, "automation"), "task_processing_enabled", *s.cfg.Automation.TaskProcessingEnabled)
-	}
 	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
 	setIntScalar(mapValue(top, "automation"), "sourcing_retry_interval_hours", s.cfg.Automation.EffectiveSourcingRetryIntervalHours())
 	setBoolScalar(mapValue(top, "automation"), "subscription_check_enabled", s.cfg.Automation.SubscriptionCheckEnabled)
@@ -511,11 +497,13 @@ func (s *Store) UpdateAutomationSection(section string, update AutomationConfig)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	current := s.cfg.Automation
+	if current.TaskProgressSyncIntervalSeconds <= 0 {
+		current.TaskProgressSyncIntervalSeconds = 60
+	}
 	switch section {
 	case "", "ALL":
 		current = update
 	case "TASKS":
-		current.TaskProcessingEnabled = update.TaskProcessingEnabled
 		current.TaskProgressSyncIntervalSeconds = update.TaskProgressSyncIntervalSeconds
 		current.SourcingRetryIntervalHours = update.SourcingRetryIntervalHours
 		current.SubscriptionCheckEnabled = update.SubscriptionCheckEnabled
@@ -531,7 +519,7 @@ func (s *Store) UpdateAutomationSection(section string, update AutomationConfig)
 	default:
 		return nil, fmt.Errorf("unknown settings section %q", section)
 	}
-	return s.updateAutomationLocked(current.TaskProcessingEnabled, current.TaskProgressSyncIntervalSeconds, current.SubscriptionCheckEnabled, current.StashBoxEndpoints, current.SubscriptionReleasePolicy, current.TorrentSelection, current.EffectiveSourcingRetryIntervalHours())
+	return s.updateAutomationLocked(current.TaskProgressSyncIntervalSeconds, current.SubscriptionCheckEnabled, current.StashBoxEndpoints, current.SubscriptionReleasePolicy, current.TorrentSelection, current.EffectiveSourcingRetryIntervalHours())
 }
 
 func (s *Store) UpdateStashBoxCache(ttl int) (*Config, error) {

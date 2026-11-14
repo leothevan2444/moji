@@ -57,7 +57,6 @@ export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
 ];
 
 export const EMPTY_POLICY_SETTINGS_FORM = {
-  taskProcessingEnabled: true,
   sourcingRetryIntervalHours: "6",
   taskProgressSyncIntervalSeconds: "60",
   subscriptionCheckEnabled: true,

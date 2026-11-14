@@ -83,7 +83,6 @@ logging:
 
 tasks:
     # Independently pause/resume automatic download checks and Stash ingest.
-    task_processing_enabled: true
     # Task heartbeat in seconds: 30, 60 (recommended), 120, or 300.
     task_progress_sync_interval_seconds: 60
     # Per-performer check intervals are determined by release activity.

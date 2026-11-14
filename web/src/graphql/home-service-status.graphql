@@ -15,8 +15,8 @@ query HomeServiceStatus {
       version
       sceneCount
       pendingMojiScanCount
-      lastError
       okAt
+      lastError
     }
   }
 }

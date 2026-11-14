@@ -16,7 +16,7 @@ Home 索引器区显示当前已确认启用站点、所选区间的逐站搜索
 
 规则库面板的 IndexerDefinitionPolicy 区域通过 useIndexerDefinitionPolicy 读取 network-only 配置并订阅配置事件，编辑器复用 useSettingsAutosave 的串行稀疏 patch、准确确认 revision 与草稿保护。检查周期为 1–168 小时，自动应用默认关闭；策略保存不会安装规则或立即发起检查。冲突后保留输入，只有确认载入当前设置才丢弃草稿。源/schema 是只读固定属性，活动版本继续来自 manifest/core 状态。
 
-旧 Jackett 搜索/预览/目录/阻塞候选操作及缓存类型已移除，设置策略编辑器只负责任务、资源规则与 Stash 元数据三个实际路由。索引排序使用当前站点管理面板及其 reorder hook，旧无路由分支和排序组件已删除。ServiceCard 仅保留当前 Stash 诊断内容，不再实现固定 Jackett/qB 状态卡；HomeIndexers 和 HomeDownloader 继续分别持有真实索引与下载观测。
+旧 Jackett 搜索/预览/目录/阻塞候选操作及缓存类型已移除，设置策略编辑器只负责任务、资源规则与 Stash 元数据三个实际路由。索引排序使用当前站点管理面板及其 reorder hook，旧无路由分支和排序组件已删除。2026-11-14 按用户确认将首页运行状态彻底替换为 HomeStash，与索引器、下载器同级：连接、版本、影片数、Moji 待扫描任务数；顶部设置及局部刷新，底部打开 Stash。首次成功观测前数字为未知，失败保留最近数据但不标健康；无独立详情、任务推进或交付配置行。任务处理开关及全站暂停提示、相关查询和文案已删除；后台随应用启动持续运行，设置只调整检查间隔。HomeIndexers 和 HomeDownloader 继续分别持有真实索引与下载观测。
 
 任务选源由 useTaskIndexerSearch 管理 URL/操作，TaskIndexerSearch 表达交互，手动磁力和上传路径保留。sourcingTask/run/page/sort 保存恢复范围，参数更新保留原列表参数和 backgroundLocation；刷新不重搜。首次打开沿用自动搜索，服务端按任务与范围复用 run；外任务结果不可选择，过期不隐式重跑。选择只提交 ID 与当前 revision，错误保留候选并有界回读最新任务；已接收提示不宣称下载完成。桌面选源抽屉使用稳定视口高度，避免异步结果改变面板位置。Home 搜索发送统一 indexers 模式，旧 session 的 jackett 值在读取时转换。usePreparedTorrentDownload 管理显式准备、取消、失效和作用域保护；发现/任务候选共用 PreparedTorrentDownloadActions。种子由本站短期 attachment 下载；磁力通过本站准备附件读取后展示原生链接，界面不跳到私有定位 URL。过期只移除当前入口，不自动获取；准备失败保留候选和任务选择。
 

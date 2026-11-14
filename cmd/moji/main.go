@@ -416,12 +416,12 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 	resolver.StashBox = metadataService
 	resolver.LogReader = logging.Default()
 	resolver.RuntimeSettings = buildSettingsSnapshot(cfg, version)
-	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, taskRuntimeService != nil, stashService != nil, stashClient, metadataService)
+	resolver.RuntimeStatus = buildSettingsStatusSnapshot(cfg, version, stashService != nil, stashClient, metadataService)
 	resolver.Stats = statsCollector
 	resolver.ImageCache = imageService
 	resolver.StashBoxDataCache = stashBoxCacheService
 	if configStore != nil {
-		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, taskRuntimeService != nil, stashService != nil, stashClient, subscriptionService, metadataService)
+		resolver.SettingsEditor = newRuntimeSettingsEditor(configStore, version, stashService != nil, stashClient, subscriptionService, metadataService)
 	}
 	graphqlHandler := graphqlapi.NewGraphQLServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
@@ -621,9 +621,6 @@ func configureTaskStore(cfg *config.Config, managers ...*storage.Manager) (taskr
 
 func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds
-	if !cfg.Automation.EffectiveTaskProcessingEnabled() {
-		return 0
-	}
 	if seconds <= 0 {
 		seconds = 60
 	}
@@ -631,8 +628,7 @@ func configureProgressSyncInterval(cfg *config.Config) time.Duration {
 }
 
 // configureProgressSyncIntervalProvider returns the current task sync
-// interval, honoring the latest Web UI edit each time it is called. A return
-// value <= 0 disables the worker.
+// interval, honoring the latest Web UI edit each time it is called.
 func configureProgressSyncIntervalProvider(store *config.Store, cfg *config.Config) func() time.Duration {
 	return func() time.Duration {
 		return configureProgressSyncInterval(storeAutomation(cfg, store))
@@ -752,7 +748,6 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			Tags:               cfg.Connection.QBittorrent.Tags,
 		},
 		Automation: graphqlapi.AutomationSettingsSnapshot{
-			TaskProcessingEnabled:           cfg.Automation.EffectiveTaskProcessingEnabled(),
 			SourcingRetryIntervalHours:      cfg.Automation.EffectiveSourcingRetryIntervalHours(),
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
 			SubscriptionCheckEnabled:        cfg.Automation.SubscriptionCheckEnabled,
@@ -838,7 +833,7 @@ func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.Torr
 	return out
 }
 
-func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, stashBoxService graphqlapi.StashBoxService) *graphqlapi.SettingsStatusSnapshot {
+func buildSettingsStatusSnapshot(cfg *config.Config, version string, stashEnabled bool, stashClient *stash.Client, stashBoxService graphqlapi.StashBoxService) *graphqlapi.SettingsStatusSnapshot {
 	_ = version
 	jackettConfigured := cfg.Connection.Jackett.URL != "" && cfg.Connection.Jackett.APIKey != ""
 	stashConfigured := isStashConfigured(cfg)
@@ -883,7 +878,6 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, downloaderE
 		},
 		Automation: graphqlapi.AutomationStatusSnapshot{
 			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
-			TaskProgressSyncEnabled:         cfg.Automation.EffectiveTaskProcessingEnabled() && downloaderEnabled,
 			SubscriptionCheckEnabled:        cfg.Automation.SubscriptionCheckEnabled,
 			SubscriptionPollEnabled:         cfg.Automation.SubscriptionCheckEnabled && stashEnabled,
 		},
@@ -919,54 +913,45 @@ func loadStashLibraries(stashConfigured bool, stashClient *stash.Client) ([]grap
 
 func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeService, stash graphqlapi.StashService, intervalProvider func() time.Duration) <-chan struct{} {
 	done := make(chan struct{})
-	if service == nil || intervalProvider == nil {
+	if service == nil {
 		close(done)
 		return done
 	}
+	interval := func() time.Duration {
+		if intervalProvider != nil {
+			if value := intervalProvider(); value > 0 {
+				return value
+			}
+		}
+		return time.Minute
+	}
 	go func() {
 		defer close(done)
-		// Keep observing configuration while paused so enabling never needs a restart.
 		check := time.NewTicker(500 * time.Millisecond)
 		defer check.Stop()
-		timer := time.NewTimer(time.Hour)
+		current := interval()
+		// Begin processing immediately, then continue at the configured interval.
+		timer := time.NewTimer(0)
 		defer timer.Stop()
-		var tick <-chan time.Time
-		schedule := func(delay time.Duration, enabled bool) {
+		schedule := func(delay time.Duration) {
 			if !timer.Stop() {
 				select {
 				case <-timer.C:
 				default:
 				}
 			}
-			tick = nil
-			if enabled {
-				timer.Reset(delay)
-				tick = timer.C
-			}
+			timer.Reset(delay)
 		}
-		current := intervalProvider()
-		schedule(current, current > 0)
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-check.C:
-				next := intervalProvider()
-				if next != current {
-					delay := next
-					if current <= 0 && next > 0 {
-						delay = 0
-					}
+				if next := interval(); next != current {
 					current = next
-					schedule(delay, next > 0)
+					schedule(current)
 				}
-			case <-tick:
-				next := intervalProvider()
-				if next != current {
-					current = next
-					schedule(next, next > 0)
-					continue
-				}
+			case <-timer.C:
 				syncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 				syncProgress := service.SyncProgress
 				if bounded, ok := service.(interface {
@@ -989,8 +974,8 @@ func startTaskSyncWorker(ctx context.Context, service graphqlapi.TaskRuntimeServ
 					}
 				}
 				cancel()
-				current = intervalProvider()
-				schedule(current, current > 0)
+				current = interval()
+				schedule(current)
 			}
 		}
 	}()

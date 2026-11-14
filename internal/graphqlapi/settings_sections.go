@@ -41,7 +41,6 @@ func settingsSectionInput(input model.UpdateSettingsSectionInput) (SettingsSecti
 		if task.SourcingRetryIntervalHours < 1 || task.SourcingRetryIntervalHours > 168 {
 			return update, errors.New("resource search interval must be between 1 and 168 hours")
 		}
-		update.TaskProcessingEnabled = &task.TaskProcessingEnabled
 		update.TaskProgressSyncIntervalSeconds = task.TaskProgressSyncIntervalSeconds
 		update.SourcingRetryIntervalHours = task.SourcingRetryIntervalHours
 		update.SubscriptionCheckEnabled = task.SubscriptionCheckEnabled

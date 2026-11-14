@@ -14,18 +14,16 @@ import (
 type runtimeSettingsEditor struct {
 	store               *config.Store
 	version             string
-	downloaderEnabled   bool
 	stashEnabled        bool
 	stashClient         *stash.Client
 	subscriptionService *subscription.Service
 	metadataService     *metadata.Service
 }
 
-func newRuntimeSettingsEditor(store *config.Store, version string, downloaderEnabled bool, stashEnabled bool, stashClient *stash.Client, subscriptionService *subscription.Service, metadataService *metadata.Service) *runtimeSettingsEditor {
+func newRuntimeSettingsEditor(store *config.Store, version string, stashEnabled bool, stashClient *stash.Client, subscriptionService *subscription.Service, metadataService *metadata.Service) *runtimeSettingsEditor {
 	return &runtimeSettingsEditor{
 		store:               store,
 		version:             version,
-		downloaderEnabled:   downloaderEnabled,
 		stashEnabled:        stashEnabled,
 		stashClient:         stashClient,
 		subscriptionService: subscriptionService,
@@ -42,7 +40,7 @@ func (s *runtimeSettingsEditor) Snapshot() *graphqlapi.SettingsSnapshot {
 func (s *runtimeSettingsEditor) StatusSnapshot() *graphqlapi.SettingsStatusSnapshot {
 	cfg := s.store.Config()
 	applyAutomationSettings(cfg, s.subscriptionService, s.metadataService)
-	return buildSettingsStatusSnapshot(cfg, s.version, s.downloaderEnabled, s.stashEnabled, s.stashClient, s.metadataService)
+	return buildSettingsStatusSnapshot(cfg, s.version, s.stashEnabled, s.stashClient, s.metadataService)
 }
 
 func (s *runtimeSettingsEditor) UpdateStashSettings(input graphqlapi.UpdateStashSettingsInput) (*graphqlapi.SettingsSnapshot, error) {
@@ -204,7 +202,6 @@ func (s *runtimeSettingsEditor) UpdateSettingsSection(input graphqlapi.SettingsS
 		interval = s.store.Config().Automation.EffectiveSourcingRetryIntervalHours()
 	}
 	cfg, err := s.store.UpdateAutomationSection(input.Section, config.AutomationConfig{
-		TaskProcessingEnabled:           input.TaskProcessingEnabled,
 		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
 		SubscriptionCheckEnabled:        input.SubscriptionCheckEnabled,
 		StashBoxEndpoints:               input.StashBoxEndpoints,

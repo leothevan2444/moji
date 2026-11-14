@@ -140,7 +140,6 @@ const rootValue = {
       transfer: { action: "COPY" },
     },
     automation: {
-      taskProcessingEnabled: true,
       taskProgressSyncIntervalSeconds: 60, subscriptionCheckEnabled: true,
       sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: {
@@ -162,7 +161,7 @@ const rootValue = {
     qbittorrent: { configured: true, ready: true },
     ingest: { configured: true },
     automation: {
-      taskProgressSyncIntervalSeconds: 60, taskProgressSyncEnabled: false,
+      taskProgressSyncIntervalSeconds: 60,
       subscriptionCheckEnabled: true, subscriptionPollEnabled: false,
     },
     stashBox: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null },
@@ -201,6 +200,7 @@ const rootValue = {
 };
 
 export const settingsSnapshot = rootValue.settings;
+export const serviceStatusSnapshot = rootValue.settingsStatus;
 
 export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
   graphqlOverrides: [{}, { option: true }],
