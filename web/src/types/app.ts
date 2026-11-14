@@ -2,7 +2,7 @@
  * Application-level type definitions shared across components.
  */
 
-export type DrawerKey = "downloader-cleanup" | "subscription-history" | "performance" | "stats" | "settings" | "help" | "task" | "task-resolution" | "task-queue" | "task-batch-result" | "performer-batch-result" | "performer-batch-confirm" | "subscription-check" | "discovery" | "torrents" | "confirm" | "indexer-login" | "indexer-diagnostics" | null;
+export type DrawerKey = "subscription-history" | "performance" | "stats" | "settings" | "help" | "task" | "task-resolution" | "task-queue" | "task-batch-result" | "performer-batch-result" | "performer-batch-confirm" | "subscription-check" | "discovery" | "torrents" | "confirm" | "indexer-login" | "indexer-diagnostics" | null;
 
 export type ToastTone = "tone-success" | "tone-danger" | "tone-info";
 export type ToastPhase = "entering" | "leaving";

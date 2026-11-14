@@ -840,10 +840,7 @@
     "cleanupTrigger": "清理条件",
     "cleanupUi": {
       "label": "自动清理：{{state}}",
-      "title": "自动清理",
       "enabled": "自动清理已启用",
-      "torrent": "当前种子",
-      "lastAction": "最近操作",
       "phases": {
         "IDLE": "已启用",
         "RUNNING": "清理中",

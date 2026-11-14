@@ -843,10 +843,7 @@
     "cleanupTrigger": "Cleanup trigger",
     "cleanupUi": {
       "label": "Automatic cleanup: {{state}}",
-      "title": "Automatic cleanup",
       "enabled": "Automatic cleanup is enabled",
-      "torrent": "Current torrent",
-      "lastAction": "Last action",
       "phases": {
         "IDLE": "Enabled",
         "RUNNING": "Cleaning",

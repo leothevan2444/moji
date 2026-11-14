@@ -10,7 +10,7 @@
 
 两种策略共用 [cleanup 执行器](../../internal/downloader/cleanup.go) 和四种公开阶段：IDLE/RUNNING/WARNING/ERROR。删除前准备状态先落核心库；删除意图和 CONFIRMING 阶段在同一核心事务中提交，随后调用 qB。结果不明只核对同一 hash；15 秒后转为静止警告，不无限播放动画。确认容量种子移除后观察 6 秒，再决定下一项；连续 3 项未观察到净空间增长才暂停。预算、截止及在途身份保存在核心库，runtime 丢失不重置；空间回升或关闭策略可重置保护，空间恢复至阈值以上也重置预算。4xx 明确拒绝（不含 408）记为失败并冷却 30 秒；超时、5xx 和未知结果不冒充失败。重复不变状态不占核心写事务。
 
-主页剩余空间旁由 [CleanupIndicator](../../web/src/components/home/CleanupIndicator.tsx) 展示扫帚图标，只有实际执行及有限确认期间动画。warning/error 分色并配短文案，详细原因、种子和操作时间点击查看，悬停/键盘聚焦提供说明；失联和 reduced-motion 均停止动画。GraphQL 的 cleanup 对象统一提供两种策略状态，不再公开容量专用状态。
+主页剩余空间旁由 [CleanupIndicator](../../web/src/components/home/CleanupIndicator.tsx) 展示扫帚图标，只有实际执行及有限确认期间动画。warning/error 分色并配短文案，悬停/键盘聚焦提供原因，点击直接进入自动清理设置；无独立详情窗口。失联和 reduced-motion 均停止动画。GraphQL 的 cleanup 对象统一提供两种策略状态，不再公开容量专用状态；主页只读取启用、阶段和原因，不取抽屉专用详情。
 
 无旧配置自动转换或兼容分支；schema v7 调整策略结构，v8 新增独立清理执行状态并移除旧空间索引，不转换策略值。本次未修改本地配置或数据。主要源码：[观测](../../internal/downloader/service.go)、[持久化](../../internal/downloader/storage.go)、[qB 配置](../../internal/downloader/preferences.go)、[协议](../../pkg/qbittorrent/transfer_preferences.go)、[页面](../../web/src/components/settings/QBTransferSettings.tsx)。
 

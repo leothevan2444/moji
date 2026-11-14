@@ -1,6 +1,6 @@
 query DownloaderDocument($offset: Int = 0, $limit: Int = 50, $search: String, $taskId: ID, $attentionOnly: Boolean = false) {
   downloader(offset: $offset, limit: $limit, search: $search, taskId: $taskId, attentionOnly: $attentionOnly) {
-    checkedAt connected stale storageAvailable cleanup {enabled phase reason hash name updatedAt} freeSpace downloadSpeed uploadSpeed downloadLimit uploadLimit connectionStatus dhtNodes completedBytes remainingBytes total attentionCount
+    checkedAt connected stale storageAvailable cleanup {enabled phase reason} freeSpace downloadSpeed uploadSpeed downloadLimit uploadLimit connectionStatus dhtNodes completedBytes remainingBytes total attentionCount
     policy { enabled deleteFiles afterIngest capacityEnabled minFreeGb capacityOrder }
     torrents {
       hash name state present taskIds taskCodes allCompleted canDeleteFiles progress downloadSpeed uploadSpeed size completedBytes downloaded uploaded ratio seedingSeconds eta seeds peers availability savePath category tags lastSeenAt removedAt removalReason cleanupError needsAttention
@@ -14,7 +14,7 @@ mutation SetDownloaderSpeedLimitDocument($upload: Boolean!, $kibPerSecond: Int!)
 
 query DownloaderSummaryDocument {
  downloader {
-  checkedAt connected stale storageAvailable cleanup {enabled phase reason hash name updatedAt} freeSpace downloadSpeed uploadSpeed completedBytes remainingBytes total attentionCount connectionStatus
+  checkedAt connected stale storageAvailable cleanup {enabled phase reason} freeSpace downloadSpeed uploadSpeed completedBytes remainingBytes total attentionCount connectionStatus
  }
 }
 query DownloaderSettingsDocument {
