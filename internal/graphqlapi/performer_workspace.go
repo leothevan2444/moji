@@ -32,7 +32,7 @@ func filterAndSortPerformers(items []performer.Performer, subscribed []*model.Su
 			case model.PerformerListFilterReview:
 				keep = reviews[item.ID] > 0
 			case model.PerformerListFilterError:
-				keep = state != nil && strings.TrimSpace(derefString(state.LastError)) != ""
+				keep = item.Subscribed && state != nil && strings.TrimSpace(derefString(state.LastError)) != ""
 			}
 		}
 		if keep {

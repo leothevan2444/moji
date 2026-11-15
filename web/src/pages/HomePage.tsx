@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faCheck, faCircleExclamation, faMagnifyingGlass, faRotate, faArrowUpRightFromSquare, faBolt } from "@fortawesome/free-solid-svg-icons";
-import { HomeSubscriptionChecks, type HomeChecksView } from "../components/home/HomeSubscriptionChecks";
+import { HomeSubscriptions, type HomeChecksView } from "../components/home/HomeSubscriptions";
 import { HomeStash } from "../components/home/HomeStash";
 import { TaskPrimaryAction } from "../components/tasks/TaskPrimaryAction";
 import { formatDateTime, formatRelative, taskFailureSummary, taskPresentation, taskSummary, type DashboardTask } from "../utils";
@@ -49,7 +49,7 @@ export interface HomePageProps {
 
 export function HomePage(props: HomePageProps) {
   const { t } = useTranslation();
-  const { overview, runtimeSettings: settings, runtimeStatus: status, subscription } = props;
+  const { overview, runtimeSettings: settings, runtimeStatus: status } = props;
   const [query, setQuery] = useState(() => readSession("moji:home-search"));
   const [source, setSource] = useState<"stashbox" | "indexers">(() => ["jackett", "indexers"].includes(readSession("moji:home-source")) ? "indexers" : "stashbox");
   const input = useRef<HTMLInputElement>(null);
@@ -119,18 +119,7 @@ export function HomePage(props: HomePageProps) {
 
       </div>
       <aside className="home-sidebar">
-      <section className="home-panel home-subscriptions" aria-labelledby="home-subscriptions-title">
-        <div className="home-panel-heading"><h2 id="home-subscriptions-title">{t("workbench.subscriptions")}</h2><Link to="/performers" aria-label={t("workbench.manageSubscriptions")}>{t("workbench.manageShort")} <FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></Link></div>
-        {error(props.subscriptionError, props.onRefreshSubscription, Boolean(subscription))}
-        {!subscription ? !props.subscriptionError && loading : <>
-          <p className="home-big-number">{subscription.total}<span>{t("workbench.subscribedUnit")}</span></p>
-          {subscription.unchecked > 0 ? <p className="home-muted">{t("workbench.unchecked", { count: subscription.unchecked })}</p> : null}
-          {subscription.total === 0 ? <p className="home-muted">{t("workbench.subscriptionEmpty")}</p> : null}
-        </>}
-
-      </section>
-
-      <HomeSubscriptionChecks snapshot={props.checks ?? null} error={props.checksError ?? null} onRetry={props.onRefreshChecks ?? props.onRefresh} onOpenRun={id => props.onOpenCheck?.(id)} />
+      <HomeSubscriptions subscription={props.subscription} subscriptionError={props.subscriptionError} onRetrySubscription={props.onRefreshSubscription} snapshot={props.checks ?? null} error={props.checksError ?? null} onRetry={props.onRefreshChecks ?? props.onRefresh} onOpenRun={id => props.onOpenCheck?.(id)} />
       <HomeStash status={status} url={settings?.stash.url ?? ""} error={props.statusError} refreshing={props.statusFetching} onRefresh={props.onRefreshStatus} />
       {props.indexers}
       {props.downloader}

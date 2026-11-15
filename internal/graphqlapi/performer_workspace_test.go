@@ -124,6 +124,7 @@ func TestPerformerListOptionsApplyAcrossPagesAndKeepReviewOnlyActors(t *testing.
 	lastCheck, failed := "2026-10-24T10:00:00Z", "check failed"
 	states := []*model.SubscribedPerformer{
 		{Performer: &model.StashPerformer{ID: "a"}, LastError: &failed},
+		{Performer: &model.StashPerformer{ID: "b"}, LastError: &failed},
 		{Performer: &model.StashPerformer{ID: "c"}, LastCheckedAt: &lastCheck},
 	}
 	for _, test := range []struct {

@@ -16,12 +16,16 @@ let active: ReturnType<typeof makeRun> | null = null;
 let recent: ReturnType<typeof makeRun>[] = [];
 let starts = 0;
 let detailReads = 0;
+let failedActorIDs = new Set<string>();
 test.beforeEach(async ({ page }) => {
-  active = null; recent = []; starts = 0; detailReads = 0;
+  active = null; recent = []; starts = 0; detailReads = 0; failedActorIDs = new Set();
   await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
 });
 test.use({ graphqlOverrides: {
-  performerWorkspace: { activities: [], performers: { items: actors, page: 1, pageSize: 24, totalCount: 2, totalPages: 1, hasPrevPage: false, hasNextPage: false }, subscribedPerformers: states },
+  performerWorkspace: ({options}: {options?: {filter?: string}}) => {
+    const visible = options?.filter === "ERROR" ? actors.filter(actor => failedActorIDs.has(actor.id)) : actors;
+    return {activities:[],performers:{items:visible,page:1,pageSize:24,totalCount:visible.length,totalPages:visible.length?1:0,hasPrevPage:false,hasNextPage:false},subscribedPerformers:states.map(state=>({...state,lastError:failedActorIDs.has(state.performer.id)?"Upstream catalogue request timed out.":null}))};
+  },
   homeSubscriptionChecks: () => {
     const scheduled = active?.trigger === "SCHEDULED" ? active : recent.find(run => run.trigger === "SCHEDULED");
     return { enabled: true, nextRunAt: "2026-01-15T18:00:00Z", activeCount: active ? 1 : 0, latestScheduled: scheduled ? summarize(scheduled) : null, latestFinishedScheduled: recent.find(run => run.trigger === "SCHEDULED" && run.status !== "RUNNING") ? summarize(recent.find(run => run.trigger === "SCHEDULED" && run.status !== "RUNNING")!) : null, statistics: { runCount: recent.length, succeededCount: recent.reduce((sum, run) => sum + run.succeededCount, 0), failedCount: recent.reduce((sum, run) => sum + run.failedCount, 0), skippedCount: recent.reduce((sum, run) => sum + run.skippedCount, 0) }, activeRuns: active ? [summarize(active)] : [], recentRuns: recent.slice(0, 3).map(summarize) };
@@ -53,7 +57,7 @@ test("manual check survives actor reload and is tracked in Home's drawer", async
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(page).toHaveURL("/");
-  const home = page.getByRole("region", { name: "Release checks" });
+  const home = page.getByRole("region", { name: "My subscriptions" });
   await expect(home.getByRole("progressbar", { name: "Check progress" })).toHaveAttribute("aria-valuenow", "0");
   await expect(home).toHaveScreenshot("checks-running.png");
 
@@ -61,7 +65,8 @@ test("manual check survives actor reload and is tracked in Home's drawer", async
   finished.status = "SUCCEEDED"; finished.completedCount = 1; finished.succeededCount = 1; finished.finishedAt = "2026-01-15T12:00:00Z";
   finished.items[0].status = "SUCCEEDED"; finished.items[0].finishedAt = finished.finishedAt;
   recent = [finished]; active = null;
-  await expect(home.getByText("Idle", { exact: true })).toBeVisible();
+  await expect(home.getByRole("progressbar")).toHaveCount(0);
+  await expect(home.locator(".home-check-status-line time")).toBeVisible();
   await expect(home.getByText("Completed", { exact: true })).toHaveCount(0);
   const historyButton = home.getByRole("button", {name:/^History/});
   const readsBeforeHistory=detailReads;
@@ -81,7 +86,7 @@ test("Home shows bounded scheduled progress and loads failures only on demand", 
   active.items[0].status = "FAILED";
   active.items[0].error = "The release source could not be reached. ".repeat(8);
   await page.goto("/");
-  const home = page.getByRole("region", { name: "Release checks" });
+  const home = page.getByRole("region", { name: "My subscriptions" });
   await expect(home.getByText("Checked 1 / 2 performers", { exact: false })).toBeVisible();
   await expect(home.getByText("Checking: Beta", { exact: true })).toBeVisible();
   expect(detailReads).toBe(0);
@@ -106,7 +111,7 @@ test("Home shows bounded scheduled progress and loads failures only on demand", 
   await expect(page.getByRole("region", { name: "Release checks" })).toHaveCount(0);
 });
 
-test("history button retains the last scheduled result and shows actor statistics", async ({ page }) => {
+test("neutral history entry opens the latest scheduled result and actor statistics", async ({ page }) => {
   const finished = makeRun("scheduled-finished", "SCHEDULED", ["p1", "p2"]);
   finished.status = "PARTIAL";
   finished.finishedAt = "2026-01-15T12:00:00Z";
@@ -117,21 +122,26 @@ test("history button retains the last scheduled result and shows actor statistic
   finished.items[1].status = "FAILED";
   recent = [finished];
   await page.goto("/");
-  const home = page.getByRole("region", { name: "Release checks" });
+  const home = page.getByRole("region", { name: "My subscriptions" });
   const history = home.getByRole("button", { name: /^History/ });
-  await expect(history).toHaveClass(/home-warning/);
-  await expect(history).toHaveAttribute("title", /Partially failed/);
-  await expect(home.locator(".home-check-statistics dd")).toHaveText(["1", "1", "0"]);
+  await expect(history).not.toHaveClass(/home-warning|home-success/);
+  await expect(home.getByText("Partially failed", {exact:true})).toHaveCount(0);
+  await expect(home.locator(".home-check-statistics")).toHaveCount(0);
   await expect(home.getByText("Latest scheduled run", { exact: true })).toHaveCount(0);
   await expect(home).toHaveScreenshot("checks-history-warning.png");
   await history.click();
   const drawer = page.getByRole("dialog", { name: "History", exact: true });
-  await expect(drawer.getByText("Partially failed", { exact: true })).toBeVisible();
+  await expect(drawer.locator(".home-check-latest").getByRole("button", {name:/Partially failed/})).toBeVisible();
+  await expect(drawer.locator(".home-check-latest time")).toHaveAttribute("datetime", "2026-01-15T12:00:00Z");
+  await expect(drawer.locator(".home-check-latest .home-warning")).toHaveCSS("color", "rgb(164, 83, 19)");
+  await expect(drawer.locator(".home-check-statistics dd")).toHaveText(["1", "1", "0"]);
+  await expect(drawer.locator(".home-check-statistics")).toHaveAttribute("title", /1 recent retained finished runs/);
+  await expect(drawer).toHaveScreenshot("checks-history-statistics.png");
   await page.keyboard.press("Escape");
   await expect(history).toBeFocused();
   active = makeRun("new-scheduled", "SCHEDULED");
   await page.reload();
-  await expect(history).toHaveClass(/home-warning/);
+  await expect(history).not.toHaveClass(/home-warning|home-success/);
   await expect(home.getByRole("progressbar")).toBeVisible();
   active = null;
   finished.status = "SUCCEEDED";
@@ -139,8 +149,30 @@ test("history button retains the last scheduled result and shows actor statistic
   finished.failedCount = 0;
   finished.items[1].status = "SUCCEEDED";
   await page.reload();
-  await expect(history).toHaveClass(/home-success/);
-  await expect(history).toHaveAttribute("title", /Completed/);
-  await expect(home.locator(".home-check-statistics dd")).toHaveText(["2", "0", "0"]);
+  await expect(history).not.toHaveClass(/home-warning|home-success/);
+  await expect(home.locator(".home-check-statistics")).toHaveCount(0);
   await expect(home).toHaveScreenshot("checks-history-success.png");
+  await history.click();
+  await expect(drawer.locator(".home-check-statistics dd")).toHaveText(["2", "0", "0"]);
+  await expect(drawer.locator(".home-check-latest").getByRole("button", {name:/Completed/})).toBeVisible();
+});
+
+
+test("Home latest-issue count opens affected actors and supports diagnosis and recheck", async ({page}) => {
+  failedActorIDs.add("p2");
+  await page.goto("/");
+  await page.getByRole("link", {name:"View performers with latest check issues (1)"}).click();
+  await expect(page).toHaveURL(/\/performers\?filter=error$/);
+  await expect(page.getByRole("button", {name:"Check Beta for updates"})).toBeVisible();
+  await expect(page.getByRole("button", {name:"Check Alpha for updates"})).toHaveCount(0);
+  const errorButton = page.locator(".performer-card-error-button");
+  await errorButton.click();
+  const errorDialog = page.getByRole("dialog");
+  await expect(errorDialog.getByText("Upstream catalogue request timed out.", {exact:true})).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(errorButton).toBeFocused();
+  await page.getByRole("button", {name:"Check Beta for updates"}).click();
+  await expect.poll(()=>starts).toBe(1);
+  expect(active?.items.map(item=>item.performerId)).toEqual(["p2"]);
+  await expect(page.getByRole("button", {name:"Check Beta for updates"})).toBeDisabled();
 });

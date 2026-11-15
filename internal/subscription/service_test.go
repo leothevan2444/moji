@@ -60,6 +60,14 @@ func (f *fakeStashClient) AllPerformers(_ context.Context) ([]*stashgraphql.Perf
 	return out, nil
 }
 
+func (f *fakeStashClient) PerformerSubscriptionFlags(_ context.Context) ([]*stashgraphql.PerformerSubscriptionFlags_AllPerformers, error) {
+	var out []*stashgraphql.PerformerSubscriptionFlags_AllPerformers
+	for _, p := range f.performers {
+		out = append(out, &stashgraphql.PerformerSubscriptionFlags_AllPerformers{ID: p.ID, CustomFields: p.CustomFields})
+	}
+	return out, nil
+}
+
 func (f *fakeStashClient) FindPerformerByID(_ context.Context, id string) (*stashgraphql.PerformerFragment, error) {
 	return f.performers[id], nil
 }

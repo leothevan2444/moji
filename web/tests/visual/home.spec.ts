@@ -187,24 +187,29 @@ for (const averageElapsedMs of [null,0,1500]) {
  });
 }
 
- test("compact subscription summary keeps the large count and omits issues", async ({ page }) => {
+ test("compact subscription summary shows latest actor check issues", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("moji:locale", "zh-CN"));
   await page.goto("/");
   const summary = page.locator(".home-subscriptions");
-  const checks = page.locator(".home-checks");
   await expect(summary.locator(".home-big-number")).toContainText("24");
   await expect(summary.locator("details")).toHaveCount(0);
-  await expect(summary.getByText(/订阅检查异常/)).toHaveCount(0);
-  await expect(checks.getByText("自动检查已启用", { exact: true })).toBeVisible();
-  await expect(checks.locator(".home-check-history")).toHaveCount(0);
-  expect((await summary.boundingBox())!.height).toBeLessThan(130);
-  expect((await checks.boundingBox())!.height).toBeLessThan(190);
+  await expect(summary.getByRole("link", {name:"查看最近检查异常的演员（1 位）"})).toHaveAttribute("href", "/performers?filter=error");
+  await expect(summary.getByText("最近检查异常", {exact:true})).toBeVisible();
+  await expect(summary.getByText("空闲", {exact:true})).toHaveCount(0);
+  await expect(summary.getByText("自动检查已启用", { exact: true })).toBeVisible();
+  await expect(summary.locator(".home-check-history")).toHaveCount(0);
+  expect((await summary.boundingBox())!.height).toBeLessThan(260);
+  await expect(page.locator(".home-checks")).toHaveCount(0);
   await expect(summary).toHaveScreenshot("compact-subscriptions-zh.png");
-  await expect(checks).toHaveScreenshot("compact-checks-zh.png");
   const manage = summary.getByRole("link", { name: "管理演员与订阅" });
   await manage.focus();
   await expect(manage).toBeFocused();
   await expect(manage).toHaveAttribute("href", "/performers");
-  await checks.locator(".home-check-statistics").focus();
-  await expect(checks.locator(".home-check-statistics")).toHaveAttribute("title", /0 次已结束运行/);
+  await expect(manage.locator("svg")).toHaveCount(0);
+  await expect(summary.locator(".home-check-status-line").getByRole("button", {name:"历史记录"})).toBeVisible();
+  await expect(summary.locator(".home-check-statistics")).toHaveCount(0);
+  await summary.getByRole("button", { name: /^历史记录/ }).click();
+  const history = page.getByRole("dialog", { name: "历史记录", exact: true });
+  await history.locator(".home-check-statistics").focus();
+  await expect(history.locator(".home-check-statistics")).toHaveAttribute("title", /0 次已结束运行/);
  });

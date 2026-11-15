@@ -23,6 +23,7 @@ import (
 var errNoMatchingStashBoxMapping = errors.New("subscription: no stash_id matched any configured stash-box endpoint")
 
 type StashClient interface {
+	PerformerSubscriptionFlags(context.Context) ([]*stashgraphql.PerformerSubscriptionFlags_AllPerformers, error)
 	AllPerformers(ctx context.Context) ([]*stashgraphql.PerformerFragment, error)
 	FindPerformerByID(ctx context.Context, id string) (*stashgraphql.PerformerFragment, error)
 	FindScenes(ctx context.Context, sceneFilter *stashgraphql.SceneFilterType, filter *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error)
@@ -187,6 +188,7 @@ func (s *Service) BuildSubscribedPerformers(ctx context.Context, performers []pe
 		return nil, err
 	}
 	out := make([]SubscribedPerformer, 0)
+	states := map[string]*PerformerState{}
 	for _, item := range performers {
 		if !item.Subscribed {
 			continue
@@ -195,9 +197,20 @@ func (s *Service) BuildSubscribedPerformers(ctx context.Context, performers []pe
 		if err != nil {
 			return nil, err
 		}
+		if state == nil {
+			state = &PerformerState{PerformerID: item.ID}
+		}
+		states[item.ID] = state
 		snapshot := buildSubscribedPerformer(item, state)
 		applyReviewSummary(&snapshot, records)
 		out = append(out, snapshot)
+	}
+
+	s.applyLatestCheckOutcomes(states)
+	for i := range out {
+		state := states[out[i].Performer.ID]
+		out[i].LastCheckedAt = copyTime(state.LastCheckedAt)
+		out[i].LastError = state.LastError
 	}
 
 	sort.Slice(out, func(i, j int) bool {

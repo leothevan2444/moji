@@ -127,9 +127,9 @@ describe("Home release checks", () => {
   it("shows schedule and true progress and opens a run through Home's detail action", async () => {
     const onOpenCheck = vi.fn();
     setup({ checks, onOpenCheck });
-    const region = screen.getByRole("region", { name: /Release checks/ });
+    const region = screen.getByRole("region", { name: /My subscriptions/ });
     expect(within(region).queryByText("Latest scheduled run")).toBeNull();
-    expect(within(region).getByText("Next scheduled run")).toBeTruthy();
+    expect(within(region).queryByText("Idle")).toBeNull();
     expect(within(region).getByText("Checked 4 / 10 performers")).toBeTruthy();
     expect(within(region).getByText("Checking: Alpha")).toBeTruthy();
     expect(within(region).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("4");
@@ -138,60 +138,75 @@ describe("Home release checks", () => {
     expect(onOpenCheck).toHaveBeenCalledWith("check-home");
   });
 
-  it.each(["SUCCEEDED", "FAILED", "PARTIAL", "INTERRUPTED"])("retains the %s scheduled result while a new run is active", status => {
+  it.each(["SUCCEEDED", "FAILED", "PARTIAL", "INTERRUPTED"])("keeps the history entry neutral when the latest result is %s", status => {
     const finished = { ...run, id: "older-scheduled", status, finishedAt: "2026-01-15T11:50:00Z" } as typeof run;
     setup({ checks: { ...checks, latestFinishedScheduled: finished } });
-    const history = within(screen.getByRole("region", { name: /Release checks/ })).getByRole("button", { name: /^History/ });
-    expect(history.classList.contains(status === "SUCCEEDED" ? "home-success" : "home-warning")).toBe(true);
-    expect(history.getAttribute("aria-label")).toContain(i18n.t(`subscriptionChecks.states.${status}`));
-    expect(history.title).toContain("Latest scheduled result");
+    const history = within(screen.getByRole("region", { name: /My subscriptions/ })).getByRole("button", { name: /^History/ });
+    expect(history.classList.contains("home-success")).toBe(false);
+    expect(history.classList.contains("home-warning")).toBe(false);
+    expect(history.closest(".home-check-status-line")).toBeTruthy();
+    expect(history.title).toBe("");
   });
 
   it("uses a neutral history button when no finished scheduled result exists", () => {
     setup({ checks });
-    const history = within(screen.getByRole("region", { name: /Release checks/ })).getByRole("button", { name: /^History/ });
+    const history = within(screen.getByRole("region", { name: /My subscriptions/ })).getByRole("button", { name: /^History/ });
     expect(history.classList.contains("home-success")).toBe(false);
     expect(history.classList.contains("home-warning")).toBe(false);
-    expect(history.title).toBe("No finished scheduled checks recorded");
+    expect(history.title).toBe("");
   });
 
   it("isolates failed check reads from task lists and retries only that module", async () => {
     const onRefreshChecks = vi.fn();
-    setup({ checksError: "Check snapshot unavailable", onRefreshChecks });
-    const region = screen.getByRole("region", { name: /Release checks/ });
+    setup({ checksError: "Check snapshot unavailable", onRefreshChecks, subscription: { total: 128, attention: 0, unchecked: 0, lastCheckedAt: null, attentionPerformerIds: [] } });
+    const region = screen.getByRole("region", { name: /My subscriptions/ });
     expect(within(region).getByText("Check snapshot unavailable")).toBeTruthy();
+    expect(region.querySelector(".home-big-number")?.textContent).toContain("128");
     expect(screen.getByText("DEMO-101")).toBeTruthy();
     await userEvent.setup().click(within(region).getByRole("button", { name: "Retry" }));
     expect(onRefreshChecks).toHaveBeenCalledOnce();
   });
 
-  it("shows the latest finished scheduled result on History and renders backend statistics", () => {
+  it("keeps check progress available when the subscription count cannot load", async () => {
+    const onRefreshSubscription = vi.fn();
+    const onRefreshChecks = vi.fn();
+    setup({ checks, subscriptionError: "Subscription summary unavailable", onRefreshSubscription, onRefreshChecks });
+    const region = screen.getByRole("region", { name: /My subscriptions/ });
+    expect(within(region).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("4");
+    await userEvent.setup().click(within(region).getByRole("button", { name: "Retry" }));
+    expect(onRefreshSubscription).toHaveBeenCalledOnce();
+    expect(onRefreshChecks).not.toHaveBeenCalled();
+    expect(screen.queryByRole("region", { name: /Release checks/ })).toBeNull();
+  });
+
+  it("keeps history details out of the idle summary", () => {
     const finished = { ...run, status: "PARTIAL", failedCount: 1 } as typeof run;
     setup({ checks: { ...checks, activeCount: 0, activeRuns: [], latestScheduled: run, latestFinishedScheduled: finished, recentRuns: [finished] } });
-    const region = screen.getByRole("region", { name: /Release checks/ });
-    expect(within(region).getByText("Idle")).toBeTruthy();
+    const region = screen.getByRole("region", { name: /My subscriptions/ });
+    expect(within(region).queryByText("Idle")).toBeNull();
+    expect(within(region).getByLabelText(/Next check /)).toBeTruthy();
     expect(region.querySelector("details")).toBeNull();
     expect(within(region).queryByLabelText("Recent runs")).toBeNull();
     const history = within(region).getByRole("button", { name: /^History/ });
-    expect(history.title).toContain("Partially failed");
-    expect(history.classList.contains("home-warning")).toBe(true);
-    const statistics = region.querySelector(".home-check-statistics")!;
-    expect(statistics.textContent).toContain("Succeeded81");
-    expect(statistics.textContent).toContain("Issues5");
-    expect(statistics.textContent).toContain("Skipped2");
-    expect(statistics.getAttribute("title")).toContain("7 recent retained finished runs");
+    expect(history.title).toBe("");
+    expect(history.classList.contains("home-warning")).toBe(false);
+    expect(region.querySelector(".home-check-statistics")).toBeNull();
     expect(within(region).queryByText("Succeeded 3 · Failed 1 · Skipped 0")).toBeNull();
     expect(within(region).getByRole("button", {name:/^History/})).toBeTruthy();
   });
 });
 
-it("keeps the large subscription total without subscription issue information", () => {
+it("shows latest actor check issues beside the subscription total", () => {
   setup({ subscription: { total: 128, attention: 12, unchecked: 3, lastCheckedAt: "2026-01-15T12:00:00Z", attentionPerformerIds: ["actor/1", "actor2"] } });
   const region = screen.getByRole("region", { name: /My subscriptions/ });
   expect(region.querySelector(".home-big-number")?.textContent).toContain("128");
   expect(within(region).getByRole("link", { name: "Manage performers & subscriptions" }).getAttribute("href")).toBe("/performers");
   expect(region.querySelector("details")).toBeNull();
-  expect(within(region).queryByText(/subscription checks need attention/)).toBeNull();
+  const issues = within(region).getByRole("link", {name:"View performers with latest check issues (12)"});
+  expect(issues.getAttribute("title")).toContain("Currently subscribed performers only");
+  expect(issues.getAttribute("href")).toBe("/performers?filter=error");
+  expect(issues.querySelector(".home-subscription-issue-count")?.textContent).toBe("12");
+  expect(within(region).getByRole("link", { name: "Manage performers & subscriptions" }).querySelector("svg")).toBeNull();
   expect(within(region).queryByRole("link", { name: /Review subscription issue/ })).toBeNull();
 });
 
@@ -264,4 +279,9 @@ describe("Home Stash overview", () => {
     setup({ runtimeStatus: status, runtimeSettings: { ...settings, stash: { url: "javascript:alert(1)" } } });
     expect(within(screen.getByRole("region", { name: "Stash" })).queryByRole("link", { name: "Open Stash" })).toBeNull();
   });
+});
+
+it("shows zero latest check issues explicitly", () => {
+ setup({subscription:{total:3,attention:0,unchecked:0,lastCheckedAt:null,attentionPerformerIds:[]}});
+ expect(screen.getByRole("link", {name:"View performers with latest check issues (0)"}).querySelector(".home-subscription-issue-count")?.textContent).toBe("0");
 });

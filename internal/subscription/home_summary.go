@@ -2,10 +2,11 @@ package subscription
 
 import (
 	"context"
-	"database/sql"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/leothevan2444/moji/internal/performer"
 )
 
 type HomeSummary struct {
@@ -14,23 +15,35 @@ type HomeSummary struct {
 	AttentionPerformerIDs       []string
 }
 
-// HomeSummary reads persisted checks only; it never fetches Stash's catalogue.
+// HomeSummary joins current Stash subscription flags with local check outcomes.
+// It never fetches actor metadata, scenes, releases, or StashBox catalogues.
 func (s *Service) HomeSummary(ctx context.Context) (HomeSummary, error) {
-	if store, ok := s.store.(interface {
-		HomeSummary(context.Context) (HomeSummary, error)
-	}); ok {
-		return store.HomeSummary(ctx)
-	}
-	states, err := s.store.List(ctx)
+	flags, err := s.stash.PerformerSubscriptionFlags(ctx)
 	if err != nil {
 		return HomeSummary{}, err
 	}
-	result := HomeSummary{}
-	for _, state := range states {
-		if state == nil {
-			continue
+	states := map[string]*PerformerState{}
+	var ids []string
+	for _, flag := range flags {
+		if flag != nil && performer.IsSubscribed(flag.CustomFields, s.customFieldKey) {
+			if _, exists := states[flag.ID]; !exists {
+				ids = append(ids, flag.ID)
+				states[flag.ID] = &PerformerState{PerformerID: flag.ID}
+			}
 		}
-		result.Total++
+	}
+	for offset := 0; offset < len(ids); offset += 500 {
+		page, err := s.store.GetCheckStates(ctx, ids[offset:min(offset+500, len(ids))])
+		if err != nil {
+			return HomeSummary{}, err
+		}
+		for _, state := range page {
+			states[state.PerformerID] = state
+		}
+	}
+	s.applyLatestCheckOutcomes(states)
+	result := HomeSummary{Total: len(ids)}
+	for _, state := range states {
 		if strings.TrimSpace(state.LastError) != "" {
 			result.Attention++
 			result.AttentionPerformerIDs = append(result.AttentionPerformerIDs, state.PerformerID)
@@ -38,42 +51,10 @@ func (s *Service) HomeSummary(ctx context.Context) (HomeSummary, error) {
 		if state.LastCheckedAt == nil {
 			result.Unchecked++
 		} else if result.LastCheckedAt == nil || state.LastCheckedAt.After(*result.LastCheckedAt) {
-			result.LastCheckedAt = state.LastCheckedAt
+			result.LastCheckedAt = copyTime(state.LastCheckedAt)
 		}
 	}
 	sort.Strings(result.AttentionPerformerIDs)
 	result.AttentionPerformerIDs = result.AttentionPerformerIDs[:min(3, len(result.AttentionPerformerIDs))]
-	return result, nil
-}
-
-func (s *SQLiteStore) HomeSummary(ctx context.Context) (HomeSummary, error) {
-	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return HomeSummary{}, err
-	}
-	defer tx.Rollback()
-	var row struct {
-		Total       int            `db:"total"`
-		Attention   int            `db:"attention"`
-		Unchecked   int            `db:"unchecked"`
-		LastChecked sql.NullString `db:"last_checked"`
-	}
-	if err := tx.GetContext(ctx, &row, `SELECT COUNT(*) total, COUNT(CASE WHEN TRIM(COALESCE(last_error,'')) != '' THEN 1 END) attention, COUNT(CASE WHEN last_checked_at IS NULL THEN 1 END) unchecked, MAX(last_checked_at) last_checked FROM subscription_performer_state`); err != nil {
-		return HomeSummary{}, err
-	}
-	result := HomeSummary{Total: row.Total, Attention: row.Attention, Unchecked: row.Unchecked}
-	if row.LastChecked.Valid {
-		checked, err := time.Parse(time.RFC3339Nano, row.LastChecked.String)
-		if err != nil {
-			return HomeSummary{}, err
-		}
-		result.LastCheckedAt = &checked
-	}
-	if err := tx.SelectContext(ctx, &result.AttentionPerformerIDs, `SELECT performer_id FROM subscription_performer_state WHERE TRIM(COALESCE(last_error,'')) != '' ORDER BY performer_id ASC LIMIT 3`); err != nil {
-		return HomeSummary{}, err
-	}
-	if err := tx.Commit(); err != nil {
-		return HomeSummary{}, err
-	}
 	return result, nil
 }

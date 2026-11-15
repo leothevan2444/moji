@@ -6,6 +6,15 @@ import (
 	"github.com/leothevan2444/moji/pkg/stash/graphql"
 )
 
+// PerformerSubscriptionFlags reads membership without actor metadata or scenes.
+func (c *Client) PerformerSubscriptionFlags(ctx context.Context) ([]*graphql.PerformerSubscriptionFlags_AllPerformers, error) {
+	result, err := c.graphql.PerformerSubscriptionFlags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return result.AllPerformers, nil
+}
+
 func (c *Client) FindPerformerByID(ctx context.Context, id string) (*graphql.PerformerFragment, error) {
 	performer, err := c.graphql.FindPerformerByID(context.Background(), id)
 	if err != nil {

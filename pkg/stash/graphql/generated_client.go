@@ -10,6 +10,7 @@ import (
 )
 
 type StashGraphQLClient interface {
+	PerformerSubscriptionFlags(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*PerformerSubscriptionFlags, error)
 	FindPerformerByID(ctx context.Context, id string, interceptors ...clientv2.RequestInterceptor) (*FindPerformerByID, error)
 	FindPerformers(ctx context.Context, performerFilter *PerformerFilterType, filter *FindFilterType, performerIds []int, ids []string, interceptors ...clientv2.RequestInterceptor) (*FindPerformers, error)
 	AllPerformers(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*AllPerformers, error)
@@ -881,6 +882,24 @@ func (t *IngestScrapedTag_Parent) GetStoredID() *string {
 		t = &IngestScrapedTag_Parent{}
 	}
 	return t.StoredID
+}
+
+type PerformerSubscriptionFlags_AllPerformers struct {
+	CustomFields map[string]any "json:\"custom_fields\" graphql:\"custom_fields\""
+	ID           string         "json:\"id\" graphql:\"id\""
+}
+
+func (t *PerformerSubscriptionFlags_AllPerformers) GetCustomFields() map[string]any {
+	if t == nil {
+		t = &PerformerSubscriptionFlags_AllPerformers{}
+	}
+	return t.CustomFields
+}
+func (t *PerformerSubscriptionFlags_AllPerformers) GetID() string {
+	if t == nil {
+		t = &PerformerSubscriptionFlags_AllPerformers{}
+	}
+	return t.ID
 }
 
 type FindPerformers_FindPerformers struct {
@@ -2516,6 +2535,17 @@ func (t *SaveIngestScene_SceneUpdate) GetID() string {
 	return t.ID
 }
 
+type PerformerSubscriptionFlags struct {
+	AllPerformers []*PerformerSubscriptionFlags_AllPerformers "json:\"allPerformers\" graphql:\"allPerformers\""
+}
+
+func (t *PerformerSubscriptionFlags) GetAllPerformers() []*PerformerSubscriptionFlags_AllPerformers {
+	if t == nil {
+		t = &PerformerSubscriptionFlags{}
+	}
+	return t.AllPerformers
+}
+
 type FindPerformerByID struct {
 	FindPerformer *PerformerFragment "json:\"findPerformer,omitempty\" graphql:\"findPerformer\""
 }
@@ -2833,6 +2863,29 @@ func (t *SaveIngestScene) GetSceneUpdate() *SaveIngestScene_SceneUpdate {
 		t = &SaveIngestScene{}
 	}
 	return t.SceneUpdate
+}
+
+const PerformerSubscriptionFlagsDocument = `query PerformerSubscriptionFlags {
+	allPerformers {
+		id
+		custom_fields
+	}
+}
+`
+
+func (c *Client) PerformerSubscriptionFlags(ctx context.Context, interceptors ...clientv2.RequestInterceptor) (*PerformerSubscriptionFlags, error) {
+	vars := map[string]any{}
+
+	var res PerformerSubscriptionFlags
+	if err := c.Client.Post(ctx, "PerformerSubscriptionFlags", PerformerSubscriptionFlagsDocument, &res, vars, interceptors...); err != nil {
+		if c.Client.ParseDataWhenErrors {
+			return &res, err
+		}
+
+		return nil, err
+	}
+
+	return &res, nil
 }
 
 const FindPerformerByIDDocument = `query FindPerformerByID ($id: ID!) {
@@ -3944,6 +3997,7 @@ func (c *Client) SaveIngestScene(ctx context.Context, input SceneUpdateInput, in
 }
 
 var DocumentOperationNames = map[string]string{
+	PerformerSubscriptionFlagsDocument:  "PerformerSubscriptionFlags",
 	FindPerformerByIDDocument:           "FindPerformerByID",
 	FindPerformersDocument:              "FindPerformers",
 	AllPerformersDocument:               "allPerformers",

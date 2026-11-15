@@ -56,6 +56,13 @@ fragment SceneFragment on Scene {
   }
 }
 
+query PerformerSubscriptionFlags {
+  allPerformers {
+    id
+    custom_fields
+  }
+}
+
 query FindPerformerByID($id: ID!) {
   findPerformer(id: $id) {
     ...PerformerFragment
