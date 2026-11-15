@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/leothevan2444/moji/internal/indexer"
 	"net/url"
 	"strings"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/film"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/mediafiles"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -38,33 +39,17 @@ func SourcingValidationErrorCode(err error) string {
 // Matching is independent of configurable ranking rules. A fuzzy indexer hit
 // must never win merely because all the real matches are unavailable.
 func validateCodeEvidence(code string, values ...string) (bool, error) {
-	matched := false
+	nonempty := false
 	for _, value := range values {
-		for _, found := range mediafiles.ExtractCodes(value) {
-			if !mediafiles.SameCode(code, found) {
-				if mediaLabel(found) {
-					continue
-				}
-				return false, candidateError(TaskStageErrorCandidateMismatch,
-					fmt.Sprintf("candidate code %s does not match task code %s", found, code))
-			}
-			matched = true
+		if film.Match(code, value) {
+			return true, nil
 		}
+		nonempty = nonempty || strings.TrimSpace(value) != ""
 	}
-	return matched, nil
-}
-
-// Quality labels and numbered parts can resemble release codes, for example
-// "[HD 720p] OFJE657" or "OFJE657-part01.mp4".
-func mediaLabel(value string) bool {
-	prefix, number, _ := strings.Cut(value, "-")
-	switch prefix {
-	case "HD", "FHD", "UHD":
-		return number == "720" || number == "1080" || number == "2160" || number == "4320"
-	case "CD", "DISC", "DISK", "DVD", "PART", "PT":
-		return len(number) <= 2
+	if nonempty {
+		return false, candidateError(TaskStageErrorCandidateUnverified, "resource does not establish the complete target film code")
 	}
-	return false
+	return false, nil
 }
 
 type preparedTorrent struct {
@@ -149,15 +134,18 @@ func prepareTorrentFile(code string, candidate Candidate, metadata downloadedTor
 	candidate.InfoHash = metadata.InfoHash
 	return preparedTorrent{
 		candidate: candidate,
-		options:   qbittorrent.AddTorrentOptions{Torrents: []qbittorrent.TorrentFile{{Filename: code + ".torrent", Data: metadata.Data}}},
+		options:   qbittorrent.AddTorrentOptions{Torrents: []qbittorrent.TorrentFile{{Filename: film.SafeName(code) + ".torrent", Data: metadata.Data}}},
 	}, nil
 }
 
 func validateTorrentCode(code string, metadata downloadedTorrentMetadata) error {
-	names := append([]string{metadata.Name}, metadata.IdentityNames...)
-	matched, err := validateCodeEvidence(code, names...)
-	if err != nil {
-		return err
+	matched := false
+	for _, name := range append([]string{metadata.Name}, metadata.IdentityNames...) {
+		found, err := validateCodeEvidence(code, name)
+		if err != nil {
+			return err
+		}
+		matched = matched || found
 	}
 	videos := 0
 	paths := append(append([]string(nil), metadata.Paths...), metadata.IdentityPaths...)
@@ -236,7 +224,11 @@ func (s *Service) blockSourcingValidation(ctx context.Context, task *Task, err e
 	if errors.As(err, &validation) {
 		code = validation.code
 	}
-	setTaskStage(task, TaskStageSourcing, TaskStageStatusBlocked)
+	stage := TaskStageSourcing
+	if task.SourcingMode == "USER_SELECTED" {
+		stage = TaskStageDownloading
+	}
+	setTaskStage(task, stage, TaskStageStatusBlocked)
 	if persistErr := s.recordSourcingFailure(ctx, task, code, err.Error()); persistErr != nil {
 		return fmt.Errorf("persist sourcing validation failure: %w", persistErr)
 	}

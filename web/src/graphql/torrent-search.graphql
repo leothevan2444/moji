@@ -9,7 +9,7 @@ query TorrentSearch($id: ID!, $offset: Int, $limit: Int, $sortBy: TorrentSearchS
 }
 mutation StartTorrentSearch($input: StartTorrentSearchInput!) { startTorrentSearch(input: $input) { id ...TorrentSearchFields } }
 mutation CancelTorrentSearch($id: ID!) { cancelTorrentSearch(id: $id) { id ...TorrentSearchFields } }
-mutation QueueTorrentCandidate($input: QueueTorrentCandidateInput!) { queueTorrentCandidate(input: $input) { id code stage stageStatus } }
+
 subscription TorrentSearchEvents($id: ID!) { torrentSearchEvents(id: $id) { streamId sequence searchId } }
 mutation PreviewTorrentSelection($input: PreviewTorrentSelectionInput!) {
  previewTorrentSelection(input: $input) {

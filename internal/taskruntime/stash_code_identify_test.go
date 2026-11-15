@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/stashsync"
 )
 
@@ -17,8 +18,11 @@ type codeIngestScanner struct {
 	onApply              func(*stashsync.CodeIdentifyPlan)
 }
 
-func (f *codeIngestScanner) PrepareCodeIdentify(context.Context, string, string, []string) (*stashsync.CodeIdentifyPlan, error) {
+func (f *codeIngestScanner) PrepareFilmIdentify(_ context.Context, target film.Snapshot, _ string, _ []string) (*stashsync.CodeIdentifyPlan, error) {
 	f.prepares++
+	if f.plan != nil {
+		f.plan.Endpoint = target.Endpoint
+	}
 	return f.plan, f.prepareErr
 }
 func (f *codeIngestScanner) ApplyCodeIdentify(_ context.Context, _ string, _ []string, plan *stashsync.CodeIdentifyPlan) error {
@@ -32,7 +36,7 @@ func (f *codeIngestScanner) ApplyCodeIdentify(_ context.Context, _ string, _ []s
 func TestCodeFallbackCompletesOnlyAfterReadingSavedMetadata(t *testing.T) {
 	store := NewMemoryTaskStore()
 	createIngestTask(t, store)
-	scanner := &codeIngestScanner{fakeIngestScanner: readyIngestScanner(), plan: &stashsync.CodeIdentifyPlan{Version: 2, Code: "ABCD-123", RemoteID: "chosen"}}
+	scanner := &codeIngestScanner{fakeIngestScanner: readyIngestScanner(), plan: &stashsync.CodeIdentifyPlan{Version: 2, Endpoint: "https://example.test/graphql", Code: "ABCD-123", RemoteID: "chosen"}}
 	scanner.scenes[0].Title = ""
 	scanner.onApply = func(*stashsync.CodeIdentifyPlan) { scanner.scenes[0].Title = "Saved by Stash" }
 	service, _ := NewService(fakeTracker{}, &fakeTorrentAdder{}, store, WithFileOperator(&fakeFileOperator{}))
@@ -50,6 +54,8 @@ func TestCodeFallbackPersistsChoiceAndReusesItAfterRestart(t *testing.T) {
 	ctx := context.Background()
 	task := richRelationalTask()
 	task.Code = "ABCD-123"
+	task.Film = ingestFilm()
+	task.Film.SceneID = "original"
 	if err := store.Create(ctx, task); err != nil {
 		t.Fatal(err)
 	}
@@ -132,6 +138,7 @@ func TestCodePlanMustFinishEvenWhenRequiredMetadataAlreadyExists(t *testing.T) {
 	ctx := context.Background()
 	task := richRelationalTask()
 	task.Code = "ABCD-123"
+	task.Film = ingestFilm()
 	task.Stage = TaskStageScanning
 	task.StageStatus = TaskStageStatusRunning
 	task.StageErrorCode = ""
@@ -144,7 +151,7 @@ func TestCodePlanMustFinishEvenWhenRequiredMetadataAlreadyExists(t *testing.T) {
 	if e := store.Create(ctx, task); e != nil {
 		t.Fatal(e)
 	}
-	plan := &stashsync.CodeIdentifyPlan{Version: 2, Code: "ABCD-123", RemoteID: "chosen"}
+	plan := &stashsync.CodeIdentifyPlan{Version: 2, Endpoint: "https://example.test/graphql", Code: "ABCD-123", RemoteID: "chosen"}
 	if e := store.RunTaskCommand(ctx, task, stashCodeIdentifyCommand, taskCommandTarget(task, stashCodeIdentifyCommand), map[string]any{"plan": plan}, func() error { return nil }); e != nil {
 		t.Fatal(e)
 	}

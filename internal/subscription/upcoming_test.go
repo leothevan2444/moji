@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/storage"
@@ -152,7 +153,7 @@ func TestUpcomingRestartReconcilesTaskAndUnknownDateReviews(t *testing.T) {
 			if unknown {
 				box.scenes[0].Date = nil
 			} else {
-				tasks.tasks = []*taskruntime.Task{{ID: "already-created", Code: "ABC-123"}}
+				tasks.tasks = []*taskruntime.Task{{ID: "already-created", Code: "ABC-123", Film: &film.Snapshot{Endpoint: refreshTaskEndpoint, SceneID: box.scenes[0].ID, Code: "ABC-123"}}}
 			}
 			if _, err := s.RefreshUpcomingRelease(ctx, key); err != nil {
 				t.Fatal(err)

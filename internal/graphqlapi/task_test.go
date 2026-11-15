@@ -20,93 +20,6 @@ import (
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
-func TestDownloadMediaCreatesTask(t *testing.T) {
-	taskRuntime := &fakeTaskRuntime{
-		downloadTask: &taskruntime.Task{
-			ID:          "task-1",
-			Code:        "ABCD-123",
-			Stage:       taskruntime.TaskStageDownloading,
-			StageStatus: taskruntime.TaskStageStatusRunning,
-			TorrentURL:  "magnet:?xt=urn:btih:test",
-			Candidate: taskruntime.Candidate{
-				Title:   "ABCD-123",
-				Tracker: "demo",
-				Seeders: 5,
-			},
-			CreatedAt: time.Unix(100, 0).UTC(),
-			UpdatedAt: time.Unix(200, 0).UTC(),
-		},
-	}
-	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
-
-	resp := executeGraphQL(t, resolver, `mutation {
-		downloadMedia(input: { code: "ABCD-123", limit: 1 }) {
-			id
-			code
-			stage
-			stageStatus
-			torrentUrl
-			candidate { title tracker seeders }
-		}
-	}`)
-
-	if len(resp.Errors) > 0 {
-		t.Fatalf("expected no errors, got %+v", resp.Errors)
-	}
-	task := resp.Data.DownloadMedia
-	if task.ID != "task-1" || task.Code != "ABCD-123" || task.Stage != "DOWNLOADING" || task.StageStatus != "RUNNING" || task.Candidate.Title != "ABCD-123" {
-		t.Fatalf("unexpected download task response: %+v", task)
-	}
-	if taskRuntime.downloadRequest.Code != "ABCD-123" || taskRuntime.downloadRequest.Limit != 1 {
-		t.Fatalf("unexpected download request: %+v", taskRuntime.downloadRequest)
-	}
-	if string(taskRuntime.downloadRequest.Source) != "MANUAL" {
-		t.Fatalf("expected manual task source, got %+v", taskRuntime.downloadRequest)
-	}
-}
-
-func TestAddTorrentCreatesTask(t *testing.T) {
-	taskRuntime := &fakeTaskRuntime{
-		addTask: &taskruntime.Task{
-			ID:          "task-manual",
-			Code:        "ABCD-123",
-			Stage:       taskruntime.TaskStageDownloading,
-			StageStatus: taskruntime.TaskStageStatusRunning,
-			TorrentURL:  "magnet:?xt=urn:btih:manual",
-			Candidate: taskruntime.Candidate{
-				Title:     "magnet:?xt=urn:btih:manual",
-				MagnetURI: "magnet:?xt=urn:btih:manual",
-			},
-			CreatedAt: time.Unix(100, 0).UTC(),
-			UpdatedAt: time.Unix(200, 0).UTC(),
-		},
-	}
-	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
-
-	resp := executeGraphQL(t, resolver, `mutation {
-		addTorrent(input: { url: "magnet:?xt=urn:btih:manual", category: "moji" }) {
-			id
-			code
-			stage
-			stageStatus
-			torrentUrl
-		}
-	}`)
-
-	if len(resp.Errors) > 0 {
-		t.Fatalf("expected no errors, got %+v", resp.Errors)
-	}
-	if resp.Data.AddTorrent.ID != "task-manual" || resp.Data.AddTorrent.Code != "ABCD-123" || resp.Data.AddTorrent.Stage != "DOWNLOADING" || resp.Data.AddTorrent.StageStatus != "RUNNING" {
-		t.Fatalf("unexpected add torrent response: %+v", resp.Data.AddTorrent)
-	}
-	if taskRuntime.addRequest.URL != "magnet:?xt=urn:btih:manual" || taskRuntime.addRequest.Category != "moji" {
-		t.Fatalf("unexpected add torrent request: %+v", taskRuntime.addRequest)
-	}
-	if string(taskRuntime.addRequest.Source) != "MANUAL" {
-		t.Fatalf("expected manual task source, got %+v", taskRuntime.addRequest)
-	}
-}
-
 func TestResolveBlockedSourcingTaskUsesSelectedCandidate(t *testing.T) {
 	taskRuntime := &fakeTaskRuntime{
 		resolveSourcingTask: &taskruntime.Task{
@@ -134,34 +47,6 @@ func TestResolveBlockedSourcingTaskUsesSelectedCandidate(t *testing.T) {
 	}
 	if taskRuntime.resolveSourcingID != "task-blocked" || taskRuntime.resolveSourcingReq.Title != "ABCD-123 selected" || taskRuntime.resolveSourcingReq.Seeders != 8 {
 		t.Fatalf("unexpected resolution request: %+v", taskRuntime.resolveSourcingReq)
-	}
-}
-
-func TestDeprecatedQBittorrentAddCreatesTask(t *testing.T) {
-	taskRuntime := &fakeTaskRuntime{
-		addTask: &taskruntime.Task{
-			ID:          "task-manual",
-			Stage:       taskruntime.TaskStageDownloading,
-			StageStatus: taskruntime.TaskStageStatusRunning,
-			TorrentURL:  "magnet:?xt=urn:btih:manual",
-			CreatedAt:   time.Unix(100, 0).UTC(),
-			UpdatedAt:   time.Unix(200, 0).UTC(),
-		},
-	}
-	resolver := NewResolver(nil, taskRuntime, nil, "test-version")
-
-	resp := executeGraphQL(t, resolver, `mutation {
-		qbittorrentAdd(input: { url: "magnet:?xt=urn:btih:manual" })
-	}`)
-
-	if len(resp.Errors) > 0 {
-		t.Fatalf("expected no errors, got %+v", resp.Errors)
-	}
-	if !resp.Data.QbittorrentAdd {
-		t.Fatal("expected qbittorrentAdd to return true")
-	}
-	if taskRuntime.addRequest.URL != "magnet:?xt=urn:btih:manual" {
-		t.Fatalf("unexpected add torrent request: %+v", taskRuntime.addRequest)
 	}
 }
 
@@ -588,20 +473,6 @@ func TestRetryTasksMapsBatchPayload(t *testing.T) {
 	}
 	if payload.Results[0].ReasonCode != taskruntime.TaskBatchReasonRetried || payload.Results[0].Task.ID != "task-1" {
 		t.Fatalf("unexpected result mapping: %+v", payload.Results[0])
-	}
-}
-
-func TestDownloadMediaRequiresTaskRuntime(t *testing.T) {
-	resolver := NewResolver(nil, nil, nil, "test-version")
-
-	resp := executeGraphQL(t, resolver, `mutation {
-		downloadMedia(input: { code: "ABCD-123" }) { id }
-	}`)
-	if len(resp.Errors) == 0 {
-		t.Fatal("expected taskRuntime configuration error")
-	}
-	if got := resp.Errors[0].Message; got != "task runtime is not configured" {
-		t.Fatalf("unexpected error: %q", got)
 	}
 }
 
@@ -1700,4 +1571,16 @@ func (f *fakeSettingsEditor) UpdateStashBoxCacheSettings(ttlHours int) (*Setting
 
 func (f *fakeSettingsEditor) UpdateSettingsSection(input SettingsSectionUpdate) (*SettingsSnapshot, error) {
 	return f.UpdateAutomationSettings(input)
+}
+
+func TestCodeOnlyAndUnconfirmedResourceAPIsAreRemoved(t *testing.T) {
+	schema := generated.NewExecutableSchema(generated.Config{Resolvers: NewResolver(nil, nil, nil, "test")}).Schema()
+	for _, name := range []string{"downloadMedia", "addTorrent", "qbittorrentAdd", "queueTorrentCandidate"} {
+		if schema.Mutation.Fields.ForName(name) != nil {
+			t.Fatal("unconfirmed admission remains public", name)
+		}
+	}
+	if schema.Mutation.Fields.ForName("createFilmTask") == nil {
+		t.Fatal("confirmed admission missing")
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/mediafiles"
 	"github.com/leothevan2444/moji/internal/stashsync"
@@ -355,7 +356,7 @@ func (s *Service) startMediaPreparation(ctx context.Context, task *Task) (*Task,
 		latest.TransferAction = string(cfg.Transfer.Action)
 		latest.MojiSourcePath = request.SourceRoot
 		latest.MojiTransferPath = result.Directory
-		latest.StashScanPath = filepath.Join(cfg.Library.StashRoot, latest.Code)
+		latest.StashScanPath = filepath.Join(cfg.Library.StashRoot, film.SafeName(latest.Code))
 		latest.StashIngestPhase = StashIngestScan
 		latest.StashScanJobID = ""
 		latest.TransferError = ""

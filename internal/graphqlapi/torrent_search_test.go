@@ -3,13 +3,15 @@ package graphqlapi
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/internal/torrentsearch"
-	"testing"
-	"time"
 )
 
 type searchAPISource struct {
@@ -51,16 +53,14 @@ type selectedTaskFlow struct {
 	calls int
 }
 
-func (*selectedTaskFlow) CreateFromManualTorrent(context.Context, taskflow.CreateFromManualTorrentInput) (*taskruntime.Task, error) {
-	return nil, errors.New("wrong manual entry")
+func (*selectedTaskFlow) ResolveFilm(context.Context, string, string) (film.Snapshot, error) {
+	return film.Snapshot{}, nil
 }
-func (*selectedTaskFlow) CreateFromSearchCode(context.Context, taskflow.CreateFromSearchCodeInput) (*taskruntime.Task, error) {
-	return nil, errors.New("wrong automatic entry")
-}
-func (s *selectedTaskFlow) QueueTorrentCandidate(_ context.Context, req taskruntime.QueueIndexedResourceRequest) (*taskruntime.Task, error) {
-	s.req = req
+func (s *selectedTaskFlow) ConfirmFilm(_ context.Context, input taskflow.ConfirmFilmInput) (*taskruntime.Task, error) {
 	s.calls++
-	return &taskruntime.Task{ID: "created", Code: req.Code}, nil
+	s.req.ResourceID = input.ResourceID
+	s.req.Paused = input.Paused
+	return &taskruntime.Task{ID: "created"}, nil
 }
 func TestPersistentSearchGraphQLScopePageUnknownValuesAndCancellation(t *testing.T) {
 	resolver := NewResolver(nil, nil, nil, "test")
@@ -103,15 +103,15 @@ func TestQueueCandidateGraphQLChecksRunMembershipAndOnlyUsesTaskFlow(t *testing.
 			Extensions struct{ Code string }
 		}
 		Data struct {
-			Task *model.Task `json:"queueTorrentCandidate"`
+			Task *model.Task `json:"createFilmTask"`
 		}
 	}
-	executeDefinitionGraphQLInto(t, resolver, `mutation{queueTorrentCandidate(input:{code:"ABCD-123",searchId:"other",candidateId:"candidate"}){id}}`, &response)
+	executeDefinitionGraphQLInto(t, resolver, `mutation{createFilmTask(input:{endpoint:"https://example.test/graphql",sceneId:"scene",confirmationDigest:"digest",resourceConfirmed:true,searchId:"other",candidateId:"candidate"}){id}}`, &response)
 	if len(response.Errors) != 1 || response.Errors[0].Extensions.Code != "TORRENT_SEARCH_EXPIRED" || creator.calls != 0 {
 		t.Fatal("cross-run selection admitted", response.Errors)
 	}
 	response.Errors = nil
-	executeDefinitionGraphQLInto(t, resolver, `mutation{queueTorrentCandidate(input:{code:"ABCD-123",searchId:"run",candidateId:"candidate",paused:false}){id code}}`, &response)
+	executeDefinitionGraphQLInto(t, resolver, `mutation{createFilmTask(input:{endpoint:"https://example.test/graphql",sceneId:"scene",confirmationDigest:"digest",resourceConfirmed:true,searchId:"run",candidateId:"candidate",paused:false}){id code}}`, &response)
 	if len(response.Errors) != 0 || response.Data.Task == nil || response.Data.Task.ID != "created" || creator.calls != 1 || creator.req.ResourceID != "server-private-resource" || creator.req.Paused == nil || *creator.req.Paused {
 		t.Fatal("selection did not use server-owned resource/taskflow", response.Errors)
 	}

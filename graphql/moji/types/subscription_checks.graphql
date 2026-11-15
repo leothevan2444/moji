@@ -20,12 +20,54 @@ enum SubscriptionCheckScope {
 }
 
 type SubscriptionCheckItem {
+	 details: SubscriptionCheckDetails
   performerId: ID!
   name: String!
   status: SubscriptionCheckStatus!
   error: String
   startedAt: String
   finishedAt: String
+}
+
+type SubscriptionCheckDetails {
+ phase: String!
+ catalogStatus: String!
+ catalogErrorCode: String!
+ catalogSource: String!
+ catalogMode: String!
+ catalogStopReason: String!
+ catalogPages: Int!
+ catalogPagesWithResults: Int!
+ catalogScenes: Int!
+ catalogReleases: Int!
+ newCount: Int!
+ knownCount: Int!
+ upcomingCount: Int!
+ inLibraryCount: Int!
+ queuedCount: Int!
+ reviewCount: Int!
+ skippedCount: Int!
+ creationFailedCount: Int!
+ retryTotal: Int!
+ retryAttempted: Int!
+ retrySucceeded: Int!
+ retryFailed: Int!
+ retryDeferred: Int!
+ omittedResults: Int!
+ results: [SubscriptionCheckReleaseResult!]!
+}
+
+type SubscriptionCheckReleaseResult {
+ key: ID!
+ code: String!
+ title: String!
+ phase: String!
+ outcome: String!
+ reasonCode: String!
+ errorCode: String!
+ error: String!
+ taskId: ID
+ nextRetryAt: String
 }
 
 type SubscriptionCheckRun {

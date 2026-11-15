@@ -3,11 +3,12 @@ package subscription
 import (
 	"context"
 	"errors"
-	"github.com/leothevan2444/moji/internal/releasedate"
 	"sort"
 	"strings"
 
-	"github.com/leothevan2444/moji/internal/mediafiles"
+	"github.com/leothevan2444/moji/internal/film"
+	"github.com/leothevan2444/moji/internal/metadata"
+	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -16,10 +17,26 @@ type ReviewTaskLister interface {
 }
 
 func reviewCode(code string) string {
-	if value := mediafiles.ExtractCode(strings.TrimSpace(code)); value != "" {
+	if value := film.Code(code); value != "" {
 		return value
 	}
 	return strings.ToUpper(strings.TrimSpace(code))
+}
+
+func reviewTaskMatches(record ReleaseReview, task *taskruntime.Task) bool {
+	return task != nil && task.Film != nil && task.Film.Key() == reviewFilm(record).Key()
+}
+
+func reviewFilm(record ReleaseReview) film.Snapshot {
+	endpoint := film.Endpoint(strings.TrimPrefix(record.Source, "stash-box:"))
+	id := record.SceneID
+	if id == "" {
+		id = strings.TrimPrefix(record.Key, "stashbox:"+endpointKey(endpoint)+":")
+		if id == record.Key {
+			id = ""
+		}
+	}
+	return film.Snapshot{Endpoint: endpoint, SceneID: id, Code: record.Code, Title: record.Title, Date: record.Date}
 }
 
 func reviewStatus(record RecordedRelease, processed bool) ReviewStatus {
@@ -141,8 +158,9 @@ func (s *Service) reconcileReviewTasksLocked(ctx context.Context, records map[st
 func (s *Service) reconcileReviewTasks(ctx context.Context, records map[string]ReleaseReview, tasks map[string]*taskruntime.Task) error {
 	changed := make([]ReleaseReview, 0)
 	for key, record := range records {
-		if task := tasks[reviewCode(record.Code)]; task != nil && (record.TaskID != task.ID || record.Status != ReviewDownloaded) {
-			record.TaskID, record.Status, record.Error = task.ID, ReviewDownloaded, ""
+		if task := tasks[reviewCode(record.Code)]; reviewTaskMatches(record, task) && (record.TaskID != task.ID || record.Status != ReviewDownloaded) {
+			record.TaskID, record.Status = task.ID, ReviewDownloaded
+			clearReleaseFailure(&record)
 			record.Decision = ReleaseDecisionDownloaded
 			records[key] = record
 			changed = append(changed, record)
@@ -264,10 +282,7 @@ func (s *Service) ListReleaseReviews(ctx context.Context, query ReleaseReviewQue
 	return page, nil
 }
 
-func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseReview) error {
-	if strings.TrimSpace(record.Code) == "" {
-		return errors.New("subscription: release code is missing")
-	}
+func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseReview, applyPolicy ...bool) error {
 	tasks, err := s.reviewTaskMap(ctx)
 	if err != nil {
 		return err
@@ -283,6 +298,7 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 			sceneID = ""
 		}
 	}
+	record.SceneID = sceneID
 	inLibrary, err := s.stashSceneExistsForRelease(ctx, Release{Key: record.Key, Source: record.Source, SceneID: sceneID})
 	if err != nil {
 		return err
@@ -292,7 +308,7 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 		record.Error = ""
 		return nil
 	}
-	if record.SceneID != "" {
+	if record.Film == nil && record.SceneID != "" {
 		client, ok := s.metadata.Get(strings.TrimPrefix(record.Source, "stash-box:"))
 		if !ok {
 			return errors.New("subscription: release metadata source unavailable")
@@ -305,6 +321,19 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 			return errors.New("subscription: release metadata not found")
 		}
 		record.Date = stringValue(scene.Date)
+		record.Film = metadata.FilmSnapshot(strings.TrimPrefix(record.Source, "stash-box:"), scene)
+		record.Code = stringValue(scene.Code)
+		record.Title = stringValue(scene.Title)
+		if len(applyPolicy) > 0 && applyPolicy[0] && record.ReviewedAt == nil {
+			evaluation, _ := evaluateReleasePolicy(s.currentReleasePolicy(), s.now(), nil, scene)
+			record.Classification, record.PerformerCount, record.PerformerNames = evaluation.Classification, evaluation.PerformerCount, evaluation.PerformerNames
+			record.Decision, record.DecisionReason = evaluation.Decision, evaluation.DecisionReason
+			if record.Decision != ReleaseDecisionDownloaded {
+				record.Status = reviewStatus(record.RecordedRelease, false)
+				clearReleaseFailure(record)
+				return nil
+			}
+		}
 		if err := releasedate.Check(record.Date, s.now(), s.releaseTimezone()); err == releasedate.ErrNotReleased {
 			return err
 		}
@@ -322,6 +351,9 @@ func (s *Service) queueReviewTaskLocked(ctx context.Context, record *ReleaseRevi
 		return errors.New("subscription: release code is missing")
 	}
 	if task := tasks[reviewCode(record.Code)]; task != nil {
+		if !reviewTaskMatches(*record, task) {
+			return taskruntime.ErrDuplicateCodeTask
+		}
 		record.TaskID = task.ID
 		record.Status = ReviewDownloaded
 		record.Error = ""
@@ -330,7 +362,11 @@ func (s *Service) queueReviewTaskLocked(ctx context.Context, record *ReleaseRevi
 	if s.taskCreator == nil {
 		return errors.New("subscription: task creation is not configured")
 	}
-	task, err := s.taskCreator.QueueSubscriptionRelease(ctx, record.Code, record.Title)
+	target := reviewFilm(*record)
+	if record.Film != nil {
+		target = record.Film.Clone()
+	}
+	task, err := s.taskCreator.QueueSubscriptionRelease(ctx, target)
 	if task != nil {
 		tasks[reviewCode(record.Code)] = task
 		record.TaskID = task.ID
@@ -349,7 +385,7 @@ func (s *Service) queueReviewTaskLocked(ctx context.Context, record *ReleaseRevi
 		if listErr != nil {
 			return listErr
 		}
-		if existing := currentTasks[reviewCode(record.Code)]; existing != nil {
+		if existing := currentTasks[reviewCode(record.Code)]; reviewTaskMatches(*record, existing) {
 			tasks[reviewCode(record.Code)] = existing
 			record.TaskID = existing.ID
 			record.Status = ReviewDownloaded
@@ -405,16 +441,19 @@ func (s *Service) ProcessReleaseReviews(ctx context.Context, keys []string, acti
 				record.Error = ""
 				switch action {
 				case ReviewReconsider:
+					clearReleaseFailure(&record)
 					record.Status = ReviewPending
 					record.Decision = ReleaseDecisionQueued
 					record.DecisionReason = "user_reconsidered"
 				case ReviewReject:
+					clearReleaseFailure(&record)
 					record.Status = ReviewRejected
 					record.DecisionReason = "user_rejected"
 				case ReviewDownload:
 					if err := s.downloadReviewLocked(ctx, &record); err != nil {
-						record.Status = ReviewFailed
-						record.Error = err.Error()
+						s.failReleaseReview(&record, err)
+					} else {
+						clearReleaseFailure(&record)
 					}
 				}
 				result.Outcome = "SUCCEEDED"

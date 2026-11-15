@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/leothevan2444/moji/internal/film"
 )
 
 // DeliveryRemoval is persisted before deletion, so interrupted cleanup can
@@ -44,8 +46,8 @@ func (p DeliveryRemoval) receiptPath() string {
 }
 
 func (p DeliveryRemoval) validate(ctx context.Context) error {
-	if ExtractCode(p.Code) != p.Code || p.Code == "" || p.TaskID == "" || p.TaskID == "." || p.TaskID == ".." || filepath.Base(p.TaskID) != p.TaskID ||
-		!filepath.IsAbs(p.Target) || filepath.Clean(p.Target) != p.Target || filepath.Base(p.Target) != p.Code {
+	if film.Code(p.Code) == "" || p.Code == "" || p.TaskID == "" || p.TaskID == "." || p.TaskID == ".." || filepath.Base(p.TaskID) != p.TaskID ||
+		!filepath.IsAbs(p.Target) || filepath.Clean(p.Target) != p.Target || p.Target == string(filepath.Separator) {
 		return errors.New("invalid delivery ownership")
 	}
 	root := filepath.Dir(p.Target)
@@ -90,6 +92,8 @@ func (p DeliveryRemoval) validate(ctx context.Context) error {
 }
 
 func PlanDeliveryRemoval(ctx context.Context, taskID, code, target string) (*DeliveryRemoval, error) {
+	// The durable target and task-owned receipt determine ownership. Catalog
+	// metadata may be corrected without renaming already delivered media.
 	p := &DeliveryRemoval{TaskID: taskID, Code: code, Target: target}
 	root := filepath.Dir(target)
 	if err := cleanupPath(root, p.receiptPath()); err != nil {

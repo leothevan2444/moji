@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/leothevan2444/moji/internal/film"
 )
 
 type Kind string
@@ -39,67 +41,10 @@ type Plan struct {
 
 var ErrReview = errors.New("media file selection requires review")
 var domain = regexp.MustCompile(`(?i)[a-z0-9_-]+(?:\.[a-z0-9_-]+)*\.(?:com|net|org|xyz|cc|tv|me|cn|top|vip)(?:@)?`)
-var codeToken = regexp.MustCompile(`(?i)([a-z]{2,10})[-_ ]?([0-9]{2,6})`)
-var partToken = regexp.MustCompile(`(?i)^(?:[-_. ]*(?:part|cd|pt)[-_. ]*([0-9]{1,2})|[-_. ]+([0-9]{1,2})|([a-z]))(?:$|[-_. ])`)
+var partToken = regexp.MustCompile(`(?i)^(?:[-_. ]*(?:part|cd|pt)[-_. ]*([0-9]{1,2})|[-_. ]+([0-9]{1,2})|[-_. ]+([a-z]))(?:$|[-_. ])`)
 var junk = regexp.MustCompile(`(?i)(?:^|[^a-z0-9])(?:sample|trailer|preview|advert|advertisement|promo)(?:$|[^a-z0-9])|广告|廣告|宣传|宣傳|样片|樣片|试看|試看|预告|預告`)
 
 func CleanName(value string) string { return domain.ReplaceAllString(value, "") }
-func codeMatches(value string) [][]string {
-	value = CleanName(value)
-	matches := codeToken.FindAllStringSubmatchIndex(value, -1)
-	result := [][]string{}
-	for _, m := range matches {
-		if m[0] > 0 && isAlnum(value[m[0]-1]) {
-			continue
-		}
-		if m[1] < len(value) && value[m[1]] >= '0' && value[m[1]] <= '9' {
-			continue
-		}
-		result = append(result, []string{strings.ToUpper(value[m[2]:m[3]]), value[m[4]:m[5]], value[m[1]:]})
-	}
-	return result
-}
-func isAlnum(c byte) bool {
-	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9'
-}
-
-// ExtractCode rejects conflicting identities rather than choosing the first match.
-func ExtractCode(value string) string {
-	found := ""
-	for _, m := range codeMatches(value) {
-		code := m[0] + "-" + m[1]
-		if found != "" && found != code {
-			return ""
-		}
-		found = code
-	}
-	return found
-}
-
-// ExtractCodes returns all code tokens, including conflicting identities, so
-// callers validating a torrent do not mistake an ambiguous name for no code.
-func ExtractCodes(value string) []string {
-	var codes []string
-	for _, m := range codeMatches(value) {
-		codes = append(codes, m[0]+"-"+m[1])
-	}
-	return codes
-}
-
-func SameCode(a, b string) bool {
-	x, y := codeMatches(a), codeMatches(b)
-	if len(x) != 1 || len(y) != 1 {
-		return false
-	}
-	number := func(s string) string {
-		s = strings.TrimLeft(s, "0")
-		if s == "" {
-			return "0"
-		}
-		return s
-	}
-	return x[0][0] == y[0][0] && number(x[0][1]) == number(y[0][1])
-}
 func Video(value string) bool {
 	switch strings.ToLower(path.Ext(value)) {
 	case ".mp4", ".mkv", ".avi", ".wmv", ".mov", ".ts", ".m2ts", ".webm", ".mpeg", ".mpg", ".m4v", ".iso":
@@ -124,19 +69,16 @@ func Classify(code string, files []File, keep bool) Plan {
 			f.Reason = "ADVERTISEMENT_OR_SAMPLE"
 		case IsSubtitle(f.Path):
 			f.Kind, f.Selected, f.Reason = Subtitle, keep, "SUBTITLE_POLICY"
-			if candidate := ExtractCode(path.Base(f.Path)); candidate != "" && !SameCode(candidate, code) {
+			if !film.Match(code, path.Base(f.Path)) {
 				f.Selected = false
 				f.Reason = "SUBTITLE_OTHER_RELEASE"
 			}
 		case Video(f.Path):
 			f.Kind, f.Reason = UnknownVideo, "IDENTITY_UNCERTAIN"
 			name := path.Base(strings.ReplaceAll(f.Path, "\\", "/"))
-			for _, token := range codeMatches(strings.TrimSuffix(name, path.Ext(name))) {
-				if !SameCode(token[0]+"-"+token[1], code) {
-					continue
-				}
+			if suffix, matched := film.Suffix(code, strings.TrimSuffix(name, path.Ext(name))); matched {
 				f.Kind, f.Selected, f.Reason = Main, true, "TARGET_CODE"
-				if m := partToken.FindStringSubmatch(token[2]); m != nil {
+				if m := partToken.FindStringSubmatch(suffix); m != nil {
 					if m[3] != "" {
 						f.Part = int(strings.ToUpper(m[3])[0]-'A') + 1
 					} else {
@@ -147,7 +89,6 @@ func Classify(code string, files []File, keep bool) Plan {
 						f.Part, _ = strconv.Atoi(n)
 					}
 				}
-				break
 			}
 		}
 	}

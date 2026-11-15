@@ -375,7 +375,7 @@ func TestDownloadMediaContextUsesConfiguredCandidateSelection(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "ABCD-123"})
+	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil {
 		t.Fatalf("DownloadMediaContext failed: %v", err)
 	}

@@ -10,79 +10,9 @@ import (
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
-	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
-
-// QbittorrentAdd is the resolver for the qbittorrentAdd field.
-func (r *mutationResolver) QbittorrentAdd(ctx context.Context, input model.QBittorrentAddInput) (bool, error) {
-	if _, err := r.AddTorrent(ctx, input); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-// AddTorrent is the resolver for the addTorrent field.
-func (r *mutationResolver) AddTorrent(ctx context.Context, input model.QBittorrentAddInput) (*model.Task, error) {
-	if r.TaskFlow == nil {
-		return nil, errors.New("task runtime is not configured")
-	}
-
-	req := taskflow.CreateFromManualTorrentInput{
-		URL:    input.URL,
-		Paused: input.Paused,
-	}
-	if input.SavePath != nil {
-		req.SavePath = *input.SavePath
-	}
-	if input.Category != nil {
-		req.Category = *input.Category
-	}
-	if input.Tags != nil {
-		req.Tags = *input.Tags
-	}
-
-	task, err := r.TaskFlow.CreateFromManualTorrent(ctx, req)
-	if task != nil {
-		r.synchronizeReleaseReviews(ctx)
-		return taskToModel(task), err
-	}
-	return nil, err
-}
-
-// DownloadMedia is the resolver for the downloadMedia field.
-func (r *mutationResolver) DownloadMedia(ctx context.Context, input model.DownloadMediaInput) (*model.Task, error) {
-	if r.TaskFlow == nil {
-		return nil, errors.New("task runtime is not configured")
-	}
-
-	req := taskflow.CreateFromSearchCodeInput{
-		Code:       input.Code,
-		Trackers:   input.Trackers,
-		Categories: input.Categories,
-		Paused:     input.Paused,
-	}
-	if input.Limit != nil {
-		req.Limit = *input.Limit
-	}
-	if input.SavePath != nil {
-		req.SavePath = *input.SavePath
-	}
-	if input.Category != nil {
-		req.Category = *input.Category
-	}
-	if input.Tags != nil {
-		req.Tags = *input.Tags
-	}
-
-	task, err := r.TaskFlow.CreateFromSearchCode(ctx, req)
-	if task != nil {
-		r.synchronizeReleaseReviews(ctx)
-		return taskToModel(task), err
-	}
-	return nil, err
-}
 
 // SyncTaskProgress is the resolver for the syncTaskProgress field.
 func (r *mutationResolver) SyncTaskProgress(ctx context.Context) ([]*model.Task, error) {

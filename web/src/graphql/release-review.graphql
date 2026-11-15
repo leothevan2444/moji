@@ -2,7 +2,7 @@ query ReleaseReviews($input: ReleaseReviewQueryInput!) {
   releaseReviews(input: $input) {
     totalCount pendingCount failedCount page pageSize totalPages
     performers { id name }
-    items { key code title date url imageUrl source vr status reasonCode error taskId seenAt reviewedAt performerNames performers { id name } }
+    items { key code title date url imageUrl source vr status reasonCode error failureCode nextRetryAt taskId seenAt reviewedAt performerNames performers { id name } }
   }
 }
 query ReleaseReviewSummary {

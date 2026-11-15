@@ -11,7 +11,7 @@ const tr = (key: string, options?: Record<string, unknown>) => i18n.t(key, optio
 
 // ── Re-usable type aliases ──────────────────────────────────────────
 
-export type DashboardTask = Omit<NonNullable<TaskDetailDocumentQuery["taskDetailSnapshot"]["task"]>, "candidate" | "revision" | "version"> & { revision?: number; version?: string };
+export type DashboardTask = Omit<NonNullable<TaskDetailDocumentQuery["taskDetailSnapshot"]["task"]>, "candidate" | "revision" | "version" | "film" | "sourcingMode"> & { revision?: number; version?: string; film?: NonNullable<TaskDetailDocumentQuery["taskDetailSnapshot"]["task"]>["film"]; sourcingMode?: string };
 
 export type TaskGroupKey = "attention" | "waiting" | "active" | "completed";
 

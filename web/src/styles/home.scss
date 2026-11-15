@@ -147,6 +147,14 @@
 .home-check-result-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 14px; padding-block: 14px; border-block-start: 1px solid var(--line); font-size: 13px; }
 .home-check-result-list li > a { overflow-wrap: anywhere; min-width: 0; }
 .home-check-result-list li > p { flex-basis: 100%; overflow-wrap: anywhere; margin: 0; }
+.check-item-details { flex-basis: 100%; min-width: 0; display: grid; gap: 14px; }
+.check-item-details section { border-inline-start: 2px solid var(--line); padding-inline-start: 12px; }
+.check-item-details h4 { margin: 0 0 8px; }
+.check-item-details p { margin: 6px 0; overflow-wrap: anywhere; }
+.check-item-details summary { cursor: pointer; }
+.check-film-results { padding: 0; list-style: none; }
+.home-check-result-list .check-film-results li { display: block; }
+.check-item-details__error, .check-item-details__source { overflow-wrap: anywhere; white-space: pre-wrap; }
 .home-check-id { font-size: 11px; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .home-check-schedule, .home-check-list { padding-inline: 16px; }

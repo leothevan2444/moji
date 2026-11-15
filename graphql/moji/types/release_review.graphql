@@ -26,6 +26,8 @@ input ProcessReleaseReviewsInput {
 type ReleaseReviewPerformer { id: ID! name: String! pendingCount: Int! }
 
 type ReleaseReview {
+ failureCode: String
+ nextRetryAt: String
   key: ID!
   code: String!
   title: String!

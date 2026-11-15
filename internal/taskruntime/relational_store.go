@@ -73,7 +73,7 @@ func (s *RelationalTaskStore) FindByCode(ctx context.Context, code string) (*Tas
 	if code == "" {
 		return nil, nil
 	}
-	task, err := s.read(ctx, s.core.Reader, " WHERE code=?", code)
+	task, err := s.read(ctx, s.core.Reader, " WHERE upper(trim(code))=?", code)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -110,6 +110,9 @@ func sameDurableTask(a, b *Task) bool {
 	left, right := cloneTask(a), cloneTask(b)
 	for _, t := range []*Task{left, right} {
 		t.Revision = 0
+		if t.SourcingMode == "" {
+			t.SourcingMode = "AUTO"
+		}
 		if t.FilePlanJSON != "" {
 			t.setFilePlan(t.FilePlan())
 		}
@@ -138,6 +141,9 @@ func (s *RelationalTaskStore) Create(ctx context.Context, task *Task) error {
 	}
 	if task.Source == "" {
 		task.Source = TaskSourceManual
+	}
+	if task.SourcingMode == "" {
+		task.SourcingMode = "AUTO"
 	}
 	refreshTaskStageFields(task)
 	task.Revision = 1
@@ -175,6 +181,9 @@ func (s *RelationalTaskStore) update(ctx context.Context, task *Task, indexedCho
 	previous, err := s.Find(ctx, task.ID)
 	if err != nil {
 		return err
+	}
+	if previous.Film != nil && (task.Film == nil || previous.Film.Key() != task.Film.Key() || previous.Code != task.Code) {
+		return errors.New("TASK_FILM_IMMUTABLE")
 	}
 	if previous.Revision != task.Revision {
 		return ErrTaskRevisionConflict
@@ -262,6 +271,19 @@ func writeRelationalTask(ctx context.Context, tx *sqlx.Tx, task *Task, update bo
 		params[raw.Type().Field(i).Tag.Get("db")] = raw.Field(i).Interface()
 	}
 	params["revision"], params["generation"] = task.Revision, task.Generation
+	params["film_json"] = nil
+	if task.Film != nil {
+		b, e := json.Marshal(task.Film)
+		if e != nil {
+			return e
+		}
+		params["film_json"] = string(b)
+	}
+	params["sourcing_mode"] = task.SourcingMode
+	if task.SourcingMode == "" {
+		params["sourcing_mode"] = "AUTO"
+	}
+	params["resource_confirmed"] = task.ResourceConfirmed
 	params["created_at"], params["updated_at"] = formatDurableTime(task.CreatedAt), formatDurableTime(task.UpdatedAt)
 	for _, key := range []string{"sourcing_last_checked_at", "sourcing_next_check_at", "sourcing_completed_at", "download_completed_at", "ingest_completed_at", "stash_scan_started_at"} {
 		if v, ok := params[key].(string); ok {
@@ -272,7 +294,7 @@ func writeRelationalTask(ctx context.Context, tx *sqlx.Tx, task *Task, update bo
 			params[key] = formatDurableTime(at)
 		}
 	}
-	core := []string{"id", "source", "code", "stage", "stage_status", "stage_error_code", "stage_error_message", "revision", "generation", "created_at", "updated_at"}
+	core := []string{"id", "film_json", "sourcing_mode", "resource_confirmed", "source", "code", "stage", "stage_status", "stage_error_code", "stage_error_message", "revision", "generation", "created_at", "updated_at"}
 	if update {
 		// The expected revision is checked inside the reserved writer transaction.
 		set := make([]string, 0, len(core))

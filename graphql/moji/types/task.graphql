@@ -13,14 +13,8 @@ extend type Query {
 }
 
 type Mutation {
-  "Add a torrent to qBittorrent via magnet or http(s) URL"
-  qbittorrentAdd(input: QBittorrentAddInput!): Boolean! @deprecated(reason: "Use addTorrent for persisted Moji task tracking.")
 
-  "Add a torrent URL or magnet and create a persisted Moji task"
-  addTorrent(input: QBittorrentAddInput!): Task!
 
-  "Persist a download task immediately; search and submit torrent candidates in the background"
-  downloadMedia(input: DownloadMediaInput!): Task!
 
   "Synchronize downloads and advance file preparation and Stash ingest, matching one background processing cycle"
   syncTaskProgress: [Task!]!
@@ -70,24 +64,9 @@ type QBTorrent {
   addedOn: Long!
 }
 
-input QBittorrentAddInput {
-  url: String!
-  savePath: String
-  category: String
-  tags: String
-  paused: Boolean
-}
 
-input DownloadMediaInput {
-  code: String!
-  trackers: [String!]
-  categories: [Int!]
-  limit: Int
-  savePath: String
-  category: String
-  tags: String
-  paused: Boolean
-}
+
+
 
 input ResolveBlockedSourcingTaskInput {
   "Provide exactly one URL or uploaded torrent file."
@@ -111,6 +90,8 @@ enum TaskSource {
 }
 
 type Task {
+  film: TaskFilm!
+  sourcingMode: String!
   version: String!
   revision: Long!
   id: ID!

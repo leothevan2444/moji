@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
@@ -23,12 +25,13 @@ type reviewTestTasks struct {
 func (f *reviewTestTasks) ListTasks(context.Context) ([]*taskruntime.Task, error) {
 	return f.tasks, nil
 }
-func (f *reviewTestTasks) QueueSubscriptionRelease(_ context.Context, code, _ string) (*taskruntime.Task, error) {
+func (f *reviewTestTasks) QueueSubscriptionRelease(_ context.Context, target film.Snapshot) (*taskruntime.Task, error) {
+	code := target.Code
 	f.calls++
 	if code == f.failCode {
 		return nil, errors.New("resource service unavailable")
 	}
-	task := &taskruntime.Task{ID: fmt.Sprintf("task-%d", f.calls), Code: code, Source: taskruntime.TaskSourceSubscription}
+	task := &taskruntime.Task{ID: fmt.Sprintf("task-%d", f.calls), Code: code, Film: &target, Source: taskruntime.TaskSourceSubscription}
 	f.tasks = append(f.tasks, task)
 	return task, nil
 }
@@ -223,12 +226,31 @@ func TestReviewLinksManualDownloadsAndFiltersPersistedRecords(t *testing.T) {
 	if err := store.PutReleaseReviews(ctx, []ReleaseReview{record}); err != nil {
 		t.Fatal(err)
 	}
-	tasks := &reviewTestTasks{tasks: []*taskruntime.Task{{ID: "manual-task", Code: "ABCVR-123", Source: taskruntime.TaskSourceManual}}}
+	tasks := &reviewTestTasks{tasks: []*taskruntime.Task{{ID: "manual-task", Code: "ABCVR-123", Film: &film.Snapshot{Endpoint: "https://example.org/graphql", SceneID: record.SceneID, Code: record.Code}, Source: taskruntime.TaskSourceManual}}}
 	service := reviewTestService(t, store, tasks)
 	yes := true
 	page, err := service.ListReleaseReviews(ctx, ReleaseReviewQuery{Status: ReviewDownloaded, VR: &yes, Search: "abcvr", PerformerID: "p1"})
 	if err != nil || len(page.Items) != 1 || page.Items[0].TaskID != "manual-task" || tasks.calls != 0 {
 		t.Fatalf("manual download not linked: %+v %v", page, err)
+	}
+}
+
+func TestReviewDoesNotLinkDifferentFilmWithSameCompleteCode(t *testing.T) {
+	ctx := context.Background()
+	store := NewMemoryStore()
+	record := reviewTestRecord("same-code", ReviewPending)
+	record.SceneID = "expected-film"
+	if err := store.PutReleaseReviews(ctx, []ReleaseReview{record}); err != nil {
+		t.Fatal(err)
+	}
+	tasks := &reviewTestTasks{tasks: []*taskruntime.Task{{ID: "other-task", Code: record.Code, Film: &film.Snapshot{Endpoint: strings.TrimPrefix(record.Source, "stash-box:"), SceneID: "different-film", Code: record.Code}}}}
+	s := reviewTestService(t, store, tasks)
+	page, err := s.ListReleaseReviews(ctx, ReleaseReviewQuery{})
+	if err != nil || len(page.Items) != 1 || page.Items[0].TaskID != "" || page.Items[0].Status != ReviewPending {
+		t.Fatalf("wrong film linked: %+v %v", page, err)
+	}
+	if err := s.queueReviewTaskLocked(ctx, &record, map[string]*taskruntime.Task{reviewCode(record.Code): tasks.tasks[0]}); !errors.Is(err, taskruntime.ErrDuplicateCodeTask) {
+		t.Fatalf("cross-film collision not rejected: %v", err)
 	}
 }
 

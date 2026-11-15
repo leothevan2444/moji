@@ -4,202 +4,111 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
-	"github.com/leothevan2444/moji/internal/releasedate"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
-type fakeTaskRuntime struct {
-	addRequest      taskruntime.AddTorrentRequest
-	downloadRequest taskruntime.DownloadRequest
-	addTask         *taskruntime.Task
-	downloadTask    *taskruntime.Task
-	err             error
+type fakeRuntime struct {
+	auto    taskruntime.DownloadRequest
+	manual  taskruntime.AddTorrentRequest
+	indexed taskruntime.QueueIndexedResourceRequest
+	calls   int
 }
 
-type fakeDiscoveredSceneResolver struct {
-	resolved ResolvedScene
-	err      error
-	sceneID  string
-	endpoint string
-}
-
-func (f *fakeTaskRuntime) AddTorrentContext(_ context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error) {
-	f.addRequest = req
-	if f.err != nil {
-		return nil, f.err
-	}
-	return f.addTask, nil
-}
-
-func (f *fakeTaskRuntime) QueueDownloadContext(_ context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error) {
-	f.downloadRequest = req
-	if f.err != nil {
-		return nil, f.err
-	}
-	return f.downloadTask, nil
-}
-
-func (f *fakeDiscoveredSceneResolver) ResolveDiscoveredScene(_ context.Context, sceneID string, stashBoxEndpoint string) (ResolvedScene, error) {
-	f.sceneID = sceneID
-	f.endpoint = stashBoxEndpoint
-	if f.err != nil {
-		return ResolvedScene{}, f.err
-	}
-	return f.resolved, nil
-}
-
-func TestCreateFromManualTorrentUsesManualSource(t *testing.T) {
-	dl := &fakeTaskRuntime{addTask: &taskruntime.Task{ID: "task-1"}}
-	service := NewService(dl)
-	paused := true
-
-	task, err := service.CreateFromManualTorrent(context.Background(), CreateFromManualTorrentInput{
-		URL:      "magnet:?xt=urn:btih:test",
-		Paused:   &paused,
-		SavePath: "/downloads",
-		Category: "moji",
-		Tags:     "a,b",
-	})
-	if err != nil {
-		t.Fatalf("CreateFromManualTorrent failed: %v", err)
-	}
-	if task == nil || task.ID != "task-1" {
-		t.Fatalf("unexpected task: %+v", task)
-	}
-	if dl.addRequest.Source != taskruntime.TaskSourceManual {
-		t.Fatalf("unexpected source: %s", dl.addRequest.Source)
-	}
-	if dl.addRequest.URL != "magnet:?xt=urn:btih:test" {
-		t.Fatalf("unexpected url: %q", dl.addRequest.URL)
-	}
-	if dl.addRequest.Paused == nil || !*dl.addRequest.Paused || dl.addRequest.SavePath != "/downloads" || dl.addRequest.Category != "moji" || dl.addRequest.Tags != "a,b" {
-		t.Fatalf("unexpected request: %+v", dl.addRequest)
-	}
-}
-
-func TestCreateFromSearchCodeUsesManualSource(t *testing.T) {
-	dl := &fakeTaskRuntime{downloadTask: &taskruntime.Task{ID: "task-2"}}
-	service := NewService(dl)
-	paused := true
-
-	task, err := service.CreateFromSearchCode(context.Background(), CreateFromSearchCodeInput{
-		Code:       "ABCD-123",
-		Trackers:   []string{"t1"},
-		Categories: []int{1},
-		Limit:      5,
-		Paused:     &paused,
-		SavePath:   "/downloads",
-		Category:   "moji",
-		Tags:       "tag",
-	})
-	if err != nil {
-		t.Fatalf("CreateFromSearchCode failed: %v", err)
-	}
-	if task == nil || task.ID != "task-2" {
-		t.Fatalf("unexpected task: %+v", task)
-	}
-	if dl.downloadRequest.Source != taskruntime.TaskSourceManual {
-		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
-	}
-	if dl.downloadRequest.Code != "ABCD-123" || dl.downloadRequest.Limit != 5 {
-		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
-	}
-}
-
-func TestCreateFromDiscoveredSceneUsesSearchSource(t *testing.T) {
-	dl := &fakeTaskRuntime{downloadTask: &taskruntime.Task{ID: "task-3"}}
-	service := NewService(dl)
-
-	task, err := service.CreateFromDiscoveredScene(context.Background(), CreateFromDiscoveredSceneInput{
-		Code:  "ABCD-123",
-		Title: "ignored",
-	})
-	if err != nil {
-		t.Fatalf("CreateFromDiscoveredScene failed: %v", err)
-	}
-	if task == nil || task.ID != "task-3" {
-		t.Fatalf("unexpected task: %+v", task)
-	}
-	if dl.downloadRequest.Source != taskruntime.TaskSourceSearch {
-		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
-	}
-	if dl.downloadRequest.Code != "ABCD-123" {
-		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
-	}
-}
-
-func TestCreateFromDiscoveredSceneRefUsesResolver(t *testing.T) {
-	dl := &fakeTaskRuntime{downloadTask: &taskruntime.Task{ID: "task-5"}}
-	resolver := &fakeDiscoveredSceneResolver{
-		resolved: ResolvedScene{Code: "ABCD-321", Title: "ignored"},
-	}
-	service := NewService(dl)
-	service.SetDiscoveredSceneResolver(resolver)
-
-	task, err := service.CreateFromDiscoveredSceneRef(context.Background(), CreateFromDiscoveredSceneRefInput{
-		SceneID:          "scene-1",
-		StashBoxEndpoint: "https://box.example/graphql",
-	})
-	if err != nil {
-		t.Fatalf("CreateFromDiscoveredSceneRef failed: %v", err)
-	}
-	if task == nil || task.ID != "task-5" {
-		t.Fatalf("unexpected task: %+v", task)
-	}
-	if resolver.sceneID != "scene-1" || resolver.endpoint != "https://box.example/graphql" {
-		t.Fatalf("unexpected resolver call: %+v", resolver)
-	}
-	if dl.downloadRequest.Source != taskruntime.TaskSourceSearch || dl.downloadRequest.Code != "ABCD-321" {
-		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
-	}
-}
-
-func TestCreateFromSubscriptionReleaseUsesCode(t *testing.T) {
-	dl := &fakeTaskRuntime{downloadTask: &taskruntime.Task{ID: "task-4"}}
-	service := NewService(dl)
-
-	task, err := service.CreateFromSubscriptionRelease(context.Background(), CreateFromSubscriptionReleaseInput{
-		Code: "SSIS-001",
-	})
-	if err != nil {
-		t.Fatalf("CreateFromSubscriptionRelease failed: %v", err)
-	}
-	if task == nil || task.ID != "task-4" {
-		t.Fatalf("unexpected task: %+v", task)
-	}
-	if dl.downloadRequest.Source != taskruntime.TaskSourceSubscription {
-		t.Fatalf("unexpected source: %s", dl.downloadRequest.Source)
-	}
-	if dl.downloadRequest.Code != "SSIS-001" {
-		t.Fatalf("unexpected request: %+v", dl.downloadRequest)
-	}
-}
-
-func TestCreateFromSubscriptionReleaseRejectsMissingCode(t *testing.T) {
-	service := NewService(&fakeTaskRuntime{})
-
-	task, err := service.CreateFromSubscriptionRelease(context.Background(), CreateFromSubscriptionReleaseInput{})
-	if err == nil || err.Error() != "task code is required" {
-		t.Fatalf("expected missing code error, got task=%+v err=%v", task, err)
-	}
-}
-
-func TestCreateFromSearchCodePropagatesTaskRuntimeErrors(t *testing.T) {
-	service := NewService(&fakeTaskRuntime{err: errors.New("boom")})
-
-	_, err := service.CreateFromSearchCode(context.Background(), CreateFromSearchCodeInput{Code: "ABCD-123"})
-	if err == nil || err.Error() != "boom" {
-		t.Fatalf("expected taskRuntime error, got %v", err)
-	}
-}
-
-func TestDiscoveredFutureSceneDoesNotCreateTask(t *testing.T) {
-	runtime := &fakeTaskRuntime{}
+func TestCatalogObservationIsReusedButClientConfirmationIsRevalidated(t *testing.T) {
+	runtime := &fakeRuntime{}
 	s := NewService(runtime)
-	s.SetDiscoveredSceneResolver(&fakeDiscoveredSceneResolver{resolved: ResolvedScene{Code: "ABC-123", Date: "2999-01-01"}})
-	task, err := s.QueueDiscoveredScene(context.Background(), "scene", "https://example.org/graphql")
-	if task != nil || !errors.Is(err, releasedate.ErrNotReleased) || runtime.downloadRequest.Code != "" {
-		t.Fatalf("future scene queued: %+v %v", task, err)
+	v := film.Snapshot{Endpoint: "https://example.test/graphql", SceneID: "scene", Code: "MMR-AA244", ConfirmedAt: time.Now()}
+	s.SetDiscoveredSceneResolver(fakeSceneResolver{err: errors.New("must not refetch catalog observation")})
+	if _, err := s.QueueSubscriptionRelease(context.Background(), v); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ConfirmFilm(context.Background(), ConfirmFilmInput{Endpoint: v.Endpoint, SceneID: v.SceneID, Digest: v.Digest()}); err == nil {
+		t.Fatal("client bypassed revalidation")
+	}
+	if runtime.calls != 1 {
+		t.Fatal(runtime.calls)
+	}
+}
+
+func (f *fakeRuntime) QueueDownloadContext(_ context.Context, r taskruntime.DownloadRequest) (*taskruntime.Task, error) {
+	f.auto = r
+	f.calls++
+	return &taskruntime.Task{ID: "auto", Film: r.Film, Code: r.Code}, nil
+}
+func (f *fakeRuntime) AddTorrentContext(_ context.Context, r taskruntime.AddTorrentRequest) (*taskruntime.Task, error) {
+	f.manual = r
+	f.calls++
+	return &taskruntime.Task{ID: "manual", Film: r.Film}, nil
+}
+func (f *fakeRuntime) QueueIndexedResourceContext(_ context.Context, r taskruntime.QueueIndexedResourceRequest) (*taskruntime.Task, error) {
+	f.indexed = r
+	f.calls++
+	return &taskruntime.Task{ID: "indexed", Film: r.Film}, nil
+}
+
+type fakeSceneResolver struct {
+	value film.Snapshot
+	err   error
+}
+
+func (f fakeSceneResolver) ResolveDiscoveredScene(_ context.Context, id, endpoint string) (ResolvedScene, error) {
+	return f.value, f.err
+}
+func TestAllAdmissionsResolveFilmAndPreserveItsCompleteCode(t *testing.T) {
+	for _, code := range []string{"300MIUM-1437", "T38-042", "081124_001-1pon", "34ID-003"} {
+		runtime := &fakeRuntime{}
+		service := NewService(runtime)
+		v := film.Snapshot{Endpoint: "https://example.test/graphql", SceneID: "scene", Code: code, Date: "2020-01-01", Title: "Film"}
+		service.SetDiscoveredSceneResolver(fakeSceneResolver{value: v})
+		for _, resource := range []string{"", "reference", "magnet"} {
+			input := ConfirmFilmInput{Endpoint: v.Endpoint, SceneID: v.SceneID, Digest: v.Digest()}
+			if resource == "reference" {
+				input.ResourceID = "server-reference"
+			}
+			if resource == "magnet" {
+				input.URL = "magnet:?xt=urn:btih:hash"
+			}
+			task, err := service.ConfirmFilm(context.Background(), input)
+			if err != nil || task.Film == nil || task.Film.Code != code {
+				t.Fatalf("lost film identity: %+v %v", task, err)
+			}
+		}
+		if runtime.calls != 3 {
+			t.Fatal(runtime.calls)
+		}
+	}
+}
+func TestConfirmationRejectsChangedMissingAndFutureFilms(t *testing.T) {
+	runtime := &fakeRuntime{}
+	service := NewService(runtime)
+	v := film.Snapshot{Endpoint: "https://example.test/graphql", SceneID: "scene", Code: "300MIUM-1437", Date: "2020-01-01"}
+	service.SetDiscoveredSceneResolver(fakeSceneResolver{value: v})
+	if _, err := service.ConfirmFilm(context.Background(), ConfirmFilmInput{Endpoint: v.Endpoint, SceneID: v.SceneID, Digest: "old"}); err == nil {
+		t.Fatal("changed confirmation accepted")
+	}
+	v.Date = "2999-01-01"
+	service.SetDiscoveredSceneResolver(fakeSceneResolver{value: v})
+	if _, err := service.ConfirmFilm(context.Background(), ConfirmFilmInput{Endpoint: v.Endpoint, SceneID: v.SceneID, Digest: v.Digest()}); err == nil {
+		t.Fatal("future film accepted")
+	}
+	service.SetDiscoveredSceneResolver(fakeSceneResolver{err: errors.New("offline")})
+	if _, err := service.QueueDiscoveredScene(context.Background(), v.SceneID, v.Endpoint); err == nil {
+		t.Fatal("unverified film admitted")
+	}
+	if runtime.calls != 0 {
+		t.Fatal("invalid task persisted")
+	}
+}
+func TestResourceSuggestionsUseLegacyParserOnlyForRecommendation(t *testing.T) {
+	got := ResourceQueries("hdd800.com@SONE-522 title")
+	if len(got) != 2 || got[0] != "SONE-522" {
+		t.Fatal(got)
+	}
+	got = ResourceQueries("300MIUM-1437")
+	if len(got) != 1 || got[0] != "300MIUM-1437" {
+		t.Fatal(got)
 	}
 }

@@ -1,5 +1,7 @@
 # 存储、迁移与恢复
 
+2026-11-15 任务影片身份重构按用户明确授权不新增自动迁移或兼容代码：更新 core 基础 schema，备份后在独立 generation 人工补全 2,200 个任务的 StashBox 关联并核对基线。新程序启动前拒绝未映射任务。保留旧 generation、任务和媒体路径；决策、纠错范围及验证见[实施复核](../reviews/2026-11-15-film-task-creation.md)。这是本次获准的开发期人工调整，不改变通常的迁移/checksum 防护。
+
 2026-11-10 按用户明确要求，本次活跃度功能不新增自动迁移或兼容代码，直接完善基础 schema，并在编码测试完成后备份、手动转换本地库及对齐 schema 基线。subscription_performer_state 的 activity_json 保存评分观测；next_check_at、check_failures 独立列，到期时间与 performer_id 建部分索引。评分/调度使用专用更新，避免重写作品关联；调度读取轻量投影及每批至多 128 项的到期 keyset。重启不重置截止时间，缺少安排时由订阅领域从既有检查时间初始化。这是本次获准的开发期人工调整，不改变通常的迁移/checksum 防护。契约见[活跃度与自动检查](../../docs/performer-activity.md)。
 
 2026-11-08 runtime v7 新增 indexer_executions 统一执行表，JSON 正文为真值、生成列负责索引与统计。只创建空表，不自动转换旧 diagnostics；详细保留规则见[集成与运维](operations.md)。历史、近期状态和搜索统计均查询此表，无独立聚合或近期快照。通用 diagnostics TTL 不影响此表。实现、验证和本地备份证据见[统一执行记录复核](../reviews/2026-11-08-indexer-executions.md)。

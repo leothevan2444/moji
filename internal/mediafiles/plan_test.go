@@ -7,7 +7,7 @@ import (
 )
 
 func TestClassifyFourKindsAndContextualCode(t *testing.T) {
-	files := []File{{Index: 0, Path: "hdd800.com@ssis00618A.mp4"}, {Index: 1, Path: "gc_55.com@SSIS-618B.mp4"}, {Index: 2, Path: "SSIS-618A.en.srt"}, {Index: 3, Path: "广告.mp4"}, {Index: 4, Path: "sample.mp4"}, {Index: 5, Path: "screenshot.jpg"}, {Index: 6, Path: "mystery.mp4"}}
+	files := []File{{Index: 0, Path: "hdd800.com@ssis-618-A.mp4"}, {Index: 1, Path: "gc_55.com@SSIS-618-B.mp4"}, {Index: 2, Path: "SSIS-618-A.en.srt"}, {Index: 3, Path: "广告.mp4"}, {Index: 4, Path: "sample.mp4"}, {Index: 5, Path: "screenshot.jpg"}, {Index: 6, Path: "mystery.mp4"}}
 	plan := Classify("SSIS-618", files, true)
 	kinds := []Kind{}
 	for _, f := range plan.Files {
@@ -37,18 +37,11 @@ func TestClassifyFourKindsAndContextualCode(t *testing.T) {
 		t.Fatal("subtitle switch was ignored")
 	}
 }
-func TestIdentityParsingDoesNotChooseAdvertisingDomain(t *testing.T) {
-	cases := map[string]string{"hdd800.com@SSIS-618.mp4": "SSIS-618", "gc_55.com@SSIS-618.mp4": "SSIS-618", "OFJE-329A.mp4": "OFJE-329", "OFJE-329-3.mp4": "OFJE-329", "ssis618": "SSIS-618", "ssis00618": "SSIS-00618", "SSIS-618 SONE-001": ""}
-	for value, want := range cases {
-		if got := ExtractCode(value); got != want {
-			t.Errorf("%s: got %s want %s", value, got, want)
-		}
-	}
-	if !SameCode("ssis00618", "SSIS-618") || SameCode("SSIS-618", "SSIS-619") {
-		t.Fatal("contextual alias comparison failed")
-	}
-	if ExtractCode("SONE-001") != "SONE-001" {
-		t.Fatal("canonical zero padding must be retained")
+func TestTargetCodeDoesNotAdoptSimilarNumberOrPrefix(t *testing.T) {
+	files := []File{{Index: 0, Path: "300MIUM-1437.mp4"}, {Index: 1, Path: "MIUM-1437.mp4"}, {Index: 2, Path: "300MIUM-1438.mp4"}, {Index: 3, Path: "300MIUM-1437A.mp4"}}
+	p := Classify("300MIUM-1437", files, false)
+	if p.Files[0].Kind != Main || p.Files[1].Kind != UnknownVideo || p.Files[2].Kind != UnknownVideo || p.Files[3].Kind != UnknownVideo {
+		t.Fatalf("wrong target matching: %+v", p.Files)
 	}
 }
 func TestPartsMustBeUnambiguousAndOrdered(t *testing.T) {

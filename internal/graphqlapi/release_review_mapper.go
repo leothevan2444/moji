@@ -26,6 +26,7 @@ func releaseReviewToModel(record *subscription.ReleaseReview) *model.ReleaseRevi
 		}
 		out.Performers = append(out.Performers, &model.ReleaseReviewPerformer{ID: actor.ID, Name: name})
 	}
+	out.FailureCode, out.NextRetryAt = nilIfEmpty(record.FailureCode), checkTime(record.NextRetryAt)
 	return out
 }
 

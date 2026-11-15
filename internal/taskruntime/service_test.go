@@ -3,8 +3,6 @@ package taskruntime
 import (
 	"context"
 	"errors"
-	"github.com/leothevan2444/moji/internal/indexer"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +10,8 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/film"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -78,7 +78,7 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{
+	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("SONE-000"),
 		Code:     "SONE-000",
 		SavePath: "/downloads/stash",
 		Category: "moji",
@@ -186,7 +186,7 @@ func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "SONE-000"})
+	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("SONE-000"), Code: "SONE-000"})
 	if err == nil {
 		t.Fatal("expected add torrent error")
 	}
@@ -198,58 +198,6 @@ func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 	}
 	if task.StageErrorMessage != qbtErr.Error() {
 		t.Fatalf("expected task stage error %q, got %q", qbtErr.Error(), task.StageErrorMessage)
-	}
-}
-
-func TestAddTorrentContextCreatesPersistedTask(t *testing.T) {
-	qbt := &fakeTorrentAdder{}
-	store := NewMemoryTaskStore()
-	service, err := NewService(
-		fakeTracker{},
-		qbt,
-		store,
-		WithIDGenerator(func() string { return "task-manual" }),
-		WithClock(func() time.Time { return time.Unix(100, 0) }),
-	)
-	if err != nil {
-		t.Fatalf("NewService failed: %v", err)
-	}
-
-	task, err := service.AddTorrentContext(context.Background(), AddTorrentRequest{
-		URL:      "magnet:?xt=urn:btih:manual123&dn=SONE-000",
-		SavePath: "/downloads/stash",
-		Category: "moji",
-		Tags:     "manual",
-	})
-	if err != nil {
-		t.Fatalf("AddTorrentContext failed: %v", err)
-	}
-
-	if task.ID != "task-manual" || task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusRunning {
-		t.Fatalf("unexpected task: %+v", task)
-	}
-	if task.Source != TaskSourceManual {
-		t.Fatalf("expected task source %q, got %q", TaskSourceManual, task.Source)
-	}
-	if task.TorrentURL != "magnet:?xt=urn:btih:manual123&dn=SONE-000" || task.Candidate.MagnetURI != task.TorrentURL {
-		t.Fatalf("unexpected torrent candidate: %+v", task.Candidate)
-	}
-	if task.Candidate.InfoHash != "manual123" {
-		t.Fatalf("expected info hash %q, got %q", "manual123", task.Candidate.InfoHash)
-	}
-	if task.Code != "SONE-000" {
-		t.Fatalf("expected code %q, got %q", "SONE-000", task.Code)
-	}
-	if got := qbt.options.URLs; len(got) != 1 || got[0] != task.TorrentURL {
-		t.Fatalf("unexpected qBittorrent URLs: %v", got)
-	}
-
-	stored, err := store.Find(context.Background(), "task-manual")
-	if err != nil {
-		t.Fatalf("Find failed: %v", err)
-	}
-	if stored.Stage != TaskStageDownloading || stored.StageStatus != TaskStageStatusRunning || stored.TorrentURL != task.TorrentURL {
-		t.Fatalf("unexpected stored task: %+v", stored)
 	}
 }
 
@@ -277,7 +225,7 @@ func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "SONE-000"})
+	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("SONE-000"), Code: "SONE-000"})
 	if !errors.Is(err, ErrDuplicateCodeTask) {
 		t.Fatalf("expected duplicate code error, got task=%+v err=%v", task, err)
 	}
@@ -301,40 +249,9 @@ func TestDownloadMediaContextRejectsExistingStashLibraryCode(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "SONE-000"})
+	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("SONE-000"), Code: "SONE-000"})
 	if !errors.Is(err, ErrDuplicateLibraryCode) {
 		t.Fatalf("expected duplicate library code error, got task=%+v err=%v", task, err)
-	}
-	if task != nil {
-		t.Fatalf("expected no task to be created, got %+v", task)
-	}
-}
-
-func TestAddTorrentContextRejectsDuplicateTorrentTask(t *testing.T) {
-	store := NewMemoryTaskStore()
-	if err := store.Create(context.Background(), &Task{
-		ID:                    "existing-task",
-		Code:                  "SONE-000",
-		Stage:                 TaskStageDownloading,
-		StageStatus:           TaskStageStatusRunning,
-		TorrentIdentityHash:   "MANUAL123",
-		TorrentIdentityMagnet: "magnet:?xt=urn:btih:MANUAL123",
-		CreatedAt:             time.Unix(50, 0).UTC(),
-		UpdatedAt:             time.Unix(50, 0).UTC(),
-	}); err != nil {
-		t.Fatalf("Create failed: %v", err)
-	}
-
-	service, err := NewService(fakeTracker{}, &fakeTorrentAdder{}, store)
-	if err != nil {
-		t.Fatalf("NewService failed: %v", err)
-	}
-
-	task, err := service.AddTorrentContext(context.Background(), AddTorrentRequest{
-		URL: "magnet:?xt=urn:btih:manual123&dn=SONE-999&tr=https://tracker.example.test/announce",
-	})
-	if !errors.Is(err, ErrDuplicateTorrentTask) {
-		t.Fatalf("expected duplicate torrent error, got task=%+v err=%v", task, err)
 	}
 	if task != nil {
 		t.Fatalf("expected no task to be created, got %+v", task)
@@ -353,56 +270,12 @@ func TestDownloadMediaContextRequiresCode(t *testing.T) {
 		t.Fatalf("NewService failed: %v", err)
 	}
 
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "plain title"})
-	if !errors.Is(err, ErrTaskCodeRequired) {
+	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Code: "plain title"})
+	if !errors.Is(err, film.ErrRequired) {
 		t.Fatalf("expected code required error, got task=%+v err=%v", task, err)
 	}
 	if task != nil {
 		t.Fatalf("expected no task to be created, got %+v", task)
-	}
-}
-
-func TestAddTorrentContextParsesTorrentMetadataForCode(t *testing.T) {
-	qbt := &fakeTorrentAdder{}
-	store := NewMemoryTaskStore()
-	service, err := NewService(
-		fakeTracker{},
-		qbt,
-		store,
-		WithIDGenerator(func() string { return "task-http" }),
-		WithClock(func() time.Time { return time.Unix(100, 0) }),
-		WithHTTPClient(&http.Client{
-			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Header:     make(http.Header),
-					Body:       io.NopCloser(strings.NewReader(testTorrentFile("SONE-001", []string{"SONE-001.mp4"}))),
-					Request:    req,
-				}, nil
-			}),
-		}),
-	)
-	if err != nil {
-		t.Fatalf("NewService failed: %v", err)
-	}
-
-	task, err := service.AddTorrentContext(context.Background(), AddTorrentRequest{
-		URL: "https://example.test/release.torrent",
-	})
-	if err != nil {
-		t.Fatalf("AddTorrentContext failed: %v", err)
-	}
-	if task.Code != "SONE-001" {
-		t.Fatalf("expected code %q, got %q", "SONE-001", task.Code)
-	}
-	if task.Candidate.Title != "SONE-001" {
-		t.Fatalf("expected torrent title %q, got %q", "SONE-001", task.Candidate.Title)
-	}
-	if task.TorrentIdentityHash == "" {
-		t.Fatal("expected info hash to be populated from torrent metadata")
-	}
-	if len(qbt.options.URLs) != 0 || len(qbt.options.Torrents) != 1 || string(qbt.options.Torrents[0].Data) != testTorrentFile("SONE-001", []string{"SONE-001.mp4"}) {
-		t.Fatalf("expected verified torrent upload, got %+v", qbt.options)
 	}
 }
 
@@ -706,5 +579,34 @@ func TestSyncProgressMarksCompletedTask(t *testing.T) {
 	}
 	if task.DownloadCompletedAt == nil || !task.DownloadCompletedAt.Equal(time.Unix(300, 0).UTC()) {
 		t.Fatalf("unexpected download completed at: %v", task.DownloadCompletedAt)
+	}
+}
+
+func testFilm(code string) *film.Snapshot {
+	return &film.Snapshot{Endpoint: "https://example.test/graphql", SceneID: code, Code: code, Title: "Fixture film", Date: "2020-01-01"}
+}
+
+func TestSpecifiedResourceAdmissionPersistsFilmBeforeAnyDownload(t *testing.T) {
+	ctx := context.Background()
+	adder := &fakeTorrentAdder{}
+	store := NewMemoryTaskStore()
+	service, _ := NewService(fakeTracker{}, adder, store)
+	if _, err := service.AddTorrentContext(ctx, AddTorrentRequest{URL: "magnet:?xt=urn:btih:abc&dn=title"}); !errors.Is(err, film.ErrRequired) {
+		t.Fatal("missing film accepted", err)
+	}
+	target := testFilm("300MIUM-1437")
+	task, err := service.AddTorrentContext(ctx, AddTorrentRequest{Film: target, URL: "magnet:?xt=urn:btih:abc&dn=Unnumbered"})
+	if err != nil || task.Stage != TaskStageDownloading || task.Film == nil || !task.ResourceConfirmed || len(adder.options.URLs) > 0 {
+		t.Fatalf("admission performed work or lost metadata: %+v %v", task, err)
+	}
+	if err = service.processQueuedSourcing(ctx, task.ID); err != nil {
+		t.Fatal(err)
+	}
+	stored, _ := store.Find(ctx, task.ID)
+	if stored.StageStatus != TaskStageStatusRunning || len(adder.options.URLs) != 1 || stored.SourcingMode != "USER_SELECTED" {
+		t.Fatalf("selected resource did not resume: %+v", stored)
+	}
+	if _, err = service.AddTorrentContext(ctx, AddTorrentRequest{Film: target, URL: "magnet:?xt=urn:btih:other"}); !errors.Is(err, ErrDuplicateCodeTask) {
+		t.Fatal("duplicate film admitted", err)
 	}
 }

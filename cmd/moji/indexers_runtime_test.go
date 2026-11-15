@@ -21,6 +21,7 @@ import (
 	"github.com/leothevan2444/moji/internal/cardigann"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
@@ -259,7 +260,39 @@ func TestIndexerRuntimeInstallsRulesAndUsesUnifiedAcquisitionInManagedTask(t *te
 	coreStore := taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations)
 	downloader := &runtimeIndexedDownloader{store: coreStore, t: t, data: data}
 	service := configureTaskRuntimeWithIndexers(store.Config(), store, nil, runtime.service, downloader, nil, taskruntime.NewTaskEventBus(8), manager)
-	task, err := service.DownloadMediaContext(ctx, taskruntime.DownloadRequest{Code: "ABCD-123", Trackers: []string{"one"}})
+	task, err := service.QueueDownloadContext(ctx, taskruntime.DownloadRequest{Film: &film.Snapshot{Endpoint: "https://metadata.example/graphql", SceneID: "film-one", Code: "ABCD-123"}, Code: "ABCD-123", Trackers: []string{"one"}})
+	if err == nil {
+		workerCtx, stop := context.WithCancel(ctx)
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			service.(interface{ RunSourcingWorker(context.Context) }).RunSourcingWorker(workerCtx)
+		}()
+		timeout := time.NewTimer(3 * time.Second)
+		ticker := time.NewTicker(10 * time.Millisecond)
+	waitLoop:
+		for {
+			var current *taskruntime.Task
+			current, err = coreStore.Find(ctx, task.ID)
+			if err != nil {
+				break
+			}
+			task = current
+			if task.Stage == taskruntime.TaskStageDownloading {
+				break
+			}
+			select {
+			case <-timeout.C:
+				err = errors.New("queued sourcing did not finish")
+				break waitLoop
+			case <-ticker.C:
+			}
+		}
+		ticker.Stop()
+		timeout.Stop()
+		stop()
+		<-done
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -367,11 +400,13 @@ func testPickedCandidatePipeline(t *testing.T, existing, prepareDownload bool) {
 	subscription := events.Subscribe(ctx)
 	service := configureTaskRuntimeWithIndexers(configStore.Config(), configStore, nil, runtime.service, downloader, nil, events, manager)
 	flow := taskflow.NewService(service.(taskflow.TaskRuntime))
+	target := film.Snapshot{Endpoint: "https://metadata.example/graphql", SceneID: "film-one", Code: "ABCD-123", Title: "Synthetic film", Date: "2020-01-01"}
+	flow.SetDiscoveredSceneResolver(pipelineFilmResolver{target: target})
 	var prior *taskruntime.Task
 	taskInput := ""
 	if existing {
 		now := time.Now().UTC()
-		prior = &taskruntime.Task{ID: "existing-task", Code: "ABCD-123", Source: taskruntime.TaskSourceSubscription, Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusBlocked, CreatedAt: now, UpdatedAt: now}
+		prior = &taskruntime.Task{Film: &target, ID: "existing-task", Code: "ABCD-123", Source: taskruntime.TaskSourceSubscription, Stage: taskruntime.TaskStageSourcing, StageStatus: taskruntime.TaskStageStatusBlocked, CreatedAt: now, UpdatedAt: now}
 		if err = core.Create(ctx, prior); err != nil {
 			t.Fatal(err)
 		}
@@ -474,7 +509,7 @@ func testPickedCandidatePipeline(t *testing.T, existing, prepareDownload bool) {
 		}
 	}
 	var queued struct {
-		Task struct{ ID string } `json:"queueTorrentCandidate"`
+		Task struct{ ID string } `json:"createFilmTask"`
 	}
 
 	if existing {
@@ -487,7 +522,7 @@ func testPickedCandidatePipeline(t *testing.T, existing, prepareDownload bool) {
 			t.Fatal("source choice created a different task")
 		}
 	} else {
-		execute(fmt.Sprintf(`mutation{queueTorrentCandidate(input:{code:"ABCD-123",searchId:%q,candidateId:%q}){id}}`, accepted.Search.ID, result.Search.Candidates[0].ID), &queued)
+		execute(fmt.Sprintf(`mutation{createFilmTask(input:{endpoint:%q,sceneId:%q,confirmationDigest:%q,resourceConfirmed:true,searchId:%q,candidateId:%q}){id}}`, target.Endpoint, target.SceneID, target.Digest(), accepted.Search.ID, result.Search.Candidates[0].ID), &queued)
 	}
 	task, err := core.Find(ctx, queued.Task.ID)
 	if err != nil || task == nil {
@@ -540,7 +575,7 @@ func testPickedCandidatePipeline(t *testing.T, existing, prepareDownload bool) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if saved.Stage == taskruntime.TaskStageDownloading {
+		if saved.Stage == taskruntime.TaskStageDownloading && saved.StageStatus == taskruntime.TaskStageStatusRunning {
 			break
 		}
 		select {
@@ -905,4 +940,13 @@ func TestDefinitionLibraryRestoresPersistedFailedRuleJobWithoutCheckingOrDownloa
 	if err != nil || summary == nil || summary.ID != job.ID || summary.State != indexerdefs.Failed || summary.CorrelationID != failed.CorrelationID || secondSource.checks.Load() != 0 || secondSource.downloads.Load() != 0 {
 		t.Fatal("restart lost failure or status read initiated external work", err)
 	}
+}
+
+type pipelineFilmResolver struct{ target film.Snapshot }
+
+func (f pipelineFilmResolver) ResolveDiscoveredScene(_ context.Context, id, endpoint string) (taskflow.ResolvedScene, error) {
+	if id != f.target.SceneID || endpoint != f.target.Endpoint {
+		return film.Snapshot{}, film.ErrRequired
+	}
+	return f.target, nil
 }

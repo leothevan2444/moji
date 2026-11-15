@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/leothevan2444/moji/internal/mediafiles"
-	"github.com/leothevan2444/moji/internal/torrentmeta"
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"strings"
+
+	"github.com/leothevan2444/moji/internal/film"
+	"github.com/leothevan2444/moji/internal/torrentmeta"
 )
 
 type torrentIdentity struct {
@@ -19,16 +19,7 @@ type torrentIdentity struct {
 }
 
 func normalizeCode(value string) string {
-	return mediafiles.ExtractCode(strings.TrimSpace(value))
-}
-
-func extractCode(values ...string) string {
-	for _, value := range values {
-		if code := normalizeCode(value); code != "" {
-			return code
-		}
-	}
-	return ""
+	return film.Code(value)
 }
 
 func normalizeInfoHash(value string) string {
@@ -160,46 +151,26 @@ type downloadedTorrentMetadata = torrentmeta.Metadata
 
 const MaxTorrentBytes = 8 << 20
 
-func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (Candidate, string, torrentIdentity, *downloadedTorrentMetadata, error) {
+func (s *Service) resolveManualTorrent(ctx context.Context, torrentURL string) (Candidate, *downloadedTorrentMetadata, error) {
 	candidate := candidateFromTorrentURL(torrentURL)
-	titleCandidates := []string{magnetDisplayName(torrentURL)}
-	urlCandidates := []string{torrentURL}
-
-	parsedURL, err := url.Parse(torrentURL)
-	if err == nil {
-		base := path.Base(strings.TrimSpace(parsedURL.Path))
-		if base != "" && base != "." && base != "/" {
-			urlCandidates = append(urlCandidates, base)
-			titleCandidates = append(titleCandidates, base)
-		}
-	}
-
 	if candidate.MagnetURI != "" {
-		if displayName := firstNonEmpty(titleCandidates); displayName != "" {
+		if displayName := magnetDisplayName(torrentURL); displayName != "" {
 			candidate.Title = displayName
 		}
-		code := extractCode(append(titleCandidates, urlCandidates...)...)
-		identity := torrentIdentityFromCandidate(candidate, torrentURL)
-		return candidate, code, identity, nil, nil
+		return candidate, nil, nil
 	}
 
 	metadata, err := s.fetchTorrentMetadata(ctx, torrentURL)
 	if err != nil {
-		return Candidate{}, "", torrentIdentity{}, nil, err
+		return Candidate{}, nil, err
 	}
 	if metadata.Name != "" {
 		candidate.Title = metadata.Name
-		titleCandidates = append([]string{metadata.Name}, titleCandidates...)
-	}
-	if metadata.FilePath != "" {
-		titleCandidates = append(titleCandidates, metadata.FilePath)
 	}
 	if metadata.InfoHash != "" {
 		candidate.InfoHash = metadata.InfoHash
 	}
-	code := extractCode(titleCandidates...)
-	identity := torrentIdentityFromCandidate(candidate, torrentURL)
-	return candidate, code, identity, &metadata, nil
+	return candidate, &metadata, nil
 }
 
 func (s *Service) fetchTorrentMetadata(ctx context.Context, torrentURL string) (metadata downloadedTorrentMetadata, resultErr error) {

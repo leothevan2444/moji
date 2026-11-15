@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/taskruntime"
@@ -218,19 +219,23 @@ func (s *Service) attachPerformerSceneTasks(ctx context.Context, scenes []Scene)
 	if err != nil {
 		return fmt.Errorf("performer: list tasks for performer scenes: %w", err)
 	}
-	byCode := make(map[string]*taskruntime.Task, len(tasks))
+	byFilm := make(map[string]*taskruntime.Task, len(tasks))
 	for _, task := range tasks {
-		if task == nil {
+		if task == nil || task.Film == nil {
 			continue
 		}
-		code := normalize(task.Code)
-		if code != "" {
-			byCode[code] = task
-		}
+		byFilm[task.Film.Key()] = task
 	}
 	for index := range scenes {
-		code := normalize(buildReleaseCode(scenes[index].Code, scenes[index].Title))
-		task := byCode[code]
+		item := scenes[index]
+		task := byFilm[(film.Snapshot{Endpoint: item.StashBoxEndpoint, SceneID: item.StashBoxSceneID}).Key()]
+		if task == nil {
+			for _, ref := range item.StashIDs {
+				if task = byFilm[(film.Snapshot{Endpoint: ref.Endpoint, SceneID: ref.StashID}).Key()]; task != nil {
+					break
+				}
+			}
+		}
 		if task == nil {
 			continue
 		}
@@ -489,6 +494,7 @@ func stashBoxSceneToPerformerScene(scene *stashboxgraphql.SceneFragment, endpoin
 	people := stashBoxScenePerformers(scene.Performers)
 	item := Scene{
 		Key:               "stashbox:" + endpointKey(endpoint) + ":" + scene.ID,
+		Film:              metadata.FilmSnapshot(endpoint, scene),
 		PrimarySource:     SceneSourceStashBox,
 		SourceSceneID:     scene.ID,
 		Title:             stringValue(scene.Title),

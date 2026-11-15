@@ -3,10 +3,11 @@ package taskruntime
 import (
 	"bytes"
 	"context"
+	"testing"
+
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
-	"testing"
 )
 
 type indexedFixture struct {
@@ -48,7 +49,7 @@ func TestIndexedSourcingInspectsAndSubmitsIdenticalPersistedBytes(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "ABCD-123"})
+	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil {
 		t.Fatal(err)
 	}

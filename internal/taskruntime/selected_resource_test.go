@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/leothevan2444/moji/internal/indexer"
@@ -107,7 +106,7 @@ func TestAcceptedSelectionSurvivesRestartExpiryAndAccountChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"})
+	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,23 +159,23 @@ func TestFailedSelectedCandidateRetainsItsChoiceAndAcquisitionForExplicitRetry(t
 	store, m := relationalStore(t)
 	seedSelectionBundle(t, m)
 	source := &selectedSource{record: selectionRecord(), data: []byte(testTorrentFile("ABCD-999", []string{"ABCD-999.mp4"}))}
-	adder := &fakeTorrentAdder{}
+	adder := &fakeTorrentAdder{err: errors.New("downloader unavailable")}
 	service, err := NewService(nil, adder, store, WithIndexers(source))
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"})
+	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	_ = service.processQueuedSourcing(ctx, task.ID)
 	stored, err := store.Find(ctx, task.ID)
-	if err != nil || stored.StageStatus != TaskStageStatusBlocked || stored.StageErrorCode != TaskStageErrorCandidateMismatch || stored.SourcingNextCheckAt != nil || !bytes.Equal(stored.TorrentFileData, source.data) || stored.SelectedResourceID != "server-reference" {
+	if err != nil || stored.StageStatus != TaskStageStatusBlocked || stored.StageErrorCode != TaskStageErrorTorrentSubmit || stored.SourcingNextCheckAt != nil || !bytes.Equal(stored.TorrentFileData, source.data) || stored.SelectedResourceID != "server-reference" {
 		t.Fatal("failed candidate was changed into an automatic resource search", err)
 	}
 	_, _ = service.RetryTask(ctx, task.ID, nil)
 	_ = service.processQueuedSourcing(ctx, task.ID)
-	if source.fetches != 1 || source.searches != 0 || len(adder.options.Torrents) != 0 || len(adder.options.URLs) != 0 {
+	if source.fetches != 1 || source.searches != 0 || len(adder.options.Torrents) != 1 || len(adder.options.URLs) != 0 {
 		t.Fatal("retry grabbed/replaced invalid selected bytes or submitted them")
 	}
 }
@@ -189,7 +188,7 @@ func TestSelectionPinsRollBackWithAdmissionAndDisappearWithTaskDeletion(t *testi
 		t.Fatal(err)
 	}
 	// No registered bundle: the source pin fails and the task must roll back too.
-	if _, err = service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"}); err == nil {
+	if _, err = service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"}); err == nil {
 		t.Fatal("accepted task without required rules")
 	}
 	tasks, err := store.List(ctx)
@@ -197,7 +196,7 @@ func TestSelectionPinsRollBackWithAdmissionAndDisappearWithTaskDeletion(t *testi
 		t.Fatal("failed admission partially committed", err)
 	}
 	seedSelectionBundle(t, m)
-	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"})
+	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +204,7 @@ func TestSelectionPinsRollBackWithAdmissionAndDisappearWithTaskDeletion(t *testi
 		t.Fatal("task deletion left rule pin", err)
 	}
 	source.expired = true
-	if _, err = service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"}); !errors.Is(err, indexer.ErrExpired) {
+	if _, err = service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"}); !errors.Is(err, indexer.ErrExpired) {
 		t.Fatal("expired candidate admitted", err)
 	}
 }
@@ -260,7 +259,7 @@ func TestCoreV5MigrationRetainsExistingTaskAndRejectsUnknownResourcePayload(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"})
+	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -285,13 +284,13 @@ func TestExplicitManualReplacementDropsOldFrozenSelectionAndRulePin(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"})
+	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	_ = service.processQueuedSourcing(ctx, task.ID)
 	blocked, err := store.Find(ctx, task.ID)
-	if err != nil || !waitingForResource(blocked) || blocked.StageErrorCode != "" || blocked.IndexerResource == nil || selectionPins(t, m) != 1 {
+	if err != nil || blocked.Stage != TaskStageDownloading || blocked.StageStatus != TaskStageStatusBlocked || blocked.StageErrorCode != TaskStageErrorTorrentMetadata || blocked.IndexerResource == nil || selectionPins(t, m) != 1 {
 		t.Fatal("failed acquisition lost its durable source", err)
 	}
 	data := []byte(testTorrentFile("ABCD-123", []string{"ABCD-123.mp4"}))
@@ -319,7 +318,7 @@ func TestAcceptedMagnetDropsSecretSourceAndPublishesOnlyAnOpaqueReference(t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"})
+	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -345,7 +344,7 @@ func TestSelectedSiteFailureWaitsAndRetriesSameFrozenResource(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Code: "ABCD-123", ResourceID: "server-reference"})
+	task, err := service.QueueIndexedResourceContext(ctx, QueueIndexedResourceRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", ResourceID: "server-reference"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,12 +352,14 @@ func TestSelectedSiteFailureWaitsAndRetriesSameFrozenResource(t *testing.T) {
 		t.Fatal(err)
 	}
 	task, err = store.Find(ctx, task.ID)
-	if err != nil || !waitingForResource(task) || task.IndexerResource == nil || task.SelectedResourceID != "server-reference" || task.StageErrorCode != "" || selectionPins(t, m) != 1 {
+	if err != nil || task.Stage != TaskStageDownloading || task.StageStatus != TaskStageStatusBlocked || task.IndexerResource == nil || task.SelectedResourceID != "server-reference" || task.StageErrorCode != TaskStageErrorTorrentMetadata || selectionPins(t, m) != 1 {
 		t.Fatalf("choice lost while waiting: %+v %v", task, err)
 	}
 	source.fetchErr = nil
 	source.data = []byte(testTorrentFile("ABCD-123", []string{"ABCD-123.mp4"}))
-	service.now = func() time.Time { return *task.SourcingNextCheckAt }
+	if _, err = service.RetryTask(ctx, task.ID, nil); err != nil {
+		t.Fatal(err)
+	}
 	if err = service.processQueuedSourcing(ctx, task.ID); err != nil {
 		t.Fatal(err)
 	}

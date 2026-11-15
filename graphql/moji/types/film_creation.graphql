@@ -1,0 +1,40 @@
+extend type Query {
+  taskFilmSources: [TaskFilmSource!]!
+  taskFilmCandidates(input: TaskFilmSearchInput!): [TaskFilm!]!
+  taskFilm(endpoint: String!, sceneId: ID!): TaskFilm!
+}
+type TaskFilmSource { name: String!, endpoint: String! }
+extend type Mutation { createFilmTask(input: CreateFilmTaskInput!): Task! }
+input TaskFilmSearchInput {
+  keywords: String
+  endpoint: String
+  searchId: ID
+  candidateId: ID
+  resourceUrl: String
+}
+input CreateFilmTaskInput {
+  endpoint: String!
+  sceneId: ID!
+  confirmationDigest: String!
+  searchId: ID
+  candidateId: ID
+  resourceUrl: String
+  resourceConfirmed: Boolean! = false
+  savePath: String
+  category: String
+  tags: String
+  paused: Boolean
+}
+type TaskFilm {
+  endpoint: String!
+  sceneId: ID!
+  code: String!
+  title: String!
+  date: String!
+  studio: String!
+  performers: [String!]!
+  imageUrl: String!
+  url: String!
+  durationSeconds: Int
+  confirmationDigest: String!
+}

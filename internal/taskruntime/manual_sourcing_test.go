@@ -34,10 +34,10 @@ func TestWaitingTaskAcceptsManualMagnetOrUploadedTorrent(t *testing.T) {
 			task := createWaitingTask(t, store)
 			qbt := &fakeTorrentAdder{}
 			s, _ := NewService(fakeTracker{}, qbt, store, WithMediaPreparation(func() stashsync.IntegrationConfig { return stashsync.IntegrationConfig{} }, nil))
-			body := []byte(testTorrentFile("ofje00657", []string{"OFJE657.mp4"}))
+			body := []byte(testTorrentFile("ofje00657", []string{"OFJE-657.mp4"}))
 			req := ResolveBlockedSourcingRequest{TorrentData: body}
 			if mode == "magnet" {
-				req = ResolveBlockedSourcingRequest{URL: "magnet:?xt=urn:btih:manual657&dn=OFJE657"}
+				req = ResolveBlockedSourcingRequest{URL: "magnet:?xt=urn:btih:manual657&dn=OFJE-657"}
 			}
 			resolved, err := s.ResolveBlockedSourcingTask(ctx, task.ID, req)
 			if err != nil {
@@ -70,9 +70,8 @@ func TestWaitingTaskAcceptsManualMagnetOrUploadedTorrent(t *testing.T) {
 
 func TestBadManualResourcePreservesWaitingScheduleAndNeverSubmits(t *testing.T) {
 	for _, req := range []ResolveBlockedSourcingRequest{
-		{}, {URL: "magnet:?xt=urn:btih:wrong&dn=OFJE667"}, {TorrentData: []byte("<html>not a torrent</html>")},
-		{TorrentData: []byte(testTorrentFile("OFJE657", []string{"OFJE667.mp4"}))},
-		{URL: "magnet:?xt=urn:btih:both&dn=OFJE657", TorrentData: []byte("both")},
+		{}, {URL: "magnet:?dn=unknown"}, {TorrentData: []byte("<html>not a torrent</html>")},
+		{URL: "magnet:?xt=urn:btih:both&dn=OFJE-657", TorrentData: []byte("both")},
 		{TorrentData: []byte{}}, {TorrentData: make([]byte, MaxTorrentBytes+1)},
 	} {
 		store := NewMemoryTaskStore()
@@ -97,7 +96,7 @@ func TestUploadedTorrentSurvivesRestartAndRetriesAsAFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	task := createWaitingTask(t, store)
-	body := []byte(testTorrentFile("release", []string{"OFJE657.mp4"}))
+	body := []byte(testTorrentFile("release", []string{"OFJE-657.mp4"}))
 	qbt := &fakeTorrentAdder{err: errors.New("downloader unavailable")}
 	s, _ := NewService(fakeTracker{}, qbt, store)
 	if _, err := s.ResolveBlockedSourcingTask(ctx, task.ID, ResolveBlockedSourcingRequest{TorrentData: body}); err == nil {
@@ -112,6 +111,10 @@ func TestUploadedTorrentSurvivesRestartAndRetriesAsAFile(t *testing.T) {
 	qbt = &fakeTorrentAdder{}
 	s, _ = NewService(fakeTracker{}, qbt, store)
 	resolved, err := s.RetryTask(ctx, task.ID, nil)
+	if err == nil {
+		err = s.processQueuedSourcing(ctx, task.ID)
+		resolved, _ = store.Find(ctx, task.ID)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +146,7 @@ func TestSchema14UpgradeRetainsResourceScheduleAndAddsTorrentStorage(t *testing.
 		t.Fatalf("upgrade damaged tracking: %+v %v", stored, err)
 	}
 	s, _ := NewService(fakeTracker{}, &fakeTorrentAdder{}, store)
-	if _, err := s.ResolveBlockedSourcingTask(context.Background(), task.ID, ResolveBlockedSourcingRequest{TorrentData: []byte(testTorrentFile("OFJE657", []string{"OFJE657.mp4"}))}); err != nil {
+	if _, err := s.ResolveBlockedSourcingTask(context.Background(), task.ID, ResolveBlockedSourcingRequest{TorrentData: []byte(testTorrentFile("OFJE-657", []string{"OFJE-657.mp4"}))}); err != nil {
 		t.Fatal(err)
 	}
 }

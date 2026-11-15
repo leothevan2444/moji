@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/storage"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
@@ -22,7 +23,7 @@ func TestHomepageWidgetReadsManagedTasksWithoutUpstreams(t *testing.T) {
 	defer manager.Close()
 	store := taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations)
 	now := time.Now().Add(-time.Hour)
-	if err := store.Create(ctx, &taskruntime.Task{ID: "completed", Code: "TEST-1", Source: taskruntime.TaskSourceManual, Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone, CreatedAt: now, UpdatedAt: now, IngestCompletedAt: &now}); err != nil {
+	if err := store.Create(ctx, &taskruntime.Task{Film: &film.Snapshot{Endpoint: "https://example.test/graphql", SceneID: "completed", Code: "TEST-1"}, ID: "completed", Code: "TEST-1", Source: taskruntime.TaskSourceManual, Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone, CreatedAt: now, UpdatedAt: now, IngestCompletedAt: &now}); err != nil {
 		t.Fatal(err)
 	}
 	runtime := newHTTPRuntimeWithContext(ctx, &config.Config{}, "widget-test", nil, manager)

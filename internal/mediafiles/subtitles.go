@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/leothevan2444/moji/internal/film"
 )
 
 var srtTime = regexp.MustCompile(`(?m)(\d{2,}):(\d{2}):(\d{2})[,.](\d{3})[ \t]+-->[ \t]+(\d{2,}):(\d{2}):(\d{2})[,.](\d{3})`)
@@ -91,9 +93,8 @@ func (f FFmpeg) prepareSubtitles(ctx context.Context, r Request, parts []File, d
 		}
 		if part < 0 {
 			// A subtitle for the whole movie is retained without a part-time offset.
-			if SameCode(stem, r.Code) {
-				token := codeToken.FindStringIndex(CleanName(stem))
-				label = CleanName(stem)[token[1]:]
+			if film.Match(r.Code, stem) {
+				label, _ = film.Suffix(r.Code, CleanName(stem))
 				if partToken.MatchString(label) {
 					return errors.New("subtitle refers to an unselected video part")
 				}
@@ -153,7 +154,7 @@ func (f FFmpeg) prepareSubtitles(ctx context.Context, r Request, parts []File, d
 		pieces := groups[key]
 		sort.SliceStable(pieces, func(i, j int) bool { return pieces[i].part < pieces[j].part })
 		ext := strings.ToLower(filepath.Ext(pieces[0].file.Path))
-		name := r.Code
+		name := film.SafeName(r.Code)
 		if strings.TrimSuffix(key, ext) != "" {
 			name += "." + strings.TrimSuffix(key, ext)
 		}

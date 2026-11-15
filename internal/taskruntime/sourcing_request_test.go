@@ -74,7 +74,7 @@ func TestNewQueuedRequestHasAnExplicitSourceIdentityVersion(t *testing.T) {
 	}
 	ids := []string{"jackett/legacy-site", "33333333-3333-4333-8333-333333333333"}
 	paused := false
-	task, err := service.QueueDownloadContext(ctx, DownloadRequest{Code: "UPGRADE-125", Trackers: ids, Paused: &paused})
+	task, err := service.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("UPGRADE-125"), Code: "UPGRADE-125", Trackers: ids, Paused: &paused})
 	if err != nil {
 		t.Fatal(err)
 	}

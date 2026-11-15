@@ -10,6 +10,7 @@ const relationalTaskSelectSQL = `SELECT * FROM (SELECT
  t.id AS id,
  t.source AS source,
  t.code AS code,
+ t.film_json AS film_json, t.sourcing_mode AS sourcing_mode,t.resource_confirmed AS resource_confirmed,
  t.stage AS stage,
  t.stage_status AS stage_status,
  t.stage_error_code AS stage_error_code,

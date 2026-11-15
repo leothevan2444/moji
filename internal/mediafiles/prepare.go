@@ -16,6 +16,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/leothevan2444/moji/internal/film"
 )
 
 type Request struct {
@@ -166,7 +168,7 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 	if err := r.Plan.Validate(); err != nil {
 		return Result{}, err
 	}
-	if ExtractCode(r.Code) != r.Code || strings.ContainsAny(r.TaskID, "/\\\x00") || r.TaskID == "" {
+	if film.Code(r.Code) == "" || strings.ContainsAny(r.TaskID, "/\\\x00") || r.TaskID == "" {
 		return Result{}, errors.New("invalid delivery identity")
 	}
 	if r.Action != "COPY" && r.Action != "MOVE" {
@@ -181,8 +183,8 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 	if !filepath.IsAbs(r.SourceRoot) || !filepath.IsAbs(r.TargetRoot) {
 		return Result{}, errors.New("media roots must be absolute")
 	}
-	final := filepath.Join(r.TargetRoot, r.Code)
-	result := Result{Directory: final, VideoPath: filepath.Join(final, r.Code+".mkv")}
+	final := filepath.Join(r.TargetRoot, film.SafeName(r.Code))
+	result := Result{Directory: final, VideoPath: filepath.Join(final, film.SafeName(r.Code)+".mkv")}
 	encoded, _ := json.Marshal(struct {
 		Code, Source string
 		Plan         Plan
@@ -215,7 +217,7 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 		}
 		videoName := saved.VideoName
 		if videoName == "" {
-			videoName = r.Code + ".mkv" // Receipts from before direct single-file delivery.
+			videoName = film.SafeName(r.Code) + ".mkv" // Receipts from before direct single-file delivery.
 		}
 		if filepath.Base(videoName) != videoName || saved.Files[videoName] == "" {
 			return Result{}, errors.New("delivery receipt has no movie output")
@@ -276,10 +278,10 @@ func (f FFmpeg) Prepare(ctx context.Context, r Request) (Result, error) {
 		return Result{}, errors.New("no main video remains after deduplication")
 	}
 	output := filepath.Join(staging, "video.partial")
-	videoName := r.Code + ".mkv"
+	videoName := film.SafeName(r.Code) + ".mkv"
 	durations := []float64{0} // Single-file subtitles need no time offsets.
 	if len(sources) == 1 {
-		videoName = r.Code + filepath.Ext(parts[0].Path)
+		videoName = film.SafeName(r.Code) + filepath.Ext(parts[0].Path)
 		if err := copyMedia(ctx, sources[0], output); err != nil {
 			return Result{}, err
 		}

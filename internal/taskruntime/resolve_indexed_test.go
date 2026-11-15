@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/jmoiron/sqlx"
-	"github.com/leothevan2444/moji/internal/indexer"
-	"github.com/leothevan2444/moji/internal/storage"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/leothevan2444/moji/internal/indexer"
+	"github.com/leothevan2444/moji/internal/storage"
 )
 
 func indexedResolutionFixture(t *testing.T) (*storage.Manager, *RelationalTaskStore, *selectedSource, *Service, *selectedArtifactAdder, *Task) {
@@ -67,7 +68,7 @@ func TestExistingTaskChoicePersistsBeforeAcquisitionSurvivesExpiryAndReplaysOnce
 	}
 }
 func TestExistingTaskChoiceRechecksRevisionStateIdentityAndUncertainCommands(t *testing.T) {
-	for _, scenario := range []string{"revision", "stage", "restart", "code", "uncertain", "future-command", "old-generation", "waiting", "paused"} {
+	for _, scenario := range []string{"revision", "stage", "restart", "uncertain", "future-command", "old-generation", "waiting", "paused"} {
 		t.Run(scenario, func(t *testing.T) {
 			m, store, source, service, _, task := indexedResolutionFixture(t)
 			ctx := context.Background()

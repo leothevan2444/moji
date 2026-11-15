@@ -3,8 +3,6 @@ package graphqlapi
 import (
 	"context"
 	"errors"
-	"github.com/leothevan2444/moji/internal/downloader"
-	"github.com/leothevan2444/moji/internal/torrentsearch"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -19,12 +17,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/indexerdefs"
 	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskruntime"
+	"github.com/leothevan2444/moji/internal/torrentsearch"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -110,6 +111,11 @@ func ErrorPresenter(ctx context.Context, err error) *gqlerror.Error {
 }
 
 func classifyError(err error) string {
+	for _, known := range []error{film.ErrRequired, film.ErrChanged, film.ErrResourceConfirmation} {
+		if errors.Is(err, known) {
+			return known.Error()
+		}
+	}
 	for _, known := range []error{torrentsearch.ErrTaskScope, torrentsearch.ErrExpired, torrentsearch.ErrBusy, torrentsearch.ErrInvalid, torrentsearch.ErrNotRunning, config.ErrConfigRevision, indexerdefs.ErrNotInstalled, indexerdefs.ErrBusy, indexerdefs.ErrConflict, indexerdefs.ErrInvalidBundle, indexerdefs.ErrIncompatible, indexerdefs.ErrUnavailable, indexerdefs.ErrNotRunning, indexerdefs.ErrNoPrevious, indexerdefs.ErrBudget, indexerdefs.ErrSource, indexerdefs.ErrJobTerminal, indexerdefs.ErrCancelling, indexer.ErrCatalogNotLoaded, indexer.ErrNotConfigured, indexer.ErrInvalidScope, indexer.ErrInvalidQuery, indexer.ErrInvalidSettings, indexer.ErrUnsupported, indexer.ErrReference, indexer.ErrExpired, indexer.ErrIncomplete, indexer.ErrBusy, indexer.ErrCoolingDown, indexer.ErrTransport, indexer.ErrUnsafeURL, indexer.ErrResponseBudget, indexer.ErrAuthentication, indexer.ErrChallenge} {
 		if errors.Is(err, known) {
 			return known.Error()

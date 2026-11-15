@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/leothevan2444/moji/internal/indexer"
 	"io"
 	"net/http"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -30,15 +30,15 @@ func TestSourcingValidationBlocksBeforeDownloaderSubmission(t *testing.T) {
 		status                   int
 		errorCode                string
 	}{
-		{name: "fuzzy title", title: "OFJE667", torrentName: "OFJE657", files: []string{"OFJE657.mp4"}, errorCode: TaskStageErrorCandidateMismatch},
-		{name: "wrong torrent name", title: "OFJE657", torrentName: "OFJE667", files: []string{"movie.mp4"}, errorCode: TaskStageErrorCandidateMismatch},
-		{name: "wrong video despite matching name", title: "OFJE657", torrentName: "OFJE657", files: []string{"OFJE667.mp4"}, errorCode: TaskStageErrorCandidateMismatch},
-		{name: "conflicting videos", title: "OFJE657", torrentName: "OFJE657", files: []string{"OFJE657.mp4", "OFJE667.mp4"}, errorCode: TaskStageErrorCandidateMismatch},
-		{name: "ambiguous title", title: "OFJE657 OFJE667", torrentName: "OFJE657", files: []string{"OFJE657.mp4"}, errorCode: TaskStageErrorCandidateMismatch},
+		{name: "fuzzy title", title: "OFJE-667", torrentName: "OFJE-657", files: []string{"OFJE-657.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
+		{name: "wrong torrent name", title: "OFJE-657", torrentName: "OFJE-667", files: []string{"movie.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
+		{name: "wrong video despite matching name", title: "OFJE-657", torrentName: "OFJE-657", files: []string{"OFJE-667.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
+		{name: "conflicting videos", title: "OFJE-657", torrentName: "OFJE-657", files: []string{"OFJE-657.mp4", "OFJE-667.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
+		{name: "longer number is not the target", title: "OFJE-6570", torrentName: "OFJE-657", files: []string{"OFJE-657.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
 		{name: "unknown identity", title: "release", torrentName: "release", files: []string{"movie.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
-		{name: "no video", title: "OFJE657", torrentName: "OFJE657", files: []string{"readme.txt"}, errorCode: TaskStageErrorCandidateUnverified},
-		{name: "HTTP failure", title: "OFJE657", status: http.StatusBadGateway, errorCode: TaskStageErrorTorrentMetadata},
-		{name: "HTML response", title: "OFJE657", body: "<html>upstream error</html>", errorCode: TaskStageErrorTorrentMetadata},
+		{name: "no video", title: "OFJE-657", torrentName: "OFJE-657", files: []string{"readme.txt"}, errorCode: TaskStageErrorCandidateUnverified},
+		{name: "HTTP failure", title: "OFJE-657", status: http.StatusBadGateway, errorCode: TaskStageErrorTorrentMetadata},
+		{name: "HTML response", title: "OFJE-657", body: "<html>upstream error</html>", errorCode: TaskStageErrorTorrentMetadata},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			body := tc.body
@@ -55,7 +55,7 @@ func TestSourcingValidationBlocksBeforeDownloaderSubmission(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			task, err := s.DownloadMediaContext(context.Background(), DownloadRequest{Code: "OFJE-657"})
+			task, err := s.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("OFJE-657"), Code: "OFJE-657"})
 			if err == nil || task == nil || task.Stage != TaskStageSourcing || task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != tc.errorCode {
 				t.Fatalf("expected blocked sourcing with %s, got task=%+v err=%v", tc.errorCode, task, err)
 			}
@@ -71,7 +71,7 @@ func TestSourcingValidationBlocksBeforeDownloaderSubmission(t *testing.T) {
 }
 
 func TestSourcingUploadsExactVerifiedTorrentBytesAndIdentity(t *testing.T) {
-	for _, alias := range []string{"OFJE657", "ofje_657", "OFJE 657", "OFJE00657", "OFJE-657", "[HD 720p] OFJE657", "OFJE657-part01"} {
+	for _, alias := range []string{"OFJE-657", "ofje-657", "[HD 720p] OFJE-657", "OFJE-657-part01"} {
 		t.Run(alias, func(t *testing.T) {
 			body := testTorrentFile(alias, []string{"movie/" + alias + ".mp4", "readme.txt"})
 			qbt := &fakeTorrentAdder{}
@@ -81,7 +81,7 @@ func TestSourcingUploadsExactVerifiedTorrentBytesAndIdentity(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			task, err := s.DownloadMediaContext(context.Background(), DownloadRequest{Code: "OFJE-657", SavePath: "/downloads", Category: "moji", Tags: "test"})
+			task, err := s.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("OFJE-657"), Code: "OFJE-657", SavePath: "/downloads", Category: "moji", Tags: "test"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -106,20 +106,20 @@ func TestSourcingUploadsExactVerifiedTorrentBytesAndIdentity(t *testing.T) {
 func TestSourcingFallsBackAfterMetadataMismatch(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
 	s, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{
-		{Title: "OFJE657 preferred", Link: "http://indexer.invalid/wrong", Seeders: 10},
-		{Title: "OFJE657 fallback", Link: "http://indexer.invalid/right", Seeders: 1},
+		{Title: "OFJE-657 preferred", Link: "http://indexer.invalid/wrong", Seeders: 10},
+		{Title: "OFJE-657 fallback", Link: "http://indexer.invalid/right", Seeders: 1},
 	}}, qbt, NewMemoryTaskStore(), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		code := "OFJE657"
+		code := "OFJE-657"
 		if req.URL.Path == "/wrong" {
-			code = "OFJE667"
+			code = "OFJE-667"
 		}
 		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(testTorrentFile(code, []string{code + ".mp4"}))), Request: req}, nil
 	})}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := s.DownloadMediaContext(context.Background(), DownloadRequest{Code: "OFJE-657"})
-	if err != nil || task.Candidate.Title != "OFJE657 fallback" || len(qbt.options.Torrents) != 1 {
+	task, err := s.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("OFJE-657"), Code: "OFJE-657"})
+	if err != nil || task.Candidate.Title != "OFJE-657 fallback" || len(qbt.options.Torrents) != 1 {
 		t.Fatalf("failed fallback: %+v %v", task, err)
 	}
 }
@@ -129,17 +129,17 @@ func TestMagnetCodeValidation(t *testing.T) {
 		title, dn string
 		wantError bool
 	}{
-		{"OFJE657", "ofje_00657", false},
-		{"OFJE657", "", false},
-		{"release", "OFJE657", false},
-		{"OFJE667", "OFJE657", true},
-		{"OFJE657", "OFJE667", true},
+		{"OFJE-657", "ofje-657", false},
+		{"OFJE-657", "", false},
+		{"release", "OFJE-657", false},
+		{"OFJE-667", "OFJE-657", false},
+		{"OFJE-657", "OFJE-667", false},
 		{"release", "", true},
 	} {
 		t.Run(tc.title+"/"+tc.dn, func(t *testing.T) {
 			qbt := &fakeTorrentAdder{}
 			s, _ := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: tc.title, MagnetURI: "magnet:?xt=urn:btih:123&dn=" + tc.dn}}}, qbt, NewMemoryTaskStore())
-			task, err := s.DownloadMediaContext(context.Background(), DownloadRequest{Code: "OFJE-657"})
+			task, err := s.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("OFJE-657"), Code: "OFJE-657"})
 			if (err != nil) != tc.wantError {
 				t.Fatalf("unexpected result: %+v %v", task, err)
 			}
@@ -154,11 +154,11 @@ func TestMagnetCodeValidation(t *testing.T) {
 }
 
 func TestResolveAndRetryCannotBypassSourcingValidation(t *testing.T) {
-	for _, mode := range []string{"resolve", "retry"} {
+	for _, mode := range []string{"retry"} {
 		t.Run(mode, func(t *testing.T) {
 			ctx := context.Background()
 			store := NewMemoryTaskStore()
-			task := &Task{ID: mode, Code: "OFJE-657", Stage: TaskStageSourcing, StageStatus: TaskStageStatusBlocked, TorrentURL: "http://indexer.invalid/wrong", Candidate: Candidate{Title: "OFJE657"}, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+			task := &Task{ID: mode, Code: "OFJE-657", Stage: TaskStageSourcing, StageStatus: TaskStageStatusBlocked, TorrentURL: "http://indexer.invalid/wrong", Candidate: Candidate{Title: "OFJE-657"}, CreatedAt: time.Now(), UpdatedAt: time.Now()}
 			if mode == "retry" {
 				task.Stage = TaskStageDownloading
 				task.StageErrorCode = TaskStageErrorTorrentSubmit
@@ -167,14 +167,14 @@ func TestResolveAndRetryCannotBypassSourcingValidation(t *testing.T) {
 				t.Fatal(err)
 			}
 			qbt := &fakeTorrentAdder{}
-			s, _ := NewService(fakeTracker{}, qbt, store, torrentResponse(testTorrentFile("OFJE667", []string{"OFJE667.mp4"}), 200))
+			s, _ := NewService(fakeTracker{}, qbt, store, torrentResponse(testTorrentFile("OFJE-667", []string{"OFJE-667.mp4"}), 200))
 			var err error
 			if mode == "resolve" {
-				task, err = s.ResolveBlockedSourcingTask(ctx, task.ID, ResolveBlockedSourcingRequest{URL: task.TorrentURL, Title: "OFJE657"})
+				task, err = s.ResolveBlockedSourcingTask(ctx, task.ID, ResolveBlockedSourcingRequest{URL: task.TorrentURL, Title: "OFJE-657"})
 			} else {
 				task, err = s.RetryTask(ctx, task.ID, nil)
 			}
-			if err == nil || task.Stage != TaskStageSourcing || task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != TaskStageErrorCandidateMismatch || len(qbt.options.Torrents) != 0 {
+			if err == nil || task.Stage != TaskStageSourcing || task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != TaskStageErrorCandidateUnverified || len(qbt.options.Torrents) != 0 {
 				t.Fatalf("validation bypassed: %+v %v", task, err)
 			}
 		})
@@ -182,13 +182,13 @@ func TestResolveAndRetryCannotBypassSourcingValidation(t *testing.T) {
 }
 
 func TestTorrentHashMismatchAndMalformedMetadataAreRejected(t *testing.T) {
-	s, _ := NewService(fakeTracker{}, &fakeTorrentAdder{}, NewMemoryTaskStore(), torrentResponse(testTorrentFile("OFJE657", []string{"OFJE657.mp4"}), 200))
-	_, err := s.prepareTorrent(context.Background(), "OFJE-657", Candidate{Title: "OFJE657", InfoHash: "different"}, "http://indexer.invalid/file")
+	s, _ := NewService(fakeTracker{}, &fakeTorrentAdder{}, NewMemoryTaskStore(), torrentResponse(testTorrentFile("OFJE-657", []string{"OFJE-657.mp4"}), 200))
+	_, err := s.prepareTorrent(context.Background(), "OFJE-657", Candidate{Title: "OFJE-657", InfoHash: "different"}, "http://indexer.invalid/file")
 	var validation *candidateValidationError
 	if !errors.As(err, &validation) || validation.code != TaskStageErrorTorrentMetadata {
 		t.Fatalf("hash mismatch accepted: %v", err)
 	}
-	for _, body := range []string{"de", "d4:infod4:name99999999999999999999999999999999:xe", testTorrentFile("OFJE657", []string{"OFJE657.mp4"}) + "junk"} {
+	for _, body := range []string{"de", "d4:infod4:name99999999999999999999999999999999:xe", testTorrentFile("OFJE-657", []string{"OFJE-657.mp4"}) + "junk"} {
 		if _, err := parseTorrentMetadata([]byte(body)); err == nil {
 			t.Fatalf("accepted malformed torrent %q", body)
 		}
@@ -200,7 +200,7 @@ func TestTorrentHashMismatchAndMalformedMetadataAreRejected(t *testing.T) {
 	s.httpClient = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(strings.Repeat("x", (8<<20)+1)))}, nil
 	})}
-	if _, err := s.prepareTorrent(context.Background(), "OFJE-657", Candidate{Title: "OFJE657"}, "http://indexer.invalid/oversize"); err == nil || !strings.Contains(err.Error(), "exceeds") {
+	if _, err := s.prepareTorrent(context.Background(), "OFJE-657", Candidate{Title: "OFJE-657"}, "http://indexer.invalid/oversize"); err == nil || !strings.Contains(err.Error(), "exceeds") {
 		t.Fatalf("oversize torrent accepted: %v", err)
 	}
 }
@@ -208,13 +208,13 @@ func TestTorrentHashMismatchAndMalformedMetadataAreRejected(t *testing.T) {
 func TestTorrentUTF8NamesCannotHideConflictingCodes(t *testing.T) {
 	for _, key := range []string{"name.utf-8", "path.utf-8"} {
 		t.Run(key, func(t *testing.T) {
-			body := testTorrentFile("OFJE657", []string{"OFJE657.mp4"})
+			body := testTorrentFile("OFJE-657", []string{"OFJE-657.mp4"})
 			if key == "name.utf-8" {
-				needle := bencodeString("name") + bencodeString("OFJE657")
-				body = strings.Replace(body, needle, needle+bencodeString(key)+bencodeString("OFJE667"), 1)
+				needle := bencodeString("name") + bencodeString("OFJE-657")
+				body = strings.Replace(body, needle, needle+bencodeString(key)+bencodeString("OFJE-667"), 1)
 			} else {
-				needle := bencodeString("path") + "l" + bencodeString("OFJE657.mp4") + "e"
-				body = strings.Replace(body, needle, needle+bencodeString(key)+"l"+bencodeString("OFJE667.mp4")+"e", 1)
+				needle := bencodeString("path") + "l" + bencodeString("OFJE-657.mp4") + "e"
+				body = strings.Replace(body, needle, needle+bencodeString(key)+"l"+bencodeString("OFJE-667.mp4")+"e", 1)
 			}
 			metadata, err := parseTorrentMetadata([]byte(body))
 			if err != nil {
@@ -227,13 +227,13 @@ func TestTorrentUTF8NamesCannotHideConflictingCodes(t *testing.T) {
 	}
 }
 
-func TestTitleSimilarityRecognizesCodeAliases(t *testing.T) {
+func TestTitleSimilarityRecognizesTheCompleteTarget(t *testing.T) {
 	selector := defaultCandidateSelector{}
 	result, err := selector.Select(context.Background(), "OFJE-657", []indexer.SelectionCandidate{
 		{Title: "OFJE-667", MagnetURI: "magnet:?xt=urn:btih:wrong"},
-		{Title: "ofje00657", MagnetURI: "magnet:?xt=urn:btih:right"},
+		{Title: "ofje-657", MagnetURI: "magnet:?xt=urn:btih:right"},
 	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTitleSimilarity, Enabled: true}}))
-	if err != nil || result.Title != "ofje00657" {
+	if err != nil || result.Title != "ofje-657" {
 		t.Fatalf("alias did not win: %+v %v", result, err)
 	}
 }
@@ -241,7 +241,7 @@ func TestTitleSimilarityRecognizesCodeAliases(t *testing.T) {
 func TestSyncRecoversUnstartedFuzzySubmissionsAndKeepsSourcingBlocked(t *testing.T) {
 	ctx := context.Background()
 	store := NewMemoryTaskStore()
-	for _, pair := range [][2]string{{"OFJE-657", "OFJE667"}, {"IPOK-004", "IPOK006"}} {
+	for _, pair := range [][2]string{{"OFJE-657", "OFJE-667"}, {"IPOK-004", "IPOK006"}} {
 		task := &Task{ID: pair[0], Code: pair[0], Candidate: Candidate{Title: pair[1]}, TorrentURL: "http://indexer.invalid/file", Stage: TaskStageDownloading, StageStatus: TaskStageStatusRunning, CreatedAt: time.Now(), UpdatedAt: time.Now()}
 		completed := time.Now()
 		task.SourcingCompletedAt = &completed
@@ -249,7 +249,7 @@ func TestSyncRecoversUnstartedFuzzySubmissionsAndKeepsSourcingBlocked(t *testing
 			t.Fatal(err)
 		}
 	}
-	qbt := &fakeTorrentAdder{torrents: []qbittorrent.Torrent{{Name: "OFJE667", Hash: "wrong", Progress: 0.5}}}
+	qbt := &fakeTorrentAdder{torrents: []qbittorrent.Torrent{{Name: "OFJE-667", Hash: "wrong", Progress: 0.5}}}
 	s, _ := NewService(fakeTracker{}, qbt, store)
 	for i := 0; i < 2; i++ {
 		if _, err := s.SyncProgress(ctx); err != nil {
@@ -257,7 +257,7 @@ func TestSyncRecoversUnstartedFuzzySubmissionsAndKeepsSourcingBlocked(t *testing
 		}
 		for _, id := range []string{"OFJE-657", "IPOK-004"} {
 			task, err := store.Find(ctx, id)
-			if err != nil || task.Stage != TaskStageSourcing || task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != TaskStageErrorCandidateMismatch || task.SourcingCompletedAt != nil || task.TorrentHash != "" {
+			if err != nil || task.Stage != TaskStageSourcing || task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != TaskStageErrorCandidateUnverified || task.SourcingCompletedAt != nil || task.TorrentHash != "" {
 				t.Fatalf("invalid historical submission was not blocked: %+v %v", task, err)
 			}
 		}

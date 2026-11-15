@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/stash"
@@ -21,7 +22,9 @@ type queueTestTaskCreator struct {
 	titles []string
 }
 
-func (f *queueTestTaskCreator) QueueResolvedScene(_ context.Context, code, title string) (*taskruntime.Task, error) {
+func (f *queueTestTaskCreator) QueueResolvedScene(_ context.Context, target film.Snapshot) (*taskruntime.Task, error) {
+	code, title := target.Code, target.Title
+	_ = title
 	f.calls++
 	f.codes = append(f.codes, code)
 	f.titles = append(f.titles, title)

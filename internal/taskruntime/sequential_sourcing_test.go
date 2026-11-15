@@ -3,14 +3,15 @@ package taskruntime
 import (
 	"context"
 	"encoding/json"
-	"github.com/leothevan2444/moji/internal/config"
-	"github.com/leothevan2444/moji/internal/indexer"
-	"github.com/leothevan2444/moji/internal/tracker"
-	"github.com/leothevan2444/moji/pkg/jackett"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/indexer"
+	"github.com/leothevan2444/moji/internal/tracker"
+	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
 func TestSourcingRejectsInvalidLocksAndFallsBackNormally(t *testing.T) {
@@ -38,7 +39,7 @@ func TestSourcingRejectsInvalidLocksAndFallsBackNormally(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := service.DownloadMediaContext(context.Background(), DownloadRequest{Code: "ABCD-123"})
+	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil || task.Stage != TaskStageDownloading || !reflect.DeepEqual(calls, []string{"a", "b", "c"}) {
 		t.Fatalf("task=%+v calls=%v err=%v", task, calls, err)
 	}

@@ -18,6 +18,13 @@ fragment SubscriptionCheckFields on SubscriptionCheckRun {
     error
     startedAt
     finishedAt
+    details {
+      phase catalogStatus catalogErrorCode catalogSource catalogMode catalogStopReason
+      catalogPages catalogPagesWithResults catalogScenes catalogReleases
+      newCount knownCount upcomingCount inLibraryCount queuedCount reviewCount skippedCount creationFailedCount
+      retryTotal retryAttempted retrySucceeded retryFailed retryDeferred omittedResults
+      results { key code title phase outcome reasonCode errorCode error taskId nextRetryAt }
+    }
   }
 }
 

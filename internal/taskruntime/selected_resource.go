@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/indexer"
 )
 
@@ -14,6 +15,7 @@ type IndexedResourceAccess interface {
 	FetchRecord(context.Context, indexer.ResourceRecord) (indexer.Artifact, error)
 }
 type QueueIndexedResourceRequest struct {
+	Film                                       *film.Snapshot
 	Code, ResourceID, SavePath, Category, Tags string
 	Paused                                     *bool
 }
@@ -21,7 +23,11 @@ type QueueIndexedResourceRequest struct {
 // QueueIndexedResourceContext accepts only the opaque server reference. The
 // caller cannot replace its locator, account, title, hash or source metadata.
 func (s *Service) QueueIndexedResourceContext(ctx context.Context, req QueueIndexedResourceRequest) (*Task, error) {
-	code := extractCode(req.Code)
+	if req.Film == nil || req.Film.Validate() != nil {
+		return nil, film.ErrRequired
+	}
+	req.Code = req.Film.Code
+	code := normalizeCode(req.Code)
 	if code == "" {
 		return nil, ErrTaskCodeRequired
 	}
@@ -49,18 +55,16 @@ func (s *Service) QueueIndexedResourceContext(ctx context.Context, req QueueInde
 	if err = record.Validate(); err != nil {
 		return nil, err
 	}
-	if _, err = validateCodeEvidence(code, record.Ref.Locator.Title); err != nil {
-		return nil, err
-	}
+
 	release := indexer.Release{Title: record.Ref.Locator.Title, InstanceID: record.Instance.ID, InstanceName: record.Instance.Name, Kind: record.Instance.Kind, InfoHash: record.Ref.Locator.InfoHash, Resource: record.Ref}
 	candidate := candidateFromSearchResult(indexer.SelectionFromRelease(release))
-	request, err := marshalSourcingRequest(DownloadRequest{Source: TaskSourceSearch, Code: code, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, Paused: req.Paused})
+	request, err := marshalSourcingRequest(DownloadRequest{Film: req.Film, Source: TaskSourceSearch, Code: code, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, Paused: req.Paused})
 	if err != nil {
 		return nil, err
 	}
 	now := s.now().UTC()
-	task := &Task{ID: s.newID(), Code: code, Source: TaskSourceSearch, Candidate: candidate, TorrentURL: "indexer-resource:" + record.Ref.ID, SelectedResourceID: record.Ref.ID, IndexerResource: &record, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, SourcingRequestJSON: string(request), CreatedAt: now, UpdatedAt: now}
-	setTaskStage(task, TaskStageSourcing, TaskStageStatusPending)
+	task := &Task{Film: req.Film, SourcingMode: "USER_SELECTED", ResourceConfirmed: true, ID: s.newID(), Code: code, Source: TaskSourceSearch, Candidate: candidate, TorrentURL: "indexer-resource:" + record.Ref.ID, SelectedResourceID: record.Ref.ID, IndexerResource: &record, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, SourcingRequestJSON: string(request), CreatedAt: now, UpdatedAt: now}
+	setTaskStage(task, TaskStageDownloading, TaskStageStatusPending)
 	if err = creator.CreateIndexedTask(ctx, task); err != nil {
 		return nil, err
 	}
@@ -112,7 +116,7 @@ type ResolveIndexedResourceRequest struct {
 }
 
 func eligibleIndexedChoice(task *Task) bool {
-	return task != nil && task.RestartStateJSON == "" && task.Stage == TaskStageSourcing && (task.StageStatus == TaskStageStatusBlocked || waitingForResource(task)) && task.TorrentHash == "" && task.ContentPath == ""
+	return task != nil && task.RestartStateJSON == "" && (task.Stage == TaskStageSourcing || (task.SourcingMode == "USER_SELECTED" && task.Stage == TaskStageDownloading)) && (task.StageStatus == TaskStageStatusBlocked || waitingForResource(task)) && task.TorrentHash == "" && task.ContentPath == ""
 }
 func (s *Service) ResolveIndexedResourceContext(ctx context.Context, id string, req ResolveIndexedResourceRequest) (*Task, error) {
 	id = strings.TrimSpace(id)
@@ -145,7 +149,7 @@ func (s *Service) ResolveIndexedResourceContext(ctx context.Context, id string, 
 	if !eligibleIndexedChoice(task) {
 		return nil, ErrSourcingUnavailable
 	}
-	code := extractCode(task.Code)
+	code := normalizeCode(task.Code)
 	if code == "" || code != task.Code {
 		return nil, ErrTaskCodeRequired
 	}
@@ -158,10 +162,10 @@ func (s *Service) ResolveIndexedResourceContext(ctx context.Context, id string, 
 	if err = record.Validate(); err != nil {
 		return nil, err
 	}
-	if _, err = validateCodeEvidence(code, record.Ref.Locator.Title); err != nil {
-		return nil, err
-	}
+
 	next := cloneTask(task)
+	next.SourcingMode = "USER_SELECTED"
+	next.ResourceConfirmed = true
 	request := DownloadRequest{Source: task.Source, Code: code, SavePath: task.SavePath, Category: task.Category, Tags: task.Tags}
 	if task.SourcingRequestJSON != "" {
 		request, err = unmarshalSourcingRequest([]byte(task.SourcingRequestJSON))
@@ -192,7 +196,7 @@ func (s *Service) ResolveIndexedResourceContext(ctx context.Context, id string, 
 	next.FilePlanJSON = ""
 	next.SourcingNextCheckAt = nil
 	next.SourcingRequestJSON = string(encoded)
-	setTaskStage(next, TaskStageSourcing, TaskStageStatusPending)
+	setTaskStage(next, TaskStageDownloading, TaskStageStatusPending)
 	clearTaskStageError(next)
 	next.UpdatedAt = s.now().UTC()
 	if err = updater.UpdateIndexedTask(ctx, next); err != nil {

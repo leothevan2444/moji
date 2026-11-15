@@ -1,3 +1,5 @@
+import { FilmTaskConfirmation, type ResourceChoice } from "../../components/discovery/FilmTaskConfirmation";
+import "../../styles/film-confirmation.scss";
 import { useDeferredValue, useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { DiscoveryPage } from "../../pages/DiscoveryPage";
@@ -29,7 +31,8 @@ export function Component() {
   const [params, setParams] = useSearchParams(); const state = parseDiscoverSearchParams(params);
   const { pushToast, openHelp } = useOutletContext<AppOutletContext>();
   const [draft, setDraft] = useState(state.q); const [focused, setFocused] = useState(false); const [historyVisible, setHistoryVisible] = useState(false);
-  const [pendingAdd, setPendingAdd] = useState<string | null>(null); const history = useSearchHistory();
+  const [confirmResource,setConfirmResource]=useState<ResourceChoice|null>(null);
+ const [pendingAdd, setPendingAdd] = useState<string | null>(null); const history = useSearchHistory();
   useEffect(() => setDraft(state.q), [state.q]);
   const query = useDeferredValue(state.q); const mode = state.source;
   const stashSort = state.sort.toUpperCase().replaceAll("-", "_") as DiscoverSortBy;
@@ -72,10 +75,8 @@ export function Component() {
     if (activePreview && !await applyPreview(targetPage, sort.toUpperCase().replaceAll("-", "_") as TorrentSearchSort)) return;
     update({ page: targetPage, sort });
   };
-  const queueCandidate = async (id: string, code: string) => {
-    const task = await torrents.queue({ candidateId: id, code });
-    if (!task) return false;
-    navigate(`/tasks/${encodeURIComponent(task.id)}`, { state: { backgroundLocation: location } }); return true;
+  const queueCandidate = async (id: string, _code: string) => {
+    setConfirmResource({searchId:runID??undefined,candidateId:id,title:candidates.find(c=>c.id===id)?.title,sourceName:candidates.find(c=>c.id===id)?.instanceName});return true;
   };
   const queueScene = async (item: DiscoverScenesDocumentQuery["discoverScenes"]["items"][number]) => {
     setPendingAdd(item.key);
@@ -83,6 +84,7 @@ export function Component() {
     finally { setPendingAdd(null); }
   };
   return <>
+ <button type="button" className="ghost-button" onClick={()=>setConfirmResource({})}>{t("filmCreation.manualEntry")}</button>
     <DiscoveryPage query={draft} searching={mode === "stashbox" ? discovered.fetching : torrents.starting} inputFocused={focused} mode={mode} history={history.history} historyVisible={historyVisible}
       onQueryChange={value => { setDraft(value); setHistoryVisible(!value.trim() && focused); }}
       onInputFocus={() => { setFocused(true); setHistoryVisible(!draft.trim()); }} onInputBlur={() => { setFocused(false); setHistoryVisible(false); }}
@@ -123,5 +125,6 @@ export function Component() {
         </>}
       </article></div>
     </Drawer> : null}
+ {confirmResource?<FilmTaskConfirmation key={`${confirmResource.searchId??"manual"}/${confirmResource.candidateId??""}`} resource={confirmResource} onClose={()=>setConfirmResource(null)} onCreated={id=>{setConfirmResource(null);navigate(`/tasks/${encodeURIComponent(id)}`,{state:{backgroundLocation:location}})}}/>:null}
   </>;
 }

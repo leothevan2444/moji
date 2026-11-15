@@ -39,7 +39,7 @@ func (s *checkAPIService) CheckActivity(_ context.Context, ids []string) (subscr
 func TestHomeSubscriptionCheckGraphQLContract(t *testing.T) {
 	now := time.Now().UTC()
 	service := &checkAPIService{run: subscription.CheckRun{ID: "check-1", Trigger: "SCHEDULED", Scope: "ALL", Status: "PARTIAL", StartedAt: now, FinishedAt: &now, Items: []subscription.CheckItem{
-		{PerformerID: "p1", Name: "One", Status: "SUCCEEDED"},
+		{PerformerID: "p1", Name: "One", Status: "SUCCEEDED", Details: &subscription.CheckDetails{Version: 1, Phase: "FINISHED", CatalogStatus: "SUCCEEDED", CatalogPages: 2, CatalogScenes: 80, RetryTotal: 1, RetryAttempted: 1, RetryFailed: 1, Results: []subscription.CheckReleaseResult{{Key: "film", Code: "T38-043", Phase: "HISTORICAL_RETRY", Outcome: "FAILED", ReasonCode: "solo_behavior_download", ErrorCode: "UPSTREAM_TEMPORARY", Error: "source timeout", NextRetryAt: &now}}}},
 		{PerformerID: "p2", Name: "Two", Status: "FAILED", Error: "source unavailable"},
 		{PerformerID: "p3", Name: "Three", Status: "SKIPPED"},
 	}}}
@@ -70,9 +70,13 @@ func TestHomeSubscriptionCheckGraphQLContract(t *testing.T) {
 	if len(service.activityIDs) != 1 || service.activityIDs[0] != "p1" || len(result.Data.Activity.Performers) != 1 || result.Data.Activity.Performers[0].RunID != "active" {
 		t.Fatalf("incorrect scoped activity: %+v", result)
 	}
-	executeGraphQLInto(t, resolver, `{subscriptionCheck(id:"check-1"){id startedAt finishedAt items{performerId error}}}`, &result)
+	executeGraphQLInto(t, resolver, `{subscriptionCheck(id:"check-1"){id startedAt finishedAt items{performerId error details{catalogStatus catalogPages catalogScenes retryTotal retryFailed results{code phase outcome reasonCode errorCode error nextRetryAt}}}}}`, &result)
 	if len(result.Errors) > 0 || result.Data.SubscriptionCheck == nil || result.Data.SubscriptionCheck.Items[1].Error == nil {
 		t.Fatalf("detail must load actor results separately: %+v", result)
+	}
+	details := result.Data.SubscriptionCheck.Items[0].Details
+	if details == nil || details.CatalogStatus != "SUCCEEDED" || details.RetryFailed != 1 || len(details.Results) != 1 || details.Results[0].ReasonCode != "solo_behavior_download" || details.Results[0].NextRetryAt == nil {
+		t.Fatalf("missing independent retry diagnostics: %+v", details)
 	}
 	executeGraphQLInto(t, resolver, `mutation {startSubscriptionCheck(ids:["p1"]){id status}}`, &result)
 	if len(result.Errors) > 0 || len(service.ids) != 1 || service.ids[0] != "p1" || service.trigger != "MANUAL" || result.Data.StartSubscriptionCheck.ID != "check-1" {

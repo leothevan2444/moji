@@ -4,7 +4,6 @@ extend type Query {
 extend type Mutation {
   startTorrentSearch(input: StartTorrentSearchInput!): TorrentSearch!
   cancelTorrentSearch(id: ID!): TorrentSearch!
-  queueTorrentCandidate(input: QueueTorrentCandidateInput!): Task!
 }
 extend type Subscription { torrentSearchEvents(id: ID!): TorrentSearchEvent! }
 
@@ -26,15 +25,7 @@ input StartTorrentSearchInput {
   refresh: Boolean
   taskId: ID
 }
-input QueueTorrentCandidateInput {
-  code: String!
-  searchId: ID!
-  candidateId: ID!
-  paused: Boolean
-  savePath: String
-  category: String
-  tags: String
-}
+
 "A persisted, bounded search snapshot. Events invalidate this snapshot."
 type TorrentSearch {
   filterInstanceId: ID

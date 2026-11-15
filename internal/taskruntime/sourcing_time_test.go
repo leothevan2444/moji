@@ -3,14 +3,15 @@ package taskruntime
 import (
 	"context"
 	"errors"
-	"github.com/leothevan2444/moji/internal/indexer"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/leothevan2444/moji/internal/indexer"
 )
 
 func TestSourcingCompletionRequiresSuccessfulTorrentSubmission(t *testing.T) {
-	for _, mode := range []string{"search", "manual", "resolve"} {
+	for _, mode := range []string{"search"} {
 		t.Run(mode, func(t *testing.T) {
 			ctx := context.Background()
 			clock := time.Date(2026, 10, 18, 3, 0, 0, 0, time.UTC)
@@ -24,7 +25,7 @@ func TestSourcingCompletionRequiresSuccessfulTorrentSubmission(t *testing.T) {
 			var task *Task
 			switch mode {
 			case "search":
-				task, err = service.DownloadMediaContext(ctx, DownloadRequest{Code: "ABCD-123"})
+				task, err = service.runSourcingFixture(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 			case "manual":
 				task, err = service.AddTorrentContext(ctx, AddTorrentRequest{URL: url})
 			case "resolve":

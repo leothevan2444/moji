@@ -20,12 +20,15 @@ type ReviewPerformer struct {
 
 type ReleaseReview struct {
 	RecordedRelease
-	SceneID    string
-	ImageURL   string
-	Status     ReviewStatus
-	Performers []ReviewPerformer
-	ReviewedAt *time.Time
-	Error      string
+	SceneID       string
+	ImageURL      string
+	Status        ReviewStatus
+	Performers    []ReviewPerformer
+	ReviewedAt    *time.Time
+	Error         string
+	FailureCode   string     `json:",omitempty"`
+	RetryAttempts int        `json:",omitempty"`
+	NextRetryAt   *time.Time `json:",omitempty"`
 }
 
 type ReleaseReviewQuery struct {

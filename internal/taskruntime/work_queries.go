@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/leothevan2444/moji/pkg/qbittorrent"
 	"sort"
 	"strings"
+
+	"github.com/leothevan2444/moji/internal/film"
+	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
 const workBatchSize = 128
@@ -137,7 +139,7 @@ func workPredicate(kind string) (string, error) {
 	predicate := ""
 	switch kind {
 	case "SOURCING":
-		predicate = "t.stage='SOURCING' AND t.stage_status<>'DONE'"
+		predicate = "(t.stage='SOURCING' AND t.stage_status<>'DONE') OR (t.stage='DOWNLOADING' AND t.stage_status='PENDING' AND t.sourcing_mode='USER_SELECTED' AND COALESCE(d.torrent_hash,'')='')"
 	case "MONITOR":
 		predicate = "t.stage<>'SOURCING' AND (d.torrent_hash<>'' OR d.torrent_identity_hash IS NOT NULL OR t.stage='DOWNLOADING') AND k.restart_state_json IS NULL"
 	case "INGEST":
@@ -159,7 +161,7 @@ func (s *RelationalTaskStore) TaskWorkPage(ctx context.Context, kind, after stri
 		return nil, err
 	}
 	var rows []sqliteTaskRow
-	err = s.core.Reader.SelectContext(ctx, &rows, `SELECT COALESCE(k.payload_version,1) AS checkpoint_version,t.id,t.source,t.code,t.stage,t.stage_status,t.stage_error_code,t.stage_error_message,t.revision,t.generation,t.created_at,t.updated_at,
+	err = s.core.Reader.SelectContext(ctx, &rows, `SELECT COALESCE(k.payload_version,1) AS checkpoint_version,t.film_json,t.sourcing_mode,t.resource_confirmed,t.id,t.source,t.code,t.stage,t.stage_status,t.stage_error_code,t.stage_error_message,t.revision,t.generation,t.created_at,t.updated_at,
  d.torrent_hash,d.torrent_identity_hash,d.content_path,k.sourcing_request_json,k.sourcing_last_checked_at,k.sourcing_next_check_at
  FROM tasks t LEFT JOIN task_downloads d ON d.task_id=t.id LEFT JOIN task_checkpoints k ON k.task_id=t.id WHERE t.id>? AND (`+predicate+`) ORDER BY t.id LIMIT ?`, after, limit)
 	if err != nil {
@@ -231,14 +233,14 @@ type reviewTaskProvider interface {
 }
 
 func (s *RelationalTaskStore) ListReviewTasks(ctx context.Context) ([]*Task, error) {
-	type row struct{ ID, Code string }
+	type row struct{ ID, Code, Endpoint, SceneID string }
 	var rows []row
-	if err := s.core.Reader.SelectContext(ctx, &rows, "SELECT id,code FROM tasks WHERE code<>'' ORDER BY created_at DESC,id"); err != nil {
+	if err := s.core.Reader.SelectContext(ctx, &rows, "SELECT id,code,coalesce(json_extract(film_json,'$.Endpoint'),'') AS endpoint,coalesce(json_extract(film_json,'$.SceneID'),'') AS sceneid FROM tasks WHERE code<>'' ORDER BY created_at DESC,id"); err != nil {
 		return nil, err
 	}
 	out := make([]*Task, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, &Task{ID: row.ID, Code: row.Code})
+		out = append(out, &Task{ID: row.ID, Code: row.Code, Film: &film.Snapshot{Endpoint: row.Endpoint, SceneID: row.SceneID, Code: row.Code}})
 	}
 	return out, nil
 }

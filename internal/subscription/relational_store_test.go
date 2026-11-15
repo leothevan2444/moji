@@ -97,6 +97,7 @@ func TestManagedCheckRunTypedItemsAndMembershipGuard(t *testing.T) {
 	}
 	run.Items[0].Status = "DONE"
 	run.Items[0].FinishedAt = &now
+	run.Items[0].Details = &CheckDetails{Version: 1, Phase: "FINISHED", CatalogStatus: "SUCCEEDED", CatalogPages: 2, CatalogScenes: 80, RetryTotal: 1, RetryAttempted: 1, RetryFailed: 1, Results: []CheckReleaseResult{{Key: "film", Code: "300MIUM-1437", Phase: "HISTORICAL_RETRY", Outcome: "FAILED", ErrorCode: "UPSTREAM_TEMPORARY", NextRetryAt: &now}}}
 	if err := s.SaveCheckRun(ctx, run); err != nil {
 		t.Fatal(err)
 	}

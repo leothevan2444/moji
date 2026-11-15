@@ -3,12 +3,12 @@ package taskruntime
 import (
 	"context"
 	"errors"
-	"github.com/leothevan2444/moji/internal/indexer"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/tracker"
 )
 
@@ -31,7 +31,7 @@ func TestResourcesAreTrackedAcrossMonthAndRestartUntilValidRelease(t *testing.T)
 	}
 	s := newService()
 	paused := true
-	task, err := s.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123", Trackers: []string{"preferred"}, Categories: []int{6000}, Limit: 3, SavePath: "/downloads", Category: "moji", Tags: "tracked", Paused: &paused})
+	task, err := s.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", Trackers: []string{"preferred"}, Categories: []int{6000}, Limit: 3, SavePath: "/downloads", Category: "moji", Tags: "tracked", Paused: &paused})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestResourcesAreTrackedAcrossMonthAndRestartUntilValidRelease(t *testing.T)
 		}
 	}
 	defer store.db.Close()
-	search.results = []indexer.SelectionCandidate{{Title: "abcd00123", MagnetURI: "magnet:?xt=urn:btih:abc123&dn=ABCD_123"}}
+	search.results = []indexer.SelectionCandidate{{Title: "abcd-123", MagnetURI: "magnet:?xt=urn:btih:abc123&dn=ABCD-123"}}
 	if err := s.processQueuedSourcing(ctx, task.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestTrackingRejectsFuzzyResultsAndManualRetryRunsImmediately(t *testing.T) 
 	qbt := &fakeTorrentAdder{}
 	store := NewMemoryTaskStore()
 	s, _ := NewService(search, qbt, store)
-	task, _ := s.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
+	task, _ := s.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err := s.processQueuedSourcing(ctx, task.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestSearchFailureWaitsForResourceButPermanentFailureDoesNot(t *testing.T) {
 	clock := time.Now().UTC()
 	store := NewMemoryTaskStore()
 	s, _ := NewService(fakeTracker{err: errors.New("indexer unavailable")}, &fakeTorrentAdder{}, store, WithClock(func() time.Time { return clock }))
-	task, _ := s.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
+	task, _ := s.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err := s.processQueuedSourcing(ctx, task.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestLegacyBlockedSearchAndIntervalChangesAreAdopted(t *testing.T) {
 	}
 	// A newly waiting task picks up settings edits without a restart.
 	s.tracker = fakeTracker{}
-	task, _ = s.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-125"})
+	task, _ = s.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-125"), Code: "ABCD-125"})
 	if err := s.processQueuedSourcing(ctx, task.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ func TestWorkerWakesWhenResourceCheckBecomesDue(t *testing.T) {
 	search := &appearingResourceTracker{}
 	store := NewMemoryTaskStore()
 	s, _ := NewService(search, &fakeTorrentAdder{}, store, WithClock(func() time.Time { return time.Unix(unix.Load(), 0).UTC() }))
-	task, _ := s.QueueDownloadContext(context.Background(), DownloadRequest{Code: "ABCD-123"})
+	task, _ := s.QueueDownloadContext(context.Background(), DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() { s.RunSourcingWorker(ctx); close(done) }()
@@ -271,7 +271,7 @@ func TestResourceAbsenceNeverPublishesBlockedState(t *testing.T) {
 		t.Fatal(err)
 	}
 	s, _ := NewService(fakeTracker{}, &fakeTorrentAdder{}, store)
-	task, err := s.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
+	task, err := s.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -317,7 +317,7 @@ func TestSearchFailuresNeverPublishBlockedTask(t *testing.T) {
 			events := bus.Subscribe(ctx)
 			store, _ := NewEventingTaskStore(NewMemoryTaskStore(), bus)
 			s, _ := NewService(fakeTracker{err: failure}, &fakeTorrentAdder{}, store)
-			task, err := s.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
+			task, err := s.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -377,7 +377,7 @@ func TestDiagnosticStorageFailureDoesNotClearTaskFailure(t *testing.T) {
 	ctx := context.Background()
 	store := NewMemoryTaskStore()
 	service, _ := NewService(fakeTracker{err: indexer.ErrStateUnavailable}, &fakeTorrentAdder{}, store)
-	task, err := service.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
+	task, err := service.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil {
 		t.Fatal(err)
 	}

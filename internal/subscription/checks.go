@@ -17,6 +17,7 @@ const checkHistoryLimit = 100
 const checkTimeout = 30 * time.Minute
 
 type CheckItem struct {
+	Details     *CheckDetails
 	PerformerID string
 	Name        string
 	Status      string
@@ -118,6 +119,7 @@ func cloneCheckRun(run CheckRun) CheckRun {
 	run.FinishedAt = copyTime(run.FinishedAt)
 	run.Items = append([]CheckItem{}, run.Items...)
 	for i := range run.Items {
+		run.Items[i].Details = run.Items[i].Details.Clone()
 		run.Items[i].StartedAt = copyTime(run.Items[i].StartedAt)
 		run.Items[i].FinishedAt = copyTime(run.Items[i].FinishedAt)
 	}
@@ -261,7 +263,7 @@ func (s *Service) startCheckItem(ctx context.Context, id string) error {
 	})
 }
 
-func (s *Service) finishCheckItem(ctx context.Context, id, name, status, message string) error {
+func (s *Service) finishCheckItem(ctx context.Context, id, name, status, message string, details ...*CheckDetails) error {
 	return s.updateCheck(ctx, func(run *CheckRun) {
 		for i := range run.Items {
 			if run.Items[i].PerformerID == id {
@@ -271,6 +273,9 @@ func (s *Service) finishCheckItem(ctx context.Context, id, name, status, message
 					item.Name = name
 				}
 				item.Status, item.Error, item.FinishedAt = status, message, &now
+				if len(details) > 0 {
+					item.Details = details[0].Clone()
+				}
 			}
 		}
 	})

@@ -7,6 +7,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/discovery"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/metadata"
 	performerdomain "github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/taskflow"
@@ -246,7 +247,8 @@ func (f *fakeTaskRuntime) ListTasks(_ context.Context) ([]*taskruntime.Task, err
 	return append([]*taskruntime.Task(nil), f.tasks...), nil
 }
 
-func (f *fakeTaskCreator) QueueResolvedScene(_ context.Context, code, title string) (*taskruntime.Task, error) {
+func (f *fakeTaskCreator) QueueResolvedScene(_ context.Context, target film.Snapshot) (*taskruntime.Task, error) {
+	code := target.Code
 	f.resolvedCodes = append(f.resolvedCodes, code)
 	return f.queueTask, f.queueErr
 }
@@ -256,7 +258,8 @@ func (f *fakeTaskCreator) QueueDiscoveredScene(_ context.Context, sceneID string
 	return f.queueTask, f.queueErr
 }
 
-func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, code, _ string) (*taskruntime.Task, error) {
+func (f *fakeTaskCreator) QueueSubscriptionRelease(_ context.Context, target film.Snapshot) (*taskruntime.Task, error) {
+	code := target.Code
 	f.subscriptionCalls = append(f.subscriptionCalls, code)
 	if f.subscriptionCode != "" {
 		code = f.subscriptionCode
@@ -1000,10 +1003,11 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 		client: &fakeStashboxClient{
 			performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"},
 			scenes: []*stashboxgraphql.SceneFragment{{
-				Date:  stringPointer("2026-01-01"),
-				ID:    "js-scene-1",
-				Title: &title,
-				Code:  &code,
+				Performers: []*stashboxgraphql.PerformerAppearanceFragment{{Performer: &stashboxgraphql.PerformerFragment{ID: "js-1", Name: "Rara Anzai"}}},
+				Date:       stringPointer("2026-01-01"),
+				ID:         "js-scene-1",
+				Title:      &title,
+				Code:       &code,
 			}},
 		},
 	})
@@ -1027,11 +1031,11 @@ func TestRefreshPerformerKeepsFailedAutoDownloadsPending(t *testing.T) {
 	if first.PendingReleaseCount != 1 || second.PendingReleaseCount != 1 {
 		t.Fatalf("expected failed release to remain pending once, got first=%d second=%d", first.PendingReleaseCount, second.PendingReleaseCount)
 	}
-	if len(creator.subscriptionCalls) != 1 {
-		t.Fatalf("expected task creator to be called once for the new release, got %d", len(creator.subscriptionCalls))
+	if len(creator.subscriptionCalls) != 2 {
+		t.Fatalf("expected the second check to retry the historical failure, got %d", len(creator.subscriptionCalls))
 	}
-	if second.LastError == "" {
-		t.Fatalf("expected last error to be preserved after auto-download failure")
+	if second.LastError != "" {
+		t.Fatalf("release failure must not replace the successful catalog check outcome")
 	}
 }
 
@@ -1507,6 +1511,7 @@ func TestListPerformerScenesDeduplicatesMatchedStashBoxScenes(t *testing.T) {
 
 	taskRuntime := &fakeTaskRuntime{tasks: []*taskruntime.Task{{
 		ID:               "task-abp-123",
+		Film:             &film.Snapshot{Endpoint: endpoint, SceneID: "box-scene-1", Code: "ABP-123"},
 		Code:             "ABP-123",
 		Stage:            taskruntime.TaskStageDownloading,
 		StageStatus:      taskruntime.TaskStageStatusRunning,

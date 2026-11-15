@@ -1,13 +1,10 @@
 import { useMutation } from "urql";
 import {
-  AddTorrentDocumentDocument,
   DeleteTaskDocumentDocument,
   DeleteTasksDocumentDocument,
   RestartTaskSourcingDocumentDocument,
   RetryTaskDocumentDocument,
   RetryTasksDocumentDocument,
-  type AddTorrentDocumentMutation,
-  type AddTorrentDocumentMutationVariables,
   type DeleteTaskDocumentMutation,
   type DeleteTaskDocumentMutationVariables,
   type DeleteTasksDocumentMutation,
@@ -23,10 +20,7 @@ import {
  * task state (add torrent, sync downloads and advance ingest).
  */
 export function useTaskMutations() {
-  const [, addTorrent] = useMutation<
-    AddTorrentDocumentMutation,
-    AddTorrentDocumentMutationVariables
-  >(AddTorrentDocumentDocument);
+
 
   const [{ fetching: deletingTask }, deleteTask] = useMutation<
     DeleteTaskDocumentMutation,
@@ -45,7 +39,6 @@ export function useTaskMutations() {
 
 
   return {
-    addTorrent,
     deleteTask,
     deletingTask,
     retryTask,

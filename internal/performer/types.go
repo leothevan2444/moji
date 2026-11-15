@@ -3,6 +3,7 @@ package performer
 import (
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -50,6 +51,7 @@ const (
 )
 
 type Scene struct {
+	Film                                         *film.Snapshot `json:"-"`
 	UpcomingState                                string
 	Key                                          string
 	PrimarySource                                SceneSource

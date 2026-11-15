@@ -108,7 +108,7 @@ func waitPrepared(t *testing.T, store TaskStore, stage TaskStage) *Task {
 	return nil
 }
 func TestFileSelectionUsesQBTIndicesAndSelectedProgress(t *testing.T) {
-	files := []qbittorrent.TorrentContentFile{{Index: 7, Name: "OFJE-329A.mkv", Size: 100, Progress: .5}, {Index: 12, Name: "OFJE-329B.mkv", Size: 100, Progress: 1}, {Index: 22, Name: "OFJE-329A.en.srt", Size: 10}, {Index: 31, Name: "广告.mp4", Size: 100}}
+	files := []qbittorrent.TorrentContentFile{{Index: 7, Name: "OFJE-329-A.mkv", Size: 100, Progress: .5}, {Index: 12, Name: "OFJE-329-B.mkv", Size: 100, Progress: 1}, {Index: 22, Name: "OFJE-329-A.en.srt", Size: 10}, {Index: 31, Name: "广告.mp4", Size: 100}}
 	service, store, q := fileService(t, files, false, &controlledPreparer{})
 	tasks, err := service.SyncProgress(context.Background())
 	if err != nil {
@@ -156,7 +156,7 @@ func TestUnknownVideosPauseAndRequireManualOrderedSelection(t *testing.T) {
 }
 func TestPreparationRunsOutsideRequestAndPublishesCleanScanPath(t *testing.T) {
 	preparer := &controlledPreparer{started: make(chan struct{}, 1), release: make(chan struct{})}
-	service, store, _ := fileService(t, []qbittorrent.TorrentContentFile{{Index: 0, Name: "OFJE-329A.mkv", Size: 100, Progress: 1}, {Index: 1, Name: "OFJE-329B.mkv", Size: 100, Progress: 1}}, false, preparer)
+	service, store, _ := fileService(t, []qbittorrent.TorrentContentFile{{Index: 0, Name: "OFJE-329-A.mkv", Size: 100, Progress: 1}, {Index: 1, Name: "OFJE-329-B.mkv", Size: 100, Progress: 1}}, false, preparer)
 	if _, err := service.SyncProgress(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +213,7 @@ func TestFilePlanSurvivesSQLiteReload(t *testing.T) {
 	defer store.db.Close()
 	now := time.Now().UTC()
 	task := &Task{ID: "saved", Stage: TaskStageDownloading, CreatedAt: now, UpdatedAt: now}
-	p := mediafiles.Classify("OFJE-329", []mediafiles.File{{Index: 8, Path: "OFJE-329A.mp4"}, {Index: 14, Path: "OFJE-329B.mp4"}}, true)
+	p := mediafiles.Classify("OFJE-329", []mediafiles.File{{Index: 8, Path: "OFJE-329-A.mp4"}, {Index: 14, Path: "OFJE-329-B.mp4"}}, true)
 	if err := p.Select([]int{14, 8}); err != nil {
 		t.Fatal(err)
 	}

@@ -48,7 +48,7 @@ func ensureSourcingRequest(task *Task) error {
 // a temporary BLOCKED event to connected task views.
 func (s *Service) recordSourcingFailure(ctx context.Context, task *Task, code, message string) error {
 	blockTask(task, code, message, s.now().UTC())
-	if task.SelectedResourceID == "" && task.SourcingRequestJSON != "" && resourceUnavailable(code) {
+	if task.SourcingMode != "USER_SELECTED" && task.SelectedResourceID == "" && task.SourcingRequestJSON != "" && resourceUnavailable(code) {
 		if err := s.scheduleResourceCheck(task, s.now().UTC()); err != nil {
 			return err
 		}

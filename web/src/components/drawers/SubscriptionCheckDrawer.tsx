@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { formatDateTime } from "../../utils";
 import type { SubscriptionCheckFieldsFragment } from "../../graphql/generated/graphql";
+import { SubscriptionCheckItemDetails } from "./SubscriptionCheckItemDetails";
 
 export function SubscriptionCheckDrawer({ run }: { run: SubscriptionCheckFieldsFragment }) {
   const { t, i18n } = useTranslation();
@@ -19,6 +20,7 @@ export function SubscriptionCheckDrawer({ run }: { run: SubscriptionCheckFieldsF
     <ul className="home-check-result-list">{run.items.map(item => <li key={item.performerId}>
       <Link to={`/performers/${encodeURIComponent(item.performerId)}`}>{item.name || item.performerId}</Link><span>{t(`subscriptionChecks.itemStates.${item.status}`)}</span>
       {item.error ? <p className={item.status === "FAILED" ? "tone-danger" : "home-muted"}>{reason(item.error)}</p> : null}
+      <SubscriptionCheckItemDetails item={item} />
     </li>)}</ul>
     <p className="home-muted home-check-id">{t("subscriptionChecks.runId")} <code>{run.id}</code></p>
   </div>;

@@ -35,6 +35,10 @@ func (s *MemoryStore) PutReleaseReviews(_ context.Context, records []ReleaseRevi
 }
 
 func cloneReleaseReview(record ReleaseReview) ReleaseReview {
+	// A catalog observation is valid for immediate admission only; a stored
+	// decision must revalidate its source when it is tried again.
+	record.Film = nil
+	record.NextRetryAt = copyTime(record.NextRetryAt)
 	record.Performers = append([]ReviewPerformer(nil), record.Performers...)
 	record.PerformerNames = append([]string(nil), record.PerformerNames...)
 	if record.ReviewedAt != nil {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/leothevan2444/moji/internal/mediafiles"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/releasedate"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
 )
@@ -152,7 +152,7 @@ func (a *activitySample) observe(scenes []*stashboxgraphql.SceneFragment, comple
 			continue
 		}
 		key := "scene:" + scene.ID
-		if code := mediafiles.ExtractCode(stringValue(scene.Code)); code != "" {
+		if code := film.Code(stringValue(scene.Code)); code != "" {
 			key = "code:" + code
 		}
 		dayRecord := ActivityDay{Date: date, Weight: activityWeight(scene)}

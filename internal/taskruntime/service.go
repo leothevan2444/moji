@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/leothevan2444/moji/internal/indexer"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,6 +17,8 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/film"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/mediafiles"
 	"github.com/leothevan2444/moji/internal/stashsync"
@@ -66,6 +67,9 @@ const (
 )
 
 type Task struct {
+	Film                    *film.Snapshot
+	SourcingMode            string
+	ResourceConfirmed       bool
 	SelectedResourceID      string
 	IndexerResource         *indexer.ResourceRecord `json:"-"`
 	Revision                int64
@@ -132,6 +136,7 @@ type Candidate struct {
 }
 
 type DownloadRequest struct {
+	Film       *film.Snapshot `json:"-"`
 	Source     TaskSource
 	Code       string
 	Trackers   []string
@@ -144,6 +149,7 @@ type DownloadRequest struct {
 }
 
 type AddTorrentRequest struct {
+	Film     *film.Snapshot
 	Source   TaskSource
 	URL      string
 	SavePath string
@@ -367,10 +373,6 @@ func WithTaskDeletePolicyProvider(provider func() config.TaskDeletePolicy) Optio
 	}
 }
 
-func (s *Service) DownloadMedia(code string) (*Task, error) {
-	return s.DownloadMediaContext(context.Background(), DownloadRequest{Code: code})
-}
-
 func (s *Service) PreviewTorrentSelectionContext(ctx context.Context, req PreviewTorrentSelectionRequest) (*CandidateSelectionPreview, error) {
 	query := strings.TrimSpace(req.Query)
 	if query == "" {
@@ -518,7 +520,7 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	if task == nil {
 		return nil, fmt.Errorf("taskruntime: task %q not found", id)
 	}
-	if task.RestartStateJSON != "" || task.Stage != TaskStageSourcing || (task.StageStatus != TaskStageStatusBlocked && !waitingForResource(task)) {
+	if task.RestartStateJSON != "" || (task.Stage != TaskStageSourcing && !(task.SourcingMode == "USER_SELECTED" && task.Stage == TaskStageDownloading && task.TorrentHash == "")) || (task.StageStatus != TaskStageStatusBlocked && !waitingForResource(task)) {
 		return nil, ErrSourcingUnavailable
 	}
 
@@ -538,7 +540,7 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 		torrentURL = "magnet:?xt=urn:btih:" + parsed.InfoHash + "&dn=" + url.QueryEscape(parsed.Name)
 		candidate.MagnetURI = torrentURL
 	} else {
-		candidate, _, _, metadata, err = s.resolveManualTorrent(ctx, torrentURL)
+		candidate, metadata, err = s.resolveManualTorrent(ctx, torrentURL)
 	}
 	if err != nil {
 		if waitingForResource(task) {
@@ -560,12 +562,11 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	}
 	candidate.Seeders = req.Seeders
 	candidate.Peers = req.Peers
-	var prepared preparedTorrent
-	if req.TorrentData != nil {
-		prepared, err = prepareTorrentFile(task.Code, candidate, *metadata)
-	} else {
-		prepared, err = s.prepareTorrentWithMetadata(ctx, task.Code, candidate, torrentURL, metadata)
-	}
+	selected := cloneTask(task)
+	selected.ResourceConfirmed = true
+	selected.SourcingMode = "USER_SELECTED"
+	selected.Candidate = candidate
+	prepared, err := s.prepareConfirmedResource(ctx, selected, torrentURL, metadata)
 	if err != nil {
 		if waitingForResource(task) {
 			return task, err
@@ -580,6 +581,8 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 
 	next := cloneTask(task)
 	next.SelectedResourceID = ""
+	next.SourcingMode = "USER_SELECTED"
+	next.ResourceConfirmed = true
 	next.IndexerResource = nil
 	next.TorrentFileData = append([]byte(nil), req.TorrentData...)
 	if err := ensureSourcingRequest(next); err != nil {
@@ -621,6 +624,9 @@ func (s *Service) SyncProgress(ctx context.Context) ([]*Task, error) {
 }
 
 func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents []qbittorrent.Torrent) (*Task, error) {
+	if pendingSelectedDownload(snapshot) {
+		return snapshot, nil
+	}
 	if snapshot == nil {
 		return nil, nil
 	}
@@ -656,7 +662,7 @@ func (s *Service) syncTaskProgress(ctx context.Context, snapshot *Task, torrents
 		return next, nil
 	}
 	// Recover older submissions without ever attaching an unrelated fuzzy candidate.
-	if task.TorrentHash == "" && task.Progress == 0 {
+	if task.SourcingMode != "USER_SELECTED" && task.TorrentHash == "" && task.Progress == 0 {
 		if _, err := validateCodeEvidence(task.Code, task.Candidate.Title, magnetDisplayName(task.TorrentURL)); err != nil {
 			next := cloneTask(task)
 			if blockErr := s.blockSourcingValidation(ctx, next, err); !errors.Is(blockErr, err) {
@@ -786,6 +792,19 @@ func (s *Service) retrySourcingTask(ctx context.Context, task *Task) (*Task, err
 }
 
 func (s *Service) retryDownloadingTask(ctx context.Context, task *Task) (*Task, error) {
+	if task.SourcingMode == "USER_SELECTED" && task.TorrentHash == "" {
+		next := cloneTask(task)
+		setTaskStage(next, TaskStageDownloading, TaskStageStatusPending)
+		clearTaskStageError(next)
+		if err := s.store.Update(ctx, next); err != nil {
+			return nil, err
+		}
+		select {
+		case s.sourcingWake <- struct{}{}:
+		default:
+		}
+		return next, nil
+	}
 	if s.mediaConfig != nil && task.TorrentHash != "" && task.StageErrorCode != TaskStageErrorTorrentSubmit {
 		return s.retryFileDownload(ctx, task)
 	}
@@ -827,44 +846,6 @@ func (s *Service) retryIngestTask(ctx context.Context, task *Task, scanner Stash
 		return retried, execErr
 	}
 	return retried, nil
-}
-
-func (s *Service) DownloadMediaContext(ctx context.Context, req DownloadRequest) (*Task, error) {
-	code := extractCode(req.Code)
-	if code == "" {
-		return nil, ErrTaskCodeRequired
-	}
-	if err := s.ensureTaskCodeCanBeCreated(ctx, code); err != nil {
-		return nil, err
-	}
-
-	now := s.now().UTC()
-	source := req.Source
-	if source == "" {
-		source = TaskSourceManual
-	}
-	task := &Task{
-		ID:        s.newID(),
-		Source:    source,
-		Code:      code,
-		SavePath:  req.SavePath,
-		Category:  req.Category,
-		Tags:      req.Tags,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-	setTaskStage(task, TaskStageSourcing, TaskStageStatusRunning)
-
-	if err := s.store.Create(ctx, task); err != nil {
-		logging.Errorf("taskruntime: create task failed for code %q: %v", code, err)
-		return nil, fmt.Errorf("create task: %w", err)
-	}
-	logging.Infof("taskruntime: created %s task %s for code %q", strings.ToLower(string(source)), task.ID, code)
-
-	if s.indexers != nil {
-		req.Trackers = tracker.InstanceIDsFromLegacyTrackers(req.Trackers)
-	}
-	return s.runSourcingFlow(ctx, task, req)
 }
 
 func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadRequest) (*Task, error) {
@@ -1004,54 +985,7 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 }
 
 func (s *Service) AddTorrentContext(ctx context.Context, req AddTorrentRequest) (*Task, error) {
-	torrentURL := strings.TrimSpace(req.URL)
-	if torrentURL == "" {
-		return nil, errors.New("taskruntime: torrent url is required")
-	}
-
-	candidate, code, identity, metadata, err := s.resolveManualTorrent(ctx, torrentURL)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.ensureTaskCanBeCreated(ctx, identity, code); err != nil {
-		return nil, err
-	}
-
-	now := s.now().UTC()
-	source := req.Source
-	if source == "" {
-		source = TaskSourceManual
-	}
-	task := &Task{
-		ID:                    s.newID(),
-		Source:                source,
-		Code:                  code,
-		Stage:                 TaskStageSourcing,
-		StageStatus:           TaskStageStatusRunning,
-		Candidate:             candidate,
-		TorrentURL:            torrentURL,
-		SavePath:              req.SavePath,
-		Category:              req.Category,
-		Tags:                  req.Tags,
-		TorrentIdentityHash:   identity.InfoHash,
-		TorrentIdentityMagnet: identity.MagnetURI,
-		CreatedAt:             now,
-		UpdatedAt:             now,
-	}
-	refreshTaskStageFields(task)
-
-	if err := s.store.Create(ctx, task); err != nil {
-		logging.Errorf("taskruntime: create manual task failed for url %q: %v", torrentURL, err)
-		return nil, fmt.Errorf("create task: %w", err)
-	}
-	logging.Infof("taskruntime: created %s task %s for url %q", strings.ToLower(string(source)), task.ID, torrentURL)
-
-	if err := s.submitTaskTorrentWithMetadata(ctx, task, torrentURL, metadata, req.SavePath, req.Category, req.Tags, req.Paused); err != nil {
-		return task, err
-	}
-	logging.Infof("taskruntime: %s task %s added to qBittorrent", strings.ToLower(string(source)), task.ID)
-
-	return task, nil
+	return s.queueManualResource(ctx, req)
 }
 
 func (s *Service) submitTaskTorrent(ctx context.Context, task *Task, torrentURL string, savePath string, category string, tags string, paused *bool) error {
@@ -1064,6 +998,10 @@ func (s *Service) submitTaskTorrentWithMetadata(ctx context.Context, task *Task,
 	if task.IndexerResource != nil {
 		fetchCtx := indexer.WithDiagnosticContext(ctx, indexer.DiagnosticContext{Trigger: "SELECTED", TaskID: task.ID, Code: task.Code})
 		if err := s.acquireSelectedResource(fetchCtx, task); err != nil {
+			if task.SourcingMode == "USER_SELECTED" {
+				blockTask(task, TaskStageErrorTorrentMetadata, "unable to acquire selected resource", s.now().UTC())
+				return s.store.Update(ctx, task)
+			}
 			if errors.Is(err, indexer.ErrStateUnavailable) {
 				return s.blockSourcingState(ctx, task)
 			}
@@ -1081,7 +1019,9 @@ func (s *Service) submitTaskTorrentWithMetadata(ctx context.Context, task *Task,
 		}
 		torrentURL = task.TorrentURL
 	}
-	if len(task.TorrentFileData) > 0 {
+	if task.SourcingMode == "USER_SELECTED" {
+		prepared, err = s.prepareConfirmedResource(ctx, task, torrentURL, metadata)
+	} else if len(task.TorrentFileData) > 0 {
 		parsed, parseErr := parseTorrentMetadata(task.TorrentFileData)
 		if parseErr != nil {
 			return s.blockSourcingValidation(ctx, task, candidateError(TaskStageErrorTorrentMetadata, "invalid persisted torrent metadata"))
@@ -1500,6 +1440,10 @@ func cloneTask(task *Task) *Task {
 		return nil
 	}
 	cp := *task
+	if task.Film != nil {
+		v := task.Film.Clone()
+		cp.Film = &v
+	}
 	if task.IndexerResource != nil {
 		record := task.IndexerResource.Clone()
 		cp.IndexerResource = &record

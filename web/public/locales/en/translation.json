@@ -1,4 +1,25 @@
 {
+  "filmCreation": {
+    "resource": "Selected resource",
+    "providedLink": "User-provided download link",
+    "specifiedResource": "User-selected resource",
+    "automatic": "Automatic sourcing",
+    "resourceMismatch": "The resource name does not contain the full film code. Check the association before confirming.",
+    "title": "Confirm film",
+    "resourceUrl": "Magnet or torrent URL (optional)",
+    "match": "Match film",
+    "keywords": "Film keywords",
+    "source": "StashBox source URL (optional)",
+    "preferredSource": "Search configured sources in priority order",
+    "search": "Search films",
+    "loading": "Loading film…",
+    "noResults": "No films found. Search by keywords or change the source.",
+    "confirmResource": "I confirm that this resource contains the selected film. I will select the video files if needed.",
+    "confirmFilm": "Download this film and let Moji find a resource.",
+    "create": "Create task",
+    "chooseAnother": "Choose another film",
+    "manualEntry": "Create from a film or resource"
+  },
   "performerActivity": {
     "help": "About activity levels and values",
     "latestSourceHelp": "Latest valid release among loaded works from the preferred StashBox. Future and unknown dates are excluded; the catalog may be incomplete.",
@@ -862,6 +883,64 @@
       }
     }
   },
+  "checkDetails": {
+    "phase": "Stage: {{phase}}",
+    "notStarted": "This stage has not run.",
+    "notRecorded": "Detailed observations were not captured for this check.",
+    "duration": "{{count}} seconds elapsed",
+    "catalog": "Current catalog check",
+    "releases": "Current release processing",
+    "retries": "Historical failure retries",
+    "catalogCounts": "Read {{pages}} pages and {{scenes}} catalog entries; {{releases}} films were in this check’s release processing range.",
+    "releaseCounts": "New {{fresh}} · Previously recorded {{known}} · Tasks accepted / linked {{queued}} · In library {{library}} · Review {{review}} · Policy skipped {{skipped}} · Upcoming {{upcoming}}",
+    "creationFailures": "Task creation failures in this check: {{count}}",
+    "retryCounts": "Historical failures {{total}} · Retried {{attempted}} · Handled {{succeeded}} · Retry failures {{failed}} · Deferred {{deferred}}",
+    "deferred": "Deferred items wait for backoff or manual handling. Each performer check retries up to 32 films and retains the rest. A manual check can retry immediately.",
+    "openFailures": "Review failed films",
+    "films": "Film processing details ({{count}})",
+    "technicalError": "View original error",
+    "nextRetry": "Next automatic retry: {{time}}",
+    "openTask": "View task",
+    "openFilm": "Resolve this film",
+    "omitted": "Another {{count}} results are not expanded here. See release reviews.",
+    "phases": {
+      "CATALOG": "Reading catalog",
+      "RELEASES": "Processing releases",
+      "HISTORICAL_RETRIES": "Retrying historical failures",
+      "NEW_RELEASE": "Current release processing",
+      "HISTORICAL_RETRY": "Historical failure retry",
+      "FINISHED": "Finished"
+    },
+    "modes": {
+      "poll": "Incremental check",
+      "backfill": "Initial catalog check"
+    },
+    "stops": {
+      "max_pages_reached": "Reached the page limit for this check; historical catalog was not fully scanned.",
+      "known_release_boundary": "Reached previously recorded releases.",
+      "release_date_boundary": "Reached the release date boundary.",
+      "empty_page": "The source returned no further processable entries.",
+      "repeated_page": "The source repeated a page; pagination stopped.",
+      "catalog_complete": "Reached the end of the source catalog."
+    },
+    "outcomes": {
+      "DOWNLOADED": "Task accepted / linked",
+      "IN_LIBRARY": "Already in library",
+      "FAILED": "Failed",
+      "PENDING": "Sent for review",
+      "SKIPPED": "Skipped by current policy",
+      "DEFERRED": "Deferred"
+    },
+    "errors": {
+      "UPSTREAM_TEMPORARY": "The source or network is temporarily unavailable. Retry when available.",
+      "CANCELLED": "Operation cancelled.",
+      "FILM_IDENTITY_CONFLICT": "Another film’s task already uses this full code. Check the film association.",
+      "FILM_METADATA_INVALID": "Film identity or metadata is incomplete. Check the StashBox record.",
+      "RELEASE_NOT_AVAILABLE": "The film has not been released.",
+      "PERFORMER_MAPPING_MISSING": "The performer has no match in the configured StashBox sources.",
+      "MANUAL_REVIEW_REQUIRED": "Manual review is required. Read the original error and resolve this film."
+    }
+  },
   "subscriptionChecks": {
     "historyLatest": "Latest scheduled result: {{status}} · {{time}}",
     "historyNone": "No finished scheduled checks recorded",
@@ -1496,6 +1575,9 @@
     "retry": "Retry"
   },
   "errorSpecial": {
+    "STASHBOX_FILM_REQUIRED": "Select a StashBox film with a complete code first.",
+    "FILM_CONFIRMATION_CHANGED": "The film details changed. Select and confirm the film again.",
+    "RESOURCE_CONFIRMATION_REQUIRED": "Confirm that the resource belongs to the selected film.",
     "SUBSCRIPTION_CHECK_IN_PROGRESS": "A check is already running for the selected performers. Follow its progress in Release checks.",
     "STASH_NOT_CONFIGURED": "Stash is not configured. Check the connection settings."
   },

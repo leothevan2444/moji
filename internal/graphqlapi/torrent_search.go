@@ -5,10 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/indexer"
-	"github.com/leothevan2444/moji/internal/mediafiles"
-	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/internal/torrentsearch"
 )
 
@@ -76,7 +75,7 @@ func (r *Resolver) startTorrentSearch(ctx context.Context, input model.StartTorr
 		if err != nil {
 			return nil, err
 		}
-		if task == nil || task.Code == "" || mediafiles.ExtractCode(query.Keywords) != task.Code {
+		if task == nil || task.Code == "" || film.Code(query.Keywords) != task.Code {
 			return nil, torrentsearch.ErrInvalid
 		}
 	}
@@ -121,36 +120,6 @@ func (r *Resolver) cancelTorrentSearch(ctx context.Context, id string) (*model.T
 		return nil, err
 	}
 	return torrentSearchToModel(snapshot), nil
-}
-func (r *Resolver) queueTorrentCandidate(ctx context.Context, input model.QueueTorrentCandidateInput) (*model.Task, error) {
-	if r.SearchRuns == nil {
-		return nil, indexer.ErrNotConfigured
-	}
-	resource, err := r.SearchRuns.ResourceID(ctx, input.SearchID, input.CandidateID)
-	if err != nil {
-		return nil, err
-	}
-	creator, ok := r.TaskFlow.(interface {
-		QueueTorrentCandidate(context.Context, taskruntime.QueueIndexedResourceRequest) (*taskruntime.Task, error)
-	})
-	if !ok {
-		return nil, indexer.ErrNotConfigured
-	}
-	req := taskruntime.QueueIndexedResourceRequest{Code: input.Code, ResourceID: resource, Paused: input.Paused}
-	if input.SavePath != nil {
-		req.SavePath = *input.SavePath
-	}
-	if input.Category != nil {
-		req.Category = *input.Category
-	}
-	if input.Tags != nil {
-		req.Tags = *input.Tags
-	}
-	task, err := creator.QueueTorrentCandidate(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return taskToModel(task), nil
 }
 func (r *Resolver) torrentSearchEvents(ctx context.Context, id string) (<-chan *model.TorrentSearchEvent, error) {
 	if r.SearchRuns == nil {

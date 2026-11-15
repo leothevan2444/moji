@@ -3,8 +3,8 @@ import { useMutation, useQuery } from "urql";
 import { useFragment } from "../graphql/generated/fragment-masking";
 import {
   TorrentSearchDocument, TorrentSearchFieldsFragmentDoc, TorrentSearchSort, TorrentSearchState,
-  StartTorrentSearchDocument, CancelTorrentSearchDocument, QueueTorrentCandidateDocument,
-  type StartTorrentSearchInput, type QueueTorrentCandidateInput
+  StartTorrentSearchDocument, CancelTorrentSearchDocument,
+  type StartTorrentSearchInput
 } from "../graphql/generated/graphql";
 import { useTorrentSearchEvents } from "./useTorrentSearchEvents";
 import i18n from "../i18n/i18n";
@@ -19,7 +19,6 @@ export function useTorrentSearch(id: string | null, offset = 0, limit = 100, sor
   const events = useTorrentSearchEvents(id, refresh, running);
   const [startState, startMutation] = useMutation(StartTorrentSearchDocument);
   const [cancelState, cancelMutation] = useMutation(CancelTorrentSearchDocument);
-  const [queueState, queueMutation] = useMutation(QueueTorrentCandidateDocument);
   const [actionError, setActionError] = useState<unknown>(null);
   const currentID = useRef(id); currentID.current = id;
   useEffect(() => setActionError(null), [id]);
@@ -38,13 +37,6 @@ export function useTorrentSearch(id: string | null, offset = 0, limit = 100, sor
     catch (failure) { if (currentID.current === id) setActionError(failure); return false; }
     finally { cancelLock.current = false; }
   };
-  const queue = async (input: Omit<QueueTorrentCandidateInput, "searchId">) => {
-    if (!id || queueLock.current) return null;
-    queueLock.current = true; setActionError(null);
-    try { const result = await queueMutation({ input: { ...input, searchId: id } }); if (result.error) throw result.error; if (!result.data?.queueTorrentCandidate.id) throw new Error(i18n.t("errors.unknown")); return currentID.current === id ? result.data.queueTorrentCandidate : null; }
-    catch (failure) { if (currentID.current === id) setActionError(failure); return null; }
-    finally { queueLock.current = false; }
-  };
-  return { snapshot, progressSnapshot: raw?.id === id ? raw : null, fetching: read.fetching, starting: startState.fetching, cancelling: cancelState.fetching, queueing: queueState.fetching,
-    error: actionError ?? read.error ?? events.error, start, cancel, queue, refresh: () => { refresh(); events.retry(); }, clearActionError: () => setActionError(null) };
+  return { snapshot, progressSnapshot: raw?.id === id ? raw : null, fetching: read.fetching, starting: startState.fetching, cancelling: cancelState.fetching, queueing: false,
+    error: actionError ?? read.error ?? events.error, start, cancel, refresh: () => { refresh(); events.retry(); }, clearActionError: () => setActionError(null) };
 }

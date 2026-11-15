@@ -145,7 +145,15 @@ func (s *SQLiteStore) saveTypedCheckRun(ctx context.Context, run CheckRun) error
 			}
 		}
 		for position, item := range run.Items {
-			_, err := tx.ExecContext(ctx, `INSERT INTO subscription_check_items(run_id,performer_id,name,position,status,started_at,finished_at,error) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(run_id,performer_id) DO UPDATE SET name=excluded.name,status=excluded.status,started_at=excluded.started_at,finished_at=excluded.finished_at,error=excluded.error WHERE name IS NOT excluded.name OR status IS NOT excluded.status OR started_at IS NOT excluded.started_at OR finished_at IS NOT excluded.finished_at OR error IS NOT excluded.error`, run.ID, item.PerformerID, item.Name, position, item.Status, formatOptionalTimestamp(item.StartedAt), formatOptionalTimestamp(item.FinishedAt), item.Error)
+			var details any
+			if item.Details != nil {
+				raw, err := json.Marshal(item.Details)
+				if err != nil {
+					return err
+				}
+				details = string(raw)
+			}
+			_, err := tx.ExecContext(ctx, `INSERT INTO subscription_check_items(run_id,performer_id,name,position,status,started_at,finished_at,error,details_json) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(run_id,performer_id) DO UPDATE SET name=excluded.name,status=excluded.status,started_at=excluded.started_at,finished_at=excluded.finished_at,error=excluded.error,details_json=excluded.details_json WHERE name IS NOT excluded.name OR status IS NOT excluded.status OR started_at IS NOT excluded.started_at OR finished_at IS NOT excluded.finished_at OR error IS NOT excluded.error OR details_json IS NOT excluded.details_json`, run.ID, item.PerformerID, item.Name, position, item.Status, formatOptionalTimestamp(item.StartedAt), formatOptionalTimestamp(item.FinishedAt), item.Error, details)
 			if err != nil {
 				return err
 			}
@@ -167,14 +175,15 @@ func (s *SQLiteStore) loadTypedCheckRuns(ctx context.Context) ([]CheckRun, error
 		return nil, err
 	}
 	type itemRow struct {
-		RunID               string `db:"run_id"`
-		PerformerID         string `db:"performer_id"`
+		Details             sql.NullString `db:"details_json"`
+		RunID               string         `db:"run_id"`
+		PerformerID         string         `db:"performer_id"`
 		Name, Status, Error string
 		StartedAt           sql.NullString `db:"started_at"`
 		FinishedAt          sql.NullString `db:"finished_at"`
 	}
 	var items []itemRow
-	if err := s.db.SelectContext(ctx, &items, `SELECT run_id,performer_id,name,status,error,started_at,finished_at FROM subscription_check_items ORDER BY run_id,position`); err != nil {
+	if err := s.db.SelectContext(ctx, &items, `SELECT run_id,performer_id,name,status,error,started_at,finished_at,details_json FROM subscription_check_items ORDER BY run_id,position`); err != nil {
 		return nil, err
 	}
 	byRun := map[string][]CheckItem{}
@@ -187,7 +196,17 @@ func (s *SQLiteStore) loadTypedCheckRuns(ctx context.Context) ([]CheckRun, error
 		if err != nil {
 			return nil, err
 		}
-		byRun[row.RunID] = append(byRun[row.RunID], CheckItem{PerformerID: row.PerformerID, Name: row.Name, Status: row.Status, Error: row.Error, StartedAt: started, FinishedAt: finished})
+		var details *CheckDetails
+		if row.Details.Valid {
+			details = &CheckDetails{}
+			if err := json.Unmarshal([]byte(row.Details.String), details); err != nil {
+				return nil, err
+			}
+			if details.Version != 1 {
+				return nil, errors.New("subscription: unsupported check details version")
+			}
+		}
+		byRun[row.RunID] = append(byRun[row.RunID], CheckItem{PerformerID: row.PerformerID, Name: row.Name, Status: row.Status, Error: row.Error, StartedAt: started, FinishedAt: finished, Details: details})
 	}
 	out := make([]CheckRun, 0, len(headers))
 	for _, row := range headers {

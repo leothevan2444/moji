@@ -3,7 +3,6 @@ package taskruntime
 import (
 	"context"
 	"errors"
-	"github.com/leothevan2444/moji/internal/indexer"
 	"path"
 	"regexp"
 	"sort"
@@ -13,8 +12,9 @@ import (
 	"unicode"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/film"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/logging"
-	"github.com/leothevan2444/moji/internal/mediafiles"
 )
 
 type torrentInspection struct {
@@ -637,7 +637,7 @@ func parsePublishDate(value string) (time.Time, bool) {
 }
 
 func titleSimilarityScore(query string, title string) int {
-	if mediafiles.SameCode(query, title) {
+	if film.Match(query, title) {
 		return 10000
 	}
 	normQuery := normalizeSimilarityText(query)

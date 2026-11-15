@@ -2,6 +2,9 @@ CREATE TABLE tasks (
  id TEXT PRIMARY KEY,
  source TEXT NOT NULL CHECK(source IN ('MANUAL','SEARCH','SUBSCRIPTION')),
  code TEXT NOT NULL,
+ film_json TEXT CHECK(film_json IS NULL OR json_valid(film_json)),
+ sourcing_mode TEXT NOT NULL DEFAULT 'AUTO' CHECK(sourcing_mode IN ('AUTO','USER_SELECTED')),
+ resource_confirmed INTEGER NOT NULL DEFAULT 0,
  stage TEXT NOT NULL CHECK(stage IN ('SOURCING','DOWNLOADING','PENDING_INGEST','TRANSFERRING','SCANNING','COMPLETED')),
  stage_status TEXT NOT NULL CHECK(stage_status IN ('PENDING','RUNNING','BLOCKED','DONE')),
  stage_error_code TEXT,
@@ -11,7 +14,8 @@ CREATE TABLE tasks (
  created_at TEXT NOT NULL,
  updated_at TEXT NOT NULL
 ) STRICT;
-CREATE UNIQUE INDEX tasks_code ON tasks(code) WHERE code<>'';
+CREATE UNIQUE INDEX tasks_code ON tasks(upper(trim(code))) WHERE code<>'';
+CREATE UNIQUE INDEX tasks_film ON tasks(json_extract(film_json,'$.Endpoint'),json_extract(film_json,'$.SceneID')) WHERE film_json IS NOT NULL;
 CREATE INDEX tasks_created ON tasks(created_at DESC,id);
 CREATE INDEX tasks_stage_created ON tasks(stage,stage_status,created_at,id);
 CREATE INDEX tasks_updated ON tasks(updated_at DESC,id);
@@ -221,5 +225,6 @@ CREATE TABLE subscription_check_items (
  run_id TEXT NOT NULL REFERENCES subscription_check_runs(id) ON DELETE CASCADE,
  performer_id TEXT NOT NULL,name TEXT NOT NULL DEFAULT '',position INTEGER NOT NULL,
  status TEXT NOT NULL,started_at TEXT,finished_at TEXT,error TEXT NOT NULL DEFAULT '',
+ details_json TEXT CHECK(details_json IS NULL OR json_valid(details_json)),
  PRIMARY KEY(run_id,performer_id),UNIQUE(run_id,position)
 ) STRICT;

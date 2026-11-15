@@ -32,7 +32,7 @@
 
 状态：待处理；建议优先级：P1。
 
-证据：[task-creation](../docs/task-creation.md) 仍说阻塞不会自动重试并引用 schema 13；[media-delivery](../docs/media-delivery.md) 引用旧 `tasks.file_plan_json`/schema 9；[downloader](../docs/downloader.md) 仍将策略与观测一并描述为 runtime 的 downloader_state。当前 managed 存储和资源跟踪行为不同。带日期的数据库旧评估应保留历史身份。
+证据：[media-delivery](../docs/media-delivery.md) 引用旧 `tasks.file_plan_json`/schema 9；[downloader](../docs/downloader.md) 仍将策略与观测一并描述为 runtime 的 downloader_state。当前 managed 存储和资源跟踪行为不同。带日期的数据库旧评估应保留历史身份；task-creation 已随影片确认重构更新。
 
 验收：面向用户的当前说明与 [任务](modules/tasks.md)、[存储](modules/storage.md)、[运维](modules/operations.md) 一致；历史文档明确时点，不复制新的竞争设计或改写历史验收。
 

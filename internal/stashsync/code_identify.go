@@ -8,10 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
-	"github.com/leothevan2444/moji/internal/mediafiles"
+	"github.com/leothevan2444/moji/internal/film"
 	gql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
 
@@ -64,18 +63,24 @@ func sceneMetadataDigest(scene IngestScene) string {
 	return metadataDigest(scene)
 }
 func exactScrapedCode(value, code string) bool {
-	clean := func(s string) string {
-		return strings.NewReplacer("-", "", "_", "", " ", "").Replace(strings.ToUpper(strings.TrimSpace(s)))
-	}
-	return clean(value) == clean(code)
+	return film.Code(value) != "" && film.Code(value) == film.Code(code)
 }
 
+func (s *Service) PrepareFilmIdentify(ctx context.Context, target film.Snapshot, path string, ids []string) (*CodeIdentifyPlan, error) {
+	if target.Validate() != nil {
+		return nil, film.ErrRequired
+	}
+	return s.prepareCodeIdentify(ctx, target.Code, path, ids, &target)
+}
 func (s *Service) PrepareCodeIdentify(ctx context.Context, code, path string, ids []string) (*CodeIdentifyPlan, error) {
+	return s.prepareCodeIdentify(ctx, code, path, ids, nil)
+}
+func (s *Service) prepareCodeIdentify(ctx context.Context, code, path string, ids []string, target *film.Snapshot) (*CodeIdentifyPlan, error) {
 	c, ok := s.client.(codeIdentifyClient)
 	if !ok {
 		return nil, nil
 	}
-	code = mediafiles.ExtractCode(code)
+	code = film.Code(code)
 	if code == "" || len(ids) == 0 || len(ids) > 16 {
 		return nil, ErrCodeNoMatch
 	}
@@ -105,7 +110,7 @@ func (s *Service) PrepareCodeIdentify(ctx context.Context, code, path string, id
 		if !found {
 			return nil, ErrCodePlanChanged
 		}
-		if len(scene.StashIDs) > 0 || (scene.Code != "" && !mediafiles.SameCode(scene.Code, code)) {
+		if len(scene.StashIDs) > 0 || (scene.Code != "" && film.Code(scene.Code) != film.Code(code)) {
 			return nil, nil
 		}
 	}
@@ -130,6 +135,9 @@ func (s *Service) PrepareCodeIdentify(ctx context.Context, code, path string, id
 		if source == nil || source.Source == nil || source.Source.StashBoxEndpoint == nil || *source.Source.StashBoxEndpoint == "" {
 			continue
 		}
+		if target != nil && film.Endpoint(*source.Source.StashBoxEndpoint) != film.Endpoint(target.Endpoint) {
+			continue
+		}
 		options := effectiveCodeOptions(defaults.Options, source.Options)
 		matches, e := c.ScrapeIngestScene(ctx, *source.Source, gql.ScrapeSingleSceneInput{Query: &code}, options.Cover)
 		if e != nil {
@@ -138,6 +146,9 @@ func (s *Service) PrepareCodeIdentify(ctx context.Context, code, path string, id
 		exact := []*gql.ScrapedScene{}
 		seen := map[string]bool{}
 		for _, m := range matches {
+			if target != nil && (m == nil || valueOrEmpty(m.RemoteSiteID) != target.SceneID) {
+				continue
+			}
 			if m == nil || m.Code == nil || !exactScrapedCode(*m.Code, code) || valueOrEmpty(m.RemoteSiteID) == "" {
 				continue
 			}

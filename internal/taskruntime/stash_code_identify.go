@@ -6,13 +6,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/stashsync"
 )
 
 const stashCodeIdentifyCommand = "STASH_CODE_IDENTIFY"
 
 type stashCodeIdentifier interface {
-	PrepareCodeIdentify(context.Context, string, string, []string) (*stashsync.CodeIdentifyPlan, error)
+	PrepareFilmIdentify(context.Context, film.Snapshot, string, []string) (*stashsync.CodeIdentifyPlan, error)
 	ApplyCodeIdentify(context.Context, string, []string, *stashsync.CodeIdentifyPlan) error
 }
 
@@ -20,6 +21,9 @@ func (s *Service) tryStashCodeIdentify(ctx context.Context, task *Task, ingestor
 	identifier, ok := ingestor.(stashCodeIdentifier)
 	if !ok {
 		return false, nil
+	}
+	if task.Film == nil {
+		return false, film.ErrRequired
 	}
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
@@ -57,10 +61,13 @@ func (s *Service) tryStashCodeIdentify(ctx context.Context, task *Task, ingestor
 	}
 	if plan == nil {
 		var err error
-		plan, err = identifier.PrepareCodeIdentify(ctx, task.Code, task.StashScanPath, task.StashSceneIDs())
+		plan, err = identifier.PrepareFilmIdentify(ctx, *task.Film, task.StashScanPath, task.StashSceneIDs())
 		if err != nil || plan == nil {
 			return false, err
 		}
+	}
+	if task.Film != nil && (film.Endpoint(plan.Endpoint) != film.Endpoint(task.Film.Endpoint) || plan.RemoteID != task.Film.SceneID) {
+		return false, stashsync.ErrCodePlanChanged
 	}
 	if !exactTaskCode(plan.Code, task.Code) {
 		return false, stashsync.ErrCodePlanChanged

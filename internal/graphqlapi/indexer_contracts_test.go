@@ -38,7 +38,7 @@ func TestIndexerPublicContractHasOnlyServerOwnedSearchAndSelection(t *testing.T)
 	if schema.Query.Fields.ForName("torrentSearch") == nil {
 		t.Fatal("durable search missing")
 	}
-	for _, name := range []string{"startTorrentSearch", "previewTorrentSelection", "queueTorrentCandidate", "resolveTaskSourcingCandidate", "prepareTorrentDownload"} {
+	for _, name := range []string{"startTorrentSearch", "previewTorrentSelection", "createFilmTask", "resolveTaskSourcingCandidate", "prepareTorrentDownload"} {
 		if schema.Mutation.Fields.ForName(name) == nil {
 			t.Fatal("neutral operation missing", name)
 		}

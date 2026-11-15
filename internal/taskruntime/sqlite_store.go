@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/leothevan2444/moji/internal/film"
 )
 
 type SQLiteTaskStore struct {
@@ -210,6 +211,7 @@ func (s *SQLiteTaskStore) Delete(ctx context.Context, id string) (*Task, error) 
 
 const taskSelectSQL = `
 SELECT
+  film_json, sourcing_mode, resource_confirmed,
   id,
   source,
   code,
@@ -261,6 +263,9 @@ SELECT
 FROM tasks`
 
 type sqliteTaskRow struct {
+	FilmJSON                sql.NullString `db:"film_json"`
+	SourcingMode            string         `db:"sourcing_mode"`
+	ResourceConfirmed       bool           `db:"resource_confirmed"`
 	SelectedResourceID      sql.NullString `db:"selected_resource_id"`
 	IndexerResourceJSON     sql.NullString `db:"indexer_resource_json"`
 	IndexerSelectionVersion sql.NullInt64  `db:"indexer_selection_version"`
@@ -324,10 +329,17 @@ type sqliteTaskRow struct {
 }
 
 func (r sqliteTaskRow) toTask() (*Task, error) {
+	var snapshot *film.Snapshot
+	if r.FilmJSON.Valid {
+		snapshot = &film.Snapshot{}
+		if err := json.Unmarshal([]byte(r.FilmJSON.String), snapshot); err != nil {
+			return nil, err
+		}
+	}
 	if r.CheckpointVersion > 1 || r.FilePlanVersion > 1 {
 		return nil, fmt.Errorf("taskruntime: unsupported checkpoint version for task %q", r.ID)
 	}
-	task := &Task{
+	task := &Task{Film: snapshot, SourcingMode: r.SourcingMode, ResourceConfirmed: r.ResourceConfirmed,
 		Revision:                r.Revision,
 		Generation:              r.Generation,
 		RestartStateJSON:        nullableStringValue(r.RestartStateJSON),
@@ -437,6 +449,9 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 }
 
 type sqliteTaskParams struct {
+	FilmJSON                any     `db:"film_json"`
+	SourcingMode            string  `db:"sourcing_mode"`
+	ResourceConfirmed       bool    `db:"resource_confirmed"`
 	RestartStateJSON        any     `db:"restart_state_json"`
 	TorrentFileData         []byte  `db:"torrent_file_data"`
 	SourcingLastCheckedAt   any     `db:"sourcing_last_checked_at"`
@@ -497,7 +512,16 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 	if source == "" {
 		source = TaskSourceManual
 	}
-	return sqliteTaskParams{
+	var snapshot any
+	if task.Film != nil {
+		b, _ := json.Marshal(task.Film)
+		snapshot = string(b)
+	}
+	mode := task.SourcingMode
+	if mode == "" {
+		mode = "AUTO"
+	}
+	return sqliteTaskParams{FilmJSON: snapshot, SourcingMode: mode, ResourceConfirmed: task.ResourceConfirmed,
 		RestartStateJSON:        nullableStringParam(task.RestartStateJSON),
 		TorrentFileData:         task.TorrentFileData,
 		SourcingRequestJSON:     nullableStringParam(task.SourcingRequestJSON),
@@ -557,7 +581,7 @@ func upsertTaskRow(ctx context.Context, tx *sqlx.Tx, task *Task, isUpdate bool) 
 	params := taskToSQLiteParams(task)
 	query := `
 INSERT INTO tasks (
-  id, source, code, stage, stage_status, stage_error_code, stage_error_message, restart_state_json, sourcing_request_json, torrent_file_data, sourcing_last_checked_at, sourcing_next_check_at, file_plan_json, torrent_url, save_path, category, tags,
+  film_json, sourcing_mode, resource_confirmed, id, source, code, stage, stage_status, stage_error_code, stage_error_message, restart_state_json, sourcing_request_json, torrent_file_data, sourcing_last_checked_at, sourcing_next_check_at, file_plan_json, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
   last_progress_at, sourcing_completed_at, download_completed_at, ingest_completed_at, moji_source_path, transfer_action, moji_transfer_path,
   stash_ingest_phase, stash_generate_job_id, stash_identify_job_id, stash_scene_ids_json, stash_scene_recovery_count,
@@ -565,7 +589,7 @@ INSERT INTO tasks (
   stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
   selected_size, selected_seeders, selected_peers, created_at, updated_at
 ) VALUES (
-  :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :restart_state_json, :sourcing_request_json, :torrent_file_data, :sourcing_last_checked_at, :sourcing_next_check_at, :file_plan_json, :torrent_url, :save_path, :category, :tags,
+  :film_json, :sourcing_mode, :resource_confirmed, :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :restart_state_json, :sourcing_request_json, :torrent_file_data, :sourcing_last_checked_at, :sourcing_next_check_at, :file_plan_json, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
   :last_progress_at, :sourcing_completed_at, :download_completed_at, :ingest_completed_at, :moji_source_path, :transfer_action, :moji_transfer_path,
   :stash_ingest_phase, :stash_generate_job_id, :stash_identify_job_id, :stash_scene_ids_json, :stash_scene_recovery_count,
@@ -576,6 +600,7 @@ INSERT INTO tasks (
 	if isUpdate {
 		query += `
 ON CONFLICT(id) DO UPDATE SET
+ film_json=excluded.film_json,sourcing_mode=excluded.sourcing_mode,resource_confirmed=excluded.resource_confirmed,
   source = excluded.source,
   code = excluded.code,
   stage = excluded.stage,
@@ -668,7 +693,7 @@ func translateTaskConstraintError(err error) error {
 	message := strings.ToLower(err.Error())
 	switch {
 	case strings.Contains(message, "idx_tasks_code_unique"),
-		strings.Contains(message, "tasks.code"):
+		strings.Contains(message, "tasks.code"), strings.Contains(message, "tasks_code"), strings.Contains(message, "tasks_film"):
 		return ErrDuplicateCodeTask
 	case strings.Contains(message, "idx_tasks_torrent_identity_hash_unique"),
 		strings.Contains(message, "idx_tasks_torrent_identity_magnet_unique"),

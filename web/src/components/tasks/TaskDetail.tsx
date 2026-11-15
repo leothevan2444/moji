@@ -41,6 +41,7 @@ export function TaskDetail({ task, pendingRetry, pendingDelete,
   </div>;
 
   return <>
+    {task.film?.title?<article className="drawer-card"><h3>{task.film.code} · {task.film.title}</h3><p>{task.film.date} · {task.film.studio}</p><p>{task.film.performers.join(" / ")}</p><p>{task.film.endpoint}</p><p>{t(task.sourcingMode==="USER_SELECTED"?"filmCreation.specifiedResource":"filmCreation.automatic")}</p></article>:null}
     <article className="drawer-card task-detail-overview" aria-label={t("taskDetail.overview")}>
       <div className="drawer-card__head">
         <div className="task-detail-heading"><h3>{t("taskDetail.overview")}</h3>{presentation.metaLine ? <p>{presentation.metaLine}</p> : null}</div>

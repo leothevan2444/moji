@@ -20,11 +20,6 @@ func (r *mutationResolver) CancelTorrentSearch(ctx context.Context, id string) (
 	return r.cancelTorrentSearch(ctx, id)
 }
 
-// QueueTorrentCandidate is the resolver for the queueTorrentCandidate field.
-func (r *mutationResolver) QueueTorrentCandidate(ctx context.Context, input model.QueueTorrentCandidateInput) (*model.Task, error) {
-	return r.queueTorrentCandidate(ctx, input)
-}
-
 // PreviewTorrentSelection is the resolver for the previewTorrentSelection field.
 func (r *mutationResolver) PreviewTorrentSelection(ctx context.Context, input model.PreviewTorrentSelectionInput) (*model.TorrentSelectionPreview, error) {
 	return r.previewTorrentSelection(ctx, input)

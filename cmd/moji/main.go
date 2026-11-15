@@ -5,8 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/leothevan2444/moji/internal/downloader"
-	"github.com/leothevan2444/moji/internal/storage"
 	"log/slog"
 	"net"
 	"net/http"
@@ -24,6 +22,7 @@ import (
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/controller/api"
 	"github.com/leothevan2444/moji/internal/discovery"
+	"github.com/leothevan2444/moji/internal/downloader"
 	"github.com/leothevan2444/moji/internal/graphqlapi"
 	"github.com/leothevan2444/moji/internal/graphqlapi/generated"
 	"github.com/leothevan2444/moji/internal/imagecache"
@@ -33,6 +32,7 @@ import (
 	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
+	"github.com/leothevan2444/moji/internal/storage"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/taskruntime"
@@ -334,6 +334,16 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 	applyAutomationSettings(cfg, subscriptionService, metadataService)
 	if taskFlowService != nil && metadataService != nil {
 		taskFlowService.SetDiscoveredSceneResolver(discovery.NewDiscoveredSceneResolver(metadataService.Registry()))
+		taskFlowService.SetFilmImageProxy(func(ctx context.Context, endpoint, raw string) string {
+			if imageService == nil || raw == "" {
+				return raw
+			}
+			value, err := imageService.Register(ctx, imagecache.Descriptor{Kind: imagecache.SourceStashBox, InstanceURL: endpoint, ImageURL: raw, APIKey: metadataService.APIKey(endpoint)})
+			if err != nil {
+				return ""
+			}
+			return value
+		})
 	}
 
 	statsCollector := stats.NewCollector(
@@ -614,7 +624,13 @@ func configureTorrentSelectionProvider(store *config.Store, cfg *config.Config) 
 
 func configureTaskStore(cfg *config.Config, managers ...*storage.Manager) (taskruntime.TaskStore, error) {
 	if len(managers) > 0 && managers[0] != nil {
-		return taskruntime.NewRelationalTaskStore(managers[0].Core, managers[0].Observations), nil
+		store := taskruntime.NewRelationalTaskStore(managers[0].Core, managers[0].Observations)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := store.ValidateFilmTasks(ctx); err != nil {
+			return nil, err
+		}
+		return store, nil
 	}
 	return taskruntime.NewMemoryTaskStore(), nil
 }

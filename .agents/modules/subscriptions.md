@@ -1,5 +1,7 @@
 # 订阅检查与发行决策
 
+2026-11-15 检查结果与发行创建失败分离，手动演员检查重试历史 FAILED，临时故障持久退避。CheckDetails 保存目录读取、发行处理、历史重试与逐影片原因，UI 分段展示并提供处理入口；旧检查不补造明细。边界、限额、本地人工字段调整及实际恢复验证见[实施复核](../reviews/2026-11-15-subscription-check-diagnostics.md)。
+
 核对日期：2026-10-27；代码基线：`86f69e5`；状态：当前实现。
 
 主要源码：[服务](../../internal/subscription/service.go)、[检查作业](../../internal/subscription/checks.go)、[reservation 投影](../../internal/subscription/check_activity.go)、[发行策略](../../internal/subscription/release_policy.go)、[持久复核](../../internal/subscription/release_review.go)。
@@ -65,6 +67,6 @@ Home 投影只返回有限活动/历史摘要；详情通过 run ID 按需读。
 
 到期核验最新元数据、当前订阅、入库情况、人工决定和下载策略；先保存 HANDOFF_PENDING，发行决定与移交状态共用核心事务。任务创建继续走 taskflow，重启通过任务身份去重恢复关联；HANDED_OFF 保留历史。失败自动创建重试前应用当前策略，人工拒绝保持有效。未知日期转交复核。
 
-发现/演员所选场景校验未来日期，人工复核下载重读有 scene ID 的来源日期。原始种子和仅番号入口不额外猜测日期，旧任务不自动修改。验证见[待发行复核](../reviews/2026-10-31-upcoming.md)。
+发现/演员所选场景校验未来日期，人工复核下载重读来源日期。所有新任务须先确认 StashBox 影片，原始资源也使用确认影片的日期，不从资源名猜测日期。验证见[待发行复核](../reviews/2026-10-31-upcoming.md)及[任务创建](../../docs/task-creation.md)。
 
 再次检查遇到已有非 HANDED_OFF 待发行记录时，captureUpcoming 更新原记录的元数据、日期和演员关联，保留首次发现时间，不写入普通任务/复核流程；日期到期或变为未知时将 NextCheckAt 设为当前时间，由到期流程重新核验处理。UpcomingReleaseStates 是仅按请求 key 读取状态的有界投影，包含已暂停记录、排除 HANDED_OFF，不查询订阅或上游元数据，供演员影片卡片展示。

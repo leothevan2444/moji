@@ -1,0 +1,7 @@
+fragment TaskFilmFields on TaskFilm {
+ endpoint sceneId code title date studio performers imageUrl url durationSeconds confirmationDigest
+}
+query TaskFilmSources { taskFilmSources { name endpoint } }
+query TaskFilmCandidates($input: TaskFilmSearchInput!) { taskFilmCandidates(input: $input) { ...TaskFilmFields } }
+query ConfirmedTaskFilm($endpoint: String!, $sceneId: ID!) { taskFilm(endpoint: $endpoint, sceneId: $sceneId) { ...TaskFilmFields } }
+mutation CreateFilmTask($input: CreateFilmTaskInput!) { createFilmTask(input: $input) { id code stage stageStatus } }

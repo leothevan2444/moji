@@ -267,6 +267,7 @@ func (s *Service) refreshUpcomingLocked(ctx context.Context, key string, active 
 		return saveFailure("PERFORMER_MISMATCH")
 	}
 	record.Release.Code = stringValue(scene.Code)
+	record.Release.Film = metadata.FilmSnapshot(record.Endpoint, scene)
 	record.Release.Title = stringValue(scene.Title)
 	record.OriginalDate = stringValue(scene.Date)
 	record.Release.Date = record.OriginalDate
@@ -324,7 +325,7 @@ func (s *Service) refreshUpcomingLocked(ctx context.Context, key string, active 
 	review, exists := reviews[key]
 	if !exists {
 		r := record.Release
-		review = ReleaseReview{RecordedRelease: RecordedRelease{Key: r.Key, Source: r.Source, Title: r.Title, Code: r.Code, Date: r.Date, URL: r.URL, SeenAt: record.FirstSeenAt, PerformerCount: r.PerformerCount, PerformerNames: r.PerformerNames, Classification: r.Classification, Decision: r.Decision, DecisionReason: r.DecisionReason}, SceneID: r.SceneID, ImageURL: r.ImageURL, Performers: record.Performers}
+		review = ReleaseReview{RecordedRelease: RecordedRelease{Film: r.Film, Key: r.Key, Source: r.Source, Title: r.Title, Code: r.Code, Date: r.Date, URL: r.URL, SeenAt: record.FirstSeenAt, PerformerCount: r.PerformerCount, PerformerNames: r.PerformerNames, Classification: r.Classification, Decision: r.Decision, DecisionReason: r.DecisionReason}, SceneID: r.SceneID, ImageURL: r.ImageURL, Performers: record.Performers}
 		review.Status = reviewStatus(review.RecordedRelease, false)
 		inLibrary, err := s.stashSceneExistsForRelease(ctx, r)
 		if err != nil {
@@ -339,6 +340,7 @@ func (s *Service) refreshUpcomingLocked(ctx context.Context, key string, active 
 	}
 	if exists {
 		review.Date = record.Release.Date
+		review.Film = record.Release.Film
 		review.Title = record.Release.Title
 		review.ImageURL = record.Release.ImageURL
 		if review.Status == ReviewFailed && review.ReviewedAt == nil {

@@ -9,7 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/stashsync"
+	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
 
 type fakeIngestScanner struct {
@@ -76,7 +78,7 @@ func readyIngestScanner() *fakeIngestScanner {
 			Library:   stashsync.LibraryPathConfig{StashRoot: "/library", MojiRoot: "/moji/library"},
 			Transfer:  stashsync.TransferConfig{Action: stashsync.TransferActionMove},
 		}},
-		scenes: []stashsync.IngestScene{{ID: "scene-1", Code: "ABCD-123", Title: "Movie", Date: "2026-01-01", StudioID: "studio-1", PerformerCount: 1, Paths: []string{"/library/ABCD-123.mp4"}}},
+		scenes: []stashsync.IngestScene{{StashIDs: []*stashgraphql.StashIDInput{{Endpoint: "https://example.test/graphql", StashID: "chosen"}}, ID: "scene-1", Code: "ABCD-123", Title: "Movie", Date: "2026-01-01", StudioID: "studio-1", PerformerCount: 1, Paths: []string{"/library/ABCD-123.mp4"}}},
 		jobs: map[string]*stashsync.Job{
 			"scan-1":     {ID: "scan-1", Status: "FINISHED"},
 			"generate-1": {ID: "generate-1", Status: "FINISHED"},
@@ -87,7 +89,7 @@ func readyIngestScanner() *fakeIngestScanner {
 func createIngestTask(t *testing.T, store TaskStore) {
 	t.Helper()
 	now := time.Now().UTC()
-	if err := store.Create(context.Background(), &Task{ID: "ingest", Code: "ABCD-123", Stage: TaskStagePendingIngest, StageStatus: TaskStageStatusPending, ContentPath: "/downloads/ABCD-123.mp4", CreatedAt: now, UpdatedAt: now}); err != nil {
+	if err := store.Create(context.Background(), &Task{Film: ingestFilm(), ID: "ingest", Code: "ABCD-123", Stage: TaskStagePendingIngest, StageStatus: TaskStageStatusPending, ContentPath: "/downloads/ABCD-123.mp4", CreatedAt: now, UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -228,15 +230,18 @@ func TestStashIngestRetriesOnlyFailedStep(t *testing.T) {
 func TestFinishedIdentifyJobDoesNotHideMissingOrWrongMetadata(t *testing.T) {
 	for _, mutation := range []func(*stashsync.IngestScene){
 		func(s *stashsync.IngestScene) { s.Title = "" },
-		func(s *stashsync.IngestScene) { s.Code = "WRONG-999" },
+		func(s *stashsync.IngestScene) { s.Code = "" },
 		func(s *stashsync.IngestScene) { s.Date = "" },
 		func(s *stashsync.IngestScene) { s.StudioID = "" },
 		func(s *stashsync.IngestScene) { s.PerformerCount = 0 },
 		func(s *stashsync.IngestScene) { s.Paths = nil },
+		func(s *stashsync.IngestScene) { s.StashIDs = nil },
+		func(s *stashsync.IngestScene) { s.StashIDs[0].StashID = "other-scene" },
+		func(s *stashsync.IngestScene) { s.StashIDs[0].Endpoint = "https://other.test/graphql" },
 	} {
 		scanner := readyIngestScanner()
 		mutation(&scanner.scenes[0])
-		if err := verifyIngestScenes(&Task{Code: "ABCD-123"}, []string{"scene-1"}, scanner.scenes); err == nil {
+		if err := verifyIngestScenes(&Task{Film: ingestFilm(), Code: "ABCD-123"}, []string{"scene-1"}, scanner.scenes); err == nil {
 			t.Fatal("incomplete result should fail verification")
 		}
 	}
@@ -249,7 +254,7 @@ func TestIngestVerificationListsActualMissingFields(t *testing.T) {
 	scene := readyIngestScanner().scenes[0]
 	scene.Date, scene.Code = "", ""
 	scene.PerformerCount = 0
-	err := verifyIngestScenes(&Task{Code: "ABCD-123"}, []string{scene.ID}, []stashsync.IngestScene{scene})
+	err := verifyIngestScenes(&Task{Film: ingestFilm(), Code: "ABCD-123"}, []string{scene.ID}, []stashsync.IngestScene{scene})
 	if err == nil || !strings.HasSuffix(err.Error(), "missing fields: code, date, performers") {
 		t.Fatalf("missing fields were not preserved: %v", err)
 	}
@@ -325,7 +330,7 @@ func TestSceneReplacementRestartsGenerationWithoutDelivery(t *testing.T) {
 			scanner.scenes[0].ID = "scene-2"
 			scanner.expectedIDs = []string{"scene-2"}
 			now := time.Now().UTC()
-			task := &Task{ID: "replace", Code: "ABCD-123", Stage: TaskStageScanning, StageStatus: TaskStageStatusBlocked, StashIngestPhase: phase, StashSceneIDsJSON: `["scene-1"]`, StashScanPath: "/library/ABCD-123.mp4", StashGenerateJobID: "old-gen", StashIdentifyJobID: "old-identify", CreatedAt: now, UpdatedAt: now}
+			task := &Task{Film: ingestFilm(), ID: "replace", Code: "ABCD-123", Stage: TaskStageScanning, StageStatus: TaskStageStatusBlocked, StashIngestPhase: phase, StashSceneIDsJSON: `["scene-1"]`, StashScanPath: "/library/ABCD-123.mp4", StashGenerateJobID: "old-gen", StashIdentifyJobID: "old-identify", CreatedAt: now, UpdatedAt: now}
 			// A failed job has already been cleared when a task is blocked.
 			setStashJobID(task, "")
 			if err := store.Create(context.Background(), task); err != nil {
@@ -489,4 +494,10 @@ func TestIdentifySourcesHaveSpecificFailureCode(t *testing.T) {
 	if task.StageErrorCode != TaskStageErrorSourcesMissing || task.StashSceneRecoveryCount != 0 {
 		t.Fatalf("wrong classification: %+v", task)
 	}
+}
+
+func ingestFilm() *film.Snapshot {
+	target := testFilm("ABCD-123")
+	target.SceneID = "chosen"
+	return target
 }

@@ -49,6 +49,20 @@ type BuiltinIndexerResult struct {
 	Instance *IndexerInstance `json:"instance"`
 }
 
+type CreateFilmTaskInput struct {
+	Endpoint           string  `json:"endpoint"`
+	SceneID            string  `json:"sceneId"`
+	ConfirmationDigest string  `json:"confirmationDigest"`
+	SearchID           *string `json:"searchId,omitempty"`
+	CandidateID        *string `json:"candidateId,omitempty"`
+	ResourceURL        *string `json:"resourceUrl,omitempty"`
+	ResourceConfirmed  bool    `json:"resourceConfirmed"`
+	SavePath           *string `json:"savePath,omitempty"`
+	Category           *string `json:"category,omitempty"`
+	Tags               *string `json:"tags,omitempty"`
+	Paused             *bool   `json:"paused,omitempty"`
+}
+
 type DashboardStats struct {
 	Attention    int `json:"attention"`
 	Waiting      int `json:"waiting"`
@@ -119,17 +133,6 @@ type DownloadCandidate struct {
 	Size      int64  `json:"size"`
 	Seeders   int    `json:"seeders"`
 	Peers     int    `json:"peers"`
-}
-
-type DownloadMediaInput struct {
-	Code       string   `json:"code"`
-	Trackers   []string `json:"trackers,omitempty"`
-	Categories []int    `json:"categories,omitempty"`
-	Limit      *int     `json:"limit,omitempty"`
-	SavePath   *string  `json:"savePath,omitempty"`
-	Category   *string  `json:"category,omitempty"`
-	Tags       *string  `json:"tags,omitempty"`
-	Paused     *bool    `json:"paused,omitempty"`
 }
 
 type DownloadRootsPatchInput struct {
@@ -978,14 +981,6 @@ type QBTorrent struct {
 	AddedOn  int64   `json:"addedOn"`
 }
 
-type QBittorrentAddInput struct {
-	URL      string  `json:"url"`
-	SavePath *string `json:"savePath,omitempty"`
-	Category *string `json:"category,omitempty"`
-	Tags     *string `json:"tags,omitempty"`
-	Paused   *bool   `json:"paused,omitempty"`
-}
-
 type QBittorrentSettings struct {
 	Configured         bool   `json:"configured"`
 	URL                string `json:"url"`
@@ -1050,16 +1045,6 @@ type QueuePerformerScenesSummary struct {
 	FailedCount    int `json:"failedCount"`
 }
 
-type QueueTorrentCandidateInput struct {
-	Code        string  `json:"code"`
-	SearchID    string  `json:"searchId"`
-	CandidateID string  `json:"candidateId"`
-	Paused      *bool   `json:"paused,omitempty"`
-	SavePath    *string `json:"savePath,omitempty"`
-	Category    *string `json:"category,omitempty"`
-	Tags        *string `json:"tags,omitempty"`
-}
-
 type ReleasePolicyPatchInput struct {
 	SoloBehavior           *SubscriptionReleaseBehavior  `json:"solo_behavior,omitempty"`
 	GroupBehavior          *SubscriptionReleaseBehavior  `json:"group_behavior,omitempty"`
@@ -1070,6 +1055,8 @@ type ReleasePolicyPatchInput struct {
 }
 
 type ReleaseReview struct {
+	FailureCode    *string                   `json:"failureCode,omitempty"`
+	NextRetryAt    *string                   `json:"nextRetryAt,omitempty"`
 	Key            string                    `json:"key"`
 	Code           string                    `json:"code"`
 	Title          string                    `json:"title"`
@@ -1456,13 +1443,55 @@ type SubscriptionCheckActivity struct {
 	Performers  []*PerformerCheckActivity `json:"performers"`
 }
 
+type SubscriptionCheckDetails struct {
+	Phase                   string                            `json:"phase"`
+	CatalogStatus           string                            `json:"catalogStatus"`
+	CatalogErrorCode        string                            `json:"catalogErrorCode"`
+	CatalogSource           string                            `json:"catalogSource"`
+	CatalogMode             string                            `json:"catalogMode"`
+	CatalogStopReason       string                            `json:"catalogStopReason"`
+	CatalogPages            int                               `json:"catalogPages"`
+	CatalogPagesWithResults int                               `json:"catalogPagesWithResults"`
+	CatalogScenes           int                               `json:"catalogScenes"`
+	CatalogReleases         int                               `json:"catalogReleases"`
+	NewCount                int                               `json:"newCount"`
+	KnownCount              int                               `json:"knownCount"`
+	UpcomingCount           int                               `json:"upcomingCount"`
+	InLibraryCount          int                               `json:"inLibraryCount"`
+	QueuedCount             int                               `json:"queuedCount"`
+	ReviewCount             int                               `json:"reviewCount"`
+	SkippedCount            int                               `json:"skippedCount"`
+	CreationFailedCount     int                               `json:"creationFailedCount"`
+	RetryTotal              int                               `json:"retryTotal"`
+	RetryAttempted          int                               `json:"retryAttempted"`
+	RetrySucceeded          int                               `json:"retrySucceeded"`
+	RetryFailed             int                               `json:"retryFailed"`
+	RetryDeferred           int                               `json:"retryDeferred"`
+	OmittedResults          int                               `json:"omittedResults"`
+	Results                 []*SubscriptionCheckReleaseResult `json:"results"`
+}
+
 type SubscriptionCheckItem struct {
-	PerformerID string                  `json:"performerId"`
-	Name        string                  `json:"name"`
-	Status      SubscriptionCheckStatus `json:"status"`
-	Error       *string                 `json:"error,omitempty"`
-	StartedAt   *string                 `json:"startedAt,omitempty"`
-	FinishedAt  *string                 `json:"finishedAt,omitempty"`
+	Details     *SubscriptionCheckDetails `json:"details,omitempty"`
+	PerformerID string                    `json:"performerId"`
+	Name        string                    `json:"name"`
+	Status      SubscriptionCheckStatus   `json:"status"`
+	Error       *string                   `json:"error,omitempty"`
+	StartedAt   *string                   `json:"startedAt,omitempty"`
+	FinishedAt  *string                   `json:"finishedAt,omitempty"`
+}
+
+type SubscriptionCheckReleaseResult struct {
+	Key         string  `json:"key"`
+	Code        string  `json:"code"`
+	Title       string  `json:"title"`
+	Phase       string  `json:"phase"`
+	Outcome     string  `json:"outcome"`
+	ReasonCode  string  `json:"reasonCode"`
+	ErrorCode   string  `json:"errorCode"`
+	Error       string  `json:"error"`
+	TaskID      *string `json:"taskId,omitempty"`
+	NextRetryAt *string `json:"nextRetryAt,omitempty"`
 }
 
 type SubscriptionCheckRun struct {
@@ -1531,6 +1560,8 @@ type SystemSettings struct {
 }
 
 type Task struct {
+	Film              *TaskFilm          `json:"film"`
+	SourcingMode      string             `json:"sourcingMode"`
 	Version           string             `json:"version"`
 	Revision          int64              `json:"revision"`
 	ID                string             `json:"id"`
@@ -1634,6 +1665,33 @@ type TaskFile struct {
 	Part     int    `json:"part"`
 	Selected bool   `json:"selected"`
 	Reason   string `json:"reason"`
+}
+
+type TaskFilm struct {
+	Endpoint           string   `json:"endpoint"`
+	SceneID            string   `json:"sceneId"`
+	Code               string   `json:"code"`
+	Title              string   `json:"title"`
+	Date               string   `json:"date"`
+	Studio             string   `json:"studio"`
+	Performers         []string `json:"performers"`
+	ImageURL           string   `json:"imageUrl"`
+	URL                string   `json:"url"`
+	DurationSeconds    *int     `json:"durationSeconds,omitempty"`
+	ConfirmationDigest string   `json:"confirmationDigest"`
+}
+
+type TaskFilmSearchInput struct {
+	Keywords    *string `json:"keywords,omitempty"`
+	Endpoint    *string `json:"endpoint,omitempty"`
+	SearchID    *string `json:"searchId,omitempty"`
+	CandidateID *string `json:"candidateId,omitempty"`
+	ResourceURL *string `json:"resourceUrl,omitempty"`
+}
+
+type TaskFilmSource struct {
+	Name     string `json:"name"`
+	Endpoint string `json:"endpoint"`
 }
 
 type TaskPage struct {

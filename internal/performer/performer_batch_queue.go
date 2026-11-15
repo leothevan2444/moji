@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/taskruntime"
@@ -137,7 +138,11 @@ func (s *Service) queuePerformerSceneSelection(ctx context.Context, byKey map[st
 			ReasonCode: "MISSING_CODE",
 		}
 	}
-	task, err := s.taskCreator.QueueResolvedScene(ctx, resolvedCode, current.Title)
+	target := film.Snapshot{Endpoint: current.StashBoxEndpoint, SceneID: current.StashBoxSceneID, Code: current.Code, Title: current.Title, Date: current.Date}
+	if current.Film != nil {
+		target = current.Film.Clone()
+	}
+	task, err := s.taskCreator.QueueResolvedScene(ctx, target)
 	if err == nil {
 		return QueueSceneResult{
 			Key:          selection.Key,

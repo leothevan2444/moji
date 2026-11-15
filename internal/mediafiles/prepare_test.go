@@ -48,30 +48,30 @@ func TestRealFFmpegMergesFiltersDeduplicatesAndShiftsSubtitles(t *testing.T) {
 	if err := os.Mkdir(source, 0755); err != nil {
 		t.Fatal(err)
 	}
-	makeClip(t, filepath.Join(source, "hdd800.com@OFJE-329A.mkv"), "red", true)
-	makeClip(t, filepath.Join(source, "gc_55.com@OFJE-329B.mkv"), "blue", true)
-	if err := copyMedia(context.Background(), filepath.Join(source, "gc_55.com@OFJE-329B.mkv"), filepath.Join(source, "OFJE-329C.mkv")); err != nil {
+	makeClip(t, filepath.Join(source, "hdd800.com@OFJE-329-A.mkv"), "red", true)
+	makeClip(t, filepath.Join(source, "gc_55.com@OFJE-329-B.mkv"), "blue", true)
+	if err := copyMedia(context.Background(), filepath.Join(source, "gc_55.com@OFJE-329-B.mkv"), filepath.Join(source, "OFJE-329-C.mkv")); err != nil {
 		t.Fatal(err)
 	}
 	for _, part := range []string{"A", "B", "C"} {
-		if err := os.WriteFile(filepath.Join(source, "OFJE-329"+part+".en.srt"), []byte("1\n00:00:00,100 --> 00:00:00,500\n"+part+"\n"), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(source, "OFJE-329-"+part+".en.srt"), []byte("1\n00:00:00,100 --> 00:00:00,500\n"+part+"\n"), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := copyMedia(context.Background(), filepath.Join(source, "OFJE-329B.en.srt"), filepath.Join(source, "duplicate-sub.srt")); err != nil {
+	if err := copyMedia(context.Background(), filepath.Join(source, "OFJE-329-B.en.srt"), filepath.Join(source, "duplicate-sub.srt")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(filepath.Join(source, "OFJE-329C.en.srt")); err != nil {
+	if err := os.Remove(filepath.Join(source, "OFJE-329-C.en.srt")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Rename(filepath.Join(source, "duplicate-sub.srt"), filepath.Join(source, "OFJE-329C.en.srt")); err != nil {
+	if err := os.Rename(filepath.Join(source, "duplicate-sub.srt"), filepath.Join(source, "OFJE-329-C.en.srt")); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(source, "广告.mp4"), []byte("junk"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	files := []File{}
-	names := []string{"hdd800.com@OFJE-329A.mkv", "gc_55.com@OFJE-329B.mkv", "OFJE-329C.mkv", "OFJE-329A.en.srt", "OFJE-329B.en.srt", "OFJE-329C.en.srt", "广告.mp4"}
+	names := []string{"hdd800.com@OFJE-329-A.mkv", "gc_55.com@OFJE-329-B.mkv", "OFJE-329-C.mkv", "OFJE-329-A.en.srt", "OFJE-329-B.en.srt", "OFJE-329-C.en.srt", "广告.mp4"}
 	for i, name := range names {
 		files = append(files, File{Index: i, Path: name})
 	}
@@ -151,9 +151,9 @@ func TestRealFFmpegSingleFilePreservesEmbeddedSubtitlesAndCancelledPreparation(t
 func TestRealFFmpegMultiplePartsStillMergeAndApplySubtitlePolicy(t *testing.T) {
 	requireFFmpeg(t)
 	source, target := t.TempDir(), t.TempDir()
-	makeClip(t, filepath.Join(source, "SSIS-618A.mkv"), "red", true)
-	makeClip(t, filepath.Join(source, "SSIS-618B.mkv"), "blue", true)
-	request := Request{TaskID: "parts", Code: "SSIS-618", SourceRoot: source, TargetRoot: target, Action: "COPY", Plan: Classify("SSIS-618", []File{{Path: "SSIS-618A.mkv"}, {Path: "SSIS-618B.mkv"}}, false)}
+	makeClip(t, filepath.Join(source, "SSIS-618-A.mkv"), "red", true)
+	makeClip(t, filepath.Join(source, "SSIS-618-B.mkv"), "blue", true)
+	request := Request{TaskID: "parts", Code: "SSIS-618", SourceRoot: source, TargetRoot: target, Action: "COPY", Plan: Classify("SSIS-618", []File{{Path: "SSIS-618-A.mkv"}, {Path: "SSIS-618-B.mkv"}}, false)}
 	result, err := (FFmpeg{}).Prepare(context.Background(), request)
 	if err != nil {
 		t.Fatal(err)
@@ -285,12 +285,12 @@ func TestSingleFileDeliveryWithoutMediaTools(t *testing.T) {
 
 func TestDuplicatePartsDeliverOriginalWithoutMediaTools(t *testing.T) {
 	source, target := t.TempDir(), t.TempDir()
-	for _, name := range []string{"IDBD-998A.mp4", "IDBD-998B.mp4"} {
+	for _, name := range []string{"IDBD-998-A.mp4", "IDBD-998-B.mp4"} {
 		if err := os.WriteFile(filepath.Join(source, name), []byte("identical movie"), 0600); err != nil {
 			t.Fatal(err)
 		}
 	}
-	request := Request{TaskID: "duplicates", Code: "IDBD-998", SourceRoot: source, TargetRoot: target, Action: "COPY", Plan: Classify("IDBD-998", []File{{Path: "IDBD-998A.mp4"}, {Path: "IDBD-998B.mp4"}}, false)}
+	request := Request{TaskID: "duplicates", Code: "IDBD-998", SourceRoot: source, TargetRoot: target, Action: "COPY", Plan: Classify("IDBD-998", []File{{Path: "IDBD-998-A.mp4"}, {Path: "IDBD-998-B.mp4"}}, false)}
 	result, err := withoutMediaTools(t).Prepare(context.Background(), request)
 	if err != nil {
 		t.Fatal(err)

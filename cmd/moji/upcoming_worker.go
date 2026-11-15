@@ -23,6 +23,14 @@ func runUpcomingWorker(ctx context.Context, service graphqlapi.SubscriptionServi
 			if err != nil && ctx.Err() == nil {
 				logging.Warnf("upcoming release check: %v", err)
 			}
+			if retries, ok := service.(interface{ ProcessDueReviewRetries(context.Context) error }); ok && ctx.Err() == nil {
+				retryCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+				err := retries.ProcessDueReviewRetries(retryCtx)
+				cancel()
+				if err != nil && ctx.Err() == nil {
+					logging.Warnf("release task retry: %v", err)
+				}
+			}
 		}
 		select {
 		case <-ctx.Done():

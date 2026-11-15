@@ -4,12 +4,14 @@ import (
 	"time"
 
 	"github.com/leothevan2444/moji/internal/config"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/performer"
 )
 
 const DefaultCustomFieldKey = performer.DefaultCustomFieldKey
 
 type Release struct {
+	Film                                                   *film.Snapshot `json:"-"`
 	SceneID, Key, Source, Title, Code, Date, URL, ImageURL string
 	PerformerCount                                         int
 	PerformerNames                                         []string
@@ -18,6 +20,7 @@ type Release struct {
 	DecisionReason                                         string
 }
 type RecordedRelease struct {
+	Film           *film.Snapshot        `json:"-"`
 	Key            string                `json:"key"`
 	Source         string                `json:"source"`
 	Title          string                `json:"title"`

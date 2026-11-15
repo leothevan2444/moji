@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/taskflow"
 )
@@ -15,10 +16,15 @@ type StashBoxSceneRegistry interface {
 
 type discoveredSceneResolver struct {
 	registry StashBoxSceneRegistry
+	images   ImageProxy
 }
 
-func NewDiscoveredSceneResolver(registry StashBoxSceneRegistry) taskflow.DiscoveredSceneResolver {
-	return discoveredSceneResolver{registry: registry}
+func NewDiscoveredSceneResolver(registry StashBoxSceneRegistry, images ...ImageProxy) taskflow.DiscoveredSceneResolver {
+	resolver := discoveredSceneResolver{registry: registry}
+	if len(images) > 0 {
+		resolver.images = images[0]
+	}
+	return resolver
 }
 
 func (r discoveredSceneResolver) ResolveDiscoveredScene(ctx context.Context, sceneID string, stashBoxEndpoint string) (taskflow.ResolvedScene, error) {
@@ -52,9 +58,23 @@ func (r discoveredSceneResolver) ResolveDiscoveredScene(ctx context.Context, sce
 		return taskflow.ResolvedScene{}, fmt.Errorf("discovery: scene %q is missing code", sceneID)
 	}
 
-	return taskflow.ResolvedScene{
+	snapshot := taskflow.ResolvedScene{Endpoint: film.Endpoint(stashBoxEndpoint), SceneID: scene.ID, DurationSeconds: scene.Duration,
 		Code:  code,
 		Date:  value(scene.Date),
 		Title: value(scene.Title),
-	}, nil
+	}
+	if scene.Studio != nil {
+		snapshot.Studio = film.Person{ID: scene.Studio.ID, Name: scene.Studio.Name}
+	}
+	for _, p := range scene.Performers {
+		if p != nil && p.Performer != nil {
+			snapshot.Performers = append(snapshot.Performers, film.Person{ID: p.Performer.ID, Name: p.Performer.Name})
+		}
+	}
+	snapshot.ImageURL = sceneImage(scene)
+	if r.images != nil {
+		snapshot.ImageURL = r.images(ctx, stashBoxEndpoint, snapshot.ImageURL)
+	}
+	snapshot.URL = sceneURL(scene)
+	return snapshot, nil
 }

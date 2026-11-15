@@ -3,6 +3,8 @@ query TaskDetailDocument($id: ID!) {
    sequence streamId
    task {
     version revision
+    sourcingMode
+    film { endpoint sceneId code title date studio performers imageUrl url durationSeconds confirmationDigest }
     id
     source
     code
@@ -44,24 +46,7 @@ query TaskDetailDocument($id: ID!) {
 }
 }
 
-mutation AddTorrentDocument($input: QBittorrentAddInput!) {
-  addTorrent(input: $input) {
-    id
-    source
-    stage
-    stageStatus
-    stageLabel
-    stageStatusLabel
-    stageErrorCode
-    stageErrorMessage
-    files { index path size kind part selected reason }
-    code
-    torrentName
-    progress
 
-    createdAt
-  }
-}
 
 mutation SyncTaskProgressDocument {
   syncTaskProgress {

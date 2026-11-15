@@ -1,35 +1,33 @@
-# Task creation
+# 创建下载任务
 
-Actor-page creation resolves only the selected Stash-box scene IDs. Each scene
-must belong to a Stash-box performer mapped to the actor and a configured
-endpoint. This path does not paginate the actor's catalogue or register images.
-The validated code and title are passed directly to taskflow, avoiding a second
-lookup of the same scene. Local Stash selections remain skipped.
+每个 Moji 任务都对应一部 StashBox 影片。任务保存来源、影片 ID 和确认时的影片资料，下载资源单独保存。
 
-Code-based taskflow entrypoints persist a `SOURCING/PENDING` task and return it
-before library checks, torrent search, inspection, or download submission.
-Creation events are published immediately. Invalid codes and duplicate task
-codes are still rejected before creation; downstream failures are reflected in
-the persisted task rather than delaying the creation response.
+## 自动寻找资源
 
-The application starts two sourcing workers with its lifecycle context. The
-queue is the task store, not an in-memory request list. SQLite schema 13 adds
-`sourcing_request_json` without deleting existing tasks or events. Saved request
-options include tracker filters, categories, limits, destination, tags and pause
-preference. Workers scan on startup, creation notifications and a recovery timer.
-Request cancellation does not cancel worker execution; application cancellation
-leaves unfinished sourcing jobs available for the next startup. Blocked tasks
-require user retry and are not automatically retried in a loop.
+在发现页或演员影片列表选择影片并下载；订阅检查、发行复核和待发行处理也使用同一流程。Moji 根据影片的完整番号搜索资源，按设置中的选种规则选择，然后下载、整理并交给 Stash 入库。
 
-A validated torrent selection is checkpointed before submission. After an
-interruption, the worker revalidates and resubmits the same selected torrent
-instead of performing a fresh search. qBittorrent deduplicates identical torrent
-submissions. The task enters `DOWNLOADING` only after successful submission.
+只有番号而没有对应影片时，需要先搜索并选择 StashBox 影片。没有番号的影片暂时不能创建任务；尚未发行的影片继续遵守发行限制。
 
-The low-level synchronous `DownloadMediaContext` remains available for execution
-and existing integrations; interactive code-based creation uses
-`QueueDownloadContext`. Manual torrent creation keeps its existing path.
+## 使用自己选择的资源
 
-Tests cover immediate creation events with a blocked search, request cancellation,
-request-option persistence, worker concurrency, failures and retry, selected-scene
-membership checks, recovery after submission interruption, and schema upgrades.
+在发现页搜索资源，点击资源的创建按钮。Moji 会推荐 StashBox 影片；检查影片的番号、标题、日期、演员、片商和来源，确认资源对应这部影片后再创建任务。
+
+推荐不正确时，可以输入影片关键词搜索，也可以切换已配置的 StashBox 来源。自动推荐沿用来源优先级，先尝试提取到的番号，没有结果时再使用资源标题。
+
+也可以使用“按影片或资源创建任务”填写磁力或种子链接。磁力的显示名称可以用于推荐；链接没有可用的公开名称时，请输入关键词搜索。Moji 不会把私有下载链接或 tracker 凭据作为搜索关键词发送给 StashBox。
+
+确认前不会创建任务或提交下载。确认后的任务直接进入下载阶段，保留选定资源，获取或下载失败后不会自动改选其他资源。无法确定主影片或分段顺序时，任务会等待人工选择文件。
+
+## 影片身份与重复任务
+
+任务以 StashBox 来源和影片 ID 保存关联，同时用完整番号防止重复创建。已有任务不会因再次点击下载而更换影片或资源。
+
+番号只统一大小写和首尾空白，不截去数字前缀、来源后缀或前导零。文件匹配使用已知的完整番号；不再从种子名称或文件名猜测任务身份。没有连字符、不同补零方式等旧的隐式别名不再自动认定为同一番号，可以通过指定资源确认和人工选文件处理。
+
+## 入库验证
+
+Stash 负责识别和保存媒体库元数据。Moji 验证本地影片是否包含任务对应的 StashBox 来源和影片 ID；缺少或关联错误时，需在 Stash 修正后重试。仅有相同番号不能代替这一关联。
+
+## 本次数据库调整
+
+本次重构不提供旧任务的自动升级或兼容入口。已有数据库须先备份，在独立 generation 中补全影片关联并验证，再切换运行。未完成映射的数据库会拒绝启动，不会丢弃任务或生成虚假的影片关联。

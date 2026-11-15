@@ -6,18 +6,19 @@ package graphqlapi
 
 import (
 	"context"
-	"github.com/leothevan2444/moji/internal/downloader"
-	"github.com/leothevan2444/moji/internal/indexer"
-	"github.com/leothevan2444/moji/internal/storage"
 
 	"github.com/leothevan2444/moji/internal/discovery"
+	"github.com/leothevan2444/moji/internal/downloader"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/imagecache"
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/performer"
 	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/stats"
+	"github.com/leothevan2444/moji/internal/storage"
 	"github.com/leothevan2444/moji/internal/subscription"
 	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/taskruntime"
@@ -39,7 +40,6 @@ type StashService interface {
 type TaskRuntimeService interface {
 	QueueDownloadContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 	AddTorrentContext(ctx context.Context, req taskruntime.AddTorrentRequest) (*taskruntime.Task, error)
-	DownloadMediaContext(ctx context.Context, req taskruntime.DownloadRequest) (*taskruntime.Task, error)
 	FindTask(ctx context.Context, id string) (*taskruntime.Task, error)
 	ListTasks(ctx context.Context) ([]*taskruntime.Task, error)
 	DeleteTask(ctx context.Context, id string) (*taskruntime.Task, error)
@@ -57,8 +57,8 @@ type TaskRuntimeService interface {
 // existing tasks and advancing task execution stages still belongs to the
 // task runtime execution service.
 type TaskFlowService interface {
-	CreateFromManualTorrent(ctx context.Context, input taskflow.CreateFromManualTorrentInput) (*taskruntime.Task, error)
-	CreateFromSearchCode(ctx context.Context, input taskflow.CreateFromSearchCodeInput) (*taskruntime.Task, error)
+	ResolveFilm(context.Context, string, string) (film.Snapshot, error)
+	ConfirmFilm(context.Context, taskflow.ConfirmFilmInput) (*taskruntime.Task, error)
 }
 
 type SettingsEditor interface {

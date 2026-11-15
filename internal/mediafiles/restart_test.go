@@ -53,6 +53,17 @@ func TestDeliveryRemovalResumesPartialDeletionWithoutBackup(t *testing.T) {
 	}
 }
 
+func TestDeliveryRemovalUsesReceiptAfterCatalogCodeCorrection(t *testing.T) {
+	_, target, _ := deliveryRemovalFixture(t)
+	plan, err := PlanDeliveryRemoval(context.Background(), "task-1", "SNOS-184E", target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := RemoveDelivery(context.Background(), *plan); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDeliveryRemovalRejectsUnownedModifiedAndSymlinkedOutput(t *testing.T) {
 	for _, mode := range []string{"extra-file", "modified", "symlink", "foreign", "modified-after-plan"} {
 		t.Run(mode, func(t *testing.T) {

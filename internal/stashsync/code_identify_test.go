@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/leothevan2444/moji/internal/film"
 	gql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
 
@@ -17,6 +18,30 @@ type codeClient struct {
 	queries, saves    int
 	cover             string
 	savedInputs       []gql.SceneUpdateInput
+}
+
+func TestFilmIdentifyRequiresTheConfirmedSourceAndScene(t *testing.T) {
+	for _, tc := range []struct {
+		endpoint, id string
+		want         bool
+	}{
+		{"https://box.test/graphql", "remote-one", true},
+		{"https://box.test/graphql", "remote-other", false},
+		{"https://other.test/graphql", "remote-one", false},
+	} {
+		c := readyCodeClient()
+		s, _ := NewService(c, nil)
+		plan, err := s.PrepareFilmIdentify(context.Background(), film.Snapshot{Endpoint: tc.endpoint, SceneID: tc.id, Code: "DEMO-123"}, "/library/DEMO-123", []string{"scene"})
+		if tc.want && (err != nil || plan == nil) {
+			t.Fatalf("confirmed film missing: %v", err)
+		}
+		if !tc.want && plan != nil {
+			t.Fatal("same code admitted a different StashBox identity")
+		}
+		if c.saves != 0 {
+			t.Fatal("preparation mutated Stash")
+		}
+	}
 }
 
 func codeString(s string) *string            { return &s }

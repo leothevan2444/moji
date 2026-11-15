@@ -1,4 +1,25 @@
 {
+  "filmCreation": {
+    "resource": "选定资源",
+    "providedLink": "手动提供的下载链接",
+    "specifiedResource": "用户指定资源",
+    "automatic": "自动寻源",
+    "resourceMismatch": "资源名称未包含完整影片番号，请核对后再确认。",
+    "title": "确认影片",
+    "resourceUrl": "磁力或种子链接（可选）",
+    "match": "匹配影片",
+    "keywords": "影片关键词",
+    "source": "StashBox 来源地址（可选）",
+    "preferredSource": "按已配置来源的优先级搜索",
+    "search": "搜索影片",
+    "loading": "正在读取影片…",
+    "noResults": "未找到影片，请输入关键词搜索或切换来源。",
+    "confirmResource": "我确认选定资源对应此影片；无法确定主影片时，由我选择下载文件。",
+    "confirmFilm": "确认下载此影片，由 Moji 自动寻找资源。",
+    "create": "创建任务",
+    "chooseAnother": "选择其他影片",
+    "manualEntry": "按影片或资源创建任务"
+  },
   "performerActivity": {
     "help": "查看活跃度与活跃值说明",
     "latestSourceHelp": "首选 StashBox 已加载作品中最近的有效发行日期；不含未来发行或日期未知的作品，目录可能尚未完整加载。",
@@ -859,6 +880,64 @@
       }
     }
   },
+  "checkDetails": {
+    "phase": "阶段：{{phase}}",
+    "notStarted": "此阶段尚未执行。",
+    "notRecorded": "此检查记录未采集详细过程信息。",
+    "duration": "耗时 {{count}} 秒",
+    "catalog": "本次目录检查",
+    "releases": "本次发行处理",
+    "retries": "历史失败重试",
+    "catalogCounts": "读取 {{pages}} 页、{{scenes}} 条目录记录；{{releases}} 部影片进入本次发行处理范围。",
+    "releaseCounts": "新增 {{fresh}} · 已记录 {{known}} · 任务已接收／关联 {{queued}} · 已入库 {{library}} · 待复核 {{review}} · 策略跳过 {{skipped}} · 待发行 {{upcoming}}",
+    "creationFailures": "本次任务创建失败 {{count}} 部",
+    "retryCounts": "历史失败 {{total}} · 本次重试 {{attempted}} · 已处理 {{succeeded}} · 重试失败 {{failed}} · 延后 {{deferred}}",
+    "deferred": "延后项会等待退避到期或人工处理；每位演员每次最多重试 32 部，剩余记录保留。手动检查可以立即重试。",
+    "openFailures": "查看失败影片并处理",
+    "films": "影片处理明细（{{count}}）",
+    "technicalError": "查看原始错误",
+    "nextRetry": "下次自动重试：{{time}}",
+    "openTask": "查看任务",
+    "openFilm": "处理此影片",
+    "omitted": "另有 {{count}} 条结果未在此记录中展开，请到发行复核查看。",
+    "phases": {
+      "CATALOG": "读取目录",
+      "RELEASES": "处理发行",
+      "HISTORICAL_RETRIES": "重试历史失败",
+      "NEW_RELEASE": "本次发行处理",
+      "HISTORICAL_RETRY": "历史失败重试",
+      "FINISHED": "已结束"
+    },
+    "modes": {
+      "poll": "增量检查",
+      "backfill": "首次目录检查"
+    },
+    "stops": {
+      "max_pages_reached": "达到本次读取页数上限，未全量扫描历史目录。",
+      "known_release_boundary": "已到达已知发行边界。",
+      "release_date_boundary": "已到达发行日期范围边界。",
+      "empty_page": "来源没有返回更多可处理记录。",
+      "repeated_page": "来源重复返回相同页面，已停止翻页。",
+      "catalog_complete": "已读完来源目录。"
+    },
+    "outcomes": {
+      "DOWNLOADED": "任务已接收／关联",
+      "IN_LIBRARY": "已在媒体库中",
+      "FAILED": "失败",
+      "PENDING": "转为待复核",
+      "SKIPPED": "按当前策略跳过",
+      "DEFERRED": "延后处理"
+    },
+    "errors": {
+      "UPSTREAM_TEMPORARY": "来源或网络暂时不可用，可重试。",
+      "CANCELLED": "操作已取消。",
+      "FILM_IDENTITY_CONFLICT": "完整番号已被另一部影片的任务使用，请核对影片关联。",
+      "FILM_METADATA_INVALID": "影片身份或元数据不完整，请核对 StashBox 记录。",
+      "RELEASE_NOT_AVAILABLE": "影片尚未发行。",
+      "PERFORMER_MAPPING_MISSING": "演员没有匹配到已配置的 StashBox 来源。",
+      "MANUAL_REVIEW_REQUIRED": "需要人工核对；请查看原始错误并处理此影片。"
+    }
+  },
   "subscriptionChecks": {
     "historyLatest": "最近定时检查：{{status}} · {{time}}",
     "historyNone": "尚无已结束的定时检查记录",
@@ -1490,6 +1569,9 @@
     "retry": "重试"
   },
   "errorSpecial": {
+    "STASHBOX_FILM_REQUIRED": "请先选择具有完整番号的 StashBox 影片。",
+    "FILM_CONFIRMATION_CHANGED": "影片资料已变化，请重新选择并确认影片。",
+    "RESOURCE_CONFIRMATION_REQUIRED": "请先确认资源对应所选影片。",
     "SUBSCRIPTION_CHECK_IN_PROGRESS": "所选演员已有检查正在运行，请在作品检查中查看进度。",
     "STASH_NOT_CONFIGURED": "Stash 未配置，请检查连接设置。"
   },

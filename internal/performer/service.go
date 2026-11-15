@@ -6,11 +6,11 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/sync/singleflight"
-
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
+	"golang.org/x/sync/singleflight"
 )
 
 type StashClient interface {
@@ -19,7 +19,7 @@ type StashClient interface {
 	FindScenes(context.Context, *stashgraphql.SceneFilterType, *stashgraphql.FindFilterType) ([]*stashgraphql.SceneFragment, error)
 }
 type TaskCreator interface {
-	QueueResolvedScene(context.Context, string, string) (*taskruntime.Task, error)
+	QueueResolvedScene(context.Context, film.Snapshot) (*taskruntime.Task, error)
 }
 type TaskLister interface {
 	ListTasks(context.Context) ([]*taskruntime.Task, error)

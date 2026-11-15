@@ -70,6 +70,7 @@ func taskToModel(task *taskruntime.Task) *model.Task {
 		files = append(files, &model.TaskFile{Index: file.Index, Path: file.Path, Size: file.Size, Kind: string(file.Kind), Part: file.Part, Selected: file.Selected, Reason: file.Reason})
 	}
 	return &model.Task{
+		Film: filmToModel(task.Film), SourcingMode: task.SourcingMode,
 		Version: taskVersion(task), Revision: task.Revision,
 		Files:                 files,
 		ID:                    task.ID,

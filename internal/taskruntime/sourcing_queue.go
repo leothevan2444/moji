@@ -7,13 +7,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/logging"
 )
 
 // QueueDownloadContext persists user intent before any external library lookup,
 // torrent search or submission. The worker owns execution after the request ends.
 func (s *Service) QueueDownloadContext(ctx context.Context, req DownloadRequest) (*Task, error) {
-	code := extractCode(req.Code)
+	if req.Film == nil || req.Film.Validate() != nil {
+		return nil, film.ErrRequired
+	}
+	req.Code = req.Film.Code
+	code := normalizeCode(req.Code)
 	if code == "" {
 		return nil, ErrTaskCodeRequired
 	}
@@ -35,7 +40,7 @@ func (s *Service) QueueDownloadContext(ctx context.Context, req DownloadRequest)
 		return nil, err
 	}
 	now := s.now().UTC()
-	task := &Task{ID: s.newID(), Code: code, Source: req.Source, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, SourcingRequestJSON: string(request), CreatedAt: now, UpdatedAt: now}
+	task := &Task{Film: req.Film, SourcingMode: "AUTO", ID: s.newID(), Code: code, Source: req.Source, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, SourcingRequestJSON: string(request), CreatedAt: now, UpdatedAt: now}
 	setTaskStage(task, TaskStageSourcing, TaskStageStatusPending)
 	if err := s.store.Create(ctx, task); err != nil {
 		return nil, fmt.Errorf("create queued task: %w", err)
@@ -96,15 +101,18 @@ func (s *Service) RunSourcingWorker(ctx context.Context) {
 				}
 			}
 
-			if task.Stage != TaskStageSourcing || task.StageStatus == TaskStageStatusDone || inflight[task.ID] {
+			if (task.Stage != TaskStageSourcing && !pendingSelectedDownload(task)) || task.StageStatus == TaskStageStatusDone || inflight[task.ID] {
 				return nil
 			}
-			task, err := s.prepareResourceTracking(ctx, task)
+			var err error
+			if task.SourcingMode != "USER_SELECTED" {
+				task, err = s.prepareResourceTracking(ctx, task)
+			}
 			if err != nil {
 				logging.Errorf("taskruntime: prepare resource tracking: %v", err)
 				return nil
 			}
-			if task.Stage != TaskStageSourcing || (task.StageStatus == TaskStageStatusBlocked && task.SourcingNextCheckAt == nil) {
+			if (task.Stage != TaskStageSourcing && !pendingSelectedDownload(task)) || (task.StageStatus == TaskStageStatusBlocked && task.SourcingNextCheckAt == nil) {
 				return nil
 			}
 			if task.SourcingNextCheckAt != nil && task.SourcingNextCheckAt.After(s.now().UTC()) {
@@ -157,7 +165,7 @@ func (s *Service) processQueuedSourcing(parent context.Context, id string) (resu
 	if err != nil {
 		return err
 	}
-	if task == nil || task.Stage != TaskStageSourcing || (task.StageStatus == TaskStageStatusBlocked && task.SourcingNextCheckAt == nil) || task.SourcingRequestJSON == "" {
+	if task == nil || (task.Stage != TaskStageSourcing && !pendingSelectedDownload(task)) || (task.StageStatus == TaskStageStatusBlocked && task.SourcingNextCheckAt == nil) || task.SourcingRequestJSON == "" {
 		return nil
 	}
 	if task.SourcingNextCheckAt != nil && task.SourcingNextCheckAt.After(s.now().UTC()) {
@@ -168,6 +176,24 @@ func (s *Service) processQueuedSourcing(parent context.Context, id string) (resu
 	defer func() {
 		if parent.Err() != nil {
 			return
+		}
+		if ctx.Err() != nil {
+			latest, err := s.store.Find(parent, id)
+			if err != nil {
+				resultErr = err
+				return
+			}
+			if pendingSelectedDownload(latest) {
+				code := TaskStageErrorTorrentMetadata
+				if latest.TorrentIdentityHash != "" {
+					code = TaskStageErrorTorrentSubmit
+				}
+				blockTask(latest, code, "selected resource operation timed out; retry the same resource", s.now().UTC())
+				if err := s.store.Update(parent, latest); err != nil {
+					resultErr = err
+					return
+				}
+			}
 		}
 		if ctx.Err() != nil && task.Stage == TaskStageSourcing && task.StageStatus == TaskStageStatusRunning {
 			if err := s.scheduleResourceCheck(task, s.now().UTC()); err != nil {
@@ -192,7 +218,9 @@ func (s *Service) processQueuedSourcing(parent context.Context, id string) (resu
 		blockTask(task, TaskStageErrorSourcingRequest, "unable to read queued task request", s.now().UTC())
 		return s.store.Update(ctx, task)
 	}
-	setTaskStage(task, TaskStageSourcing, TaskStageStatusRunning)
+	if task.SourcingMode != "USER_SELECTED" {
+		setTaskStage(task, TaskStageSourcing, TaskStageStatusRunning)
+	}
 	task.SourcingNextCheckAt = nil
 	clearTaskStageError(task)
 	task.UpdatedAt = s.now().UTC()
@@ -228,4 +256,8 @@ func (s *Service) processQueuedSourcing(parent context.Context, id string) (resu
 	}
 
 	return err
+}
+
+func pendingSelectedDownload(t *Task) bool {
+	return t != nil && t.SourcingMode == "USER_SELECTED" && t.Stage == TaskStageDownloading && t.StageStatus == TaskStageStatusPending && t.TorrentHash == ""
 }

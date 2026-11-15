@@ -213,7 +213,7 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
     await page.clock.setFixedTime(new Date(now));
     const effective = { ...rootValue, ...graphqlOverrides } as Record<string, any>;
     const cursor = () => effective.taskSnapshotCursor?.() ?? {sequence:0,streamId:"visual"};
-    const taskDefaults = (task: any) => ({version:"00000000000000000001",revision:1,stashSceneId:task.stashSceneIds?.[0] ?? null,...task});
+    const taskDefaults = (task: any) => ({sourcingMode:"AUTO",film:{endpoint:"https://example.test/graphql",sceneId:task.id,code:task.code??task.id,title:"",date:"",studio:"",performers:[],imageUrl:"",url:"",confirmationDigest:"fixture"},version:"00000000000000000001",revision:1,stashSceneId:task.stashSceneIds?.[0] ?? null,...task});
     const taskArray = () => (typeof effective.tasks === "function" ? effective.tasks() : effective.tasks) as any[];
     effective.homeTaskSnapshot ??= { ...cursor(),...effective.homeOverview };
     effective.taskDetailSnapshot ??= ({id}:{id:string}) => ({...cursor(),task: (()=>{const task=typeof effective.task === "function" ? effective.task({id}) : effective.task;return task?taskDefaults(task):null})()});

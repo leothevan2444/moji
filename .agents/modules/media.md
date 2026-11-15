@@ -1,5 +1,7 @@
 # 文件选择、媒体交付与 Stash 入库
 
+2026-11-15：影片身份来自任务持久保存的 StashBox 来源＋影片 ID。入库验证必须具有这一精确关联；番号后备识别直接使用任务的完整番号，并限定到目标来源和远程影片 ID。媒体选择改为完整目标番号匹配，不再从文件名提取任务身份；不确定的视频仍通过现有人工文件选择处理。新生成的路径和附件名称对元数据番号做安全文件名转换，既有任务路径不自动更名。
+
 核对日期：2026-10-27；代码基线：`86f69e5`；状态：当前实现。
 
 主要源码：[文件计划](../../internal/mediafiles/plan.go)、[产物准备](../../internal/mediafiles/prepare.go)、[runtime 文件控制](../../internal/taskruntime/media_files.go)、[恢复](../../internal/taskruntime/restart.go)、[入库推进](../../internal/taskruntime/stash_ingest.go)、[Stash 集成](../../internal/stashsync/ingest.go)。用户行为说明见 [媒体交付](../../docs/media-delivery.md)。

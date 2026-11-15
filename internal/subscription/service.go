@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/metadata"
@@ -29,7 +30,7 @@ type StashClient interface {
 }
 
 type TaskCreator interface {
-	QueueSubscriptionRelease(ctx context.Context, code, title string) (*taskruntime.Task, error)
+	QueueSubscriptionRelease(ctx context.Context, target film.Snapshot) (*taskruntime.Task, error)
 }
 
 type Service struct {
@@ -294,6 +295,8 @@ func (s *Service) RefreshSubscribedPerformer(ctx context.Context, performerID st
 // All manual and scheduled entry points share the same per-item execution.
 // Subscription eligibility belongs to admission, never to an admitted item.
 func (s *Service) executeCheckItem(ctx context.Context, performerID string) (result SubscribedPerformer, resultErr error) {
+	details := &CheckDetails{Version: 1, Phase: "CATALOG", CatalogStatus: "RUNNING"}
+	ctx = context.WithValue(ctx, checkDetailsContextKey{}, details)
 	if err := s.startCheckItem(ctx, performerID); err != nil {
 		return result, err
 	}
@@ -311,7 +314,14 @@ func (s *Service) executeCheckItem(ctx context.Context, performerID string) (res
 		if ctx.Err() != nil && status == "FAILED" {
 			status = "INTERRUPTED"
 		}
-		if err := s.finishCheckItem(ctx, performerID, result.Performer.Name, status, message); err != nil && resultErr == nil {
+		if details.CatalogStatus == "RUNNING" && message != "" {
+			details.CatalogStatus = "FAILED"
+			details.CatalogErrorCode = releaseFailureCode(resultErr)
+		}
+		if status == "SUCCEEDED" || status == "SKIPPED" {
+			details.Phase = "FINISHED"
+		}
+		if err := s.finishCheckItem(ctx, performerID, result.Performer.Name, status, message, details); err != nil && resultErr == nil {
 			resultErr = err
 		}
 	}()
@@ -374,6 +384,7 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	now := s.now().UTC()
 	state.LastCheckedAt = &now
 	state.LastError = ""
+	details := detailsForCheck(ctx)
 
 	releases, err := s.fetchReleases(ctx, performer, state)
 	// Save the catalog observation without touching release links or deadlines.
@@ -383,6 +394,10 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		}
 	}
 	if err != nil {
+		if details != nil {
+			details.CatalogStatus = "FAILED"
+			details.CatalogErrorCode = releaseFailureCode(err)
+		}
 		state.LastError = err.Error()
 		result := buildSubscribedPerformer(item, state)
 		s.applyStoredReviewSummary(ctx, &result)
@@ -393,6 +408,13 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		return result, err
 	}
 	logging.Infof("subscription: refresh fetched %d releases for performer %s (%s)", len(releases), performerID, performer.Name)
+	if details != nil {
+		details.CatalogStatus = "SUCCEEDED"
+		details.Phase = "RELEASES"
+		if err := s.saveCheckDetails(ctx, performerID, details); err != nil {
+			return SubscribedPerformer{}, err
+		}
+	}
 
 	filtered := make([]Release, 0, len(releases))
 	for _, release := range releases {
@@ -402,6 +424,8 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		}
 		if !held {
 			filtered = append(filtered, release)
+		} else if details != nil {
+			details.UpcomingCount++
 		}
 	}
 	releases = filtered
@@ -415,6 +439,7 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	if err != nil {
 		return SubscribedPerformer{}, err
 	}
+	historical := failedReviewsForPerformer(reviewRecords, performerID)
 	if err := s.reconcileReviewTasks(ctx, reviewRecords, tasks); err != nil {
 		return SubscribedPerformer{}, err
 	}
@@ -433,6 +458,9 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 	skippedInLibrary := 0
 	for _, release := range releases {
 		if existing, exists := reviewRecords[release.Key]; exists {
+			if details != nil {
+				details.KnownCount++
+			}
 			if addReviewPerformer(&existing, performerID, item.Name) {
 				reviewUpdates[release.Key] = existing
 			}
@@ -454,6 +482,9 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 			return SubscribedPerformer{}, err
 		}
 		if inLibrary {
+			if details != nil {
+				details.InLibraryCount++
+			}
 			skippedInLibrary++
 			logging.Infof(
 				"subscription: skipped in-library release performer=%s release_key=%s stash_box=%s scene_id=%s",
@@ -465,6 +496,7 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 			continue
 		}
 		record := RecordedRelease{
+			Film:           release.Film,
 			Key:            release.Key,
 			Source:         release.Source,
 			Title:          release.Title,
@@ -477,6 +509,15 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 			Classification: release.Classification,
 			Decision:       release.Decision,
 			DecisionReason: release.DecisionReason,
+		}
+		if details != nil {
+			details.NewCount++
+			if record.Decision == ReleaseDecisionQueued {
+				details.ReviewCount++
+			}
+			if record.Decision == ReleaseDecisionBlocked {
+				details.SkippedCount++
+			}
 		}
 		pending = append(pending, record)
 		reviewRecords[record.Key] = ReleaseReview{RecordedRelease: record, SceneID: release.SceneID, ImageURL: release.ImageURL,
@@ -500,18 +541,33 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 		nextPending := append([]RecordedRelease(nil), existingPending...)
 		for i := range pending {
 			if pending[i].Decision != ReleaseDecisionDownloaded {
+				if details != nil {
+					review := reviewRecords[pending[i].Key]
+					details.add(review, "NEW_RELEASE", string(review.Status))
+				}
 				nextPending = append(nextPending, pending[i])
 				continue
 			}
 			review := reviewRecords[pending[i].Key]
 			if err := s.queueReviewTaskLocked(ctx, &review, tasks); err != nil {
-				review.Status = ReviewFailed
-				review.Error = err.Error()
+				s.failReleaseReview(&review, err)
+				if details != nil {
+					details.CreationFailedCount++
+					details.add(review, "NEW_RELEASE", "FAILED")
+				}
 				reviewRecords[pending[i].Key] = review
 				reviewUpdates[pending[i].Key] = review
 				logging.Errorf("subscription: auto-download failed for performer %s code %q: %v", performerID, pending[i].Code, err)
 				nextPending = append(nextPending, pending[i])
 				continue
+			}
+			if details != nil {
+				if review.Status == ReviewInLibrary {
+					details.InLibraryCount++
+				} else {
+					details.QueuedCount++
+				}
+				details.add(review, "NEW_RELEASE", string(review.Status))
 			}
 			if review.TaskID != "" {
 				logging.Infof("subscription: auto-download associated task %s for performer %s code %q", review.TaskID, performerID, pending[i].Code)
@@ -527,31 +583,25 @@ func (s *Service) refreshSubscribedPerformer(ctx context.Context, performerID st
 			logging.Infof("subscription: queued %d pending releases for performer %s (%s)", len(pending), performerID, performer.Name)
 		}
 	}
-	// Historical pending snapshots may already have a task or a resolved review.
-	// Keep them consistent and retain only errors from releases still failed.
+	if err := s.retryCheckReleases(ctx, performerID, historical, reviewRecords, reviewUpdates, details); err != nil {
+		return SubscribedPerformer{}, err
+	}
+	// Reconcile snapshots after retries, so task links and pending counts reflect
+	// the decisions made in this check immediately.
 	nextPending := make([]RecordedRelease, 0, len(state.PendingReleases))
 	for _, release := range state.PendingReleases {
 		review := reviewRecords[release.Key]
 		if review.Status == ReviewDownloaded || review.Status == ReviewInLibrary {
 			state.ProcessedReleases = append(state.ProcessedReleases, review.RecordedRelease)
 		} else {
-			nextPending = append(nextPending, release)
-		}
-	}
-	state.PendingReleases = nextPending
-	var lastFailedReview ReleaseReview
-	for _, review := range reviewRecords {
-		if review.Status != ReviewFailed || review.Error == "" {
-			continue
-		}
-		for _, actor := range review.Performers {
-			if actor.ID == performerID && (state.LastError == "" || review.SeenAt.After(lastFailedReview.SeenAt) ||
-				(review.SeenAt.Equal(lastFailedReview.SeenAt) && review.Key > lastFailedReview.Key)) {
-				state.LastError = review.Error
-				lastFailedReview = review
+			if review.Key != "" {
+				nextPending = append(nextPending, review.RecordedRelease)
+			} else {
+				nextPending = append(nextPending, release)
 			}
 		}
 	}
+	state.PendingReleases = nextPending
 
 	archive = archive[:0]
 	for _, record := range reviewUpdates {
@@ -640,6 +690,14 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 	seenReleaseKeys := make(map[string]struct{})
 	releases := make([]Release, 0, releaseQueryPerPage)
 	stats := releaseFetchStats{}
+	details := detailsForCheck(ctx)
+	if details != nil {
+		details.CatalogSource, details.CatalogMode = target.Endpoint, string(strategy.mode)
+		defer func() {
+			details.CatalogPages, details.CatalogPagesWithResults = stats.pagesRequested, stats.pagesWithResult
+			details.CatalogReleases, details.CatalogStopReason = len(releases), stats.stopReason
+		}()
+	}
 
 	sample := newActivitySample(now, s.releaseTimezone())
 	releaseDone := false
@@ -672,6 +730,9 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 			}
 		}
 		complete = complete || len(scenes) == 0
+		if details != nil {
+			details.CatalogScenes += len(scenes)
+		}
 		ratingScenes := make([]*stashboxgraphql.SceneFragment, 0, len(scenes))
 		for _, scene := range scenes {
 			if _, matched := releasePerformerNames(target.Performer, scene); matched {
@@ -720,6 +781,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 			}
 			pageReleaseCount++
 			release := Release{
+				Film:           metadata.FilmSnapshot(target.Endpoint, scene),
 				SceneID:        scene.ID,
 				Key:            keyPrefix + scene.ID,
 				Source:         source,

@@ -53,6 +53,12 @@ func NewService(source *metadata.Service, tasks TaskCreator, images ImageProxy) 
 }
 
 func (s *Service) Search(ctx context.Context, query string, limit int, sortBy Sort) (Page, error) {
+	return s.searchSource(ctx, query, limit, sortBy, "")
+}
+func (s *Service) SearchSource(ctx context.Context, query string, limit int, endpoint string) (Page, error) {
+	return s.searchSource(ctx, query, limit, SortRelevance, endpoint)
+}
+func (s *Service) searchSource(ctx context.Context, query string, limit int, sortBy Sort, endpoint string) (Page, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return Page{}, errors.New("discovery: query is required")
@@ -68,6 +74,9 @@ func (s *Service) Search(ctx context.Context, query string, limit int, sortBy So
 	}
 	var lastErr error
 	for index, box := range s.metadata.Endpoints() {
+		if endpoint != "" && metadata.NormalizeEndpoint(endpoint) != metadata.NormalizeEndpoint(box.Endpoint) {
+			continue
+		}
 		client, ok := s.metadata.Get(box.Endpoint)
 		if !ok || client == nil {
 			continue

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/stashsync"
 )
@@ -257,6 +258,9 @@ func (s *Service) startStashIngestStep(ctx context.Context, task *Task, scanner 
 }
 
 func verifyIngestScenes(task *Task, ids []string, scenes []stashsync.IngestScene) error {
+	if task == nil || task.Film == nil {
+		return film.ErrRequired
+	}
 	byID := make(map[string]stashsync.IngestScene, len(scenes))
 	for _, scene := range scenes {
 		byID[scene.ID] = scene
@@ -270,7 +274,7 @@ func verifyIngestScenes(task *Task, ids []string, scenes []stashsync.IngestScene
 		if len(missing) > 0 {
 			return fmt.Errorf("Stash scene %s has incomplete metadata; missing fields: %s", id, strings.Join(missing, ", "))
 		}
-		if task.Code != "" && extractCode(scene.Code) != normalizeCode(task.Code) {
+		if !hasFilmAssociation(scene, *task.Film) {
 			return fmt.Errorf("Stash scene %s code does not match task %s; review the identification in Stash and retry", id, task.Code)
 		}
 	}
@@ -371,4 +375,13 @@ func (s *Service) recoverStashScenes(ctx context.Context, task *Task, scanner St
 		return s.failStashIngest(task, err)
 	}
 	return s.startStashIngestStep(ctx, task, scanner)
+}
+
+func hasFilmAssociation(scene stashsync.IngestScene, target film.Snapshot) bool {
+	for _, ref := range scene.StashIDs {
+		if ref != nil && film.Endpoint(ref.Endpoint) == film.Endpoint(target.Endpoint) && ref.StashID == target.SceneID {
+			return true
+		}
+	}
+	return false
 }

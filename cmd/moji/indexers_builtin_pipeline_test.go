@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/indexeradmin"
 	"github.com/leothevan2444/moji/internal/indexerdefs"
 	"github.com/leothevan2444/moji/internal/storage"
-	"github.com/leothevan2444/moji/internal/taskflow"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -134,7 +134,6 @@ func TestBuiltinManagedPipelineFiltersAndPersistsBeforeDownloadUnderQueuedLoad(t
 	core := taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations)
 	downloader := &builtinPipelineDownloader{t: t, store: core, sourceID: saved.Instance.ID, adds: map[string]int{}}
 	service := configureTaskRuntimeWithIndexers(store.Config(), store, nil, runtime.service, downloader, nil, taskruntime.NewTaskEventBus(8), manager)
-	flow := taskflow.NewService(service.(taskflow.TaskRuntime))
 	const count = 8
 	var group sync.WaitGroup
 	samples := make([]time.Duration, count)
@@ -146,7 +145,7 @@ func TestBuiltinManagedPipelineFiltersAndPersistsBeforeDownloadUnderQueuedLoad(t
 			starts[i] = time.Now()
 			request, endRequest := context.WithCancel(ctx)
 			defer endRequest()
-			task, err := flow.CreateFromSearchCode(request, taskflow.CreateFromSearchCodeInput{Code: code})
+			task, err := service.QueueDownloadContext(request, taskruntime.DownloadRequest{Film: &film.Snapshot{Endpoint: "https://example.test/graphql", SceneID: code, Code: code}, Code: code})
 			if err != nil || task == nil || task.Stage != taskruntime.TaskStageSourcing || task.StageStatus != taskruntime.TaskStageStatusPending {
 				t.Errorf("builtin task %s was not durably queued: %+v %v", code, task, err)
 				return

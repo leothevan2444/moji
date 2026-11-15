@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/leothevan2444/moji/internal/indexer"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -78,7 +78,7 @@ func TestQueueReturnsAndPublishesBeforeExternalWork(t *testing.T) {
 		t.Fatal(err)
 	}
 	requestCtx, cancelRequest := context.WithCancel(context.Background())
-	task, err := service.QueueDownloadContext(requestCtx, DownloadRequest{Code: "ABCD-123"})
+	task, err := service.QueueDownloadContext(requestCtx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestQueuedSourcingSurvivesRestartWithOptions(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
 	service, _ := NewService(search, qbt, store)
 	paused := true
-	req := DownloadRequest{Code: "ABCD-123", Source: TaskSourceSearch, Trackers: []string{"indexer"}, Categories: []int{1}, Limit: 3, SavePath: "/downloads", Category: "moji", Tags: "favorite", Paused: &paused}
+	req := DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123", Source: TaskSourceSearch, Trackers: []string{"indexer"}, Categories: []int{1}, Limit: 3, SavePath: "/downloads", Category: "moji", Tags: "favorite", Paused: &paused}
 	task, err := service.QueueDownloadContext(context.Background(), req)
 	if err != nil {
 		t.Fatal(err)
@@ -171,7 +171,7 @@ func TestQueuedSourcingFailureAndRetry(t *testing.T) {
 	store := NewMemoryTaskStore()
 	search := &queuedTracker{}
 	service, _ := NewService(search, &fakeTorrentAdder{}, store)
-	task, err := service.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"})
+	task, err := service.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +190,7 @@ func TestQueuedSourcingFailureAndRetry(t *testing.T) {
 	if err := service.processQueuedSourcing(ctx, task.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.QueueDownloadContext(ctx, DownloadRequest{Code: "ABCD-123"}); !errors.Is(err, ErrDuplicateCodeTask) {
+	if _, err := service.QueueDownloadContext(ctx, DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"}); !errors.Is(err, ErrDuplicateCodeTask) {
 		t.Fatalf("duplicate not rejected: %v", err)
 	}
 }
@@ -198,7 +198,7 @@ func TestQueuedLibraryValidationRunsAfterCreation(t *testing.T) {
 	store := NewMemoryTaskStore()
 	search := &queuedTracker{results: queuedResult()}
 	service, _ := NewService(search, &fakeTorrentAdder{}, store, WithLibraryCodeChecker(fakeLibraryCodeChecker{codes: map[string]bool{"ABCD-123": true}}))
-	task, err := service.QueueDownloadContext(context.Background(), DownloadRequest{Code: "ABCD-123"})
+	task, err := service.QueueDownloadContext(context.Background(), DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestSourcingWorkerBoundsConcurrencyAndLeavesInterruptedJobsRecoverable(t *t
 	var sequence atomic.Int32
 	service, _ := NewService(search, &fakeTorrentAdder{}, store, WithIDGenerator(func() string { return fmt.Sprintf("queued-%d", sequence.Add(1)) }))
 	for _, code := range []string{"ABCD-123", "ABCD-124", "ABCD-125"} {
-		if _, err := service.QueueDownloadContext(context.Background(), DownloadRequest{Code: code}); err != nil {
+		if _, err := service.QueueDownloadContext(context.Background(), DownloadRequest{Film: testFilm(code), Code: code}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -275,7 +275,7 @@ func TestInterruptedSubmissionResumesTheSameValidatedTorrent(t *testing.T) {
 	defer cancel()
 	search := &queuedTracker{results: queuedResult()}
 	service, _ := NewService(search, &interruptedQueueAdder{cancel: cancel}, store)
-	task, err := service.QueueDownloadContext(context.Background(), DownloadRequest{Code: "ABCD-123"})
+	task, err := service.QueueDownloadContext(context.Background(), DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
 	if err != nil {
 		t.Fatal(err)
 	}

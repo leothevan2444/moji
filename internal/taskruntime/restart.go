@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/mediafiles"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -89,11 +90,11 @@ func (s *Service) restartTaskSourcingLocked(ctx context.Context, task *Task, sca
 		if task.MojiTransferPath == "" && s.mediaConfig != nil {
 			cfg := s.mediaConfig()
 			if cfg.Library.MojiRoot != "" {
-				target := filepath.Join(cfg.Library.MojiRoot, task.Code)
+				target := filepath.Join(cfg.Library.MojiRoot, film.SafeName(task.Code))
 				if _, err := os.Lstat(target); err == nil {
 					task.MojiTransferPath = target
 					if cfg.Library.StashRoot != "" {
-						task.StashScanPath = filepath.Join(cfg.Library.StashRoot, task.Code)
+						task.StashScanPath = filepath.Join(cfg.Library.StashRoot, film.SafeName(task.Code))
 					}
 				} else if !errors.Is(err, os.ErrNotExist) {
 					return task, err
@@ -176,7 +177,7 @@ func (s *Service) restartTaskSourcingLocked(ctx context.Context, task *Task, sca
 		}
 	}
 	now := s.now().UTC()
-	next := &Task{Revision: task.Revision, Generation: task.Generation, ID: task.ID, Source: task.Source, Code: task.Code, SavePath: task.SavePath,
+	next := &Task{Film: task.Film, SourcingMode: "AUTO", Revision: task.Revision, Generation: task.Generation, ID: task.ID, Source: task.Source, Code: task.Code, SavePath: task.SavePath,
 		Category: task.Category, Tags: task.Tags, CreatedAt: task.CreatedAt, UpdatedAt: now,
 		LastProgressAt: &now, SourcingRequestJSON: task.SourcingRequestJSON}
 	if err := ensureSourcingRequest(next); err != nil {
