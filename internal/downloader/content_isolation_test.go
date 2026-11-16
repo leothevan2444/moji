@@ -48,50 +48,62 @@ func metadataFixture(t *testing.T, n int) (*Service, *metadataClient, []string) 
 	s.client = client
 	return s, client, hashes
 }
-func TestMetadataOnlyTorrentsDoNotBlockSafeCapacityCleanup(t *testing.T) {
-	s, q, hashes := metadataFixture(t, 9)
-	q.torrents[len(q.torrents)-1].State = qbittorrent.TorrentStateForcedMetaDL
-	if err := s.Cycle(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	if q.deleted != 1 || q.hashes[0] != strings.Repeat("a", 40) || !q.deleteFiles {
-		t.Fatal("metadata downloads blocked eligible source", q.hashes)
-	}
-	for _, hash := range hashes {
-		if q.calls[hash] != 2 {
-			t.Fatal("expected one check per listing plus deletion recheck", hash, q.calls[hash])
-		}
-	}
-}
-func TestUnknownOrNonemptyTorrentContentStillBlocksDeletion(t *testing.T) {
-	for _, mode := range []string{"files unavailable", "null file list", "files already known", "ordinary downloading", "stopped unknown", "data received", "size known", "progress nonzero"} {
-		t.Run(mode, func(t *testing.T) {
-			s, q, hashes := metadataFixture(t, 1)
-			last := len(q.torrents) - 1
-			switch mode {
-			case "files unavailable":
-				q.fileErr = errors.New("offline")
-			case "null file list":
-				q.files[hashes[0]] = nil
-			case "files already known":
-				q.files[hashes[0]] = []qbittorrent.TorrentContentFile{{}}
-			case "ordinary downloading":
-				q.torrents[last].State = qbittorrent.TorrentStateDownloading
-			case "stopped unknown":
-				q.torrents[last].State = qbittorrent.TorrentState("stoppedDL")
-			case "data received":
-				q.torrents[last].Completed = 1
-			case "size known":
-				q.torrents[last].Size = 1
-			case "progress nonzero":
-				q.torrents[last].Progress = .1
+func TestEmptyDownloadsDoNotBlockSafeCapacityCleanup(t *testing.T) {
+	for _, state := range []qbittorrent.TorrentState{qbittorrent.TorrentStateMetaDL, qbittorrent.TorrentStateForcedMetaDL, qbittorrent.TorrentState("stoppedDL"), qbittorrent.TorrentStatePausedDL} {
+		t.Run(string(state), func(t *testing.T) {
+			s, q, hashes := metadataFixture(t, 9)
+			for i := len(q.torrents) - 9; i < len(q.torrents); i++ {
+				q.torrents[i].State = state
 			}
 			if err := s.Cycle(context.Background()); err != nil {
 				t.Fatal(err)
 			}
-			snap, _ := s.Snapshot(context.Background())
-			if q.deleted != 0 || snap.Cleanup.Reason != string(contentUnknown) {
-				t.Fatal("unknown content accepted or misreported", q.deleted, snap.Cleanup.Reason)
+			if q.deleted != 1 || q.hashes[0] != strings.Repeat("a", 40) || !q.deleteFiles {
+				t.Fatal("empty downloads blocked eligible source", q.hashes)
+			}
+			for _, hash := range hashes {
+				if q.calls[hash] != 2 {
+					t.Fatal("expected one check per listing plus deletion recheck", hash, q.calls[hash])
+				}
+			}
+		})
+	}
+}
+
+func TestUnknownOrNonemptyTorrentContentStillBlocksDeletion(t *testing.T) {
+	for _, state := range []qbittorrent.TorrentState{qbittorrent.TorrentStateMetaDL, qbittorrent.TorrentState("stoppedDL"), qbittorrent.TorrentStatePausedDL} {
+		t.Run(string(state), func(t *testing.T) {
+			for _, mode := range []string{"files unavailable", "null file list", "files already known", "ordinary downloading", "unknown state", "data received", "size known", "progress nonzero"} {
+				t.Run(mode, func(t *testing.T) {
+					s, q, hashes := metadataFixture(t, 1)
+					last := len(q.torrents) - 1
+					q.torrents[last].State = state
+					switch mode {
+					case "files unavailable":
+						q.fileErr = errors.New("offline")
+					case "null file list":
+						q.files[hashes[0]] = nil
+					case "files already known":
+						q.files[hashes[0]] = []qbittorrent.TorrentContentFile{{}}
+					case "ordinary downloading":
+						q.torrents[last].State = qbittorrent.TorrentStateDownloading
+					case "unknown state":
+						q.torrents[last].State = qbittorrent.TorrentState("unknown")
+					case "data received":
+						q.torrents[last].Completed = 1
+					case "size known":
+						q.torrents[last].Size = 1
+					case "progress nonzero":
+						q.torrents[last].Progress = .1
+					}
+					if err := s.Cycle(context.Background()); err != nil {
+						t.Fatal(err)
+					}
+					snap, _ := s.Snapshot(context.Background())
+					if q.deleted != 0 || snap.Cleanup.Reason != string(contentUnknown) {
+						t.Fatal("unknown content accepted or misreported", q.deleted, snap.Cleanup.Reason)
+					}
+				})
 			}
 		})
 	}
@@ -108,34 +120,44 @@ func TestKnownSharedContentIsReportedWithoutMetadataRequests(t *testing.T) {
 	}
 }
 func TestMetadataArrivalIsRecheckedBeforeDeletingFiles(t *testing.T) {
-	s, q, _ := metadataFixture(t, 1)
-	q.onListing = func(n int) {
-		if n == 2 {
-			q.torrents[len(q.torrents)-1].ContentPath = "/downloads"
-			q.torrents[len(q.torrents)-1].State = qbittorrent.TorrentStateDownloading
-		}
-	}
-	if err := s.Cycle(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	snap, _ := s.Snapshot(context.Background())
-	if q.deleted != 0 || snap.Cleanup.Reason != string(contentShared) {
-		t.Fatal("newly shared path was deleted", q.deleted, snap.Cleanup.Reason)
+	for _, state := range []qbittorrent.TorrentState{qbittorrent.TorrentStateMetaDL, qbittorrent.TorrentState("stoppedDL"), qbittorrent.TorrentStatePausedDL} {
+		t.Run(string(state), func(t *testing.T) {
+			s, q, _ := metadataFixture(t, 1)
+			q.torrents[len(q.torrents)-1].State = state
+			q.onListing = func(n int) {
+				if n == 2 {
+					q.torrents[len(q.torrents)-1].ContentPath = "/downloads"
+					q.torrents[len(q.torrents)-1].State = qbittorrent.TorrentStateDownloading
+				}
+			}
+			if err := s.Cycle(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			snap, _ := s.Snapshot(context.Background())
+			if q.deleted != 0 || snap.Cleanup.Reason != string(contentShared) {
+				t.Fatal("newly shared path was deleted", q.deleted, snap.Cleanup.Reason)
+			}
+		})
 	}
 }
 func TestMetadataFileAPIFailureAtDeletionRecheckIsSafe(t *testing.T) {
-	s, q, _ := metadataFixture(t, 1)
-	q.onFile = func(_ string, n int) {
-		if n == 2 {
-			q.fileErr = errors.New("offline")
-		}
-	}
-	if err := s.Cycle(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	snap, _ := s.Snapshot(context.Background())
-	if q.deleted != 0 || snap.Cleanup.Reason != string(contentUnknown) {
-		t.Fatal(q.deleted, snap.Cleanup.Reason)
+	for _, state := range []qbittorrent.TorrentState{qbittorrent.TorrentStateMetaDL, qbittorrent.TorrentState("stoppedDL"), qbittorrent.TorrentStatePausedDL} {
+		t.Run(string(state), func(t *testing.T) {
+			s, q, _ := metadataFixture(t, 1)
+			q.torrents[len(q.torrents)-1].State = state
+			q.onFile = func(_ string, n int) {
+				if n == 2 {
+					q.fileErr = errors.New("offline")
+				}
+			}
+			if err := s.Cycle(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			snap, _ := s.Snapshot(context.Background())
+			if q.deleted != 0 || snap.Cleanup.Reason != string(contentUnknown) {
+				t.Fatal(q.deleted, snap.Cleanup.Reason)
+			}
+		})
 	}
 }
 func TestMetadataProofIsNotReusedAcrossCycles(t *testing.T) {
@@ -168,11 +190,16 @@ func TestMetadataVerificationHasBoundedRequests(t *testing.T) {
 	}
 }
 func TestManualFileRemovalUsesTheSameMetadataSafetyCheck(t *testing.T) {
-	s, q, _ := metadataFixture(t, 1)
-	if err := s.Action(context.Background(), strings.Repeat("a", 40), "REMOVE_FILES"); err != nil {
-		t.Fatal(err)
-	}
-	if q.deleted != 1 || !q.deleteFiles {
-		t.Fatal(q.hashes)
+	for _, state := range []qbittorrent.TorrentState{qbittorrent.TorrentStateMetaDL, qbittorrent.TorrentState("stoppedDL"), qbittorrent.TorrentStatePausedDL} {
+		t.Run(string(state), func(t *testing.T) {
+			s, q, _ := metadataFixture(t, 1)
+			q.torrents[len(q.torrents)-1].State = state
+			if err := s.Action(context.Background(), strings.Repeat("a", 40), "REMOVE_FILES"); err != nil {
+				t.Fatal(err)
+			}
+			if q.deleted != 1 || !q.deleteFiles {
+				t.Fatal(q.hashes)
+			}
+		})
 	}
 }

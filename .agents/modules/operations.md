@@ -6,7 +6,7 @@
 
 容量只覆盖 qB 默认保存目录，不推断自定义目录属于同盘。“传输设置”保留 panel=speed，分为全局限速、qB 做种限制、Torrent 排队。后两组直读 qB，经认证后发送 typed 稀疏 form/json patch，回读不一致返回未确认；缺少的能力不伪造默认值。qB 自身删除动作独立于 Moji 入库保护。前端沿用串行自动保存、失败草稿保护及区域错误隔离。
 
-共用内容检查由 [content_isolation](../../internal/downloader/content_isolation.go) 统一处理。未知路径的 metaDL/forcedMetaDL 只有进度、已完成数据量及大小均为零，且文件接口明确返回非 null 的空列表时，才不阻塞其他候选；普通未知路径、非空文件列表和查询失败仍拦截。单次完整列表的核对最多 16 个文件请求、共享 2 秒预算，证据仅用于本次列表，不跨刷新复用。真正删除文件前再读完整 qB 列表及文件信息，路径变化或新共用内容会阻止删除。容量状态分别报告 CONTENT_PATH_UNKNOWN、SHARED_SOURCE_FILES、LIBRARY_COPY_UNVERIFIED，不再将它们混为没有已入库候选。验证只使用临时数据和模拟服务，不更新用户手动运行的开发实例。
+共用内容检查由 [content_isolation](../../internal/downloader/content_isolation.go) 统一处理。未知路径的 metaDL/forcedMetaDL 或 stoppedDL/pausedDL 只有进度、已完成数据量及大小均为零，且文件接口明确返回非 null 的空列表时，才不阻塞其他候选；普通未知路径、非空文件列表和查询失败仍拦截。单次完整列表的核对最多 16 个文件请求、共享 2 秒预算，证据仅用于本次列表，不跨刷新复用。真正删除文件前再读完整 qB 列表及文件信息，路径变化或新共用内容会阻止删除。容量状态分别报告 CONTENT_PATH_UNKNOWN、SHARED_SOURCE_FILES、LIBRARY_COPY_UNVERIFIED，不再将它们混为没有已入库候选。验证只使用临时数据和模拟服务，不更新用户手动运行的开发实例。
 
 两种策略共用 [cleanup 执行器](../../internal/downloader/cleanup.go) 和四种公开阶段：IDLE/RUNNING/WARNING/ERROR。删除前准备状态先落核心库；删除意图和 CONFIRMING 阶段在同一核心事务中提交，随后调用 qB。结果不明只核对同一 hash；15 秒后转为静止警告，不无限播放动画。确认容量种子移除后观察 6 秒，再决定下一项；连续 3 项未观察到净空间增长才暂停。预算、截止及在途身份保存在核心库，runtime 丢失不重置；空间回升或关闭策略可重置保护，空间恢复至阈值以上也重置预算。4xx 明确拒绝（不含 408）记为失败并冷却 30 秒；超时、5xx 和未知结果不冒充失败。重复不变状态不占核心写事务。
 

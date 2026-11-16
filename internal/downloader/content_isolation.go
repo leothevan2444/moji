@@ -36,10 +36,16 @@ type contentIsolation struct {
 func newContentIsolation(ctx context.Context, client Client, torrents []qbittorrent.Torrent) *contentIsolation {
 	return &contentIsolation{ctx: ctx, client: client, torrents: torrents, checked: make(map[string]bool)}
 }
-func metadataWithoutData(t qbittorrent.Torrent) bool {
-	return validHash(strings.ToLower(t.Hash)) && (t.State == qbittorrent.TorrentStateMetaDL || t.State == qbittorrent.TorrentStateForcedMetaDL) && t.ContentPath == "" && t.Progress == 0 && t.Completed == 0 && t.Size == 0
+func canVerifyEmptyFiles(t qbittorrent.Torrent) bool {
+	switch t.State {
+	case qbittorrent.TorrentStateMetaDL, qbittorrent.TorrentStateForcedMetaDL,
+		qbittorrent.TorrentStatePausedDL, qbittorrent.TorrentState("stoppedDL"):
+		return validHash(strings.ToLower(t.Hash)) && t.ContentPath == "" && t.Progress == 0 && t.Completed == 0 && t.Size == 0
+	default:
+		return false
+	}
 }
-func (c *contentIsolation) emptyMetadataFiles(t qbittorrent.Torrent) bool {
+func (c *contentIsolation) emptyFiles(t qbittorrent.Torrent) bool {
 	hash := strings.ToLower(t.Hash)
 	if empty, ok := c.checked[hash]; ok {
 		return empty
@@ -77,13 +83,13 @@ func (c *contentIsolation) check(target qbittorrent.Torrent) isolationResult {
 			return contentShared
 		}
 	}
-	// Unknown ordinary torrents remain protected; only positively identified,
-	// data-free metadata downloads can be exempted after checking their file API.
+	// Unknown ordinary torrents remain protected. Metadata downloads and stopped
+	// downloads without data require an explicitly empty file list to be exempted.
 	for _, other := range c.torrents {
 		if strings.EqualFold(other.Hash, target.Hash) || other.ContentPath != "" {
 			continue
 		}
-		if !metadataWithoutData(other) {
+		if !canVerifyEmptyFiles(other) {
 			return contentUnknown
 		}
 	}
@@ -91,7 +97,7 @@ func (c *contentIsolation) check(target qbittorrent.Torrent) isolationResult {
 		if strings.EqualFold(other.Hash, target.Hash) || other.ContentPath != "" {
 			continue
 		}
-		if !c.emptyMetadataFiles(other) {
+		if !c.emptyFiles(other) {
 			return contentUnknown
 		}
 	}
