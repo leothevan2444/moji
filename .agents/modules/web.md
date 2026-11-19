@@ -1,6 +1,6 @@
 # Web UI 与交互约定
 
-核对日期：2026-11-19；代码基线：`ec7b093`；状态：当前源码契约。跨页面体验要求统一见[产品规范](../standards/product.md)，这里定位已有能力与数据边界。
+核对日期：2026-11-19；代码基线：`43dee38` 及 Stage2 工作树；状态：当前源码契约。跨页面体验要求统一见[产品规范](../standards/product.md)，这里定位已有能力与数据边界。
 
 主要源码：[路由](../../web/src/app/routeConfig.tsx)、[providers](../../web/src/app/AppProviders.tsx)、[客户端](../../web/src/graphql/client.ts)、[缓存](../../web/src/graphql/cache.ts)、[布局](../../web/src/app/AppLayout.tsx)。React/Router、urql、graphql-ws 与 i18next 沿现有体系使用，不引入第二套状态或界面框架。
 
@@ -21,12 +21,13 @@
 
 | 能力 | 首选实现与边界 |
 | --- | --- |
-| 主题/静态 token/共享表面 | [theme.css](../../web/src/styles/theme.css)、[_tokens.scss](../../web/src/styles/_tokens.scss)、[_mixins.scss](../../web/src/styles/_mixins.scss)；历史样式落差留给 Stage2 |
+| 主题/静态 token/共享表面 | [theme.css](../../web/src/styles/theme.css)、[_tokens.scss](../../web/src/styles/_tokens.scss)、[_mixins.scss](../../web/src/styles/_mixins.scss)；语义前景 success/danger/warning/info 统一由主题提供，shared mixin、首页、索引器和日志直接消费，不再各自覆写明暗色 |
+| 缓存清理确认 | [ConfirmationDialog](../../web/src/components/common/ConfirmationDialog.tsx) 包装 Drawer/Portal，图片、StashBox 和索引搜索缓存共用；请求中禁用确认/取消/Escape/遮罩关闭，失败保留面板并允许重试，取消不执行操作 |
 | 抽屉与模态焦点 | [Drawer](../../web/src/components/layout/Drawer.tsx)、[useModalFocus](../../web/src/hooks/useModalFocus.ts)；dialog、Escape、嵌套栈和焦点恢复 |
 | 设置外壳/字段/状态 | [SettingsPanels](../../web/src/components/settings/SettingsPanels.tsx)、[SettingsTabCommon](../../web/src/components/settings/SettingsTabCommon.tsx)、SettingsSwitch；PolicySettingsEditor 已复用 FieldLabel |
 | 说明浮层 | [Tooltip](../../web/src/components/common/Tooltip.tsx)、SettingsInfoTooltip；Portal、边界定位、Escape；任务删除缺少关联提示沿用原生 title |
 | 图片与候选链接 | SceneArtwork、[TorrentCandidateLinks/CandidateSeeders](../../web/src/components/tasks/TorrentCandidateLinks.tsx)、PreparedTorrentDownloadActions |
-| 日期/容量/qB 状态/用户错误 | [formatters](../../web/src/utils/formatters.ts)、[qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)、[queryError](../../web/src/services/queryError.ts)；不能从浏览器日期推断发行资格 |
+| 日期/容量/qB 状态/用户错误 | [formatters](../../web/src/utils/formatters.ts)、[qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)、[queryError](../../web/src/services/queryError.ts)；时间戳/仅时分秒分别使用 formatDateTime/formatTime，遵循应用语言；发行日仍保留日历语义，不能从浏览器日期推断发行资格 |
 
 顶栏保留品牌、主导航与常驻工具。小于 1000px 展开两列导航，600px 以下隐藏可见页名并保留可访问名；aria-current、外部关闭、Escape 与路由关闭保持。ThemeMenu 使用 menuitemradio，方向键/Home/End、Tab 离开、选择/Escape 返回焦点；不套用已废弃的通用 listbox Menu。
 
@@ -70,6 +71,8 @@ History 中性入口放在检查状态行右侧，左侧空闲显示安排/下�
 
 TaskDetail 在 TaskFiles 内嵌一份 DownloadManager，文件选择抽屉不加载下载器。删除确认每次默认不删除 Stash；无关联禁用、关联丢失清选，提交重验。配置入口 `/settings/tasks?panel=deletion` 不提交删除。
 
+发行复核沿用现有标题、筛选和动作，表面/间距/边框使用主题及 token；封面复用 SceneArtwork，在空值或加载失败时显示占位。跨页选择、下载/拒绝和重新考虑语义不变。
+
 ## 待发行、日志与文案
 
 待发行 `section=upcoming` 与 upcomingSearch/Performer/Days/Page 恢复筛选。卡片/详情复用 SceneArtwork、现有影片卡与 Drawer media，16:9 封面；无下载按钮、预告片未接入。状态来自服务端持久 upcomingState，已入库/已有任务优先，未来影片不进入可选集合；只移除当前页已确认不合资格项，其他跨页选择保留。相对天数基于服务端 today/effectiveReleaseTimezone。
@@ -80,4 +83,4 @@ TaskDetail 在 TaskFiles 内嵌一份 DownloadManager，文件选择抽屉不加
 
 ## 修改时验证
 
-数据/交互选择最小有效 hook、组件、路由或 graphcache 测试；覆盖迟到结果、缺口、跨页及部分成功。可见布局/焦点改动按[开发流程](../workflows/development.md)运行相关 Playwright 并人工看图。Stage1 不改变当前外观，Stage2 的范围见[TODO](../TODO.md#u-006)。
+数据/交互选择最小有效 hook、组件、路由或 graphcache 测试；覆盖迟到结果、缺口、跨页及部分成功。可见布局/焦点改动按[开发流程](../workflows/development.md)运行相关 Playwright 并人工看图。本次视觉收敛、历史基线校准及验证范围见[Stage2 复核](../reviews/2026-11-19-ui-consistency.md)。

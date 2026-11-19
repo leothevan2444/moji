@@ -113,18 +113,10 @@
     line-height: 1.55;
   }
 
-  &__error {
-    color: #b9382d !important;
-  }
-
   &__actions {
     display: flex;
     gap: $space-2;
     flex: 0 0 auto;
-  }
-
-  &__submit {
-    @include danger-action-surface;
   }
 }
 

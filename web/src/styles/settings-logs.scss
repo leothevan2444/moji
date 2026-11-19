@@ -60,8 +60,4 @@
   }
 }
 
-.log-stream { --log-warning: #a35005; --log-error: #b91c1c; }
-[data-theme="dark"] .log-stream { --log-warning: #fdba74; --log-error: #fca5a5; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .log-stream { --log-warning: #fdba74; --log-error: #fca5a5; }
-}
+.log-stream { --log-warning: var(--warning); --log-error: var(--danger); }

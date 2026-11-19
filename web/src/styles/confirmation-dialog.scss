@@ -1,0 +1,11 @@
+@use "tokens" as *;
+@use "mixins" as *;
+
+.confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: $space-2;
+  &__confirm { @include danger-action-surface; }
+  @media (max-width: 640px) { > button { flex: 1; } }
+}

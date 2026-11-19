@@ -147,15 +147,9 @@
   .icon-button { width: 26px; height: 26px; min-width: 26px; min-height: 26px; flex: 0 0 26px; padding: 0; }
   .indexer-test { height: 26px; min-height: 26px; padding: 0 6px; width: auto; }
 }
-.indexer-test.is-passed { color: #15803d; }
-.indexer-test.is-failed { color: #c2412f; }
+.indexer-test.is-passed { color: var(--success); }
+.indexer-test.is-failed { color: var(--danger); }
 .indexer-test.is-running { color: var(--muted); }
-[data-theme="dark"] .indexer-test.is-passed { color: #86efac; }
-[data-theme="dark"] .indexer-test.is-failed { color: #fca5a5; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .indexer-test.is-passed { color: #86efac; }
-  :root:not([data-theme]) .indexer-test.is-failed { color: #fca5a5; }
-}
 @media (max-width: 640px) {
   .indexer-list:not(.indexer-catalog-list) > .indexer-row > .indexer-row__controls { padding-block-start: 0; justify-content: flex-end; }
 }

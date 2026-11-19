@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import i18n from "../i18n/i18n";
-import { formatDateTime, formatRelative, formatRelativeDate } from "./formatters";
+import { formatDateTime, formatTime, formatRelative, formatRelativeDate } from "./formatters";
 
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 it("reuses locale-specific formatters without caching the date or relative-time result", async () => {
@@ -27,4 +27,19 @@ it("reuses locale-specific formatters without caching the date or relative-time 
   await i18n.changeLanguage("en");
   expect(formatDateTime(at)).toBe(english);
   expect(date).toHaveBeenCalledTimes(3);
+});
+
+it("formats time with the application language and keeps missing or invalid values explicit", async () => {
+  const at = "2026-11-19T05:06:07Z";
+  await i18n.changeLanguage("en");
+  const english = formatTime(at);
+  expect(english).toBe(new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(at)));
+  expect(formatTime(new Date(at))).toBe(english);
+  await i18n.changeLanguage("zh-CN");
+  expect(formatTime(at)).toBe(new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(at)));
+  expect(formatTime(at)).not.toBe(english);
+  expect(formatTime(null)).toBe("—");
+  expect(formatTime("invalid-time")).toBe("invalid-time");
+  expect(formatTime(new Date("invalid"))).toBe("—");
+  await i18n.changeLanguage("en");
 });

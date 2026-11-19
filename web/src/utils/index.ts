@@ -2,6 +2,7 @@ export {
   formatBytes,
   formatBytesRate,
   formatDateTime,
+  formatTime,
   formatDurationSeconds,
   formatLogEntries,
   formatPublishDate,

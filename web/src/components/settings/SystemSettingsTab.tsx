@@ -8,6 +8,7 @@ import { ClearImageCacheDocumentDocument, SystemSettingsTabDocument } from "../.
 import { SUPPORTED_LOCALES, isLocalePreference, type LocalePreference } from "../../i18n/locales";
 import { describeQueryError } from "../../services/queryError";
 import { formatBytes, formatDateTime } from "../../utils";
+import { ConfirmationDialog } from "../common/ConfirmationDialog";
 import { useSettingsAutosave } from "./useSettingsAutosave";
 import { FieldLabel, SettingsCard, SettingsSaveStatus, SettingsError, SettingsLoading } from "./SettingsTabCommon";
 import "../../styles/settings-system.scss";
@@ -22,6 +23,7 @@ export default function SystemSettingsTab() {
   const [{ fetching: clearing }, clearImageCache] = useMutation(ClearImageCacheDocumentDocument);
 
   const [confirming, setConfirming] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
 
   const initial = useMemo<SystemDraft>(() => ({ releaseTimezone: data?.settings.system.releaseTimezone ?? "auto", developerMode: data?.settings.system.developerMode ?? false, language: isLocalePreference(data?.settings.system.language) ? data.settings.system.language : "auto", enabled: data?.settings.system.imageCache.enabled ?? true, maxSizeMb: String(data?.settings.system.imageCache.maxSizeMb ?? 1024), retentionDays: String(data?.settings.system.imageCache.retentionDays ?? 30) }), [data]);
   const autosave = useSettingsAutosave("system", initial, value => ({system:{
@@ -41,7 +43,7 @@ export default function SystemSettingsTab() {
   const clear = async () => {
     const released = Number(image?.usedBytes ?? 0);
     const result = await clearImageCache({});
-    if (result.error) { pushToast("tone-danger", describeQueryError(result.error)); return; }
+    if (result.error) { setClearError(describeQueryError(result.error)); return; }
     setConfirming(false); pushToast("tone-success", released ? t("systemSettings.clearedBytes", { size: formatBytes(released) }) : t("systemSettings.cleared"));
     refresh();
   };
@@ -61,7 +63,9 @@ export default function SystemSettingsTab() {
       <label className="settings-field"><FieldLabel text={t("systemSettings.retention")} info={t("systemSettings.retentionInfo")} /><input type="number" min="1" max="365" value={form.retentionDays} onChange={(event) => setForm((current) => ({ ...current, retentionDays: event.target.value }))} /></label>
     </div>
     <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemSettings.usage", { size: formatBytes(Number(image?.usedBytes ?? 0)) })}</span><span>{t("systemSettings.images", { count: image?.entryCount ?? 0 })}</span><span>{t("systemSettings.cleanup", { time: formatDateTime(image?.lastCleanupAt) })}</span></div></div><button type="button" className="image-cache-management__clear" disabled={clearing || !image?.entryCount} onClick={() => setConfirming(true)}>{clearing ? t("systemSettings.clearing") : t("systemSettings.clear")}</button></div>
-    {confirming ? <div className="image-cache-confirm" role="alertdialog"><div><strong>{t("systemSettings.clearTitle")}</strong><p>{t("systemSettings.clearDescription", { count: image?.entryCount ?? 0, size: formatBytes(Number(image?.usedBytes ?? 0)) })}</p></div><div className="image-cache-confirm__actions"><button type="button" className="ghost-button" onClick={() => setConfirming(false)}>{t("systemSettings.cancel")}</button><button type="button" className="image-cache-confirm__submit" onClick={() => void clear()}>{t("systemSettings.confirm")}</button></div></div> : null}
+    {confirming ? <ConfirmationDialog title={t("systemSettings.clearTitle")} confirmLabel={t(clearing ? "systemSettings.clearing" : "systemSettings.confirm")} cancelLabel={t("systemSettings.cancel")} pending={clearing} error={clearError} onConfirm={() => { setClearError(null); void clear(); }} onCancel={() => { setConfirming(false); setClearError(null); }}>
+      <p>{t("systemSettings.clearDescription", { count: image?.entryCount ?? 0, size: formatBytes(Number(image?.usedBytes ?? 0)) })}</p>
+    </ConfirmationDialog> : null}
     {image?.lastError ? <p className="settings-feedback tone-danger">{image.lastError}</p> : null}
     </SettingsSubpanel>
     <SettingsSaveStatus {...autosave} />

@@ -1,3 +1,4 @@
+import { formatTime } from "../../utils";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -7,7 +8,7 @@ import { describeQueryError } from "../../services/queryError";
 import { Drawer } from "../layout/Drawer";
 
 export function IndexerLoginDialog({ input, name, onClose }: { input: IndexerLoginInput; name: string; onClose: () => void }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const login = useIndexerLogin(input);
   const [answer, setAnswer] = useState("");
   const [expired, setExpired] = useState(false);
@@ -53,7 +54,7 @@ export function IndexerLoginDialog({ input, name, onClose }: { input: IndexerLog
       {report.challenge?.imageData ? <img className="indexer-login__image" src={report.challenge.imageData} alt={t("indexerLogin.image")} onError={()=>setImageFailed(true)} referrerPolicy="no-referrer" /> : null}
       {imageFailed?<p role="alert">{t("indexerLogin.imageFailed")}</p>:null}
       <label className="settings-field"><span>{t("indexerLogin.answer")}</span><input ref={answerField} value={answer} onChange={event => setAnswer(event.target.value)} maxLength={1024} autoComplete="off" spellCheck={false} disabled={login.busy || imageFailed} /></label>
-      <p className="settings-note">{t("indexerLogin.expires", { time: new Date(report.expiresAt).toLocaleTimeString(i18n.resolvedLanguage) })}</p>
+      <p className="settings-note">{t("indexerLogin.expires", { time: formatTime(report.expiresAt) })}</p>
     </form> : null}
   </Drawer>, document.body);
 }

@@ -68,8 +68,7 @@
   &__actions { display: flex; gap: $space-2; }
 }
 
-.image-cache-management__clear,
-.image-cache-confirm__submit { @include danger-action-surface; }
+.image-cache-management__clear { @include danger-action-surface; }
 
 .log-list { display: grid; gap: $space-2; margin-top: $space-3; }
 .log-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: $space-2; padding: 10px $space-3; border: 1px solid var(--line); border-radius: $radius-lg; font-size: 12px; time { color: var(--muted); } code { white-space: pre-wrap; overflow-wrap: anywhere; } }
@@ -258,8 +257,8 @@
 .settings-connection-test { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .settings-connection-test__result {
   margin: 0; padding: 0; border: 0; background: transparent; font-size: 13px;
-  &.is-success { color: var(--success, #228454); }
-  &.is-failure { color: var(--danger, #c2412f); }
+  &.is-success { color: var(--success); }
+  &.is-failure { color: var(--danger); }
 }
 .settings-workspace .settings-order.settings-indexer-order {
   li { padding-inline: 4px; }

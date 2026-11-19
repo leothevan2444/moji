@@ -7,7 +7,7 @@ Moji 是自托管的 Stash 自动化伴侣：跟踪演员与发行，通过索�
 1. 查看 `git status --short` 和近期提交，保留已有改动；核对任务涉及的实现与测试。
 2. 所有改动遵守 [工程规范](standards/engineering.md)；涉及界面、文案或用户流程，先读 [产品体验规范](standards/product.md)。规范约束新增与重构，不能以旧实现中的不良模式作为新增依据。
 3. 阅读 [架构地图](architecture.md)，再按下表读取相关模块。普通局部修改无需通读全部历史复核。
-4. 需要选择后续工作时读 [TODO](TODO.md)；当前一致性治理见 [2026-11-19 Stage1 复核](reviews/2026-11-19-consistency.md)；历史架构与全项目验证由该复核链接，不能将旧结论直接当作当前任务。用户当前任务优先于 TODO 的建议顺序。
+4. 需要选择后续工作时读 [TODO](TODO.md)；最近治理见 [2026-11-19 Stage2 视觉与交互复核](reviews/2026-11-19-ui-consistency.md)，文档整理见 [Stage1](reviews/2026-11-19-consistency.md)；历史架构与全项目验证由该复核链接，不能将旧结论直接当作当前任务。用户当前任务优先于 TODO 的建议顺序。
 5. 按 [开发与验证](workflows/development.md) 完成改动和适当检查；跨会话任务按 [阶段复核与交接](workflows/review.md) 留下证据和下一步。
 
 | 任务 | 按需阅读 |

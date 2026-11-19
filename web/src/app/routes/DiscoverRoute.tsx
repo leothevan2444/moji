@@ -15,6 +15,7 @@ import { useSearchHistory } from "../../hooks/useSearchHistory";
 import { parseDiscoverSearchParams, serializeDiscoverSearchParams } from "../searchParams";
 import { DISCOVERY_PAGE_SIZE, DISCOVER_SORT_OPTIONS, INDEXER_SORT_OPTIONS } from "../../constants";
 import { DiscoverSortBy, TorrentSearchSort, TorrentSearchState, type DiscoverScenesDocumentQuery } from "../../graphql/generated/graphql";
+import { formatDateTime } from "../../utils";
 import { describeQueryError } from "../../services/queryError";
 import type { AppOutletContext } from "../AppLayout";
 import "../../styles/filter-panel.scss";
@@ -104,7 +105,7 @@ export function Component() {
           {torrents.error || preview.error ? <p className="inline-error">{describeQueryError(torrents.error ?? preview.error)}</p> : null}
           {snapshot?.errorCode ? <p className="inline-error">{t(`indexerErrors.${snapshot.errorCode}`, { defaultValue: t("indexerErrors.INDEXER_SEARCH_INCOMPLETE") })}</p> : null}
           {snapshot?.truncated ? <p>{t("torrentSearch.truncated")}</p> : null}
-          {snapshot?.sites.length ? <details className="torrent-search__sites"><summary>{t("torrentSearch.sites")}</summary><ul>{snapshot.sites.map(site => <li key={site.instanceId}><strong>{site.name}</strong> · {t(`torrentSearch.siteStates.${site.state}`)}{site.cacheHit ? ` · ${t("torrentSearch.cached")}` : ""}{site.fetchedAt ? ` · ${new Date(site.fetchedAt).toLocaleString()}` : ""}{site.errorCode ? <span className="inline-error"> · {t(`indexerErrors.${site.errorCode}`, { defaultValue: t("indexerErrors.INDEXER_REQUEST_FAILED") })}</span> : null}</li>)}</ul></details> : null}
+          {snapshot?.sites.length ? <details className="torrent-search__sites"><summary>{t("torrentSearch.sites")}</summary><ul>{snapshot.sites.map(site => <li key={site.instanceId}><strong>{site.name}</strong> · {t(`torrentSearch.siteStates.${site.state}`)}{site.cacheHit ? ` · ${t("torrentSearch.cached")}` : ""}{site.fetchedAt ? ` · ${formatDateTime(site.fetchedAt)}` : ""}{site.errorCode ? <span className="inline-error"> · {t(`indexerErrors.${site.errorCode}`, { defaultValue: t("indexerErrors.INDEXER_REQUEST_FAILED") })}</span> : null}</li>)}</ul></details> : null}
         </> : null}
         <SortAndPagination sortValue={mode === "stashbox" ? stashSort : torrentSort} sortOptions={mode === "stashbox" ? DISCOVER_SORT_OPTIONS : INDEXER_SORT_OPTIONS}
           onSortChange={value => { if (!preview.busy) void move(1, String(value).toLowerCase().replaceAll("_", "-")); }} page={page} totalPages={pages} total={total}

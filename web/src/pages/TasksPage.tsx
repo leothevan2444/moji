@@ -1,5 +1,6 @@
 import { TaskGroupSection } from "../components/tasks";
 import {
+  formatTime,
   taskGroup,
   taskGroupTone,
   taskBatchEligibility,
@@ -225,7 +226,7 @@ export function TasksPage({
       </div> : null}
       {autoSyncIntervalSeconds > 0 || lastRefreshedAt ? <p className="task-sync-meta">
         {autoSyncIntervalSeconds > 0 ? t("taskBatch.autoSyncOn", { seconds: autoSyncIntervalSeconds }) : null}
-        {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: lastRefreshedAt.toLocaleTimeString() })}` : ""}
+        {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: formatTime(lastRefreshedAt) })}` : ""}
       </p> : null}
 
       {!visibleTasks.length ? (

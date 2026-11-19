@@ -1,9 +1,9 @@
 @use "tokens" as *;
 
 .home-workspace, .home-check-list {
-  --home-success: light-dark(#0f766e, #5eead4);
-  --home-warning: light-dark(#a45313, #fdba74);
-  --home-error: light-dark(#c2412f, #fca5a5);
+  --home-success: var(--success);
+  --home-warning: var(--warning);
+  --home-error: var(--danger);
 }
 .home-workspace {
   display: grid;

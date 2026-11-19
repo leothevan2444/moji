@@ -21,6 +21,10 @@
   --accent: #2563eb;
   --accent-2: #0f766e;
   --accent-3: #475569;
+  --success: #0f766e;
+  --danger: #c2412f;
+  --warning: #a05d18;
+  --info: #3b5f89;
   --shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
   --shadow-soft: 0 8px 18px rgba(15, 23, 42, 0.05);
   --button-bg: #e2e8f0;
@@ -45,6 +49,10 @@
   --accent: #60a5fa;
   --accent-2: #14b8a6;
   --accent-3: #94a3b8;
+  --success: #5eead4;
+  --danger: #fca5a5;
+  --warning: #fdba74;
+  --info: #93c5fd;
   --shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
   --shadow-soft: 0 8px 18px rgba(0, 0, 0, 0.3);
   --button-bg: #1f2a44;
@@ -61,7 +69,7 @@
 [data-theme="dark"] .status-pill__value--success,
 [data-theme="dark"] .log-line--success,
 [data-theme="dark"] .toast-card__progress--success {
-  color: #5eead4;
+  color: var(--success);
 }
 [data-theme="dark"] .performer-scene-card__upcoming.tone-info,
 [data-theme="dark"] .toast-card__label.tone-info,
@@ -69,7 +77,7 @@
 [data-theme="dark"] .status-pill__value--info,
 [data-theme="dark"] .log-line--info,
 [data-theme="dark"] .toast-card__progress--info {
-  color: #93c5fd;
+  color: var(--info);
 }
 [data-theme="dark"] .performer-scene-card__upcoming.tone-warn,
 [data-theme="dark"] .toast-card__label.tone-warn,
@@ -77,7 +85,7 @@
 [data-theme="dark"] .status-pill__value--warn,
 [data-theme="dark"] .log-line--warn,
 [data-theme="dark"] .toast-card__progress--warn {
-  color: #fdba74;
+  color: var(--warning);
 }
 [data-theme="dark"] .toast-card__label.tone-danger,
 [data-theme="dark"] .task-status-error span,
@@ -88,7 +96,7 @@
 [data-theme="dark"] .task-status-error.tone-warn,
 [data-theme="dark"] .inline-error,
 [data-theme="dark"] .task-error {
-  color: #fca5a5;
+  color: var(--danger);
 }
 [data-theme="dark"] .log-line {
   color: #cbd5e1;
@@ -99,7 +107,7 @@
   :root:not([data-theme="light"]) .status-pill__value--success,
   :root:not([data-theme="light"]) .log-line--success,
   :root:not([data-theme="light"]) .toast-card__progress--success {
-    color: #5eead4;
+    color: var(--success);
   }
   :root:not([data-theme="light"]) .performer-scene-card__upcoming.tone-info,
   :root:not([data-theme="light"]) .toast-card__label.tone-info,
@@ -107,7 +115,7 @@
   :root:not([data-theme="light"]) .status-pill__value--info,
   :root:not([data-theme="light"]) .log-line--info,
   :root:not([data-theme="light"]) .toast-card__progress--info {
-    color: #93c5fd;
+    color: var(--info);
   }
   :root:not([data-theme="light"]) .performer-scene-card__upcoming.tone-warn,
   :root:not([data-theme="light"]) .toast-card__label.tone-warn,
@@ -115,7 +123,7 @@
   :root:not([data-theme="light"]) .status-pill__value--warn,
   :root:not([data-theme="light"]) .log-line--warn,
   :root:not([data-theme="light"]) .toast-card__progress--warn {
-    color: #fdba74;
+    color: var(--warning);
   }
   :root:not([data-theme="light"]) .toast-card__label.tone-danger,
   :root:not([data-theme="light"]) .task-status-error span,
@@ -126,7 +134,7 @@
   :root:not([data-theme="light"]) .task-status-error.tone-warn,
   :root:not([data-theme="light"]) .inline-error,
   :root:not([data-theme="light"]) .task-error {
-    color: #fca5a5;
+    color: var(--danger);
   }
   :root:not([data-theme="light"]) .log-line {
     color: #cbd5e1;
@@ -149,6 +157,10 @@
   --accent: #2563eb;
   --accent-2: #0f766e;
   --accent-3: #475569;
+  --success: #0f766e;
+  --danger: #c2412f;
+  --warning: #a05d18;
+  --info: #3b5f89;
   --shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
   --shadow-soft: 0 8px 18px rgba(15, 23, 42, 0.05);
   --button-bg: #e2e8f0;
@@ -175,6 +187,10 @@
     --accent: #60a5fa;
     --accent-2: #14b8a6;
     --accent-3: #94a3b8;
+    --success: #5eead4;
+    --danger: #fca5a5;
+    --warning: #fdba74;
+    --info: #93c5fd;
     --shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
     --shadow-soft: 0 8px 18px rgba(0, 0, 0, 0.3);
     --button-bg: #1f2a44;

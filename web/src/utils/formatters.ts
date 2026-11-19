@@ -8,12 +8,14 @@ function activeLocale() {
 const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
 const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
 
-function dateTimeFormatter(style: "full" | "date" | "compact" = "full") {
+function dateTimeFormatter(style: "full" | "date" | "compact" | "time" = "full") {
   const locale = activeLocale();
   const key = `${locale}:${style}`;
   let formatter = dateTimeFormatters.get(key);
   if (!formatter) {
-    formatter = new Intl.DateTimeFormat(locale, style === "compact"
+    formatter = new Intl.DateTimeFormat(locale, style === "time"
+      ? { hour: "2-digit", minute: "2-digit", second: "2-digit" }
+      : style === "compact"
       ? { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }
       : style === "date"
       ? { month: "short", day: "numeric" }
@@ -55,6 +57,13 @@ export function formatDateTime(value?: string | null, style: "full" | "compact" 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return dateTimeFormatter(style).format(date);
+}
+
+export function formatTime(value?: string | Date | null) {
+  if (!value) return "—";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return typeof value === "string" ? value : "—";
+  return dateTimeFormatter("time").format(date);
 }
 
 export function formatLogEntries(entries: LogsDocumentQuery["logs"]) {

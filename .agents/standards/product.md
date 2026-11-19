@@ -32,10 +32,10 @@
 
 | 设计要素 | 现有权威来源与规则 |
 | --- | --- |
-| 颜色、主题、字体 | [theme.css](../../web/src/styles/theme.css) 的 surface/text/muted/line/accent 等变量；浅色与深色同时成立 |
+| 颜色、主题、字体 | [theme.css](../../web/src/styles/theme.css) 的 surface/text/muted/line/accent 及 success/danger/warning/info 等变量；浅色与深色同时成立 |
 | 间距、圆角、动效、层级 | [_tokens.scss](../../web/src/styles/_tokens.scss)、[_mixins.scss](../../web/src/styles/_mixins.scss)；沿用 4/8/12/16/20/24 间距阶梯及现有层级 |
 | 设置外壳、分区、字段与保存反馈 | [SettingsPanels](../../web/src/components/settings/SettingsPanels.tsx)、[SettingsTabCommon](../../web/src/components/settings/SettingsTabCommon.tsx)、[settings-shell.scss](../../web/src/styles/settings-shell.scss) 与 settings 样式 |
-| 抽屉、确认、焦点 | [Drawer](../../web/src/components/layout/Drawer.tsx)、[useModalFocus](../../web/src/hooks/useModalFocus.ts)、现有确认组件 |
+| 抽屉、确认、焦点 | [Drawer](../../web/src/components/layout/Drawer.tsx)、[useModalFocus](../../web/src/hooks/useModalFocus.ts)、[ConfirmationDialog](../../web/src/components/common/ConfirmationDialog.tsx)；需要缓存清理确认时复用该组件 |
 | 图片、候选链接、种子状态 | 复用 SceneArtwork、TorrentCandidateLinks、CandidateSeeders 与统一 qB 状态映射；入口见 Web 模块 |
 
 - 中性背景和文字承载主体信息，强调色留给当前选择与主要动作；成功、关注、危险沿用已有语义色。一个局部动作区要有清晰的主次，不能让每个指标、按钮和标签都成为视觉焦点。

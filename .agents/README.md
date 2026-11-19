@@ -27,7 +27,7 @@ AGENTS.md                       仓库根：发现转发
     development.md              开发命令和验证矩阵
     review.md                   阶段复核和跨会话交接方法
   reviews/                      有日期、范围与代码基线的复核快照
-    2026-11-19-consistency.md    最近一致性复核；历史证据按链接读取
+    2026-11-19-ui-consistency.md 最近视觉/交互复核；历史证据按链接读取
   plans/performer-full-scan.md   尚未实现的功能设计
   references/agent-design.md     外部实践及本仓库的取舍
   scripts/check_docs.py          本地链接和结构检查
@@ -65,7 +65,7 @@ AGENTS.md                       仓库根：发现转发
 
 ## 当前阅读路径
 
-日常任务从主入口和架构地图进入当前模块，不要求通读历史复核。模块维护实际契约、共享能力和受影响验证入口；历史审查只在核对特定证据时读取。最新治理记录见[Stage1 复核](reviews/2026-11-19-consistency.md)，此前的已完成步骤由 Git 或有日期的验收快照保存。历史迁移授权不跨任务生效。
+日常任务从主入口和架构地图进入当前模块，不要求通读历史复核。模块维护实际契约、共享能力和受影响验证入口；历史审查只在核对特定证据时读取。最新治理记录见[Stage2 复核](reviews/2026-11-19-ui-consistency.md)，文档组织变更见[Stage1](reviews/2026-11-19-consistency.md)，此前的已完成步骤由 Git 或有日期的验收快照保存。历史迁移授权不跨任务生效。
 
 ## 文档验收
 

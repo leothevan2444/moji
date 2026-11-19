@@ -15,7 +15,7 @@ vi.mock("urql", () => ({
     return [{ fetching: false, error: null, data: { releaseReviews: {
       totalCount: 4, pendingCount: 4, failedCount: 0, page, pageSize: 2, totalPages: 2,
       performers: [{ id: "p1", name: "Actor" }],
-      items: ids.map(id => ({ key: id, code: id, title: `Movie ${id}`, status, vr: false, source: "stash-box:example", reasonCode: "group_behavior_review", seenAt: "2026-10-23T00:00:00Z", performers: [{ id: "p1", name: "Actor" }], performerNames: ["Actor"] }))
+      items: ids.map(id => ({ key: id, code: id, title: `Movie ${id}`, imageUrl: id === "one" ? "https://example.test/broken.jpg" : null, status, vr: false, source: "stash-box:example", reasonCode: "group_behavior_review", seenAt: "2026-10-23T00:00:00Z", performers: [{ id: "p1", name: "Actor" }], performerNames: ["Actor"] }))
     } } }, mocks.refresh];
   }
 }));
@@ -29,6 +29,15 @@ beforeEach(async () => { vi.clearAllMocks(); await i18n.changeLanguage("en"); })
 afterEach(cleanup);
 
 describe("release review actions", () => {
+  it("keeps a visible artwork fallback when the source image fails", async () => {
+    const view = setup();
+    const image = view.container.querySelector(".release-review__cover img")!;
+    expect(image).toBeTruthy();
+    fireEvent.error(image);
+    expect(view.container.querySelector(".release-review__cover img")).toBeNull();
+    expect(view.container.querySelectorAll(".release-review__cover .performer-scene-card__image-placeholder")).toHaveLength(2);
+  });
+
   it("submits the full cross-page selection and retains failed items", async () => {
     mocks.process.mockResolvedValue({ data: { processReleaseReviews: { succeededCount: 1, skippedCount: 0, failedCount: 1, results: [
       { key: "one", outcome: "SUCCEEDED", reasonCode: "UPDATED", release: { status: "DOWNLOADED", taskId: "task-1" } },

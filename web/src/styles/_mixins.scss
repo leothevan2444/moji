@@ -5,7 +5,7 @@ $semantic-tones: (
   "success": (
     border: rgba(15, 118, 110, 0.24),
     bg: rgba(15, 118, 110, 0.12),
-    color: #0f766e,
+    color: var(--success),
     strong: #1d8f68,
     weak: #0f766e,
     active-border: rgba(15, 118, 110, 0.38)
@@ -13,7 +13,7 @@ $semantic-tones: (
   "danger": (
     border: rgba(194, 65, 47, 0.22),
     bg: rgba(194, 65, 47, 0.12),
-    color: #c2412f,
+    color: var(--danger),
     strong: #dc5b44,
     weak: #c2412f,
     active-border: rgba(185, 56, 45, 0.32)
@@ -21,7 +21,7 @@ $semantic-tones: (
   "info": (
     border: rgba(71, 85, 105, 0.24),
     bg: rgba(71, 85, 105, 0.12),
-    color: #3b5f89,
+    color: var(--info),
     strong: #4f7db7,
     weak: #355c86,
     active-border: rgba(71, 85, 105, 0.36)
@@ -29,7 +29,7 @@ $semantic-tones: (
   "warn": (
     border: rgba(176, 107, 31, 0.24),
     bg: rgba(176, 107, 31, 0.12),
-    color: #a05d18,
+    color: var(--warning),
     strong: #d08a2f,
     weak: #b36b16,
     active-border: rgba(176, 107, 31, 0.34)
@@ -113,14 +113,14 @@ $semantic-tones: (
 }
 
 // Shared destructive action appearance.
-@mixin danger-action-surface($tone: "danger", $opacity: 0.72) {
+@mixin danger-action-surface($tone: "danger") {
   color: tone-value($tone, color);
-  border-color: rgba(185, 56, 45, 0.18);
-  background: rgba(254, 242, 242, $opacity);
+  border-color: color-mix(in srgb, tone-value($tone, color) 24%, var(--line));
+  background: color-mix(in srgb, tone-value($tone, color) 8%, var(--surface));
 
   &:hover {
-    border-color: tone-value($tone, active-border);
-    background: rgba(254, 226, 226, 0.9);
+    border-color: color-mix(in srgb, tone-value($tone, color) 38%, var(--line));
+    background: color-mix(in srgb, tone-value($tone, color) 14%, var(--surface));
   }
 }
 

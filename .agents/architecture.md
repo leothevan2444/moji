@@ -1,6 +1,6 @@
 # 项目定位与架构地图
 
-核对日期：2026-11-19；代码基线：`ec7b093`；状态：当前源码架构与边界。工程变更遵守 [工程规范](standards/engineering.md)，最新整理与局限见 [Stage1 复核](reviews/2026-11-19-consistency.md)。
+核对日期：2026-11-19；代码基线：`ec7b093`；状态：当前源码架构与边界。工程变更遵守 [工程规范](standards/engineering.md)，最近视觉与交互整理见 [Stage2 复核](reviews/2026-11-19-ui-consistency.md)，架构与文档校准见 [Stage1](reviews/2026-11-19-consistency.md)。
 
 ## 产品目标
 

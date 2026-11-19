@@ -1,3 +1,4 @@
+import { formatDateTime } from "../../utils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBinoculars } from "@fortawesome/free-solid-svg-icons/faBinoculars";
 import { faDownload } from "@fortawesome/free-solid-svg-icons/faDownload";
@@ -13,7 +14,7 @@ import { SettingsCard, SettingsError, SettingsLoading } from "./SettingsTabCommo
 import { describeQueryError } from "../../services/queryError";
 
 export function IndexerLibraryPanel() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const library = useIndexerLibrary();
   const [confirm, setConfirm] = useState<{ activeRevision: string; previousRevision: string } | null>(null);
   if (library.loading) return <SettingsLoading title={t("indexers.library")} />;
@@ -34,7 +35,7 @@ export function IndexerLibraryPanel() {
     {library.error ? <p role="alert" className="settings-feedback tone-danger">{describeQueryError(library.error)} <button onClick={library.refresh}>{t("common.retry")}</button></p> : null}
     <div className="indexer-library-summary">
       <p className={`indexer-library-status${status.activeRevision && !status.available ? " tone-danger" : ""}`}>{status.activeRevision ? status.available ? t("indexers.libraryReady", { count: manifest?.definitionCount ?? "—" }) : t("indexers.libraryDamaged") : t("indexers.libraryMissing")}</p>
-      {status.lastCheckedAt ? <p className="settings-note">{t("indexers.lastChecked", { time: new Date(status.lastCheckedAt).toLocaleString(i18n.language) })}</p> : null}
+      {status.lastCheckedAt ? <p className="settings-note">{t("indexers.lastChecked", { time: formatDateTime(status.lastCheckedAt) })}</p> : null}
     </div>
     {status.checkErrorCode ? <p role="alert" className="settings-feedback tone-danger">{t(`indexerErrors.${status.checkErrorCode}`, { defaultValue: t("indexers.checkFailed") })}</p> : null}
     {job ? <div className="indexer-job" role={active ? "status" : undefined} aria-live="polite">

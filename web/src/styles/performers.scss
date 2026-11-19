@@ -21,7 +21,7 @@
     &__footer { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 30px; justify-content: stretch; align-items: stretch; gap: 4px; min-width: 0; min-height: 0; margin-top: 0; }
     .performer-card-check-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; min-width: 0; height: 18px; }
     .profile-check-meta { min-width: 0; font-size: 11px; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .performer-card-error-button { flex: 0 0 auto; padding: 0; min-width: 0; min-height: 18px; border: 0; background: transparent; color: var(--danger, #b54332); font-size: 11px; line-height: 18px; cursor: pointer; }
+    .performer-card-error-button { flex: 0 0 auto; padding: 0; min-width: 0; min-height: 18px; border: 0; background: transparent; color: var(--danger); font-size: 11px; line-height: 18px; cursor: pointer; }
     .performer-card-error-button:hover { text-decoration: underline; }
     .profile-actions { grid-column: 2; grid-row: 1; display: flex; flex-wrap: nowrap; align-items: center; justify-self: end; min-width: 0; max-width: 100%; height: 30px; gap: 2px; }
     .performer-activity-icons { grid-column: 1; grid-row: 1; align-self: center; justify-self: start; font-size: 12px; }
@@ -78,7 +78,7 @@
   .performer-check-reason__icon { display: inline; }
   .performer-check-reason__label { display: none; }
   .performer-check-reason:hover { color: var(--text); text-decoration: underline; }
-  .performer-summary-metrics .tone-danger dd { color: var(--danger, #b54332); }
+  .performer-summary-metrics .tone-danger dd { color: var(--danger); }
   .performer-summary-note { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 14px; }
   .performer-scene-filters { display: grid; grid-template-columns: minmax(180px, 1fr) repeat(4, minmax(110px, 150px)) auto; }
   .performer-toolbar { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
