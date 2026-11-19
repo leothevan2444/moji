@@ -1,5 +1,7 @@
 # Database redesign implementation and acceptance
 
+> Historical snapshot / 历史快照：本文记录 2026-10-27 的调查或实施验收，版本、路径、授权和待办仅属于当时，不作为当前运行指令。当前存储与恢复见[数据库运维](database-operations.md)。
+
 Accepted objective: replace the fragmented database infrastructure with the reviewed durable-core / runtime-observation / rebuildable-cache design, complete non-destructive upgrades, migrate the real existing database without losing workflows, implement retention, backups and bounded database performance, and resume the workflow against the migrated data.
 
 Baseline commit: 89c5f25. The user has authorized implementation and migration and is stopping the running instance. Do not migrate the source database until the application is confirmed stopped, a verified durable backup exists, and the full migration has passed on a copy. Do not use the real qB/Stash endpoints in isolated restore tests.

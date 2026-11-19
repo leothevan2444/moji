@@ -1,7 +1,8 @@
 # Home workspace
 
 Home prioritizes operator attention, task progress, and discovery. Detailed
-service configuration remains available under an expandable status panel.
+service configuration is available from independent Indexers, Downloader and
+Stash panels. Reading Home does not start checks, searches or rule updates.
 
 ## Data boundaries
 
@@ -16,26 +17,26 @@ three most recently completed tasks with recorded ingest timestamps. The Home
 query does not materialize the full task table. JSON and memory stores retain
 compatible development behavior.
 
-`homeSubscriptionSummary` separately reads persisted subscription check health.
-Its counts and up to three affected performer IDs require no Stash catalogue
-or release-history read. A failed summary does not hide the rest of Home.
+`homeSubscriptionSummary` counts performers currently subscribed in Stash. It
+uses a narrow ID/custom-field membership query and local latest-check outcomes,
+without loading full actor metadata, releases or StashBox catalogues. Each actor
+counts once. Failed/interrupted latest checks are issues; an active check retains
+the previous completed outcome. Historical task-creation retry failures are
+separate. A failed membership read preserves prior UI values with an error.
 
-`homeSubscriptionChecks` is a separate bounded local projection of release-check
-runs: the full active count, three active and three recent run summaries, and the
-latest scheduled run. Each run includes at most three current actor names.
-`internal/subscription/home_checks.go` builds this projection independently of
-check execution; `home.resolvers.go` only maps it to the GraphQL contract.
-Full actor outcomes are fetched through `subscriptionCheck(id)` on demand.
+The My subscriptions card keeps a large subscription total, a smaller latest-issue
+count and the heading's management link. The issue count opens
+`/performers?filter=error`; pending first checks appear when applicable. A neutral
+History action sits at the right of the check-status row. Its left side shows
+scheduling and the next relative deadline while idle, or actor/progress details
+while active; narrow screens wrap that left content and retain the history entry.
 
-Home retains the large subscription total and the heading's management link,
-without showing subscription issues. First-check counts remain visible.
-The check panel shows automatic scheduling and the next deadline; its History
-button uses a success or warning icon and color for the latest retained finished
-scheduled run. Its title and accessible name include the result and timestamp.
-An active run does not replace that result. With no finished scheduled run, the
-button stays neutral. Active runs retain progress and actor names. Recent runs
-are available in the History drawer rather than repeated on Home.
-On narrow screens, release checks follow the subscription summary.
+`homeSubscriptionChecks` independently projects local run state: full active
+count, at most three active and three recent summaries, the latest scheduled run
+and at most three current actors per summary. The history drawer loads the
+latest finished scheduled result, statistics and additional history on demand;
+full outcomes use `subscriptionCheck(id)`. Counts and check state load and fail
+independently inside the same card.
 
 `latestFinishedScheduled` is separate from `latestScheduled`, which can be active.
 `statistics` counts successful, failed (including interrupted), and skipped actor

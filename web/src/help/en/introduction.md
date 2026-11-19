@@ -1,19 +1,17 @@
 # Introduction
 
-Moji is a self-hosted companion for Stash. It coordinates release discovery, torrent selection, qBittorrent downloads, delivery into a media library, and the final Stash scan.
+Moji is a self-hosted companion for Stash. It coordinates film discovery, resource selection, qBittorrent downloads, file delivery, and Stash scanning, generation, identification and verification.
 
-## What Moji manages
+## Data and responsibilities
 
-Moji stores its own download tasks and performer subscriptions. It searches metadata through the StashBox endpoints configured in Stash and searches torrents through Jackett. Completed downloads are mapped or delivered into a Stash library before Moji requests a Stash scan.
-
-Stash remains the source of truth for performers, library scenes, media paths, and presentation. qBittorrent remains the source of truth for torrent transfer state. Jackett remains responsible for indexer configuration and search availability.
+Stash stores performers, subscription markers and the media library; StashBox supplies film metadata. Moji stores check schedules, release decisions, download tasks and recovery state. qBittorrent handles BT transfers. Built-in indexers and optional Jackett provide resource searches.
 
 ## Main workflow
 
-1. Find a scene in **Discover** or under a performer.
-2. Create a task from structured metadata or a selected torrent.
-3. Let Moji source and monitor the qBittorrent download.
-4. Map or deliver the completed content to the library.
-5. Let Stash scan the resolved path.
+1. Find and confirm a StashBox film in **Discover** or performer details.
+2. Create an automatic sourcing task, or use a specified resource after confirming the film.
+3. Let Moji validate resources and monitor qBittorrent; uncertain files wait for your selection.
+4. Copy or move a single movie or its assembled parts into the library.
+5. Let Stash scan, generate and identify it. Moji verifies metadata and the exact StashBox association before completing the task.
 
-Moji marks the task complete only after the associated Stash scan job completes.
+Download or scan completion alone does not complete the task. Blocked tasks retain their cause and can resume from the affected step after it is resolved.

@@ -4,7 +4,7 @@ Home is the daily workspace: see what needs attention, follow task progress, or 
 
 ## Search and overview
 
-Choose **Find movies** (StashBox) or **Find resources** (Jackett). Submitting opens Discover with the query and source preserved. Press `/` to focus the search field.
+Choose **Find movies** (StashBox) or **Find resources** (built-in or Jackett indexers). Submitting opens Discover with the query and source preserved. Press `/` to focus the search field.
 
 Each metric opens its corresponding task list:
 
@@ -25,7 +25,7 @@ In progress shows up to five tasks. Download percentages use real progress; othe
 
 ## Subscriptions and Stash
 
-The subscription summary shows the subscribed total and first checks still pending, with a management entry. Release checks show the schedule, progress, latest result and retained statistics separately. Reading Home does not trigger subscription checks.
+My subscriptions shows the subscribed total, latest-check issue count and pending first checks when applicable, with management in the heading. Open the issue count to view subscribed performers whose latest check failed. The status row shows scheduling or current actors and progress; History opens the latest scheduled result, statistics and run details. Counts and check status load independently. Reading Home does not trigger checks.
 
 The Stash panel shows connection status, version, scene count, and Moji tasks awaiting a Stash scan. It provides connection settings, a status refresh, and a link to open Stash. Unknown measurements appear as a dash; failed status reads retain the last observations without presenting the connection as healthy. Delivery paths remain in Stash settings.
 

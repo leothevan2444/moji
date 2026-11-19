@@ -1,154 +1,83 @@
 # Web UI 与交互约定
 
-索引器管理区分“添加”（保存实例）与“启用”（参与搜索）。目录保留已添加规则并显示启用状态，允许明确添加另一个账号/镜像配置；未添加、无声明式登录流程的公开规则可用“添加并启用”保存默认配置。站点和外部 Jackett 启用状态复用 SettingsSwitch 与现有 switch 样式，组件显式引入样式，不依赖先访问其他设置页。站点隐私类型使用红色 private、绿色 public、黄色 semi-private 背景标签，并提供文字和深色主题对照。CRUD 使用有 accessible name/title 的 FontAwesome 图标；移除仍须确认。规则 loginSupported 为 false 时不显示登录入口，不能以 public/private 推断登录能力。
+核对日期：2026-11-19；代码基线：`ec7b093`；状态：当前源码契约。跨页面体验要求统一见[产品规范](../standards/product.md)，这里定位已有能力与数据边界。
 
-站点目录和移除确认通过 body Portal 挂载，避免设置卡片的裁剪/定位上下文遮挡。useIndexerReorder 以可见手柄启动桌面原生拖拽；原生鼠标 dragstart 后的 pointercancel 不撤销拖拽，仅取消正在捕获的触摸/笔流程。保留移动触摸、键盘上下按钮和保存期间禁用；排序仍通过窄命令持久化配置版本。浏览器回归使用真实鼠标/触摸，并检查 switch 轨道/隐藏原生输入的实际样式，而不只断言控件 role。
+主要源码：[路由](../../web/src/app/routeConfig.tsx)、[providers](../../web/src/app/AppProviders.tsx)、[客户端](../../web/src/graphql/client.ts)、[缓存](../../web/src/graphql/cache.ts)、[布局](../../web/src/app/AppLayout.tsx)。React/Router、urql、graphql-ws 与 i18next 沿现有体系使用，不引入第二套状态或界面框架。
 
-Home 索引器区显示当前已确认启用站点、所选区间的逐站搜索次数/成功率/平均搜索耗时和保留记录数；搜索统计区间提供 24h/72h/两周，默认 72h。启用站点和保留记录数不随区间筛选，启用站点始终显示当前目录中实际启用数量的纯数字，不显示“至少”或“待确认”；Jackett 目录由后端在启动后与配置变更时自动加载，成功后通过目录事件更新数量；区间切换只清空待返回的搜索指标，保留已知站点数和历史总量。空样本使用明确说明和破折号，不把空样本成功率显示为 0%，也不把启用站点挂在统计时间 tooltip 下。管理入口在右上角，底部打开执行记录。站点错误和规则作业详情归设置，不再由主页投影或订阅规则作业。已有索引器事件负责合并重读，刷新/恢复可见性继续读取当前快照。
-
-站点 Item 不重复展示错误正文；历史按钮按最近 10 次实际搜索/取种显示红色（最新失败）或黄色（最新成功但窗口内有失败）。缓存命中、合并等待者和主动取消不改变实际执行历史；颜色附带失败数的可访问文字。历史、图标与统计统一读取执行表，不再合并独立近期快照或聚合计数。历史完整保留近 14 天，另保护每个已配置站点最近 10 次有效执行，无全局条数上限；被保护的旧记录可查阅。旧报告若缺少可靠独立搜索耗时，显示原记录耗时，主页平均耗时只计算已有的可靠耗时样本，无样本或均值为零显示 "-"，不展示缺失耗时说明。未发起站点请求的记录有明确标识。执行记录窗口的 scrollport 向两侧延伸到面板内边框，内容保留原 padding；在列表中直接显示上下文，长标识缩写且可复制完整值，保留提示为小号灰字。站点/结果/操作/时间与文本搜索均由后端先筛选再分页，显示总匹配数；筛选改变重置游标。
-
-内置站点编辑器“高级设置”已接额外可信来源。原始多行草稿参与离开保护；格式/16 项限制错误阻止保存和测试，已保存来源回填，修改时显式替换，清空时提交 []，未编辑不提交。测试复用当前草稿但不保存。站点编辑器与放弃确认 Portal 挂载，标题和保存栏有视口断言；textarea 使用现有主题输入样式，来源在 RTL 下仍从左到右显示。中英文案和帮助说明凭据授权、Cookie 域规则、内网边界及已接受任务保留固定参数。
-
-保存的内置站点通过 IndexerLoginDialog/useIndexerLogin 登录；外部 Jackett 仍由 Jackett 管理。挂载仅 network-only 读取待回答挑战，begin/answer/cancel 均由明确操作触发。窗口关闭后空闲挑战可重开/刷新恢复；答案提交即清空，不写本地存储或设置。当前实例/配置作用域变化中止旧请求并丢弃迟到结果，响应的实例/配置/挑战 ID 也校验归属。到期只改变界面，不轮询/自动重登；重新登录先清理旧流程，取消可中止在途回答，旧成功不能覆盖取消状态。取消已过期流程是幂等成功。验证码为文本或本站 API 投影的图片，图片加载失败提供重登，长站点名换行；新面板复用 Portal/模态焦点栈与固定操作栏。规则无独立登录流程只说明无需单独登录，不推断无需凭据。
-
-站点列表和内置站点编辑器通过 IndexerTestDialog/useIndexerCheck 显式调用 testIndexer；编辑器传递与保存相同的当前稀疏草稿，测试不保存配置。默认只检查配置/认证，搜索需关键词，资源获取单独选择并提示配额；每阶段分别显示，Jackett 认证保持未单独验证，未执行搜索不显示零结果。输入、草稿或范围改变立即清除旧结果并中止在途请求；停止/关闭及迟到结果受请求归属保护，不自动测试。面板通过 body Portal 避开设置页层叠/裁剪，使用已有模态焦点栈，关闭后恢复编辑草稿与焦点。
-
-规则库面板的 IndexerDefinitionPolicy 区域通过 useIndexerDefinitionPolicy 读取 network-only 配置并订阅配置事件，编辑器复用 useSettingsAutosave 的串行稀疏 patch、准确确认 revision 与草稿保护。检查周期为 1–168 小时，自动应用默认关闭；策略保存不会安装规则或立即发起检查。冲突后保留输入，只有确认载入当前设置才丢弃草稿。源/schema 是只读固定属性，活动版本继续来自 manifest/core 状态。
-
-旧 Jackett 搜索/预览/目录/阻塞候选操作及缓存类型已移除，设置策略编辑器只负责任务、资源规则与 Stash 元数据三个实际路由。索引排序使用当前站点管理面板及其 reorder hook，旧无路由分支和排序组件已删除。2026-11-14 按用户确认将首页运行状态彻底替换为 HomeStash，与索引器、下载器同级：连接、版本、影片数、Moji 待扫描任务数；顶部设置及局部刷新，底部打开 Stash。首次成功观测前数字为未知，失败保留最近数据但不标健康；无独立详情、任务推进或交付配置行。任务处理开关及全站暂停提示、相关查询和文案已删除；后台随应用启动持续运行，设置只调整检查间隔。HomeIndexers 和 HomeDownloader 继续分别持有真实索引与下载观测。
-
-任务选源由 useTaskIndexerSearch 管理 URL/操作，TaskIndexerSearch 表达交互，手动磁力和上传路径保留。sourcingTask/run/page/sort 保存恢复范围，参数更新保留原列表参数和 backgroundLocation；刷新不重搜。首次打开沿用自动搜索，服务端按任务与范围复用 run；外任务结果不可选择，过期不隐式重跑。选择只提交 ID 与当前 revision，错误保留候选并有界回读最新任务；已接收提示不宣称下载完成。桌面选源抽屉使用稳定视口高度，避免异步结果改变面板位置。Home 搜索发送统一 indexers 模式，旧 session 的 jackett 值在读取时转换。usePreparedTorrentDownload 管理显式准备、取消、失效和作用域保护；发现/任务候选共用 PreparedTorrentDownloadActions。种子由本站短期 attachment 下载；磁力通过本站准备附件读取后展示原生链接，界面不跳到私有定位 URL。过期只移除当前入口，不自动获取；准备失败保留候选和任务选择。
-
-2026-11-02 发现页已迁移到持久资源搜索：索引器模式汇总内置/Jackett，本地统一目录选择范围，明确 start 才发起搜索；run ID/范围/排序/页码进 URL，刷新、返回、过期和取消均按服务器状态恢复。候选只传 searchID/candidateID 和用户确认的番号入队，不回传标题/URL 替换来源。新增 previewTorrentSelection mutation，从终态 run 一致读取最多 1000 条服务端候选后交现有 taskruntime 规则预览，再排序分页；跨页 LOCK、未知与零值、空预览及资源归属均保留。文件预览明确触发、沿用检查预算与原始数据缓存，刷新不隐式获取；旧结果为空不回退原始候选。旧 Jackett 搜索/预览/目录 hooks 和筛选组件已无生产消费者并删除。StashBox 创建流程保留，任务抽屉已迁移，服务器下载句柄及其显式界面入口已接线。
-
-2026-11-02 搜索数据层已新增 torrent-search 操作源、useTorrentSearch 与 useTorrentSearchEvents；挂载/刷新/重连只读取已有 run，显式 start 才创建工作，取消回读真实状态，入队绑定当前 run。通知按 run/stream/sequence 过滤，200ms 合并定向回读；切换 run 清理旧计时器，旧操作结果不能替换新 run 的错误。Graphcache 将分页 run 作为独立快照嵌入，避免相同 ID 的不同页面互相覆盖。中英错误及导出 locale 已更新。发现页和任务抽屉均已切换到这些 hook；界面验证按最新阶段证据。
-
-手动选种的 TorrentSearchProgress 默认折叠站点明细，摘要显示搜索状态、已结束/总站点数及非零的搜索中、等待、异常计数；“已结束”包含失败、取消、中断和未执行，不等于成功。异常计数覆盖失败、中断、部分结果或错误码。取消操作与摘要同行，移动端位于右上方。摘要没有额外外边距，仅保留下边界；部分结果在状态旁用“结果不完整”小字表示，完整说明在展开后显示。站点明细采用中性圆角边框、54px 固定高度卡片，多列自适应、列表最高 240px 并局部滚动；名称单行省略并通过 title 保留全文，显示来源、实际状态、结果数和缓存命中。失败文案与感叹号为红色，悬停或聚焦显示错误原因，点击或 Enter/空格复制站点名、原因与错误码；复制成功/失败通过现有全局 Toast 通知反馈，不改 tooltip 文案、不展开卡片。失败状态使用点击指针；Tooltip 区分鼠标点击焦点和键盘焦点，鼠标点击后移出即关闭，键盘聚焦仍可查看并用 Escape 关闭。Tooltip 从设置说明提取到 common，共用 Portal、视窗边界定位和 Escape 行为。磁力/文件面板不显示介绍 hint。更新沿用服务端搜索快照，不重新发起搜索；同一 run 保留展开状态，新 run 默认折叠。视觉与交互证据见 torrent-search-progress.spec.ts 和 task-torrents.spec.ts。
-
-手动选种的磁力/文件入口与候选区分别使用圆角边框；候选的显式获取与就绪下载链接和站点详情同排。PARTIAL 搜索在该界面显示“搜索完成”，保留小字异常结果说明。站点与标题关键词筛选由 torrentSearch 的 instanceId/candidateQuery 参数作用于整次已保留的结果，先匹配再排序分页；关键词不区分大小写，空白分词后全部按字面包含匹配，最多 512 字符。Site.candidateCount 是当前关键词匹配、忽略已选站点的实际保留候选数，不复用上游报告数。筛选回显 filterInstanceId/candidateQuery 隔离迟到结果，筛选、排序和页码保存在任务作用域 URL，独立参数更新合并最新导航意图；改筛选回第一页，不发起新的站点搜索。页码控件使用数字、首尾页和省略号，分页期间保留同筛选的总数与导航；重新搜索清除筛选。无关键词仍使用 SQL 分页；关键词匹配只读已有最多 1000 条的有界集合，不增加数据库迁移。跨页/快速筛选/刷新与链接同行回归见 manual-candidate-filters.spec.ts。
-
-最近边界核对：2026-11-01，代码基线 `71ef6fa`；功能实现证据见文内日期专项。
-
-索引器第四页签“网络与缓存”沿用 ?panel=cache。缓存开关、成功/空结果保留时间及容量上限支持聚合状态、全部/指定站点清理及确认。IndexerNetworkPanel 直接展示代理和 FlareSolverr 两个全局区域，各有启用开关，所有内置站点共用；已删除网络档案 CRUD、编辑/删除 Drawer、站点网络选择及其 schema/hooks/样式/文案。代理 URL 含协议，用户名和密码单独编辑；密码只写，留空保留、显式清除。FlareSolverr 区域提供 Max Timeout (ms)，对应 network.flaresolverr.max_timeout_ms，默认 90000、范围 1000–300000，统一限制排队和完整调用，协议 maxTimeout 使用剩余毫秒数；不超过当前操作截止。关闭开关保留字段值；代理、solver 及两项连接超时共用 useSettingsAutosave 的 500ms 合并和串行队列，updateIndexerNetwork 一次原子保存，不再提供手动保存按钮或独立超时 mutation/组件。草稿沿用 SettingsAutosaveProvider 保留，失败显示 SettingsSaveStatus 并可重试；配置冲突只有明确确认载入当前设置才丢弃输入。用户名/密码有 placeholder 及留空语义 tooltip：空用户名清除，空密码不加入 patch 并保留原值，清除密码需明确操作。保存范围和外部浏览器信任边界保持不变。配置为 v4，删除的 YAML 档案字段明确拒绝，不提供自动迁移。修改后的全局网络影响新搜索与新来源准入，已接收任务保留冻结传输参数。CACHE 仅刷新缓存区，网络区响应 CONFIGURATION/重连，不新增轮询。独立 challenge_timeout_seconds 已移除并拒绝，不提供自动转换；请求/站点超时通过 FieldLabel 说明，FlareSolverr 字段沿用 settings-form 间距。缓存卡片标题复用 SettingsSwitch，三项参数并排，四项统计紧凑排列，清理范围与清理/刷新操作独立一行；代表性真实服务验收与未测环境限制见 [完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
-
-规则库沿用 SettingsCard：安装/检查/更新/修复/回滚操作置于标题栏，FontAwesome 图标搭配现有按钮文字；安装状态与上次检查时间紧凑排列，版本与规则格式继续通过 details 展开。更新作业以紧凑分隔区展示真实状态、下载量和取消操作，错误及关联标识仍可查看。更新策略使用同级 h4、settings-field、SettingsSwitch 和 SettingsSaveStatus；周期与自动应用开关在桌面并排、窄屏纵排，作用范围说明收进 FieldLabel 的统一 tooltip。保留原自动保存、冲突保护、安装流程、回滚确认和实时作业恢复行为。
-
-站点观测由 Home 的 components/indexers/IndexerObservationView 显示，搜索和取种分别保留上次结果、真实时间、稳定原因、等待时间及按需关联标识；设置站点项不再显示错误和运行记录。Home 成功计数只表示上次搜索成功，不代替取种/完整下载成功；无匹配配置/规则观测与观测存储不可读分别表达。观测组件独立加载样式，现有事件触发局部回读，不增加轮询。
-
-2026-11-02 索引器事件：Home 和索引器设置页复用 useIndexerEvents，接收仅含 streamId/sequence/kind 的失效通知，200ms 合并重读局部快照；新流/序号缺口/重连不依赖历史重放，离开取消待处理定时器。规则事件复用同一 Home 合并入口；操作级订阅失败局部呈现，重试同时补读和重开失败订阅。配置/目录/搜索及取种完成通知已接线；健康观测见上段，Home 已显示当前失败/中断规则作业并链接规则库。
-
-2026-11-02 Home 索引器基础接线：HomeIndexers 与 HomeDownloader 同级，系统详情只保留 Stash/交付；HomeServiceStatus 不再取固定 Jackett 状态及两者冗余统计，首次配置不要求 Jackett。新增独立有界本地概况查询，显示启用内置站点、最多五项配置/规则异常及配置且启用的外部网关；未知目录不当 0，过期保留最后确认数与时间。hook 保留最近成功内容，规则/配置/目录/运行状态事件合并刷新、重连及重新可见补读，没有新增定时轮询；规则失败作业入口已补齐。完整验收与限制见 [完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
-
-2026-11-02 索引器管理：站点、规则库、外部 Jackett 入口已接真实管理 API；旧 queryOrder 参数仍可进入统一站点排序。IndexerManagementProvider 共享站点直读与规则订阅，安装/修复和连接保存后刷新站点；设置客户端无 graphcache，不能只配置全局缓存更新。动态凭据仅提示已配置，未提交保留、显式清除；编辑离开保护、目录分页、拖动/触摸/键盘移动、规则作业刷新恢复及跨进程 streamId 边界有测试。测试/登录挑战与 Home 健康的功能验收已完成，实际范围与限制详见 [完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
-
-新增、重构、修复与文案修改必须遵守 [产品体验规范](../standards/product.md) 和 [工程规范](../standards/engineering.md)。本文件描述当前 Web 契约与功能证据，具体控件/视觉/文案的通用要求只在规范中维护。当前样式或旧截图不是保留无效文案、另造设计或跳过产品复核的理由。
-
-主要源码：[路由](../../web/src/app/routeConfig.tsx)、[providers](../../web/src/app/AppProviders.tsx)、[GraphQL client](../../web/src/graphql/client.ts)、[graphcache](../../web/src/graphql/cache.ts)、[AppLayout](../../web/src/app/AppLayout.tsx)。
-
-## 结构与入口
-
-React 19、React Router 7、TypeScript、Vite、urql graphcache、graphql-ws、i18next；组件/styles 沿用当前体系，不引入并列页面框架或第二个全局实体缓存。
+## 路由与共享入口
 
 | URL / 入口 | 职责 |
 | --- | --- |
-| `/` | 注意事项、任务进度、完成与检查摘要、下载器和依赖状态 |
-| `/tasks`、`/tasks/:taskId`、`/tasks/:taskId/resolve` | 有界任务列表、详情、寻源干预和处理台 |
-| `/performers`、`/performers/:performerId` | 演员、订阅、检查和场景选择 |
-| `/performers/review` | 发行决定，放在动态 performer 路由前 |
-| `/discover` | StashBox 与 Jackett 发现和手动创建 |
-| `/stats` | 统计入口 |
-| `/settings/:section` | 分区设置；`/settings` 跳索引器；旧 connections/ingest/automation 路由分别重定向 indexers/stash/tasks |
-| 帮助、种子列表、数据库性能 | 共享抽屉/弹窗；性能入口需已保存开发者模式 |
+| `/` | 注意任务、进度、订阅与检查、索引器、下载器和 Stash |
+| `/tasks`、`/tasks/:taskId`、`/tasks/:taskId/resolve` | 有界列表、详情、人工寻源与处理台 |
+| `/performers`、`/performers/:performerId` | 演员、订阅、检查、跨页选片 |
+| `/performers/review` | 发行决定，先于动态演员路由 |
+| `/discover` | StashBox 影片、统一索引搜索与待发行 |
+| `/stats` | 统计 |
+| `/settings/:section` | indexers/downloader/stash/tasks/system/logs/about；默认 indexers；旧 connections/ingest/automation 重定向 |
+| 帮助、种子列表、数据库性能 | 共享抽屉；性能入口受已保存开发者模式控制 |
 
-路由层持有 URL 和组合 hooks，页面/组件负责显示与交互。GraphQL documents 按页面/设置 tab 拆分；详情、候选、文件与历史按需加载，不恢复早期巨型 dashboard 查询。
+路由组合 URL 和领域 hook，组件负责交互，纯转换就近复用。GraphQL 操作按页面/设置分区；详情、文件、候选和历史按需读。页面状态可返回，打开抽屉保留来源、筛选与滚动。任务创建必须经影片确认，见[任务模块](tasks.md)。
 
-## 操作界面的目标
+| 能力 | 首选实现与边界 |
+| --- | --- |
+| 主题/静态 token/共享表面 | [theme.css](../../web/src/styles/theme.css)、[_tokens.scss](../../web/src/styles/_tokens.scss)、[_mixins.scss](../../web/src/styles/_mixins.scss)；历史样式落差留给 Stage2 |
+| 抽屉与模态焦点 | [Drawer](../../web/src/components/layout/Drawer.tsx)、[useModalFocus](../../web/src/hooks/useModalFocus.ts)；dialog、Escape、嵌套栈和焦点恢复 |
+| 设置外壳/字段/状态 | [SettingsPanels](../../web/src/components/settings/SettingsPanels.tsx)、[SettingsTabCommon](../../web/src/components/settings/SettingsTabCommon.tsx)、SettingsSwitch；PolicySettingsEditor 已复用 FieldLabel |
+| 说明浮层 | [Tooltip](../../web/src/components/common/Tooltip.tsx)、SettingsInfoTooltip；Portal、边界定位、Escape；任务删除缺少关联提示沿用原生 title |
+| 图片与候选链接 | SceneArtwork、[TorrentCandidateLinks/CandidateSeeders](../../web/src/components/tasks/TorrentCandidateLinks.tsx)、PreparedTorrentDownloadActions |
+| 日期/容量/qB 状态/用户错误 | [formatters](../../web/src/utils/formatters.ts)、[qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)、[queryError](../../web/src/services/queryError.ts)；不能从浏览器日期推断发行资格 |
 
-首先回答“有没有事情需要处理、任务到哪了、下一步做什么”。Home 以注意任务和真实进度为中心，服务配置在辅助区域。详情打开后保留来源页面、筛选和滚动上下文；Home 可通过 `task/check/resolve/files` 参数恢复相应抽屉。
+顶栏保留品牌、主导航与常驻工具。小于 1000px 展开两列导航，600px 以下隐藏可见页名并保留可访问名；aria-current、外部关闭、Escape 与路由关闭保持。ThemeMenu 使用 menuitemradio，方向键/Home/End、Tab 离开、选择/Escape 返回焦点；不套用已废弃的通用 listbox Menu。
 
-长任务展示后端持久状态，刷新或另一浏览器打开仍能识别活动执行。按钮 pending 防重复请求，不代替后台 run/reservation。下载进度只在真实观测之间过渡，其他阶段显示 phase，不做假百分比。
+## 设置、草稿与连接测试
 
-异步交互给出加载、成功、部分成功、失败和可继续的动作。刷新失败保留可用旧数据，标明需要更新；不要让一个摘要失败隐藏整个页面。
+设置桌面 218px 侧栏，右侧全宽滚动、内容最大 960px；700px 以下横向导航。`?panel=` 支持深链/前进后退，tablist/tab/tabpanel 有方向键、Home/End 和 RTL。SettingsSubpanel 用 hidden 保持当前分区表单挂载，跨业务分区队列由 SettingsAutosaveProvider 持有。
 
-2026-11-07 删除任务的缓存契约：单个和批量删除成功时解除任务列表及详情读取的关联，保留本次 mutation 返回的任务记录供页面确认成功；不能在 mutation 更新器内失效同一个 Task 实体而把成功回执变成 null。没有成功回执或批量失败项不清理任务。实时 DELETED 事件仍清理实体；页面按原有路径刷新、关闭详情并显示成功。回归覆盖真实 Graphcache 回执与首页/任务页桌面及移动端删除流程。
+重新进入使用新鲜读取。useSettingsAutosave 在 500ms 后提交 typed 稀疏 patch，串行发送，只确认本次字段，晚响应不覆盖新输入；失败保留草稿并提供 SettingsSaveStatus 重试，空闲/成功不常驻提示。对象合并、列表替换、遗漏/null 不改，false/空值不能丢。配置冲突只有确认载入当前设置才丢弃草稿。副作用仍需显式操作，凭据/待保存项不写浏览器存储。
 
-## 数据同步按领域选择
+语言只在系统设置并写 system.language，保存成功后生效；初次/恢复焦点读取，不让旧响应覆盖新设置。任务删除策略归任务与订阅；qB 原生传输设置直读写 qB，Moji 自动清理在 YAML。PolicySettingsEditor 当前只负责任务、资源、元数据三个分区；进一步职责收窄见[A-001](../TODO.md#a-001)。
 
-| 领域 | 当前策略 | 恢复 |
-| --- | --- | --- |
-| 任务 | summary/detail 快照 + taskEvents + 有界传输日志 | stream/sequence 检查、挂载消费者定向读取 |
-| Home | 独立有界投影，事件合并刷新，前台 30 秒校准 | 挂载、恢复可见性及断线重试 |
-| 订阅检查 | 共享可见性轮询：活动 2 秒、空闲 10 秒 | 重新读持久 run/reservation |
-| 下载器 | 3 秒读取后台快照，详情按需 | 旧快照 + 连接/过期状态 |
-| 数据库性能 | WebSocket 最新值推送；隐藏/关闭暂停 | 重连直接获最新缓存，15 秒或错误标过期 |
-| 订阅实体、服务和日志 | 各自 GraphQL subscription | 按现有 hook 的边界恢复 |
+服务连接测试使用当前输入，不保存，结果纯文字并五秒消失，输入变化清旧结果。站点连接测试不等于认证或完整诊断，后端预算见[索引器](indexers.md)。useIndexerConnections 独立管理各站请求/结果，不阻塞其他配置动作；配置事件只取消 connectionRevision 改变或已移除站点，离页取消全部所属请求。
 
-不为每个组件另加 timer；扩展已有领域 hook。也不把“禁止任何轮询”作为全局规则。任务快照协议详见 [任务](tasks.md)，Home 细节见 [主页说明](../../docs/home-workspace.md)。
+站点“添加”与“启用”不同；目录可明确添加另一账号/镜像，未添加且无登录流程的公开规则可添加并启用。排序由 useIndexerReorder 处理桌面原生拖拽、移动手柄和上下方向键，落定保存 query_order。图标有名称、移除有确认，隐私标签兼顾文字及明暗主题。目录/编辑器/确认 Portal 避免裁剪。trustedOrigins 原始草稿参与离开保护和测试，不保存测试草稿。
 
-设置使用分区客户端与 SettingsAutosaveProvider：重新进入读取新设置，独立 loading/error 不污染待保存状态。字段编辑立即更新本地值，500ms 防抖发送 pending 增量；同一表单串行提交，确认只清除本次已提交的改动，失败保留并可重试。分区切换不取消队列，不将凭据或 pending 写入浏览器存储。成功后再以持久设置控制全局能力，例如语言和开发者模式按钮。
+代理/FlareSolverr 共用全局网络；密码只写、空值保留、显式清除，关闭保留参数。规则库策略也用同一串行草稿保护。登录打开仅读待答挑战；显式开始/回答/取消，答案提交即清空，关闭后可恢复空闲有效挑战；配置/实例变化取消旧请求，过期不自动重登。完整能力归索引器模块。
 
-## 文案与无障碍
+## 数据同步
 
-- 支持 zh-CN/en 和 auto；qps-ploc/ar-XB 用于开发验证。资源权威内容在 `web/src/i18n/resources.ts`，公共 JSON 通过 export 同步。
-- 用户错误根据 `extensions.code/params/correlationId` 本地化；未知代码有安全 fallback，原始上游诊断放日志。
-- 检查动作沿用 `faBinoculars`，qB 状态走统一官方映射。新 UI 需中文、英文、深浅色、移动端和必要的 pseudo/RTL 验证。
-- `Drawer/useModalFocus` 已有 dialog、焦点圈定、Escape、嵌套 modal 与返回焦点。旧“抽屉完全缺无障碍”结论已失效；扩展时复用该能力。
-- ThemeMenu 使用 menuitemradio，打开聚焦当前选项；支持方向键循环、Home/End、Escape 返回触发器，选择后返回焦点，Tab 离开关闭。
-- icon-only 按钮必须有 accessible name；不嵌套交互按钮；状态不只依靠颜色。破坏性操作说明后果并确认，服务端仍重验证资格。
+| 领域 | 现有策略与恢复 |
+| --- | --- |
+| 任务 | summary/detail＋taskEvents；stream/sequence、100ms 合并与传输日志；缺口由各挂载消费者恢复 |
+| Home | 有界投影，事件合并与前台 30 秒校准；挂载/恢复可见性补读 |
+| 订阅检查 | 共享可见性轮询，活动 2 秒、空闲 10 秒；读取持久 run/reservation |
+| 下载器 | 3 秒读后台快照，详情按需；保留最近成功状态并标过期 |
+| 索引器/规则 | useIndexerEvents 等失效通知，200ms 合并局部回读；新流/缺口/重连补读 |
+| 演员场景/待发行 | 领域事件按演员过滤，200ms 合并当前分页；重连与可见性校准，无列表轮询 |
+| 性能/订阅实体/服务/日志 | 各自订阅；性能隐藏暂停、15 秒或错误标过期，失败保留数据 |
+
+不为每张卡另开 timer，不把事件当持久历史。删除成功解除列表/详情关联但保留 mutation 回执；不能在更新器中使同一 Task 实体失效而将成功变成 null。DELETED 事件仍清实体，失败项保留。
+
+## Home 与任务交互
+
+Home 的“我的订阅”保留大号订阅数、较小的最近检查异常数和管理入口；异常链接 `/performers?filter=error`，0 中性，未检查按需显示。人数读取当前订阅 ID/custom_fields 与本地最近检查投影，不拉全演员资料/目录；运行中不覆盖上次结果，历史任务重试失败不计检查异常。
+
+History 中性入口放在检查状态行右侧，左侧空闲显示安排/下次相对时间，运行显示演员/真实进度；窄屏只换行左侧。最近定时结果、保留统计和历史在抽屉按需读。订阅概况与检查状态独立加载/失败。Stash、索引器、下载器各有独立卡片，主页不再显示旧运行状态或规则作业失败区；详情及统计口径见[主页说明](../../docs/home-workspace.md)。
+
+任务选源由 useTaskIndexerSearch 管理 URL/请求，TaskIndexerSearch 呈现；sourcingTask/run/page/sort/筛选保留列表参数和 backgroundLocation。首次打开搜索，刷新恢复，过期不自动重搜；选资源只提交 ID/revision。站点/关键词筛选先作用于保留集合再分页，变更回第一页且不重新请求站点；明确重搜清筛选。结果摘要的已结束含失败/取消/中断/未执行，部分结果不能冒充全部成功。
+
+候选获取链接是独立动作，usePreparedTorrentDownload 管理准备/取消/失效和作用域。已就绪附件来自本站句柄，过期只移除入口，不自动重抓。TorrentCandidateLinks 校验协议和 userinfo，HTTP(S) 使用 noreferrer/no-referrer；不把私有定位 URL 放查询或外发。
+
+TaskDetail 在 TaskFiles 内嵌一份 DownloadManager，文件选择抽屉不加载下载器。删除确认每次默认不删除 Stash；无关联禁用、关联丢失清选，提交重验。配置入口 `/settings/tasks?panel=deletion` 不提交删除。
+
+## 待发行、日志与文案
+
+待发行 `section=upcoming` 与 upcomingSearch/Performer/Days/Page 恢复筛选。卡片/详情复用 SceneArtwork、现有影片卡与 Drawer media，16:9 封面；无下载按钮、预告片未接入。状态来自服务端持久 upcomingState，已入库/已有任务优先，未来影片不进入可选集合；只移除当前页已确认不合资格项，其他跨页选择保留。相对天数基于服务端 today/effectiveReleaseTimezone。
+
+日志最近 200 条按旧到新；上滚离底超过 24px 或暂停时冻结显示，后台缓存继续更新，恢复回底。切换级别重置跟随，复制当前顺序，下载是活动文件全部级别；不是历史文件查询。路径/轮转见[运维](operations.md)。
+
+中文/英文同步，qps-ploc/ar-XB 供开发验证。资源真值在 resources.ts，JSON 由 export 同步；错误按稳定 code/params/correlationId 本地化，未知有安全 fallback，真实上游原文不直接展示。已有可用内容在刷新失败时保留，真实长任务状态从后端恢复。
 
 ## 修改时验证
 
-纯格式调整通常 build 即可；交互/数据契约变化按最低有效边界测 hooks、组件、路由或 graphcache。跨页选择测提交变量与部分结果，实时变化测迟到响应/断线/缺口，不能只做静态截图。
-
-可见布局变化运行相关 Playwright spec，在固定 CI 环境复核截图；不为接受意外差异提高容忍值。命令与环境见 [开发流程](../workflows/development.md)。
-
-## 已记录的后续需求
-
-设置结构、独立分区保存、固定排版与实际配置迁移已完成，见 [设置复核](../reviews/2026-10-28-settings.md)。当前 tab 为 indexers/downloader/stash/tasks/system/logs/about；共享 shell 与字段组件统一状态、说明、加载和敏感值显隐。后台四种资源效果与逐站停止语义见 [任务](tasks.md)。
-
-日志（O-001）按旧到新显示最近 200 条匹配记录并向下跟随。上滚超过底部 24px 或点击暂停时冻结当前显示列表，WebSocket 与 200 条有界缓存继续更新；恢复按钮回到最新列表底部。切换级别重置跟随，重连/缺口沿用快照恢复；复制采用当前可见顺序，下载是活动文件全部级别。日志区支持键盘滚动、暂停时关闭 live 宣告，移动端消息换到第二行。证据见[日志复核](../reviews/2026-10-31-logs.md)。手动候选链接和任务种子分区已完成，见[种子交互复核](../reviews/2026-10-29-task-torrents.md)。
-
-2026-10-28 设置跟进：任务删除策略位于“任务与订阅”，独立保存。语言选择仅在“系统”，写入 `system.language`（auto/zh-CN/en），成功保存后生效；初次和窗口恢复焦点读取已保存配置，并防止迟到响应覆盖新保存值。
-
-设置分区加载/错误标题来自当前服务或业务分区映射；禁止引用退休的 connections/automation/ingest tab 翻译。当前共享编辑器为 SettingsPolicySection/PolicySettingsEditor，连接和交付分别为 ServiceConnectionSettings/LibraryDeliverySettings；公共兼容字段在 GraphQL documents 边界使用业务别名。
-
-2026-10-28 自动保存：表单统一使用 useSettingsAutosave 与 SettingsSaveStatus，不再显示保存按钮。普通配置通过 typed patchSettings 的 YAML v2 字段增量更新；下载器策略使用可选字段输入，速度限制仍为单字段命令。列表按整体替换、对象递归合并；清缓存、刷新来源等副作用仍需显式操作。
-
-2026-10-28 顶栏（U-005）：沿用 Stash 的导航分组和简洁选中态，顶栏配色使用项目主题变量：浅色为白色表面、深色为深蓝灰表面，正文/次要文字/选中及焦点使用 text/muted/accent；选中仅改变图标和文字颜色，不使用胶囊背景、边框或下划线。桌面显示品牌、主导航和右侧工具；小于 1000px 主导航改为展开按钮，面板使用两列并允许长文案换行。右侧按性能监控、统计、设置、帮助直接排列，主题随后；性能仅在已保存开发者模式下显示。所有宽度均直接显示工具，没有“更多”和语言入口；语言仍在系统设置。600px 以下导航按钮隐藏可见页名以给常驻工具留空间，保留完整无障碍名称。路由链接保留 aria-current，Escape 返回导航触发器，外部点击和路由切换关闭；主题使用 menu 键盘模式。实施参考与验证见[导航复核](../reviews/2026-10-28-navigation.md)。
-
-2026-10-29 设置布局：根据用户限定的 Handoff 原型范围，使用 218px 桌面贴边导航与右侧最大 960px 配置面板；设置工作区占满顶栏下方视口，侧栏到底，右侧独立滚动；700px 以下使用顶部横向导航。保留全局顶栏，不添加设置 Logo、面包屑、顶部服务状态或侧栏版本。二级页签通过 `?panel=` 直达并支持前进/后退；分区仍为原七项，未新增概览或仅 YAML 编辑能力。页签具有 tablist/tab/tabpanel 语义、方向键/Home/End 及 RTL 支持。SettingsSubpanel 使用 hidden 保持表单挂载，继续使用原分区队列、错误和自动保存；从侧栏切换业务分区时队列仍由 SettingsAutosaveProvider 持有。共享表单采用 26px 页面标题、14px 分组标题、12–13px 字段与说明；媒体交付按两个视角配对展示下载及媒体库路径。详见[布局复核](../reviews/2026-10-29-settings-layout.md)。
-
-2026-10-29 设置跟进：说明只保留功能范围、非直观行为和操作后果，并以领域源码核实；不重复标题、不显示空闲或已保存提示，保留保存中与失败重试。服务连接移除启用胶囊与后台状态订阅，三个面板通过 testServiceConnection 测试当前填写内容；输入修订后丢弃过期结果。开关在设置作用域统一几何变量，正常 38×22、小号 32×18，输入、轨道和滑块共享尺寸。图片缓存关闭仅禁用新图片落盘，已有缓存仍被清理，因此容量/保留期继续可编辑。文案依据见[审核记录](../reviews/2026-10-29-settings-copy.md)。
-
-Stash、qBittorrent 和 Jackett 服务连接表单的测试结果仍为无背景纯文字，返回后 5 秒自动清除；改动输入或新测试隔离旧结果。站点列表和配置窗口使用按钮内的直接连接检查：testIndexer 的 connectionOnly 模式禁止同时请求搜索或取种，内置站点访问站点地址，Jackett 请求对应站点的 Torznab caps；均不登录，也不证明搜索或取种可用。按钮文案区分“等待响应/排队中/测试中/测试成功/测试失败”；前两种不能当作已连接站点。测试全部包含已停用站点，总按钮只显示运行中，完成后恢复“测试全部”，不显示汇总结果。不创建下载任务或保存草稿。
-
-连接测试的并发由 internal/indexercheck 统一管理：全局四个执行名额，先到先执行，最多 1024 个等候请求，同站点重复请求拒绝；普通搜索/取种诊断仍在名额不足时返回忙碌，不排队。三分钟总预算包含排队；等待期间不准备配置或打开站点会话，取消或超时不发送站点请求，关闭服务取消并等待全部请求退出。indexerCheckActivity 按随机 clientId 订阅完整活动快照（仅 requestId、instanceId、QUEUED/RUNNING），首次连接及重连立即返回当前状态，不依赖重放或轮询。状态仅属于当前 HTTP 请求，不成为持久后台作业。
-
-useIndexerConnections 按站点持有独立请求、取消信号及结果，不再限制前端两站并发或把测试状态并入配置 busy。只禁用正在等待/测试站点的测试按钮、当前批次的重复启动；配置、删除、启停、添加、刷新与排序不因测试禁用。当前批次可复用已在测试的站点，其他独立测试仍可发起。IndexerInstance.connectionRevision 是连接快照与规则摘要的 HMAC 标记，覆盖已配置密码及代理等真实值而不暴露可猜测的凭据哈希；排序、新增无关站点等不改变它。保存站点的连接测试用 expectedConnectionRevision 在执行前校验该标记，允许无关全局配置版本变化；草稿及普通诊断继续要求全局版本匹配。现有配置/规则事件回读列表后，只取消连接版本变化或已移除站点的请求并过滤旧结果，未受影响站点继续。草稿修改仅取消其自己的测试，离开设置取消该界面的所有请求，迟到结果通过请求身份和连接版本共同隔离。
-
-索引站点顺序支持桌面原生拖拽、移动触摸手柄及手柄上的上下方向键，不再提供重复的上下按钮；落定后自动保存 `indexers.query_order`。站点名称承载 HTTP(S) 链接，语言和公开/私有/半私有类型同行；来源标签固定在各屏宽的项右上角（RTL 为逻辑尾侧），窄屏操作移到名称下方。普通测试按钮使用 crosshairs，配置使用扳手；可用图标按钮采用正常文字色，禁用状态继续淡化。项内图标按钮统一 26px 正方形，文字测试按钮等高、宽度随结果自适应。目录分类取当前规则 caps.categories 与 categorymappings.cat 的去重并集，已添加状态位于操作下方；添加与启用仍是两个动作。类型标签使用绿/红/黄圆角矩形，同时适配显式及自动深色主题。
-
-设置右侧由全宽 `.settings-main` 承担滚动，内部 `.settings-main__content` 保持最大 960px 和原响应式留白，滚动条位于工作区边缘。添加站点弹窗使用 Drawer 的局部 className，头部与滚动内容分别留白，让内容滚动条贴弹窗边缘；不改变其他对话框的布局。站点区头部提供添加、刷新 Jackett 站点、测试全部。Jackett 页标题为 Jackett，复用连接表单及原增量自动保存；总开关文案为“启用”，链接回统一站点列表。FieldLabel（包含策略设置）统一使用 SettingsInfoTooltip：hover/focus 打开，Escape 关闭；内容 Portal 到 body，fixed 定位根据视口收敛左右边界、下方不足时翻到上方，随滚动/尺寸变化重新定位，不扩大设置面板滚动宽度。样式统一在 settings-info.scss，不保留各设置页的旧绝对定位覆盖。
-
-2026-10-29 种子交互（U-003/U-004）：任务寻源处理（含处理台）与发现页共用 TorrentCandidateLinks/CandidateSeeders。分别提供磁力、种子下载、站点详情；只使用上游原始地址，拒绝非对应协议、相对地址及 userinfo，HTTP(S) 链接以 noreferrer/no-referrer 打开，不预取、不展开含授权参数的下载地址，也不将下载地址推断为详情地址。链接与选用按钮独立；无链接明确提示，缺失/null/负数做种数显示未知，真实 0 仍显示 0。Jackett 解码以 -1 保留未知数，GraphQL 搜索结果仍沿用整数契约。
-
-任务详情由 TaskDetail 将单一 DownloadManager 作为 torrentControls 插槽放入 TaskFiles 的种子信息中，位于静态标识与文件组之间；TaskDrawer 不再额外渲染。内嵌模式去除第二层卡片与当前任务回链，保留 qB 名称、官方状态、真实进度、刷新、失联/缺失提示及危险操作确认；仍只使用原有一组查询与可见性轮询。独立文件选择抽屉不加载下载器观测。
-
-2026-10-31 待发行专区位于发现页搜索与推荐之间，复用主题与 Drawer；领域 WebSocket 事件合并后定向重读当前分页，重连、焦点及恢复可见性重新读取，无新增定时 HTTP 列表轮询。section=upcoming 和 upcomingSearch/upcomingPerformer/upcomingDays/upcomingPage 保存展开状态与筛选。日期按服务端业务时区显示，核验失败保留内容，已移交记录移出列表。没有下载按钮，预告片尚未接入。实现：[UpcomingReleases](../../web/src/components/discovery/UpcomingReleases.tsx)。
-
-2026-10-31 时区跟进：系统常规增加发行日期时区输入，auto/留空跟随运行环境，手动值通过 typed system.release_timezone 增量保存并验证。服务端返回 effectiveReleaseTimezone 和待发行 today；相对天数使用服务器日历日期，包括无法映射为浏览器 IANA 名称的系统 Local 时区。
-
-2026-10-31 待发行 UI：卡片复用演员详情的 card-grid / performer-scene-card 主题、16:9 封面和字级，共享 SceneArtwork 处理空封面及加载失败；演员链接与详情按钮独立。只显示番号、日期、两行标题和演员，异常才显示待确认。详情使用 Drawer media 变体与播放器展示区，保留完整标题、预计日期、演员、来源及刷新图标，预告片尚未接入；沿用模态焦点约束、Escape 和焦点恢复。移交后仅 QUEUED 决策显示发行复核入口。
-
-2026-10-31 演员详情新增 upcomingState：状态来自核心库记录，非浏览器日期推断。卡片原状态位置显示待发行、待确认或发行处理中；创建入口和本页全选排除这些影片。已选项在可见快照转为待发行后移除，其他分页选择保留。usePerformerScenes 复用领域 WebSocket，按演员过滤并合并 200ms 内的事件后重读当前分页，复用重连/丢事件校准，不增加列表轮询。
-
-2026-11-07 删除确认框新增本次 Stash 删除复选框，单个/批量及 Home 共用 ConfirmDeleteDrawer 的局部状态，初始化 false；按目标 key 重挂载，取消后重开不保留。显示明确的影片、funscript、生成文件删除范围；与原 qB 删除策略文案并列，无设置入口。提交期间复选框禁用，Stash 删除失败使用 STASH_DELETE_FAILED 本地化提示保留任务。测试覆盖中英、明暗、桌面/移动、取消复位、默认 false 和显式 true 请求，以及批量部分失败。
-
-2026-11-07 删除确认框的策略说明后提供“前往修改配置”按钮，Home 和任务页均跳转 `/settings/tasks?panel=deletion`，直接显示删除策略页签；待处理时禁用，点击不会提交删除。qB 策略与 Stash 删除说明共用 13px、400 字重及 1.6 行高，警告图标与复选框在行内垂直居中。
-
-2026-11-07 删除确认框顺序为 Stash 本次选项在前、qB 策略说明在后。仅任务删除确认使用 drawer--task-delete，桌面按文案固有宽度自适应（保留既有内边距，上限视口减 32px），两行说明及配置按钮各自保持单行；窄屏允许自然换行，其他确认框宽度不变。
-
-2026-11-07 ConfirmDeleteDrawer 通过 hasStashScenes 控制可选状态，无关联时 disabled 且保持未勾选，使用浏览器原生 title 提示“尚未关联 Stash 影片”，无自定义浮层；保留可聚焦说明及无障碍标签。关联丢失立即清除勾选，提交时再次按可用状态归零。Home、单个、跨页批量使用已有 summary/详情的 ID 投影，不根据识别成功或任务阶段限制。
-
-2026-11-16 主页订阅与检查摘要合并为 HomeSubscriptions 的一张“我的订阅”卡片：标题栏仅保留无箭头的管理入口，大号订阅人数与稍小的最近检查异常人数并排，仅异常数字使用强调色，0 保持中性；未检查人数按需显示。异常数字进入 `/performers?filter=error`，只展示当前订阅且最近检查异常的演员，可查看原因、逐人或批量检查。主页与演员工作区共用最近检查结果投影，包含恢复的中断，进行中不覆盖上次结果；历史任务重试失败不计入。人数通过 Stash ID/custom_fields 窄查询确认订阅范围，再读取本地检查状态，不加载演员完整资料或影片目录；读取失败保留旧值并提示错误，不当作 0。中性的历史入口并入检查状态行右侧，不独占一行；左侧空闲时显示自动检查状态与下次相对时间，原生 title 提供完整时间，运行时替换为当前演员和真实进度。窄屏只让左侧内容换行，历史入口不被挤走；多个活动检查继续向下显示。最近完成定时检查的结果、时间与详情入口放在历史抽屉，避免和演员异常人数混淆。订阅概览与检查状态仍独立加载、报错和重试。近期成功、异常、跳过统计保留后端口径：最近保留的最多 100 次已结束运行，无固定天数，包含手动和自动，重复演员分别计数，中断计入异常，排除活动运行与未执行条目。历史与多余活动检查由抽屉按需读取，移动端保留同一张卡片。
+数据/交互选择最小有效 hook、组件、路由或 graphcache 测试；覆盖迟到结果、缺口、跨页及部分成功。可见布局/焦点改动按[开发流程](../workflows/development.md)运行相关 Playwright 并人工看图。Stage1 不改变当前外观，Stage2 的范围见[TODO](../TODO.md#u-006)。

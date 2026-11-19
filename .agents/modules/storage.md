@@ -1,82 +1,61 @@
 # 存储、迁移与恢复
 
-2026-11-15 任务影片身份重构按用户明确授权不新增自动迁移或兼容代码：更新 core 基础 schema，备份后在独立 generation 人工补全 2,200 个任务的 StashBox 关联并核对基线。新程序启动前拒绝未映射任务。保留旧 generation、任务和媒体路径；决策、纠错范围及验证见[实施复核](../reviews/2026-11-15-film-task-creation.md)。这是本次获准的开发期人工调整，不改变通常的迁移/checksum 防护。
+核对日期：2026-11-19；代码基线：`ec7b093`；状态：当前源码接线，不表示运行实例状态。
 
-2026-11-10 按用户明确要求，本次活跃度功能不新增自动迁移或兼容代码，直接完善基础 schema，并在编码测试完成后备份、手动转换本地库及对齐 schema 基线。subscription_performer_state 的 activity_json 保存评分观测；next_check_at、check_failures 独立列，到期时间与 performer_id 建部分索引。评分/调度使用专用更新，避免重写作品关联；调度读取轻量投影及每批至多 128 项的到期 keyset。重启不重置截止时间，缺少安排时由订阅领域从既有检查时间初始化。这是本次获准的开发期人工调整，不改变通常的迁移/checksum 防护。契约见[活跃度与自动检查](../../docs/performer-activity.md)。
-
-2026-11-08 runtime v7 新增 indexer_executions 统一执行表，JSON 正文为真值、生成列负责索引与统计。只创建空表，不自动转换旧 diagnostics；详细保留规则见[集成与运维](operations.md)。历史、近期状态和搜索统计均查询此表，无独立聚合或近期快照。通用 diagnostics TTL 不影响此表。实现、验证和本地备份证据见[统一执行记录复核](../reviews/2026-11-08-indexer-executions.md)。
-
-2026-11-03 新增 [runtime v6](../../internal/storage/schema/runtime_v6.sql)：indexer_network_cooldowns 保存来源/代理出口的私有 SHA-256 key、失败次数（1–7）、冷却与过期毫秒时间，不保存 URL/账号/凭据。最多 8192 条，仅回收过期项，不驱逐有效冷却；普通成功请求不写该表，失败/已有失败后的成功/挑战解除才更新。到期冷却保留失败计数至额外 30 分钟，最长 Retry-After 24 小时；这不是查询缓存或任务真值。v5→v6 有序升级保留已有资源和搜索 run，重复迁移验证通过；未对实际库执行迁移。
-
-核对日期：2026-10-27；代码基线：`86f69e5`；状态：当前生产接线。
-
-主要源码：[Manager](../../internal/storage/manager.go)、[连接与写入](../../internal/storage/database.go)、[布局](../../internal/storage/layout.go)、[迁移](../../internal/storage/migrations.go)、[schema 注册](../../internal/storage/schema.go)、[离线 CLI](../../cmd/moji-storage/main.go)。操作说明以 [数据库运维](../../docs/database-operations.md) 为入口。
+主要源码：[Manager](../../internal/storage/manager.go)、[连接](../../internal/storage/database.go)、[布局](../../internal/storage/layout.go)、[迁移](../../internal/storage/migrations.go)、[schema 注册](../../internal/storage/schema.go)、[离线 CLI](../../cmd/moji-storage/main.go)。用户操作统一见[数据库运维](../../docs/database-operations.md)。
 
 ## 布局与所有权
 
-2026-11-02 新增 [runtime v5](../../internal/storage/schema/runtime_v5.sql)：交互搜索 run、逐站报告与可分页候选。过期只拒绝读取，不隐式重跑；新接收时清理过期 run，级联删除其展示结果。候选仅保存内部 opaque resource ID，不接收客户端定位符；候选删除不影响已转 core 的任务来源快照。查询/站点/候选共用 64 MiB 预算，事务提交后通知；重启将未完成 run/站点标为中断。实际 v4→v5 升级保留旧资源表与健康表的验证见 [迁移测试](../../internal/storage/torrent_search_migration_test.go)。
+默认 data root 为相对 CWD 的 `.storage/database`，`-data-dir` 可覆盖；配置路径独立。CURRENT 是安全的单目录名纯文本指针，与 generation 目录同级。generation 内有 moji.db、runtime.db、cache/stashbox/cache.db，以及仅在核心库引用时必需的 legacy-task-events.jsonl.gz。
 
-2026-11-02 内置索引工作区新增 [runtime v4](../../internal/storage/schema/runtime_v4.sql)：最近搜索/取种观测独立保存，按实例、配置指纹、活动规则修订和操作隔离；只含稳定错误代码、起止时间、关联标识与观测到的等待时间，不含凭据、URL 或原始错误。后发请求优先于迟到结果，调用方取消不记为站点失败；查询缓存命中不生成新的上游验证。容量限 8192 个命名空间/操作记录，淘汰后只能按无匹配观测表达；它们不是下载任务恢复真值。生产由 Manager.Runtime 注入，网络不在事务中；v3→v4 使用实际旧 schema 验证候选引用不丢失。见 [健康观测测试](../../internal/indexer/health_test.go)。
+OS 锁保证单实例/维护所有权。新目录完成初始化、验证、fsync 才发布 CURRENT；已有目录缺指针、文件或有效 schema 时失败，不扫描猜 generation、不自动替换派生库。旧平铺布局和 JSON 指针不能直接启动。
 
-默认 data root 为相对 CWD 的 `.storage/database`，可用 `-data-dir` 覆盖；配置路径独立选择。`CURRENT` 是只包含安全单目录名的纯文本文件，与 generation 同级。
+生产 repository 统一由 Manager 注入，每文件默认一个 writer、四个 query-only readers，写 admission 默认 64，短 SQLite busy wait 配合 context 重试预算。事务内不做网络/媒体操作；关闭 worker 和 HTTP 后才关闭数据库。
 
-```text
-.storage/database/
-  CURRENT
-  .moji-storage.lock
-  initial-example/
-    moji.db
-    runtime.db
-    cache/stashbox/cache.db
-    legacy-task-events.jsonl.gz   仅在核心库引用时必需
-  backups/
-```
+| 真值 | 存放与恢复角色 |
+| --- | --- |
+| 影片/任务身份、revision、附件、选择、路径、恢复检查点、发行决定、检查 item、重要 audit、外部命令与清理执行状态 | moji.db，FULL；必须保护备份 |
+| 最新进度、qB 观测、交互搜索、索引会话/资源、冷却及执行记录 | runtime.db，NORMAL；丢失后显式离线 repair，各领域定义重建/中断 |
+| StashBox 实体和分页 generation | cache 库，NORMAL；显式离线 repair 后回源 |
+| 应用全局配置，包括自动清理策略 | 所选 config.yaml，经 config store 验证和原子保存；无数据库配置回退 |
 
-OS 目录锁保证单实例/维护所有权。新目录完成初始化、验证、fsync 后才发布 CURRENT；已有目录缺指针、文件或有效 schema 时明确失败，不扫描目录猜 generation，不自动创建替代库。旧根目录平铺库和 JSON 指针不能直接启动。
+重要决定不依赖跨文件事务。任务更新使用 revision/CAS 和 generation fence，阶段决定与重要 audit 同事务；高频纯进度合并到 observation。runtime 重建不能丢掉核心已确认路径、来源或删除意图。
 
-生产 repository 使用唯一 Manager 注入的连接。每个文件默认一个 writer、四个 query-only readers，写 admission 默认容量 64；使用短 SQLite busy wait 和 Go context 重试预算。事务内只做数据库操作，不等待网络或媒体工具。
+## 生产 schema 与领域数据
 
-## 按恢复角色拆分
+唯一生产注册表是 schema.go：当前 core 1–9、runtime 1–7、cache 1。领域内旧 sqlite_schema.sql/独立构造器用于兼容或测试，不是 Manager 的迁移入口。
 
-| 角色 | 内容 | 恢复要求 |
-| --- | --- | --- |
-| 核心 `moji.db`，FULL | 任务身份与 revision、冷附件、文件选择、持久路径、检查点、发行决定、检查 item、重要 audit、下载器策略和外部命令 | 保护备份与明确恢复；不能重建丢弃 |
-| `runtime.db`，NORMAL | 可替换进度、qB 快照和诊断 | 显式离线 repair 后重观测 |
-| cache，NORMAL | StashBox 实体与分页 generation | 显式离线 repair 后从上游重建 |
+| 数据 | 所有权与关键约束 |
+| --- | --- |
+| 任务影片、文件计划、附件与检查点 | 核心关系表；task_file_plans/task_files 保存计划，task_attachments/task_ingest 等保存附件与入库数据；旧 file_plan_json 只属旧 schema/查询适配 |
+| 订阅、复核和待发行 | 核心库；发行决定与移交状态同事务，关系不随取消订阅丢失 |
+| 活跃度和截止时间 | subscription_performer_state；activity_json 与独立 next_check_at/check_failures，专用更新不重写影片关联，到期 keyset 每批最多 128 |
+| 规则包与选定来源 | core v4–v6；manifest、active/previous、持久 pin 和获取前私密来源，同任务接收原子提交 |
+| 清理执行 | downloader_cleanup_state 与 external_commands；core v9 已删除 download_policies，策略只在 YAML |
+| 交互搜索 | runtime v5；取消落盘保留结果，重启标记中断；具体预算归[索引器](indexers.md) |
+| 网络冷却 | runtime v6；私有 origin/出口摘要，不保存 URL/凭据；容量不驱逐有效冷却 |
+| 索引执行 | runtime v7；indexer_executions JSON 为真值，索引/统计列派生；无旧 diagnostics 自动转换 |
 
-必须原子提交的决定留在同一个核心库。不依赖跨文件原子事务；不能把删除意图和确认来源放进可丢弃 snapshot。恢复 runtime 后，核心库里的已解析下载路径仍能支持待入库任务。
+获取前私密来源单份上限 256 KiB，不对外投影。接受任务与规则 pin 同事务；原始 torrent/精确 magnet 持久化后清除私密来源并解除 pin，保留非敏感审计。未知版本、身份不一致或缺少恢复来源拒绝读取。规则与缓存细节归[索引器](indexers.md)，执行记录保留规则也由该模块唯一维护。
 
-任务使用 CAS revision 拒绝旧写入、generation 隔离重启 worker。阶段决定与对应重要 audit 在同一事务；高频纯进度合并到 observation，避免核心重复写与历史膨胀。
+schema_migrations 保存有序版本、名称与不可变 checksum。未知/未来版本、非法非空库或已应用内容变化拒绝启动，不 reset/drop。新增迁移更新注册、managed mapping 和升级/恢复测试；DDL/ledger 同事务，非空受支持升级前创建保护备份。
 
-## schema 的唯一生产来源
+影片身份与活跃度开发期曾经由用户单独授权修改基础 schema 并人工转换本地数据；这是历史例外，不是新变更的迁移规则。[影片转换复核](../reviews/2026-11-15-film-task-creation.md)记录了当时范围。旧 schema-16 的 prepare 导入不能替代后来影片关联要求；所有任务必须通过启动时有界身份验证。
 
-2026-11-02 核对 [schema 注册](../../internal/storage/schema.go)：工作区为 core v1 至 v6、runtime v1 至 v6、cache v1，由该文件嵌入 `schema/` SQL；内置索引相关迁移尚未对生产库执行升级。core v5 的 task_indexer_sources 保存非敏感来源身份与规则/配置修订；[core v6](../../internal/storage/schema/core_v6.sql) 的 task_indexer_selections 保存接受意图、资源 ID 及获取前的完整来源（单份上限 256 KiB，含凭据/定位符，不对外投影）。接收与 task-resource 规则 pin 同事务；原始 torrent 或精确 magnet 检查点提交后，私密来源设空并解除 pin，保留选择身份；任务删除触发清理 pin。未知记录版本、身份不一致或缺少恢复来源拒绝读取。实际 v5 schema 在隔离 generation 中升级，保留任务及来源审计；不以删 ledger 冒充升级。备份中的未获取来源同样按敏感数据保护，规则目录继续纳入 Manager 附属资产。领域目录下旧 `sqlite_schema.sql` 仍存在于兼容/测试路径，不是生产 Manager 的迁移入口。
+## 备份、恢复与资产
 
-`schema_migrations` 保存有序版本、名称和不可变 checksum。未知/更新版本、未识别非空库、已应用迁移内容变化必须拒绝，不允许 reset/drop。新增迁移并更新注册、managed row mapping、索引和升级/恢复测试；DDL 与 ledger 同事务。
+备份用 SQLite online backup API，核对完整性/FK、摘要与 manifest；启动及每小时一份，保留小时/日/周桶，保护备份不自动清理。包含配置、可用交付回执和引用的历史归档，不含影片、Stash 数据库或图片缓存。`-backup-dir` 可选其他挂载点，本地默认备份不证明离机恢复能力。
 
-非空受支持升级前生成受保护备份。旧 schema-16 导入由 datamigration/离线 CLI 显式 prepare，逐字段核对任务、选择、复核和检查项，完整校验历史归档；activation 单独进行。
+规则资产从已完成的数据库快照枚举并核对 manifest/文件摘要，VerifyBackup 校验资产，RestoreCore 恢复到新 generation。WithAssetMaintenance 协调快照至复制与规则清理/修复的窗口，不占 SQL 事务。清理旧规则先移除核心登记再删目录，active、previous、持久 pin、在途 lease 和更新目标受保护。
 
-## 备份、清理和性能
+restore/activate/compact/repair-derived 要停实例、保留原数据，在独立 generation 验证后切换。CLI 不组装 qB/Stash 客户端，不重放外部命令；不能复制运行中的主库而忽略 WAL。配置/回执的恢复位置及命令见用户运维文档。
 
-备份使用 SQLite online backup API，验证完整性/FK、摘要和 manifest；初始及每小时一份，定期保留小时/日/周桶，保护备份不自动清理。包含配置与可用回执、引用的历史归档；不包含影片、Stash 数据库或图片缓存。`-backup-dir` 可以选择其他挂载点，默认本地备份不能证明具备离机灾难恢复。
+## 保留与性能
 
-restore/activate/compact/repair-derived 需要停实例并保留原数据，在独立 generation 准备验证后切换。CLI 不建立 qB/Stash 客户端，不重放命令。不能只复制运行中的主 DB 或手动删除 WAL。
+通用 diagnostics 保留 14 天及最新 100000 IDs，每批最多 1000；重要 audit 不按该 TTL 清理，索引执行表有独立规则。工作查询使用 128 项 keyset，事件统计用 SQL 聚合。StashBox generation/预算见[目录](catalog.md)。
 
-诊断保留 14 天和最新 100000 IDs，每批最多 1000；重要 audit 不按诊断 TTL 清理。工作查询按 128 项 keyset 批次；事件统计用 SQL 聚合。缓存预算和 generation 规则见 [目录](catalog.md)。
-
-现有 Manager 每五秒采样三个库的连接、写 admission、等待/执行、错误和空间；开发者模式开启后通过 `databasePerformance` 推送缓存结果，订阅不再打开 Manager 或做维护。失败保留上次数据，计数进程重启清零；界面平均执行时间不代表单 SQL 延迟或 p95。实现见 [performance.go](../../internal/storage/performance.go)。
+Manager 每五秒采样三个库的连接、admission、等待/执行、错误及空间。databasePerformance 推送现有缓存，不重新打开 Manager 或执行维护；失败保留上次结果，进程重启清零计数。界面平均执行耗时不是单 SQL 延迟或 p95。
 
 ## 修改时验证
 
-- unknown/future/checksum 拒绝、支持版本升级与 preflight backup、初始化中断、坏指针、缺文件。
-- managed repository、并发 CAS、选择与外部意图原子性、runtime 丢失后的恢复、关闭等待。
-- backup manifest/资产完整性、离线恢复、保护备份保留；磁盘错误/busy/context 限期与失败不丢原状态。
-- 数据修复、迁移或清理是独立运行操作。本轮文档核对和本地测试不授权再次对真实数据执行这些操作。
-
-2026-10-31 核心 schema 新增 v3：[待发行迁移](../../internal/storage/schema/core_v3.sql)。subscription_upcoming_releases 保存可恢复生命周期及快照，subscription_upcoming_performers 独立保存演员关系，不级联依赖订阅检查状态。SQL 分页、发行日期/到期索引及 revision 写保护；发行决定和移交状态共用核心事务。纳入现有保护备份与恢复，回归见[待发行测试](../../internal/subscription/upcoming_test.go)。
-
-2026-11-01 内置索引工作区新增 [core v4](../../internal/storage/schema/core_v4.sql)：规则库 manifest/文件摘要清单、active/previous 修订、更新作业、持久引用和激活 audit。完整规则目录先 fsync，核心事务再原子写入引用、活动修订、作业完成与 audit；路径为当前 generation 的 `indexers/bundles/<commit>/`。`indexerdefs.Service` 复用注入的 Manager.Core，启动核对损坏时仅将内置规则能力标为不可用，保留活动记录；已在 cmd/moji 组装。
-
-备份从已经完成的 SQLite 快照枚举该快照登记的规则 manifest/文件，核对 inventory 与摘要后复制资产；VerifyBackup 验证资产齐全，既有 RestoreCore 将其恢复到新 generation，可离线重新加载。旧版没有规则表的快照仍可验证。`Database.WithAssetMaintenance` 协调备份快照至资产复制的窗口与规则清理/修复；不占 SQL 事务，普通数据库写入仍可进行。无引用旧版先删核心登记再删目录；active、previous、持久引用、在途 lease 和更新目标均受保护。验证见 [规则管理测试](../../internal/indexerdefs/service_test.go)。
-
-2026-11-02 工作区新增 [runtime v2](../../internal/storage/schema/runtime_v2.sql) 的账号隔离派生会话（24 小时、512 条、单条 256 KiB）与 [runtime v3](../../internal/storage/schema/runtime_v3.sql) 的服务器端候选引用（30 分钟、5000 条/128 MiB、单条 256 KiB）。会话按账号配置及认证相关规则派生 key，保存 Cookie/UA，人工挑战与答案不落库。候选引用冻结配置和定位信息，恢复注册表时以轻量 Retain 保护未过期引用对应的规则版本；实际取种仍须 Acquire 验证文件。Resolve 返回独立在途 lease，清理到期记录不撤销已经开始的获取。Resources.Maintain 由应用生命周期运行/等待，关闭定义更新 worker 后再释放注册表引用；已在 cmd/moji 组装。已选任务的来源/原始 torrent 仍必须另行写 core，不能把这些 runtime 行当恢复真值。验证见 [资源引用测试](../../internal/indexer/resources_test.go) 与 [私有站会话测试](../../internal/indexer/builtin_test.go)。
+覆盖 unknown/future/checksum 拒绝、preflight backup、初始化中断与坏布局；managed repository、CAS/持久意图、runtime 丢失恢复与关闭等待；备份资产、保护保留、busy/context/磁盘故障。真实迁移、修复或清理是独立运行操作，文档治理不授权执行。

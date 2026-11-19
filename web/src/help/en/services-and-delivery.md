@@ -19,7 +19,7 @@ The default is to check every 24 hours and apply updates manually. **Update poli
 Conflicts preserve your edits. **Load current settings** asks for confirmation before discarding unsaved changes and reading the latest server policy.
 
 
-Home’s **Indexers** section shows the current failed or interrupted definition job. **View definitions** opens its status and actions. Reloading or reconnecting restores server state; a subsequent job replaces the old notice. Reading or retrying Home status does not check for updates or download definitions.
+Home’s **Indexers** panel shows enabled sites and search statistics, with an execution-history entry. View definition jobs and failures under **Indexers > Definitions**. Reading Home does not check for updates or download definitions.
 
 ## Test a site
 
@@ -55,8 +55,8 @@ FlareSolverr is an optional trusted external browser service. For recognized log
 
 ## Ingest
 
-Moji makes the task save directory relative to the **qB download root**, then appends it to the **Moji download root** to read selected files. It filters, deduplicates, and merges the movie into `code/code.mkv` under the **Moji library root**, together with retained subtitles.
+Moji makes the task save directory relative to the **qB download root**, then appends it to the **Moji download root** to read selected files. It filters and deduplicates the movie, retaining a single file at `CODE/CODE.ext` or losslessly merging multiple parts at `CODE/CODE.mkv` under the **Moji library root**, together with retained subtitles.
 
 The **Stash library root** must expose the same files as the Moji library root. Moji appends the movie code directory to this root and asks Stash to scan the delivered movie.
 
-All four roots use the named service's filesystem perspective and must match container mounts. **Copy** retains downloaded sources. **Move** stops the qB task and deletes selected sources only after the entire movie and subtitles are published. Existing movies are not overwritten. The Moji runtime requires `ffmpeg` and `ffprobe`.
+All four roots use the named service's filesystem perspective and must match container mounts. **Copy** retains downloaded sources. **Move** stops the qB task and deletes selected sources only after the entire movie and subtitles are published. Existing movies are not overwritten. Multiple-part assembly requires `ffmpeg` and `ffprobe`; single-file delivery does not.

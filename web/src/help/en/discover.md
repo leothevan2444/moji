@@ -16,7 +16,7 @@ The page URL restores search progress and results. Refreshing or returning reads
 
 Select fast or file rules and click **Apply preview** when needed. File previews may acquire torrents, within the configured inspection budget. Rules run over the complete candidate set before paging. Reloading the page does not automatically inspect files again.
 
-Choose **Create task**, review or enter the release code, then confirm. Moji saves the selected source and lets the task acquire and validate the resource. Acquisition failure does not silently select another resource. Missing sizes or seeder counts remain unknown. Detail links use only safe detail URLs supplied by the site.
+Choose **Create task** and review the suggested StashBox film. Search for and select the correct film if needed, then confirm. A code without a film association cannot create a task. Moji saves the selected source and lets the task acquire and validate the resource. Acquisition failure does not silently select another resource. Missing sizes or seeder counts remain unknown. Detail links use only safe detail URLs supplied by the site.
 
 Choose **Get download link** to acquire a resource without creating a task. Once ready, use **Download torrent** or the magnet link. Prepared download entries remain available for five minutes. Request a new one when needed. This action may consume a site download quota.
 
@@ -28,4 +28,4 @@ Unreleased films do not create download tasks or search indexers. On the release
 
 Open a film for a player-style detail view, source link and refresh action. Trailers are not connected yet. Updating before release does not create a task; updating on or after release can start processing according to policy. Manual updates remain available when automatic checks are disabled. This list contains releases found by subscription checks, rather than a guaranteed complete catalog. Run a performer check if necessary.
 
-Dates follow the Moji runtime system timezone by default, including a container’s TZ. Override it under **Settings > System > General** or with YAML `system.release_timezone`. An empty value or `auto` follows the system. Browser timezones do not change eligibility. Indexer results and code-only inputs do not provide a trusted release date and continue to use the resources explicitly submitted by the user.
+Dates follow the Moji runtime system timezone by default, including a container’s TZ. Override it under **Settings > System > General** or with YAML `system.release_timezone`. An empty value or `auto` follows the system. Browser timezones do not change eligibility. A specified resource also requires a confirmed StashBox film and uses that film’s date to validate release eligibility.

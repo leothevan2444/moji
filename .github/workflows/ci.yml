@@ -52,6 +52,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - run: python3 .agents/scripts/check_docs_test.py
+      - run: python3 .agents/scripts/check_docs.py
       - run: python3 scripts/version_test.py
       - run: python3 scripts/docker_publish_test.py
       - run: python3 scripts/indexer-diff/build_reference_test.py

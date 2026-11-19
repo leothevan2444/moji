@@ -178,9 +178,8 @@ func (r *Registry) APIKey(endpoint string) string {
 	return r.specs[key].APIKey
 }
 
-// normalizeStashBoxEndpoint trims surrounding whitespace and lowercases the
-// endpoint so equivalent URLs (different trailing slashes, case in the host,
-// etc.) map to the same registry entry.
+// NormalizeEndpoint trims surrounding whitespace and lowercases the endpoint
+// for registry keys. It does not rewrite paths or remove trailing slashes.
 func NormalizeEndpoint(endpoint string) string {
 	return strings.ToLower(strings.TrimSpace(endpoint))
 }

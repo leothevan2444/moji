@@ -1,4 +1,6 @@
-# Homepage Widget 首版设计与验收
+# Homepage Widget 首版设计与验收快照
+
+> 历史快照：记录标题日期的设计与验收。文中部署、配置、迁移授权和测试结果只属于当时；当前契约见[运维模块](../modules/operations.md)，不据此操作现有服务或数据。
 
 日期：2026-11-11；核对基线：`47ec468` 后的功能变更；状态：已实现并通过隔离验收，未部署。用户在设计后明确要求执行，采用原建议的接入与访问方案。
 
@@ -36,7 +38,7 @@
 - [homepage.go](../../internal/controller/api/homepage.go)：窄只读依赖、HTTP 映射、截止和错误日志；[main.go](../../cmd/moji/main.go) 注入运行服务或未配置下载器时的本地存储。
 - 未支持统计的存储直接报错，不能静默回退全量 List。没有新增缓存、worker、数据库迁移或前端/GraphQL 契约。
 
-长期契约已吸收至 [运维模块](../modules/operations.md#homepage-widget)、[任务模块](../modules/tasks.md#首页与-widget-共享统计) 和 [Home 文档](../../docs/home-workspace.md)。
+长期契约已吸收至 [运维模块](../modules/operations.md#homepage-widget)、[任务模块](../modules/tasks.md#分页home-与实时一致性) 和 [Home 文档](../../docs/home-workspace.md)。
 
 ## 验收证据
 

@@ -6,18 +6,23 @@ completion checks.
 
 ## Validation before submission
 
+Every task first confirms a StashBox film and retains its endpoint, scene ID and
+metadata. Providing a torrent does not bypass film or release-date validation.
+See [task creation](task-creation.md).
+
 Movies with no verified resource remain in sourcing as normal pending work.
 The sourcing worker searches again every six hours by default, without an
 attempt limit or expiry. Change `tasks.sourcing_retry_interval_hours`
-(1–168 hours) in the Automation settings to adjust this interval independently
+(1–168 hours) in **Settings → Tasks & subscriptions** to adjust this interval independently
 of performer metadata polling. The task card and details show the next check;
 "Check resources now" bypasses the wait. Search options and the last/next check
 times are persisted, so tracking survives restarts. A newly found candidate
-must pass the same validation before download submission. Existing blocked
-searches for unavailable or mismatched resources are adopted automatically.
-Transient indexer or metadata errors remain visible and are also scheduled for
-another check; duplicate-library, duplicate-torrent and invalid-request blocks
-require operator intervention. Deleting a waiting task stops its tracking.
+must pass the same validation before download submission. Transient search and
+resource-acquisition failures schedule another check;
+per-site details remain available in indexer execution history. Identity conflicts,
+duplicate-library/torrent, invalid-request and state-storage errors require
+operator intervention. No legacy blocked-state conversion is performed.
+Deleting a waiting task stops its tracking.
 
 Waiting tasks also offer "Choose or add a resource" alongside the immediate
 automatic check. The panel accepts a magnet link, a `.torrent` upload up to
@@ -28,9 +33,10 @@ privately in SQLite so retries and interrupted submissions keep the original
 torrent, including any private trackers, instead of replacing it with a magnet.
 
 Automatic sourcing checks candidate codes before applying download submission.
-Case, optional separators and numeric zero-padding are accepted aliases;
-different numeric codes are rejected even when an indexer returns them as fuzzy
-search hits. HTTP torrents are fetched by Moji, limited to 8 MiB, and checked
+Matching uses the confirmed film’s complete code, ignoring case and surrounding
+whitespace. Separators, leading zeroes and provider suffixes are not rewritten;
+a fuzzy search hit does not establish identity. HTTP torrents are fetched by
+Moji, limited to 8 MiB, and checked
 against the task code in the torrent name and video paths, including UTF-8 name
 variants. The exact verified file is uploaded to qBittorrent with its computed
 info hash retained for progress matching. qBittorrent does not need to fetch the
@@ -46,14 +52,17 @@ are checked by the metadata and file-selection workflow below.
 
 `internal/mediafiles` classifies torrent entries into four kinds: `MAIN`,
 `SUBTITLE`, `DISCARD`, and `UNKNOWN_VIDEO`. A task's trusted release code anchors
-matching, including advertising-domain removal, case/separator variants,
-zero-padding aliases, and part suffixes. The trusted spelling remains the output
-name; aliases do not globally rewrite release identifiers.
+matching, including advertising-domain removal, case-insensitive full-code
+matching and part suffixes. It does not infer a film identity from filenames or
+normalize separators/zero-padding. Output filenames use a filesystem-safe form
+of the confirmed metadata code; existing task paths are not automatically renamed.
 
-`tasks.file_plan_json` stores original qB file indices, original relative paths,
-sizes, classification reasons, subtitle policy, ordered parts, manual decisions,
-and priority-application state. Schema version 9 upgrades versions 7 and 8
-additively. File selection and ordering survive process restarts.
+File selection and ordering survive restarts. The production managed repository
+stores original qB indices, relative paths, sizes, reasons, subtitle policy,
+ordered parts and priority-application state in core `task_file_plans` and
+`task_files`. `tasks.file_plan_json` belongs to the old standalone schema and
+query adaptation, not the current production table. See
+[storage and recovery](database-operations.md) for the schema and upgrade boundary.
 
 Production construction enables file preparation in `configureTaskRuntime`.
 qBittorrent receives `stopCondition=MetadataReceived`; non-magnet submissions are
@@ -116,6 +125,10 @@ Stash scan/generate/identify workflow without repeating preparation.
 
 When fingerprints return no match, Moji can search the configured StashBox
 sources by the task's exact code and save one unique result through Stash.
+Only successful zero-match fingerprint checks for every configured source allow
+this fallback. The accepted result must match both the complete code and the
+task’s StashBox endpoint/scene ID. Final ingest verification requires that exact
+association in Stash; a matching code alone is insufficient.
 This path follows Stash's saved Identify defaults and source overrides,
 including cover images, field strategies, entity creation, performer gender
 filters, skip markers, and the organized flag. Ambiguous identities are kept

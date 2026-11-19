@@ -1,6 +1,6 @@
 # 开发与验证
 
-状态：2026-11-01 按 `71ef6fa` 的 package scripts、CI 和现有构建/生成入口核对。命令均从仓库根目录运行。代码变更遵守 [工程规范](../standards/engineering.md)，界面和用户流程另遵守 [产品体验规范](../standards/product.md)。
+核对：2026-11-19，基线 `ec7b093` 及 Stage1 工作树的 package scripts、CI 和构建/生成入口。命令均从仓库根目录运行。代码变更遵守 [工程规范](../standards/engineering.md)，界面和用户流程另遵守 [产品体验规范](../standards/product.md)。
 
 ## 从用户结果到验证
 
@@ -28,7 +28,7 @@ npm --prefix web ci
 
 | 变更 | 必要检查 |
 | --- | --- |
-| `.agents` 文档和入口 | `python3 .agents/scripts/check_docs.py`、`git diff --check`、人工语义核对 |
+| 指引、README、docs、Web help | `python3 .agents/scripts/check_docs.py`、`git diff --check`、人工语义核对；检查器变更另跑 `python3 .agents/scripts/check_docs_test.py` |
 | Go 业务局部 | `GOCACHE=/tmp/moji-go-cache go test ./internal/<package>`；有跨模块影响再全量 |
 | 后端公共契约、持久化或生命周期 | `GOCACHE=/tmp/moji-go-cache go test ./...`；并发风险加受影响包 `-race` |
 | React 数据或交互 | `npm --prefix web test -- <相关文件>`、`npm --prefix web run build` |
@@ -101,12 +101,12 @@ docker run --rm --ipc=host \
 [ci.yml](../../.github/workflows/ci.yml) 当前配置：
 
 - Web：固定 Playwright 容器，setup-node 22，npm ci、i18n、Vitest、build、Chromium 视觉。
-- Go：版本、发布脚本及索引差分比较器的 Python 测试，以及 `go test ./...`，实际运行所有包的默认离线测试，包含 storage、downloader 和内置索引模块。真实服务测试仍显式 opt-in。
+- Go：文档结构/链接及检查器回归、版本/发布脚本与索引差分比较器的 Python 测试，以及 `go test ./...`，实际运行所有包的默认离线测试，包含 storage、downloader 和内置索引模块。真实服务测试仍显式 opt-in。
 - Docker：原生 amd64/arm64 各构建与 smoke，适用事件导出已测镜像。
 - Indexer compatibility：调用[兼容工作流](../../.github/workflows/indexer-compatibility.yml)，固定 SDK/Jackett 构建与合成 HTTP 场景真实差分、固定 v11 语料下载/编译及报告制品；仅开发 CI 需要 .NET。
 - Publish：依赖 Web、Go、Docker 和 indexer-compatibility 四个 jobs，通过 [发布工作流](../../.github/workflows/docker-publish.yml) 合并制品发布。
 
-2026-11-03 已落实全包 Go 配置并完成本地无测试结果缓存验证，见[CI 覆盖记录](../reviews/2026-11-03-cardigann-requests.md#ci-go-coverage)。兼容语料与上游首批差分 CI 已配置并验证本地同等命令，范围见[复核](../reviews/2026-11-03-cardigann-requests.md)。这不表示远端 Actions 已运行；更多差分场景及整体验收仍属 R-004 未完项。
+2026-11-03 已落实全包 Go 配置并完成本地无测试结果缓存验证，见[CI 覆盖记录](../reviews/2026-11-03-cardigann-requests.md#ci-go-coverage)。兼容语料与上游首批差分 CI 已配置并验证本地同等命令，范围见[复核](../reviews/2026-11-03-cardigann-requests.md)。这些是相应日期的本地记录，不表示本轮远端 Actions 已运行。R-004 已完成功能与本地验收，范围和限制见[完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
 
 ## 交付
 

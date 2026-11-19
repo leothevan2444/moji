@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the shared agent guide without third-party dependencies or network IO."""
+"""Check repository documentation links and agent routing without network IO."""
 
 import re
 from pathlib import Path
@@ -42,8 +42,13 @@ def anchors(path):
 
 
 def main():
-    documents = sorted(GUIDES.rglob("*.md"))
-    documents += [ROOT / "AGENTS.md", ROOT / ".github/copilot-instructions.md"]
+    documents = sorted(set([
+        *GUIDES.rglob("*.md"),
+        *(ROOT / "docs").rglob("*.md"),
+        *(ROOT / "web/src/help").rglob("*.md"),
+        ROOT / "README.md", ROOT / "AGENTS.md",
+        ROOT / ".github/copilot-instructions.md",
+    ]))
     required = [
         "AGENTS.md", "README.md", "architecture.md", "TODO.md",
         "standards/product.md", "standards/engineering.md",
@@ -51,6 +56,7 @@ def main():
     ]
     errors = [f"missing required guide: {name}" for name in required if not (GUIDES / name).is_file()]
     edges = {}
+    anchor_cache = {}
     for document in documents:
         if not document.is_file():
             errors.append(f"missing entry: {document.relative_to(ROOT)}")
@@ -72,7 +78,9 @@ def main():
                     continue
                 if target.suffix == ".md":
                     edges[document].add(target)
-                    if url.fragment and unquote(url.fragment) not in anchors(target):
+                    if url.fragment and target not in anchor_cache:
+                        anchor_cache[target] = anchors(target)
+                    if url.fragment and unquote(url.fragment) not in anchor_cache[target]:
                         errors.append(f"{label}: missing anchor: {raw}")
     entry = GUIDES / "AGENTS.md"
     for folder in ("modules", "standards"):
@@ -94,7 +102,7 @@ def main():
     if errors:
         print("\n".join(errors))
         return 1
-    print(f"Agent docs OK: {len(documents)} Markdown files; local links, anchors and entry routing verified.")
+    print(f"Repository docs OK: {len(documents)} Markdown files; local links, anchors and entry routing verified.")
     return 0
 
 

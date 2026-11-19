@@ -20,7 +20,7 @@ Interface language is saved in `system.language`; its browser copy is a display 
 
 Automatic cleanup has no database configuration fallback or automatic configuration conversion. See [Downloader](downloader.md#自动清理) for its YAML fields and when changes take effect. The configuration storage audit on 2026-11-13 found no additional application settings stored in databases that require relocation.
 
-## Configuration v2
+## Current configuration and legacy field mapping
 
 The example is [docker/config.example.yaml](../docker/config.example.yaml). `config_version: 4` is the current layout. The ownership changes originally introduced in v2 are:
 
@@ -45,7 +45,7 @@ The offline tool never opens the databases or contacts external services:
 
 ```sh
 go run ./cmd/moji-config -config config.yaml
-go run ./cmd/moji-config -config config.yaml -output /tmp/moji-config-v2.yaml
+go run ./cmd/moji-config -config config.yaml -output /tmp/moji-config-v4.yaml
 ```
 
 The output path must be new and different from the source. The tool compares effective values after migration and does not print credentials. Keep a protected original, validate a copy, stop the old process, then replace the actual file with the validated copy. Configurations and backups contain secrets; do not commit them.

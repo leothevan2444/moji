@@ -1,5 +1,7 @@
 # Moji 数据库评估与重设计建议（2026-10-27）
 
+> Historical snapshot / 历史快照：本文记录 2026-10-27 的调查或实施验收，版本、路径、授权和待办仅属于当时，不作为当前运行指令。当前存储与恢复见[数据库运维](database-operations.md)。
+
 已有修复已提交：`89c5f25 fix: isolate downloader monitoring and task event rendering`。提交后工作区干净。此轮只读调查，没有迁移、删除、VACUUM、checkpoint 或修改运行配置。
 
 ## 结论

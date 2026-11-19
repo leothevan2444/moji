@@ -1,120 +1,57 @@
 # 下载器、配置与运行交付
 
-## 下载器清理与传输设置
+核对日期：2026-11-19；代码基线：`ec7b093`；状态：当前源码与仓库工作流配置，不表示服务已更新或已发布。
 
-2026-11-13：按[已确认设计及验证记录](../plans/download-capacity-protection.md)在当前工作树实施，最新修复只用临时实例验证，未更新用户手动运行的开发实例。Moji 不再以分享率或做种时长触发删除；只清理精确关联且全部已入库的种子。清理条件用单一下拉框选择立刻清理或容量清理，前后端均保证互斥，切换保留容量参数。容量单位为十进制 GB，支持磁盘占用/分享率/做种时长降序。容量每轮最多清一项，不自动暂停下载。
+主要源码：[应用](../../cmd/moji/main.go)、[设置](../../cmd/moji/settings_store.go)、[config store](../../internal/config/store.go)、[下载器](../../internal/downloader/service.go)、[managed 存储](../../internal/downloader/storage.go)、[HTTP](../../internal/controller/api/api.go)。索引网络、规则、登录与执行历史归[索引器模块](indexers.md)。
 
-容量只覆盖 qB 默认保存目录，不推断自定义目录属于同盘。“传输设置”保留 panel=speed，分为全局限速、qB 做种限制、Torrent 排队。后两组直读 qB，经认证后发送 typed 稀疏 form/json patch，回读不一致返回未确认；缺少的能力不伪造默认值。qB 自身删除动作独立于 Moji 入库保护。前端沿用串行自动保存、失败草稿保护及区域错误隔离。
+## 配置与客户端
 
-共用内容检查由 [content_isolation](../../internal/downloader/content_isolation.go) 统一处理。未知路径的 metaDL/forcedMetaDL 或 stoppedDL/pausedDL 只有进度、已完成数据量及大小均为零，且文件接口明确返回非 null 的空列表时，才不阻塞其他候选；普通未知路径、非空文件列表和查询失败仍拦截。单次完整列表的核对最多 16 个文件请求、共享 2 秒预算，证据仅用于本次列表，不跨刷新复用。真正删除文件前再读完整 qB 列表及文件信息，路径变化或新共用内容会阻止删除。容量状态分别报告 CONTENT_PATH_UNKNOWN、SHARED_SOURCE_FILES、LIBRARY_COPY_UNVERIFIED，不再将它们混为没有已入库候选。验证只使用临时数据和模拟服务，不更新用户手动运行的开发实例。
+配置优先 `-config`，否则 MOJI_CONFIG 或 config.yaml。当前 YAML v4，按 indexers/downloader/stash/tasks/system/logging 分组，权威映射见[设置说明](../../docs/settings.md)。存量旧配置的读取边界以 config loader 为准；启动不重写，成功保存和离线工具输出 v4，未知版本/混用字段及已移除网络档案拒绝。新配置变更不新增自动迁移或数据库回退。
 
-两种策略共用 [cleanup 执行器](../../internal/downloader/cleanup.go) 和四种公开阶段：IDLE/RUNNING/WARNING/ERROR。删除前准备状态先落核心库；删除意图和 CONFIRMING 阶段在同一核心事务中提交，随后调用 qB。结果不明只核对同一 hash；15 秒后转为静止警告，不无限播放动画。确认容量种子移除后观察 6 秒，再决定下一项；连续 3 项未观察到净空间增长才暂停。预算、截止及在途身份保存在核心库，runtime 丢失不重置；空间回升或关闭策略可重置保护，空间恢复至阈值以上也重置预算。4xx 明确拒绝（不含 408）记为失败并冷却 30 秒；超时、5xx 和未知结果不冒充失败。重复不变状态不占核心写事务。
+config.Store.ApplyPatch 在同一锁内读取当前值、合并、验证、临时文件 fsync 与原子 rename，成功才发布内存，失败核对有效文件。typed patch 遗漏/null 不变，空串/列表/false 保留；列表替换，对象递归合并。连接 provider 后续调用使用已保存值；已接收任务的冻结配置不被覆盖。
 
-主页剩余空间旁由 [CleanupIndicator](../../web/src/components/home/CleanupIndicator.tsx) 展示扫帚图标，只有实际执行及有限确认期间动画。warning/error 分色并配短文案，悬停/键盘聚焦提供原因，点击直接进入自动清理设置；无独立详情窗口。失联和 reduced-motion 均停止动画。GraphQL 的 cleanup 对象统一提供两种策略状态，不再公开容量专用状态；主页只读取启用、阶段和原因，不取抽屉专用详情。
+pkg/stash、stashbox、jackett、qbittorrent、flaresolverr 负责协议，领域负责资格/编排。未配置 Jackett 不阻止启动；qB/Stash 缺配置限制相关能力。qB 首次登录失败允许启动后续重连，明确 403 才重新认证重试；写超时不自动重放。qB 5 start/stop 收到 404 回退 resume/pause。
 
-无旧配置自动转换或兼容分支；schema v7 调整策略结构，v8 新增独立清理执行状态并移除旧空间索引，不转换策略值。本次未修改本地配置或数据。主要源码：[观测](../../internal/downloader/service.go)、[持久化](../../internal/downloader/storage.go)、[qB 配置](../../internal/downloader/preferences.go)、[协议](../../pkg/qbittorrent/transfer_preferences.go)、[页面](../../web/src/components/settings/QBTransferSettings.tsx)。
+testServiceConnection 用当前输入和短生命周期客户端，十秒截止、不保存或更新依赖状态，只返回稳定结果。Stash 读版本，Jackett API key 读配置站点目录，qB 独立会话读版本；这不证明各站搜索/取种可用。种子元数据按主机串行且至少间隔一秒，Jackett `/dl/<indexer>/` 分组，429/5xx/网络超时及相关 Jackett 404 退避并尊重 Retry-After；见[metadata host](../../internal/taskruntime/torrent_metadata_host.go)。
+
+## 下载器观测与操作
+
+后台每三秒独立读取 qB，包含已完成 Moji 任务种子；任务数据库同步失败时仍更新 qB 快照，保留旧关联并暂停自动清理，只保留最新一批待同步观测。页面读取缓存不等 qB 请求；快照写盘失败不丢当前进程新观测。断连保留最近完整成功状态，不推断所有种子消失。
+
+启停、校验、汇报、限速与移除以之后的真实观测确认。缺失/error/missingFiles 只阻塞相关活动下载，不回退已入库任务；已完成任务源丢失为中性信息。添加拒绝只按已验证精确 info hash 核对，不按标题猜测关联。
+
+全项目 qB 状态复用[qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)及[官方 fixture](../../web/src/utils/__fixtures__/qbittorrent-statuses.json)，保留 `[F]`、大小写和空格；Moji missing/removed 不冒充 qB 官方状态。free_space_on_disk 是默认下载盘可用量，字节和不证明准确磁盘占用，缺失显示未知。
+
+## 自动清理与 qB 原生传输设置
+
+自动清理唯一配置是 YAML `downloader.cleanup`，默认关闭；trigger 单选 AFTER_INGEST 或 CAPACITY，切换保留容量参数，下一轮读取生效。核心只保存执行状态和外部意图，无策略数据库回退或自动转换。分享率/做种时长仅可作为容量排序，不再触发 Moji 删除。
+
+清理要求种子精确 hash 关联且全部关联任务完成入库，不自动清理未关联种子。删文件需验证独立交付副本、本地身份及没有其他 qB 内容路径交叠。手动移除未入库关联种子也受保护。共用内容检查统一由[content_isolation](../../internal/downloader/content_isolation.go)负责：未知路径的元数据/停止下载种子仅在进度、已完成量和大小全零，且文件 API 明确非 null 空列表时可豁免；单次列表最多 16 个文件查询、共两秒，证据不跨刷新。删文件前重新完整核对列表及文件，失败保留。
+
+容量条件为默认下载盘剩余空间低于或等于十进制 GB 阈值，恢复至其上停止；仅处理 save path 与默认目录一致的候选，不猜多盘/自定义目录，不自动暂停下载。容量必须删源文件，按磁盘占用/分享率/做种时长降序、hash 破平。每轮最多一项，确认后观察六秒再读真实空间；连续三项无净增长暂停，不用种子大小假定释放量。
+
+两种策略共用[cleanup](../../internal/downloader/cleanup.go)与 IDLE/RUNNING/WARNING/ERROR。准备状态先落核心，CONFIRMING 与删除意图同事务后才调用 qB；不明只核对同 hash，十五秒后静止警告。明确 4xx 拒绝（不含 408）失败并冷却三十秒，超时/5xx 不冒充明确失败。预算、截止和在途身份持久保存，runtime 丢失不重置；空间恢复或关闭策略重置保护，不变状态不重复核心写入。
+
+Home 剩余空间旁 CleanupIndicator 只在执行/有限确认时动画，异常有颜色和原因，点击直接去设置，无详情窗口；失联/reduced-motion 停动画。配置、保护与 YAML 示例见[下载器说明](../../docs/downloader.md)。
+
+“传输设置”保持 panel=speed，包含全局限速、qB 做种限制与排队；直接读写 qB，不存 Moji 配置。typed 稀疏 patch 经认证提交并回读，不一致返回未确认，缺失能力不伪造默认。qB 自身结束后删种不受 Moji 入库保护。
 
 ## Homepage Widget
 
-核对日期：2026-11-11；代码基线：`47ec468` 后的本功能工作树；状态：已实现，尚未部署。
+GET /api/v1/widget/homepage 返回 attention、active、waiting、completedLast24Hours 四个非负任务计数；[用户配置](../../docs/homepage-widget.md)。使用 Homepage customapi，推荐三十秒刷新；沿现有访问边界，无专用 Moji key，不使用上游凭据。
 
-`GET /api/v1/widget/homepage` 返回 `attention`、`active`、`waiting`、`completedLast24Hours` 四个任务计数。使用 Homepage 内置 `customapi`，推荐 30 秒刷新；[用户配置说明](../../docs/homepage-widget.md)。接口沿用现有访问边界，无额外 Moji API key；上游凭据不用于本接口。
+[Handler](../../internal/controller/api/homepage.go)经窄接口读[HomeStats](../../internal/taskruntime/home_stats.go)，复用首页聚合，不读详情/联网；无下载器时 main 注入本地任务存储。成功/应用错误均 no-store，空库才四个零；查询失败 500、依赖缺失 503、五秒截止 504，错误只有稳定码/通用文案/关联 ID。GET 路由支持标准 HEAD，拒绝写方法。24h 使用持久入库时间闭区间，删除/重选随当前投影变化。首版隔离验收见[历史记录](../reviews/2026-11-11-homepage-widget.md)，不代表当前部署状态。
 
-首版接入设计、已确认边界与隔离联调证据见 [设计与验收](../plans/homepage-widget.md)。
+## HTTP、日志与发布
 
-[REST Handler](../../internal/controller/api/homepage.go) 通过窄接口读取 [taskruntime HomeStats](../../internal/taskruntime/home_stats.go)，复用首页聚合 SQL，不加载任务详情、不联网。首页计数与样本仍在原只读事务中读取。未配置下载器时由 cmd 注入本地任务存储，统计不依赖任务执行服务启用。
+后端默认 :10000；/graphql 支持 POST、multipart、WebSocket upgrade，普通 GET 拒绝；另有 /playground、/healthz 和辅助 /api。MOJI_WEB_DIST 默认 web/dist，SPA 由 webui 提供。用户手动运行开发实例时，验证构建输出到临时目录，不能覆盖其静态资源或重启服务。
 
-响应不含任务详情，成功和应用错误均 `no-store`。读取失败为 500、依赖未装配为 503、5 秒查询截止为 504，应用错误包含稳定代码与关联 ID；空库才返回四个零。24h 为闭区间滚动窗口，使用持久入库完成时间；删除或重新选种后沿用首页当前投影口径。Go net/http 的 GET 路由也接受标准 HEAD 请求，写方法由路由拒绝。
+日志固定配置目录下 logs/moji.log，早期/加载后同路径解析；旧 logging.file_path 读时忽略、保存移除，旧文件不自动移动/删除。默认每份 10 MiB、保留 .1 至 .5；/api/logs/current 只读活动文件。实时日志/性能计数不是持久审计。详情见[设置](../../docs/settings.md#log-files-and-live-viewer)。
 
-健康场景已用临时 DB/真实应用装配及本地假 Jackett 验证：搜索成功与取种失败独立保留，取种显式恢复不改搜索观测；Home 只投影本地统计，无隐式联网。目录失联保留最后确认数量和时间，切换 API 账号返回未知且不沿用旧目录/观测。内置实例当前账号及活动规则版本的 Summary 查询读取相应命名空间，旧行保留而不投影到新账号/规则。缓存命中不刷新实际验证时间；这些离线/本地集成证据不等于真实站点可用性验收。
+版本只来自[Git 标签/提交](../../scripts/version.sh)，Make/Docker ldflags 与 Web 一致，普通未注入 go build 为 dev。镜像含 Web、Moji、FFmpeg/ffprobe，非 root；Docker 构建 Go 1.26，源码最低 Go 1.25。示例配置当前 v4、内置实例为空、Jackett 关闭且无凭据；首装操作见用户文档。
 
-生产索引器使用 NewPersistentNetwork：共享网络 gate 按请求 origin＋代理协议/主机出口隔离，跨账号/规则共享同一出口限流，健康仍按账号配置/规则分别投影。每个新 gate 在首次联网前懒读 runtime v6，恢复未过期冷却与失败次数；存储不可读返回 INDEXER_STATE_UNAVAILABLE，HTTP 尚未发出。保存失败保留真实上游结果、内存退避和 dirty 标记，结束内存冷却后需先成功保存再准入，避免因持久化失败丢弃或重复取种。保存受 2 秒预算与 Network 生命周期等待约束，诊断按分钟限量且不带 SQL/URL。容量满不驱逐未过期记录；存储写失败或 runtime 被重建时不承诺重启恢复。普通成功零写入，成功/挑战解除清除既有记录；CF 解除仍遵守序号围栏，不覆盖新失败或 429。HTTPSession 返回的 429 等待时间使用 gate 实际指数退避截止；外部 Jackett 搜索/目录读取使用每次调用的响应 receipt，把首次 429 映射为实际 gate 截止；目录客户端原先只返回普通状态错误也不再丢失该限流信息。网关 HTTP 200 内某个远端站点的失败仍仅影响该站，不上升为整个网关的网络限流。诊断共享受控网络及其限流，和生产 Cookie/查询缓存隔离不是取消上游限流。
-
-可信来源高级编辑复用站点 trustedOrigins 契约：每行完整 HTTP(S) origin（可带端口和结尾斜杠）、最多 16 个；拒绝路径、查询/片段、凭据和通配符，空列表明确撤销，遗漏保留。后端保存原子校验，草稿测试复用相同校验且不落盘。信任仅授予凭据/表单与 Cookie 会话使用，不授予私网或降级访问。HTTPSession 的 CookieJar 收发也按来源授权：不能仅删 Header 后让 net/http 自动向未信任同父域子站发送域 Cookie，也不能接受其覆盖账号 Cookie。显式信任仍遵守 Cookie 域和 Secure 规则；DNS/IP 校验对可信来源照常执行。
-
-FlareSolverr 前置协议与网络层：新增 [pkg/flaresolverr](../../pkg/flaresolverr/client.go) v1 单次 request.get/form POST 客户端和 Network.newSolverClient 受控端点封装。solver URL 是明确配置的私有 origin 授权，不跟随服务重定向；站点 Cookie/代理凭据只在协议 JSON 中，HTTP 无环境 Cookie 或站点代理认证。JSON 封装最多 32 MiB、页面最多 16 MiB，整体求解截止及排队预算由全局 max_timeout_ms 与调用者截止共同约束，错误不携带上游正文/URL。以规范化端点的私有摘要复用本地客户端/连接，最多 16 个持有端点；同端点完整求解串行，最后引用释放或网络关闭后不可重开。不创建持久浏览器会话；当前上游单次请求和 sessions.create 使用相同代理初始化路径，认证代理同时发送 username/password 两键，包括其中一个为空的情况。HTTP 500 作为协议拒绝，和 429 网络冷却分开；控制调用的响应头等待使用求解截止，保留普通 HTTP 的 30 秒响应头限制。HTTPSession 已接明确 CF/DDoS-Guard 挑战检测：仅认证/搜索可单次求解，再用 Cookie 与浏览器 UA 配对验证原请求一次；浏览器只执行 GET 导航，不接收认证表单。取种与 before HTML 均不求解/重放。采纳前检查回复同 origin、Cookie 域/公共后缀/容量；正式会话持久恢复 UA 配对。自身 CF 503 冷却凭序号解除，不覆盖较新的失败或任何 429。父级截止约束求解和排队，配置冻结 FlareSolverr Max Timeout（默认 90000 毫秒，上限 300000 毫秒）。外部浏览器属于显式信任服务：Moji 检查委托初始公共目标及最终来源，不能约束浏览器内部每次导航。FlareSolverr max_timeout_ms（默认 90000，1000–300000）统一限制排队与完整调用，协议 maxTimeout 使用剩余毫秒，不能延长父级截止。挑战超时/solver 的配置 API/UI 已接：所有内置站点共用一个全局 network；代理与 solver 各有启用开关，关闭保留填写内容。代理认证拆为 URL、用户名和密码，读侧仅回显非密码字段；空密码保留、清除显式并检查配置版本。重复的 challenge_timeout_seconds 及其 API/UI 已删除，FlareSolverr Max Timeout 与请求、站点超时及连接设置统一自动保存；updateIndexerNetwork 使用稀疏 patch 原子更新，旧档案 CRUD 与逐站选择已移除。代表性真实站点、solver 与认证 CONNECT 的验收及未测组合限制见[完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
-
-登录挑战由 [indexerlogin](../../internal/indexerlogin/service.go) 管理，并已接 cmd 生命周期和 beginIndexerLogin/answerIndexerChallenge/cancelIndexerLogin GraphQL；indexerLogin 只读查询恢复同一待回答挑战，不重新认证或取种。只接受已保存内置实例及 expectedRevision；编辑草稿仍使用站点测试。准备逻辑复用 admin 的只读校验，持有固定规则 lease；通过 indexer.LoginSession 共享正式寻源会话，Cookie 可用于后续搜索/取种。最多 4 个登录流程、同实例 1 个、等待验证码也计入容量、总预算 5 分钟；配置过期先拒绝回答；使用服务器确认的当前配置可清理旧版本流程并重新登录，过期版本请求不能借此销毁有效流程。取消/过期/服务关闭先取消并等待在途操作，再释放本流程的挑战和规则。清理完成前保留准入占位，旧清理不能删除新流程。ChallengeFor/AnswerFor/DiscardChallenge 绑定账号、网络、来源和登录规则的会话键；Close 只丢弃该登录实际观察的 challenge，不关闭共享生产会话。公开挑战 ID 使用流程 capability，不发内部 session challenge ID，答案只作为提交参数；图片最多 8 MiB，仅投影检测到的普通图片 MIME 的 data URI，不提供上游定位 URL，无法投影会取消流程。登录面板已接开始/恢复/回答/取消/到期交互；窗口关闭后空闲挑战可恢复，在途请求会中止。取消已过期流程返回幂等成功。solver 认证/搜索执行已接，配置 API/UI 已接，代表性真实服务验收与未测环境限制见[完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
-
-管理目录与已配置实例返回 loginSupported，依据当前规则是否声明 login 块，不能按 public/private/semi-private 隐私类型推断。无登录块或缺少可用规则时为 false；外部 Jackett 不通过 Moji 的登录入口认证。该字段仅表达规则能力，不表示已认证或当前账号有效。
-
-临时会话的认证和验证码回答均不写会话数据库；回答后仅在该内存会话中保留 Cookie。正式会话仍保存派生 Cookie，答案不落盘；同一 challenge 仅可消费一次，重建生产会话不能恢复临时登录。
-
-站点诊断由 [indexercheck](../../internal/indexercheck/service.go) 与 cmd 应用生命周期管理，testIndexer GraphQL 将当前草稿映射为稀疏补丁，校验 expectedRevision；新草稿才允许传 definitionId，已有实例不可借测试更换规则。准备阶段仅合并/校验草稿并持有规则 lease，不保存配置或创建实例。实例快照转换复用 indexeradmin.BuiltinSnapshot，实际适配器在共享受控网络上执行；测试使用独立临时会话，认证、搜索、下载分阶段，未观察到的 Jackett 认证不标成功。默认无搜索/下载，搜索和下载需明确范围；最多 4 个在途、每实例一个、3 分钟、20 条搜索展示。查询缓存、生产 Cookie、候选注册表和任务不承担测试状态。公开报告只有阶段、稳定错误码、版本与关联 ID，不返回资源定位符或凭据；登录挑战交互/solver 的验收与限制见[完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
-
-规则更新策略归 indexers.builtin.definitions，用户在规则库页修改 check_interval_hours/auto_update，分别经窄配置命令与同锁 revision 确认。source=prowlarr、schema_version=11 固定；策略不修改安装状态。应用每分钟评估一次已安装规则的持久 lastCheckedAt，按配置周期（1–168 小时，默认 24）检查；默认手动应用。开启自动应用只影响后续到期检查，所有更新仍经过原有验证/激活流程；关闭不会取消已接收作业。首次安装仍是显式动作。
-
-核对日期：2026-10-27；代码基线：`86f69e5`；状态：当前实现与仓库工作流配置。
-
-主要源码：[应用接线](../../cmd/moji/main.go)、[设置编辑](../../cmd/moji/settings_store.go)、[config store](../../internal/config/store.go)、[下载器](../../internal/downloader/service.go)、[managed 下载器存储](../../internal/downloader/storage.go)、[HTTP API](../../internal/controller/api/api.go)。
-
-## 索引器执行记录
-
-统一索引器服务在每站搜索结束、每次资源获取返回前保存报告；自动寻源、已选资源与交互搜索附带来源、任务/搜索/资源标识及已验证任务番号。报告保存错误码、可识别的 HTTP 状态、耗时、候选数、解析问题数、缓存/截断/部分结果、配置/规则版本及冷却截止，不保存上游错误文本、任意查询参数、凭据或资源定位 URL。搜索缓存/获取合并不丢各调用者的执行上下文；缓存命中不改变实际联网健康观测。
-
-执行历史、主页统计和近期图标共用 runtime v7 的 indexer_executions 表；不再写 indexer_search_metrics 或 indexer_activity。JSON 执行记录为单一真值，站点、操作、时间、结果及有效执行标记由 SQLite 生成列派生并索引，避免正文与统计字段分叉。按站点/操作/实际执行关联 ID 去重；缓存命中保存独立调用上下文但不计实际执行，合并调用不重复计数，取消与未发出请求均不计统计。最终执行报告决定成功/失败，搜索耗时采用 adapter 独立耗时，不含候选处理与取种。历史筛选、图标最近 10 次和区间统计均直接查询同表；统计与记录总量在同一读事务内计算。平均耗时仅以所选窗口内有可靠独立耗时的搜索记录为样本；缺失耗时不参与均值分母，不估算旧报告耗时。无耗时样本或均值为零时返回空值，界面显示 "-"，不额外展示缺失耗时提示；成功率和次数仍按全部有效搜索计算。
-
-清理完整保留近 14 天所有记录，不设全局 4096 条或站点条数上限；另外保护每个仍配置站点最近 10 次有效执行，即使已超 14 天。被保护的旧记录仍可从历史查询，但不参与窗口外的统计。站点移除后失去额外保护，近 14 天记录仍保留。runtime 每分钟读取本地站点目录进行清理；Jackett 启用且连接已配置但目录未确认时，只保守保护已存 Jackett 站点的最近 10 次，仍清理其他过期记录；不能将未知目录视为站点已移除。通用 diagnostics 清理不触及执行表。不同结果目前均保留至少完整两周，未来可按结果延长，不能缩短统计窗口或用容量上限悄悄删减区间样本。
-
-indexerDiagnostics 提供站点/结果/操作/时间过滤、字面子串搜索、总匹配数及 ID 游标分页（每页最多 100）；先保存记录再通知或返回，失败返回 INDEXER_STATE_UNAVAILABLE。runtime v7 仅创建空执行表及索引，无旧结构数据转换或兼容读取；实际旧报告如需保留，必须先备份再手动转换，旧报告无法确认的独立搜索耗时不能伪造。
-
-## 外部客户端与配置
-
-`pkg/stash`、`pkg/stashbox`、`pkg/jackett`、`pkg/qbittorrent` 处理协议；领域服务处理资格和编排。请求传递 context，有界并发和超时；凭据通过配置 provider 使用，不在源码或前端文案里硬编码。
-
-配置路径优先 `-config`，否则 `MOJI_CONFIG` 或 `config.yaml`。2026-11-02 工作区已将 Jackett 改为可选依赖，无索引器时允许启动，索引动作返回未配置；qB/Stash 未配置时相关能力受限。qB 首次登录失败允许启动并由后续观测重连。YAML 按 indexers/downloader/stash/tasks/system/logging 分组；旧格式可读取但启动不重写。当前配置版本为 v4，成功保存与 moji-config 输出均写 v4；内置站点共用 indexers.builtin.network.proxy/flaresolverr，旧 network_profiles 和 network_profile 明确拒绝，不提供自动迁移。内置实例、规则库、独立缓存和 Jackett 启用状态继续保留。应用 provider、双向配置/规则协调门、规则库及站点管理 GraphQL 已接线；站点、规则库、外部 Jackett 以及代理/请求和搜索超时/缓存管理界面已接线；Home 已有同级索引器概况，规则更新策略和搜索迁移已接线；挑战/solver 配置已接，完整健康及代表性真实服务验收与未测环境限制见[完成记录](../reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。未知版本或混用字段拒绝。字段映射与离线工具见 [设置说明](../../docs/settings.md)。配置 store 通过临时文件、fsync 和原子 rename 保存，失败核对实际有效文件；连接 provider 在后续调用读取已保存设置。
-
-内置索引在规则解析后的适配层沿用用户确认的 Jackett 发布时间策略：未来日期限制为本次搜索完成后的统一 UTC 检索时间，历史日期与未知值保持原状；规则字段和资源定位符中的原始日期保留，供后续取种模板使用。纯 Cardigann 解析器不承担该宿主策略。
-
-qB 明确 403 时重新认证再试；写操作超时可能已被执行，不能一概自动重放。qB 5 start/stop 的 404 回退 resume/pause 是明确兼容行为。
-
-种子元数据下载按主机串行并至少间隔一秒，Jackett `/dl/<indexer>/` 分组；429、5xx、网络超时及可能掩盖上游限流的 Jackett 404 触发退避，尊重 Retry-After。实现见 [metadata host](../../internal/taskruntime/torrent_metadata_host.go)，不要在日志输出带签名或 API key 的 URL。
-
-## 独立下载器管理
-
-`internal/downloader` 每三秒观测 qB，包括已完成任务的种子；快照读取不等待新 qB 请求，任务同步只保留最新一批观测。任务数据库失败时仍能观测 qB，保留最近关联信息并暂停自动清理。
-
-当前入口是 Home 的下载器统计和“查看种子列表”弹窗，设置位于 `/settings/downloader`；没有独立 `/downloader` 页面。任务详情复用种子控制。列表以最后成功观测中仍存在的 qB 种子为范围，包含未关联种子；缺失任务不补成虚构的 qB 行。
-
-支持启停、校验、重新汇报、限速和移除。命令接受后以实际后续观测确认，不乐观伪造 qB 状态；断连不代表全体消失。缺失/错误只阻塞相关活动下载，不回退已完成入库。
-
-自动清理配置仅在 `config.yaml` 的 `downloader.cleanup`，页面保存后下一轮读取生效；无数据库配置回退或自动转换。核心库 schema v9 删除 `download_policies`，保留清理执行状态和删除命令；快照在 runtime。意图保存失败时不发送删除。结果不明保持 UNCERTAIN，完整成功 listing 确认消失后记来源。
-
-自动清理默认关闭，仅对下载完成、全部关联 Moji 任务完成的种子运行；不自动清理未关联种子。删除文件必须验证本地独立库副本和没有其他 qB 种子引用重叠内容路径；保护不满足则保留。手动移除未完成入库的关联种子同样受限。完整规则及 YAML 示例见 [下载器说明](../../docs/downloader.md)。
-
-全项目 qB 状态使用 [qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)，逐字保持官方中英文，包括 `[F]`、空格、大小写；来源 fixture 在 [官方状态依据](../../web/src/utils/__fixtures__/qbittorrent-statuses.json)。Moji 的 missing/removed 与自己的生命周期不冒充 qB 状态。
-
-qB `free_space_on_disk` 是默认下载盘可用空间；已完成/待下载字节之和不是准确磁盘占用。缺失值显示未知。
-
-## HTTP、可观测性和发布
-
-后端默认 `:10000`；`/graphql` 接收 POST、multipart 与 WebSocket upgrade，普通 GET 被拒绝；另有 `/playground`、`/healthz` 和辅助 `/api`。`MOJI_WEB_DIST` 默认 `web/dist`，SPA 由 webui 提供。
-
-stats 提供依赖状态，logging 提供可控文件滚动及实时日志事件。开发者模式的数据库性能按钮订阅现有 Manager，不新建存储 owner。日志、事件和性能计数都不能等同于持久审计历史。
-
-版本唯一来源是 Git 标签/提交，由 [version.sh](../../scripts/version.sh) 解析，Make/Docker ldflags 与 Web 保持一致；普通 `go build` 未注入时为 dev。没有手工维护 VERSION 文件。
-
-Docker 镜像含 Web、Moji、FFmpeg、ffprobe，非 root 运行；Dockerfile 当前使用 Go 1.26 构建镜像，源码最低版本由 go.mod 的 1.25 定义。运行数据挂载与四根映射按 [Docker 文档](../../docs/docker.md)，不要为了测试替换真实配置或重启现有服务。打包配置示例为 v3，内置实例为空、Jackett 关闭且无地址/密钥；首装规则、可选外部来源和故障操作见[索引器使用说明](../../docs/indexers.md)。smoke 使用无 Jackett 的最小 v3 配置，断网、只读根和临时卷；启动及容器替换后校验本地概况/未安装规则/无隐式检查，存储按 CURRENT 解析 generation，保留核心/runtime/缓存库、配置保存和优雅退出验证。
-
-CI 在原生 amd64/arm64 runner 构建及 smoke test，通过后发布复用同一镜像制品；发布依赖 Web、Go、Docker 和 indexer-compatibility jobs。稳定标签、预发布、edge 的含义见根 README 和 [发布脚本](../../scripts/docker_publish.py)。未运行的架构/发布不能从本机测试推断成功。
-
-Docker 的 Web/Go 构建阶段使用 BUILDPLATFORM；Go 保持 CGO_ENABLED=0，并按 TARGETOS/TARGETARCH 输出目标二进制。最终 Alpine 仍为目标平台，实际执行 moji --version 后才生成交付镜像，不能以交叉编译成功替代目标执行/完整 smoke。跨架构本地构建仍需目标运行阶段的执行能力；这一组织不在交付镜像中增加模拟器，CI 的原生架构验收不变。
+CI 的原生 amd64/arm64 构建和 smoke 使用临时卷/最小配置，验证启动、持久化及优雅退出；Web/Go 构建使用 BUILDPLATFORM，Go 按 TARGETOS/TARGETARCH 且 CGO_ENABLED=0 输出，最终目标镜像实际执行 --version。交叉编译不能代替目标运行或完整 smoke。发布依赖 Web、Go、Docker、indexer-compatibility，通过后复用已测镜像制品，具体标签与命令见[Docker](../../docs/docker.md)及[开发流程](../workflows/development.md)。
 
 ## 修改时验证
 
-客户端用 fake/httptest 覆盖认证、明确拒绝、超时不明与重连；真实 qB destructive 测试需要独立显式开关。
-
-清理变更覆盖断连、无关联、交叉做种、独立副本、未完成入库、意图落盘失败与未知结果恢复。发布改动检查 version/Python 测试及相应镜像 smoke；具体命令见 [验证流程](../workflows/development.md)。
-
-## 已记录的后续需求
-
-设置、实际配置迁移及 Jackett 逐站搜索已交付，见 [专项复核](../reviews/2026-10-28-settings.md)。自动寻源的停止由 runtime 候选资格决定；手动搜索逐站收集，错误回退及取消有 fake HTTP 覆盖。逐站查询不等同于元数据下载主机队列。
-
-2026-10-31 日志（O-001）：路径固定为配置目录下 `logs/moji.log`，启动早期和配置加载后共用路径解析，不提供用户路径配置；旧 logging.file_path 读取时忽略，成功保存时移除。按大小轮转沿用 `moji.log.1`（最新）到 `.5` 的默认保留方式，默认单文件 10 MiB。旧目录文件不自动搬迁或删除；保留范围只覆盖当前路径对应的文件组。`/api/logs/current` 读取当前配置的活动文件，不合并备份；日志页不是磁盘历史查询。升级与读取说明见[设置文档](../../docs/settings.md#log-files-and-live-viewer)，验证见[日志复核](../reviews/2026-10-31-logs.md)。
-
-2026-10-28 增量设置：config.Store.ApplyPatch 在同一配置锁内读取最新已保存 YAML、合并、验证并原子持久化，成功后发布内存值；失败不提前更新内存。patchSettings 使用与 YAML v2 相同的 typed 可选字段，省略/null 保持原值，空串/空列表/false 明确保留。下载器 PatchPolicy 的 read/merge/write 同样与 SetPolicy 共用策略锁。
-
-2026-10-29 连接测试：testServiceConnection 使用请求传入的当前字段创建短生命周期客户端，不写配置或更新运行依赖状态。Stash 读取版本，Jackett 使用 API key 调用 `/api/v2.0/indexers/all/results/torznab/api?t=indexers&configured=true` 读取站点定义，不查询各站资源；不能用需要后台登录会话的 `/api/v2.0/indexers` 来验证搜索密钥，qB 使用独立登录会话读取版本。请求受 10 秒 context 截止约束，结束释放闲置连接，结果只包含稳定枚举，不输出上游响应原文或凭据。协议及认证/错误/超时由[httptest](../../internal/graphqlapi/connection_test_service_test.go)验证。
-
-
-Jackett 目录由 indexerRuntime 的应用级后台 worker 在 Run 启动后自动加载，不依赖打开页面、搜索或手动刷新。仅在配置已启用且 URL/API key 完整时请求目录；配置变更唤醒 worker，另每分钟检查一次，复用 registry 的 5 分钟成功缓存、30 秒失败退避与请求合并。单次请求最多 30 秒，随应用 context 取消；目录成功/失败发布既有 CATALOG 事件，读取主页仍不发起网络请求。刷新失败保留当前连接最近确认的目录，不跨账号使用旧目录；不会阻塞 HTTP 服务启动或配置事件通知。主页启用数始终为当前目录中已启用条目的纯数字，无至少/待确认展示，也不再提供 totalComplete 专属字段。
+客户端使用 fake/httptest 覆盖认证、明确拒绝、超时不明和重连。清理覆盖断连/未关联/未入库/共用文件/独立副本/意图失败/重启和未知结果；真实破坏性测试显式 opt-in。发布变更验证 version/Python 与相应镜像 smoke，不把本机或历史验收宣称为当前远端 CI/部署成功。清理设计与当时人工配置操作见[历史记录](../reviews/2026-11-13-downloader-cleanup.md)。

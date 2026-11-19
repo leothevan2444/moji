@@ -7,7 +7,7 @@ Moji 是自托管的 Stash 自动化伴侣：跟踪演员与发行，通过索�
 1. 查看 `git status --short` 和近期提交，保留已有改动；核对任务涉及的实现与测试。
 2. 所有改动遵守 [工程规范](standards/engineering.md)；涉及界面、文案或用户流程，先读 [产品体验规范](standards/product.md)。规范约束新增与重构，不能以旧实现中的不良模式作为新增依据。
 3. 阅读 [架构地图](architecture.md)，再按下表读取相关模块。普通局部修改无需通读全部历史复核。
-4. 需要选择后续工作时读 [TODO](TODO.md)；架构判断与严重性见 [2026-11-01 规范复核](reviews/2026-11-01-project-standards.md)，早期全项目验证见 [2026-10-27 复核](reviews/2026-10-27.md)，功能专项由模块导航。用户当前任务优先于 TODO 的建议顺序。
+4. 需要选择后续工作时读 [TODO](TODO.md)；当前一致性治理见 [2026-11-19 Stage1 复核](reviews/2026-11-19-consistency.md)；历史架构与全项目验证由该复核链接，不能将旧结论直接当作当前任务。用户当前任务优先于 TODO 的建议顺序。
 5. 按 [开发与验证](workflows/development.md) 完成改动和适当检查；跨会话任务按 [阶段复核与交接](workflows/review.md) 留下证据和下一步。
 
 | 任务 | 按需阅读 |
@@ -21,8 +21,8 @@ Moji 是自托管的 Stash 自动化伴侣：跟踪演员与发行，通过索�
 | SQLite、迁移、备份、恢复、性能观测 | [存储](modules/storage.md) |
 | qB 管理、清理、配置、客户端、运行和发布 | [集成与运维](modules/operations.md) |
 | 路由、交互、缓存、设置、本地化、无障碍 | [Web UI](modules/web.md) |
-| 设置页重构、配置结构调整与实际旧配置迁移 | [设置契约](plans/settings-redesign.md)；[实施复核](reviews/2026-10-28-settings.md) |
-| 内置索引、Cardigann v11、可选 Jackett 与索引缓存 | [实施方案](plans/builtin-indexers.md)；[阶段/schema 证据矩阵](reviews/2026-11-03-indexer-acceptance.md)；功能验收与限制见 [完成记录](reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04) |
+| 设置、共享组件、配置归属与保存 | [Web UI](modules/web.md)、[设置说明](../docs/settings.md) |
+| 内置索引、Cardigann v11、可选 Jackett、缓存与诊断 | [索引器](modules/indexers.md)；历史验收由模块链接 |
 | 演员历史全量检查 | [未实现的设计提案](plans/performer-full-scan.md)；不要将其当作已有能力 |
 | 整理或新增指引 | [文档组织与维护](README.md) |
 

@@ -1,10 +1,10 @@
 # 项目定位与架构地图
 
-核对日期：2026-11-01；代码基线：`71ef6fa`；状态：当前架构与边界。工程变更遵守 [工程规范](standards/engineering.md)，审查证据及严重性见 [架构复核](reviews/2026-11-01-project-standards.md)。
+核对日期：2026-11-19；代码基线：`ec7b093`；状态：当前源码架构与边界。工程变更遵守 [工程规范](standards/engineering.md)，最新整理与局限见 [Stage1 复核](reviews/2026-11-19-consistency.md)。
 
 ## 产品目标
 
-Moji 把“演员或影片意图”转为可恢复的下载与入库工作流。成功标准是后台能够持续完成自动化，失败时状态可信、原因可解释、用户有下一步可做。Stash 继续承担媒体库、元数据与播放资源管理；qBittorrent 负责 BT 传输。2026-11-02 工作区已用统一 indexer 服务组装内置 Cardigann 与可选 Jackett；功能开发与本地验收已于 2026-11-04 完成，见[完成记录](reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)，未部署。
+Moji 把“演员或影片意图”转为可恢复的下载与入库工作流。成功标准是后台能够持续完成自动化，失败时状态可信、原因可解释、用户有下一步可做。Stash 继续承担媒体库、元数据与播放资源管理；qBittorrent 负责 BT 传输。统一 indexer 服务组装内置 Cardigann 与可选 Jackett，当前契约见[索引器](modules/indexers.md)。本页不记录运行实例或部署状态。
 
 长期需要适应较大的演员库与任务历史，但“存在分页和限流”不等于已验证任意规模。当前规模边界见 [架构复核](reviews/2026-11-01-project-standards.md)，历史验证保留在对应日期复核，未完成工作见 [TODO](TODO.md)。
 
@@ -40,13 +40,13 @@ flowchart TD
 | `cmd/moji` | 依赖组装、工作循环、HTTP、运行设置 | [运维](modules/operations.md) |
 | `cmd/moji-storage`、`internal/datamigration` | 离线准备、校验、激活与恢复；不初始化外部客户端 | [存储](modules/storage.md) |
 | `internal/graphqlapi`、`graphql/moji` | 传输契约、错误、映射；业务规则在领域层 | [开发](workflows/development.md) |
-| `internal/taskflow` | 创建意图和任务来源映射 | [任务](modules/tasks.md) |
+| `internal/film`、`internal/taskflow` | 影片身份、完整番号、确认与创建意图 | [任务](modules/tasks.md) |
 | `internal/taskruntime` | 任务身份、持久化、寻源、下载、阶段推进、工作台与事件 | [任务](modules/tasks.md) |
-| `internal/indexer`、`internal/cardigann`、`internal/indexerdefs`、`internal/indexeradmin`、`internal/indexercheck`、`internal/indexerlogin` | 统一搜索与取种、声明式解释器、运行时规则库、配置站点与脱敏目录、隔离诊断及有界登录挑战管理 | [方案与状态](plans/builtin-indexers.md) |
-| `internal/indexercategory` | 标准 Torznab 数字 ID/名称的只读映射，由索引适配器和 Cardigann 共用 | [方案与状态](plans/builtin-indexers.md) |
-| `internal/indexerquery` | 内置与统一搜索入口共享的命名参数资格、大小写规范化和重复别名拒绝；不拥有网络或任务状态 | [任务](modules/tasks.md) |
-| `internal/torrentsearch` | 交互搜索持久接收、逐站进度、候选分页/归属、取消与重启中断；应用 worker 复用统一索引服务 | [任务](modules/tasks.md) |
-| `internal/torrentmeta` | 有界纯 torrent 元数据与 magnet 解析；原始字节、文件路径与哈希，供索引获取缓存和任务验证共用 | [任务](modules/tasks.md) |
+| `internal/indexer`、`internal/cardigann`、`internal/indexerdefs`、`internal/indexeradmin`、`internal/indexercheck`、`internal/indexerlogin` | 统一搜索与取种、声明式解释器、运行时规则库、配置站点与脱敏目录、隔离诊断及有界登录挑战管理 | [索引器](modules/indexers.md) |
+| `internal/indexercategory` | 标准 Torznab 数字 ID/名称的只读映射，由索引适配器和 Cardigann 共用 | [索引器](modules/indexers.md) |
+| `internal/indexerquery` | 内置与统一搜索入口共享的命名参数资格、大小写规范化和重复别名拒绝；不拥有网络或任务状态 | [索引器](modules/indexers.md) |
+| `internal/torrentsearch`、`internal/indexerdownloads` | 交互搜索持久接收、逐站进度、候选分页/归属、取消与重启中断；应用 worker 复用统一索引服务 | [索引器](modules/indexers.md) |
+| `internal/torrentmeta` | 有界纯 torrent 元数据与 magnet 解析；原始字节、文件路径与哈希，供索引获取缓存和任务验证共用 | [索引器](modules/indexers.md) |
 | `internal/subscription` | 订阅动作、检查 reservation、待发行生命周期、发行策略和持久复核 | [订阅](modules/subscriptions.md) |
 | `internal/performer`、`internal/discovery` | 演员读取、选片资格、发现与创建入口 | [目录](modules/catalog.md) |
 | `internal/metadata`、`internal/stashboxcache` | 已配置 endpoint、演员映射和可重建目录缓存 | [目录](modules/catalog.md) |

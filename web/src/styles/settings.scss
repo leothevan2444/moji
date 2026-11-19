@@ -249,131 +249,6 @@
   }
 }
 
-/* ── Menu (popover listbox triggered by a button) ─────────────── */
-.menu {
-  position: relative;
-  display: inline-flex;
-
-  &__trigger {
-    appearance: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border: 1px solid var(--line);
-    border-radius: $radius-lg;
-    background: var(--surface);
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      border-color $transition-base,
-      background $transition-base,
-      color $transition-base,
-      box-shadow $transition-base;
-
-    &:hover {
-      border-color: var(--line-strong);
-      color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 6%, var(--surface));
-    }
-
-    &:focus-visible {
-      outline: none;
-      border-color: var(--accent);
-      @include focus-ring;
-    }
-
-    &[aria-expanded="true"] {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-    }
-  }
-
-  &__trigger-caret {
-    transition: transform $transition-base;
-  }
-
-  &[aria-expanded="true"] .menu__trigger-caret {
-    transform: rotate(180deg);
-  }
-
-  &__list {
-    position: absolute;
-    top: calc(100% + 6px);
-    z-index: $z-search-history;
-    min-width: 180px;
-    margin: 0;
-    padding: 6px;
-    list-style: none;
-    border: 1px solid var(--line);
-    border-radius: $radius-xl;
-    background: linear-gradient(180deg, var(--surface-strong), var(--surface));
-    box-shadow: var(--shadow);
-    display: grid;
-    gap: 2px;
-  }
-
-  &--start &__list {
-    left: 0;
-  }
-
-  &--end &__list {
-    right: 0;
-  }
-
-  &__option-wrap {
-    margin: 0;
-  }
-
-  &__option {
-    appearance: none;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $space-3;
-    padding: 8px 10px;
-    border: none;
-    border-radius: $radius-lg;
-    background: transparent;
-    color: var(--text);
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
-    transition:
-      background $transition-base,
-      color $transition-base;
-
-    &:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--accent) 12%, transparent);
-      color: var(--accent);
-    }
-
-    &:focus-visible {
-      outline: none;
-      background: color-mix(in srgb, var(--accent) 14%, transparent);
-      color: var(--accent);
-    }
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.5;
-    }
-  }
-
-  &__option-label {
-    font-weight: 600;
-  }
-
-  &__option-hint {
-    font-size: 11.5px;
-    color: var(--muted);
-  }
-}
-
 /* ── Switch (iOS-style boolean toggle) ────────────────────────── */
 .switch {
   position: relative;
@@ -870,11 +745,6 @@
     }
   }
 
-  &__menu {
-    .menu__list {
-      min-width: 280px;
-    }
-  }
 }
 
 /* 单条规则卡片：复用 drawer-card 表面，但加入顺序标记与悬停反馈 */
@@ -1530,35 +1400,6 @@
 
 
 [data-theme="dark"] {
-  .menu {
-    &__trigger {
-      background: rgba(22, 32, 51, 0.7);
-
-      &:hover {
-        background: rgba(96, 165, 250, 0.10);
-      }
-
-      &[aria-expanded="true"] {
-        background: rgba(96, 165, 250, 0.14);
-        color: rgb(147, 197, 253);
-      }
-
-      &:focus-visible {
-        @include focus-ring-dark;
-      }
-    }
-
-    &__list {
-      background: rgba(22, 32, 51, 0.95);
-    }
-
-    &__option:hover:not(:disabled),
-    &__option:focus-visible {
-      background: rgba(96, 165, 250, 0.18);
-      color: rgb(147, 197, 253);
-    }
-  }
-
   .switch {
     &__track {
       background: rgba(148, 163, 184, 0.28);

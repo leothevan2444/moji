@@ -1,16 +1,10 @@
 # 未完成工作
 
-最近全项目复核：[2026-10-27](reviews/2026-10-27.md)，基线 `86f69e5`；[2026-10-28 设置专项](reviews/2026-10-28-settings.md) 已完成 U-002/R-001/R-002。[2026-10-31 待发行专项](reviews/2026-10-31-upcoming.md) 已完成。[2026-10-31 日志布局与跟随](reviews/2026-10-31-logs.md) 已随 `8c071f0` 提交 O-001。最新静态审查：[2026-11-01 架构与项目规范](reviews/2026-11-01-project-standards.md)，基线 `71ef6fa`。清单更新：2026-11-04。这是唯一活动清单；用户明确提出的需求与审查建议分开记录。R-004 内置索引功能已完成功能开发与本地验收，见[完成记录](reviews/2026-11-03-indexer-acceptance.md#功能验收完成2026-11-04)。
+清单核对：2026-11-19，源码基线 `ec7b093`；最新[Stage1 一致性复核](reviews/2026-11-19-consistency.md)。这是唯一活动清单，完成项退出，证据在复核或 Git；ID 不复用。历史测试与部署状态不作为当前事实。
 
-状态：待处理 = 有明确事实和可执行下一步；待设计 = 需求/取舍尚需具体化。完成后从本文件移除，在复核或 Git 中保留证据。条目 ID 不复用。
+剩余 7 项：用户需求 R-003、Stage2 U-006；维护 S-001/A-001/A-002；未落地设计 F-001/F-002。G-002 的旧存储/寻源文档已在 Stage1 校准。维护建议不覆盖用户需求顺序。
 
-当前剩余 7 项：用户需求 R-003；维护缺口 G-002、S-001、A-001、A-002；未落地设计 F-001、F-002。G-001 已随 R-004 补全 Go CI 默认包覆盖，见[验证记录](reviews/2026-11-03-cardigann-requests.md#ci-go-coverage)。R-005 Homepage Widget 已于 2026-11-11 完成实现和隔离验收，见[设计与验收](plans/homepage-widget.md)，尚未部署；其他项目保持原范围。
-
-## 用户提出的产品工作（2026-10-28）
-
-以下完整承接用户清单，按领域组织，不表示已经确定开发顺序。两项设置页要求合并为 U-002。U-002/R-001/R-002 已交付并迁移实际配置；U-005 与主题菜单键盘交互 U-001 已完成，证据见[导航专项复核](reviews/2026-10-28-navigation.md)。U-003/U-004 已完成，证据见[种子交互专项复核](reviews/2026-10-29-task-torrents.md)。O-001 已完成并提交（`8c071f0`），证据见[日志专项复核](reviews/2026-10-31-logs.md)。以下仅保留未完工作。
-
-设置重构已交付，后续界面沿用其共享规范。R-003 的记忆语义须深入讨论后再实现；维护缺口的 P1/P2 不覆盖用户需求排序。
+## 用户提出的产品工作
 
 <a id="r-003"></a>
 ### R-003 · 记录手动排除的选种项，形成记忆系统
@@ -25,25 +19,25 @@
 
 下一步：结合已完成的资源规则审核结果，以几组真实手动选种场景深入讨论排除与再次出现的预期，形成独立设计后再开发。
 
+<a id="u-006"></a>
+### U-006 · Stage2：收敛不协调页面的视觉与交互
+
+状态：用户确认排在 Stage1 一致性治理之后；具体改动范围待走查，不在 Stage1 实施。
+
+证据：发行复核样式引用主题未定义的 text-secondary/surface-soft/border-color，实际依赖固定回退；索引器测试与搜索状态仍各自定义明暗颜色；系统图片缓存清理确认单独渲染 alertdialog。日期展示也有绕过共享 formatters 的调用，需要逐处确认显示语义后处理。Stage1 对照验证发现 settings-workspace 的六项既有截图漂移：原始 ec7b093 与治理后均复现，实际截图逐字节相同；后续先核对页面与 fixture 再决定是否更新基线。
+
+验收：沿用现有视觉语言，明确语义 token 和控件交互所有权；复核中英、深浅色、移动/长文本、键盘及焦点行为。只统一相同语义，不为统一而建立第二套 UI 框架。
+
+下一步：先走查发行复核、索引器与缓存确认流程，提出具体页面差异和拟调整效果，再按区域实施并验证。
+
 ## 已确认的维护缺口
-
-<a id="g-002"></a>
-### G-002 · 收敛用户文档中的旧存储与寻源描述
-
-状态：待处理；建议优先级：P1。
-
-证据：[media-delivery](../docs/media-delivery.md) 引用旧 `tasks.file_plan_json`/schema 9；[downloader](../docs/downloader.md) 仍将策略与观测一并描述为 runtime 的 downloader_state。当前 managed 存储和资源跟踪行为不同。带日期的数据库旧评估应保留历史身份；task-creation 已随影片确认重构更新。
-
-验收：面向用户的当前说明与 [任务](modules/tasks.md)、[存储](modules/storage.md)、[运维](modules/operations.md) 一致；历史文档明确时点，不复制新的竞争设计或改写历史验收。
-
-下一步：逐份更新这三份当前说明，仅链接新的持久化契约，核对根 README 与 Web help 是否引用旧行为。
 
 <a id="s-001"></a>
 ### S-001 · 使演员与场景浏览的上游读取有界
 
 状态：待设计；建议优先级：P1。
 
-证据：2026-11-01 再核对，[performer.List](../internal/performer/service.go) 使用 AllPerformers；[本地场景](../internal/performer/performer_detail.go) 仍 `per_page=-1` 后合并，订阅列表也依赖全演员读取。[待发行查询](../internal/subscription/upcoming.go) 的 activeUpcomingPerformers 同样全量读取 Stash 演员后判断订阅关系。批量选片定向查询已经实现，不属于本项未完工作。
+证据：2026-11-19 源码核对，[performer.List](../internal/performer/service.go) 使用 AllPerformers；[本地场景](../internal/performer/performer_detail.go) 仍 `per_page=-1` 后合并，订阅列表也依赖全演员读取。[待发行查询](../internal/subscription/upcoming.go) 的 activeUpcomingPerformers 同样全量读取 Stash 演员后判断订阅关系。批量选片定向查询已经实现，不属于本项未完工作。
 
 验收：明确可见列表所需的分页、准确计数、搜索和跨源排序契约；用大 fixture 证明读取数量、内存和调用次数有界，不能只把全量集合藏进缓存。保留订阅真值、选片资格和跨页选择语义。
 
@@ -54,7 +48,7 @@
 
 状态：待处理；建议优先级：P2；来源：2026-11-01 静态架构复核。
 
-证据：[PolicySettingsEditor](../web/src/components/settings/PolicySettingsEditor.tsx) 被 indexers/metadata/tasks/resources 四个业务区域真实使用，集中编码、共享表单与大段条件渲染，并重复实现公共 FieldLabel。settings 样式跨 shell、领域与组件导入。风险来自修改联动，不是文件行数本身。
+证据：[PolicySettingsEditor](../web/src/components/settings/PolicySettingsEditor.tsx) 当前被 metadata/tasks/resources 三个业务区域使用，集中编码、共享表单与条件渲染；旧 indexers 分支已移除，FieldLabel 已复用公共组件，不再作为未解决问题。settings 样式跨 shell、领域与组件导入。风险来自修改联动，不是文件行数本身。
 
 验收：沿实际需求按业务职责分离编辑/编码与样式所有权，复用现有公共字段控件；分区 patch、自动保存、失败重试、路由/草稿、当前规则语义与视觉保持既有契约；不引入第二套表单引擎或仅把原文件机械分段。
 

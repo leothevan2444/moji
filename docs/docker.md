@@ -117,7 +117,7 @@ cp docker/config.example.yaml docker/data/config.yaml
 ```
 
 Edit `docker/data/config.yaml`: fill in qBittorrent and Stash connection details
-to enable downloading and delivery. The v3 example starts with no enabled
+to enable downloading and delivery. The v4 example starts with no enabled
 indexer sites. Download the Cardigann v11 library from **Settings → Indexers →
 Definition library**, then add sites. Jackett is optional; configure and enable
 it under **External Jackett** if needed. See [indexer setup](indexers.md).

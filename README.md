@@ -7,18 +7,19 @@ indexers or optional [Jackett](https://github.com/Jackett/Jackett), and download
 
 Moji prepares and delivers the movie files. Stash handles library scanning,
 metadata identification, and generated playback resources. Moji orchestrates
-those Stash operations rather than writing movie metadata itself.
+those Stash operations and uses Stash APIs for exact-film identification fallback;
+it never writes directly to the Stash database.
 
 ## Current features
 
 - Built-in torrent search using a runtime-downloaded Cardigann v11 definition
   library. Definitions can be updated independently of Moji; Jackett is optional.
-- Performer subscriptions and manual movie tasks, with persisted progress,
-  retries, and operator intervention in the web UI.
+- Performer subscriptions and movie tasks confirmed against a StashBox film,
+  with persisted progress, retries, and operator intervention in the web UI.
 - Torrent file selection that excludes recognized advertisements, samples,
   screenshots, and other extras. Ambiguous videos wait for manual selection.
-- Release-code matching across common filename variants, ordered movie-part
-  assembly, and removal of byte-identical duplicate video files.
+- Complete release-code matching, ordered movie-part assembly, and removal of
+  byte-identical duplicate video files. Codes are not shortened or zero-normalized.
 - Single movies are delivered unchanged as `CODE/CODE.ext`. Compatible parts
   are joined into `CODE/CODE.mkv` without re-encoding; incompatible parts block
   delivery for review.
@@ -33,7 +34,8 @@ those Stash operations rather than writing movie metadata itself.
 Display task counts in Homepage with the built-in Custom API widget; see
 [Homepage widget setup](docs/homepage-widget.md).
 
-See [media delivery](docs/media-delivery.md) for classification, merging,
+See [task creation](docs/task-creation.md) for film confirmation and specified
+resources, and [media delivery](docs/media-delivery.md) for classification, merging,
 subtitle handling, and recovery behavior.
 
 ## Database storage
@@ -136,7 +138,7 @@ sources. MOVE stops the torrent and removes selected sources after the prepared
 movie and subtitles have been delivered; it also requires write permission to
 the download directory. `stash.ingest.keep_subtitles` controls subtitle retention.
 `stash.ingest.generate_transcodes` defaults to `false`. Enable **Generate video transcodes**
-under **Settings → Ingest** to ask Stash to generate necessary video transcodes
+under **Settings → Stash** to ask Stash to generate necessary video transcodes
 during ingest. Covers, previews, timeline sprites, and pHash are generated regardless.
 
 The example service URLs use `host.docker.internal` to reach ports published on
@@ -195,7 +197,9 @@ source revision, then rebuild and recreate the container with the same mounts:
 
 Container replacement preserves data in the host-mounted directories.
 Existing Jackett settings remain enabled during the built-in indexer upgrade;
-the next settings save writes configuration v3. To downgrade, stop Moji and
+the next settings save writes configuration v4. Removed fields and unsupported
+formats require an explicit, validated manual conversion; see [settings](docs/settings.md).
+To downgrade, stop Moji and
 restore the matching pre-upgrade configuration and database backup before
 starting the old version. Changing only the program or image does not reverse
 configuration or database migrations; older programs reject newer formats.
@@ -227,6 +231,8 @@ Run the relevant checks from the repository root:
 
 ```sh
 go test ./...
+python3 .agents/scripts/check_docs.py
+python3 .agents/scripts/check_docs_test.py
 python3 scripts/version_test.py
 python3 scripts/docker_publish_test.py
 npm --prefix web test

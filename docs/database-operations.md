@@ -32,7 +32,7 @@ The following database paths are relative to the selected generation:
 | File | Contents | Durability / recovery |
 | --- | --- | --- |
 | `moji.db` | Tasks, resolved download paths, identities, ordered file choices, sourcing/restart/ingest checkpoints, review decisions, subscriptions/checks, important audit and external command intentions | `synchronous=FULL`; back up and restore |
-| `runtime.db` | Latest progress/qB observations, downloader snapshot and disposable diagnostics | `synchronous=NORMAL`; reconstruct through observation |
+| `runtime.db` | Latest progress/qB observations, downloader snapshot, interactive searches, indexer sessions/resources/cooldowns and execution history | `synchronous=NORMAL`; reconstruct through observation |
 | `cache/stashbox/cache.db` | Rebuildable upstream entity/page cache | `synchronous=NORMAL`; reconstruct from upstream |
 | `legacy-task-events.jsonl.gz` | Complete pre-migration task history | Immutable; core manifests reference its digest; included in core backups |
 
@@ -42,7 +42,13 @@ Each file has one bounded writer and four query-only reader connections. Transac
 
 ## Upgrade and initial migration
 
-SQL migrations have ordered versions, names and immutable checksums in `schema_migrations`. Unknown/newer versions or changed checksums stop startup; there is no automatic reset. The current schema versions are core 6, runtime 4 and cache 1. Independent checkpoint payload versions also reject unsupported data.
+All tasks must have a valid StashBox film association before the current
+application starts. The legacy import below does not supply missing film
+identities or replace that check. Existing installations without these
+associations need a separately reviewed offline mapping and validation.
+
+SQL migrations have ordered versions, names and immutable checksums in `schema_migrations`. Unknown/newer versions or changed checksums stop startup; there is no automatic reset. The current registry in [`internal/storage/schema.go`](../internal/storage/schema.go)
+is core 9, runtime 7 and cache 1 (checked against `ec7b093` on 2026-11-19). Independent checkpoint payload versions also reject unsupported data.
 
 Before a supported nonempty upgrade, Moji creates a protected verified backup. DDL and its ledger entry commit in the same transaction. Add future migrations instead of editing an applied migration. Keep important relations in core, evolve typed/indexed fields there, and reserve JSON for versioned recovery payloads or upstream snapshots. Rewrite large data in resumable bounded batches when a future migration requires it.
 
@@ -100,9 +106,12 @@ To relocate an already normalized generation from an old layout, stop the old bi
 
 ## Retention and performance
 
-Diagnostics retain 14 days and the latest 100000 IDs, removed in batches of at most 1000. Important audit/choices/command provenance are not TTL-deleted. Progress uses one latest observation per task and coalesces writes; no unbounded progress-event history is generated.
+General diagnostics retain 14 days and the latest 100000 IDs, removed in batches of at most 1000.
+Indexer execution history uses its own retention: all records for 14 days plus
+the latest 10 actual executions for each configured site, without a global row
+cap. An unavailable Jackett directory does not prove that its sites were removed. Important audit/choices/command provenance are not TTL-deleted. Progress uses one latest observation per task and coalesces writes; no unbounded progress-event history is generated.
 
-StashBox uses its configured TTL (default 24 hours), a 30-day stale window, active plus latest inactive generation, and a default 512 MiB live-page budget. `system.stash_box_data_cache.max_size_mb` adjusts the budget; TTL-only settings changes preserve it. Cleanup releases the writer between batches and includes indexes/link pages in the capacity check. Free pages are reused, so file length need not immediately shrink after deletion.
+StashBox uses its configured TTL (default 24 hours), a 30-day stale window, active plus latest inactive generation, and a default 512 MiB live-page budget. `stash.data_cache.max_size_mb` adjusts the budget; TTL-only settings changes preserve it. Cleanup releases the writer between batches and includes indexes/link pages in the capacity check. Free pages are reused, so file length need not immediately shrink after deletion.
 
 Background work uses indexed lifecycle queries and keyset batches of 128. Idle monitoring reads narrow headers, not torrent attachments/file plans. Event statistics are SQL aggregates; the home overview decodes only bounded samples. Public task-list pagination/response-size changes are outside this database migration.
 

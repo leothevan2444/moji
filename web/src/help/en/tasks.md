@@ -1,6 +1,6 @@
 # Tasks and ingest
 
-A task is Moji's durable record for one release. It keeps the selected torrent, qBittorrent state, delivery paths, Stash scan job, errors, and timestamps. Removing a task follows the deletion policy in **Settings > System**.
+A task is Moji's durable record for one confirmed StashBox film. It keeps the selected torrent, qBittorrent state, delivery paths, Stash scan job, errors, and timestamps. Removing a task follows the deletion policy in **Settings > Tasks & subscriptions**.
 
 ## Task lifecycle
 
@@ -9,9 +9,9 @@ A task is Moji's durable record for one release. It keeps the selected torrent, 
 3. **Pending ingest** — the download is complete and ready for path planning.
 4. **Transferring** — Moji filters and deduplicates files, losslessly merges movie parts in order, and delivers the movie with retained matching subtitles. Single files keep their original format at `CODE/CODE.ext`; merged parts use `CODE/CODE.mkv`.
 5. **Stash ingest** — Moji schedules scan, generation, and identification in order and monitors each job. The UI shows the active step. Generation prepares screenshot covers, previews, sprites, and pHash for the target scenes before identification. Full video transcoding is off by default. Enable **Settings → Stash → Generate video transcodes** to let Stash generate transcodes when needed.
-6. **Completed** — after all jobs succeed, Moji reads the target scenes to verify media files and matching code, title, date, studio, and performers. Missing or mismatched metadata keeps the task blocked.
+6. **Completed** — after all jobs succeed, Moji reads the target scenes to verify media files and matching code, title, date, studio, and performers. The scene must also have the task’s exact StashBox endpoint and film ID. Missing or mismatched metadata or association keeps the task blocked.
 
-Configure and save sources and field policies under **Stash > Settings > Tasks > Identify** first. Moji uses Stash's saved source order, global options, and source-specific options. It does not write scene metadata using `sceneUpdate`. If sources are missing or matching is incomplete, adjust settings or review the result in Stash, then retry in Moji. Generation and identification are scoped to the scenes collected for this task, never the entire library.
+Configure and save sources and field policies under **Stash > Settings > Tasks > Identify** first. Moji uses Stash's saved source order, global options, and source-specific options. When every configured fingerprint lookup succeeds without a match, Moji may search the complete code for the unique target film and save it through Stash APIs. Ambiguous results, source errors and failed saves still require attention. If sources are missing or matching is incomplete, adjust settings or review the result in Stash, then retry in Moji. Generation and identification are scoped to the scenes collected for this task, never the entire library.
 
 A stage can be pending, running, blocked, or done. “Blocked” is actionable and preserves the error. Retry resumes from the blocked step without repeating a completed download, successful transfer, scan, or generation.
 
@@ -32,9 +32,9 @@ Use **Get download link** beside a candidate to download its torrent or open its
 
 Files have four classes: movie/parts, subtitles, known advertisements/samples/promotional text/screenshots, and videos requiring review. Known extras are skipped for download and delivery. **Settings > Stash > Keep subtitles** controls subtitles in every language; when off, external subtitles are skipped. Single movies are delivered unchanged, including embedded subtitles. Merging multiple parts also applies this setting to embedded subtitles.
 
-The task code anchors filename matching. Advertising domains are ignored, and matching supports case, separators, zero-padding variants, and A/B or -1/-2 part suffixes. Original download filenames stay unchanged. Unknown videos, ambiguous parts, or gaps pause downloading. Select movie files and arrange their merge order in task details, then confirm to continue.
+The confirmed film’s complete code anchors filename matching, ignoring advertising domains and case. Prefixes, suffixes, separator spellings and zero-padding are not normalized into aliases. Movie parts can use A/B or -1/-2 suffixes. Original download filenames stay unchanged. Unknown videos, ambiguous parts, or gaps pause downloading. Select movie files and arrange their merge order in task details, then confirm to continue.
 
-Use **File delivery** and configure qB download, Moji download, Moji library, and Stash library roots. The Moji runtime requires `ffmpeg` and `ffprobe`. Choose Copy or Move for delivery.
+Use **File delivery** and configure qB download, Moji download, Moji library, and Stash library roots. Multiple-part assembly requires `ffmpeg` and `ffprobe` in the Moji runtime; single-file delivery needs neither tool. Choose Copy or Move for delivery.
 
 Copy retains sources. Move stops the qBittorrent task and removes selected source files only after the entire movie and its subtitles have been published. Both preserve the original format for single files and produce MKV for merged parts, excluding extras from the library.
 
