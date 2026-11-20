@@ -1,6 +1,6 @@
 # Web UI 与交互约定
 
-核对日期：2026-11-20（本轮设置、调度及日期显示）；代码基线：`f1d35e9` 及本轮工作树；状态：当前源码契约。跨页面体验要求统一见[产品规范](../standards/product.md)，这里定位已有能力与数据边界。
+核对日期：2026-11-20（本轮主页与任务详情）；代码基线：`226da06` 及本轮工作树；状态：当前源码契约。跨页面体验要求统一见[产品规范](../standards/product.md)，这里定位已有能力与数据边界。
 
 主要源码：[路由](../../web/src/app/routeConfig.tsx)、[providers](../../web/src/app/AppProviders.tsx)、[客户端](../../web/src/graphql/client.ts)、[缓存](../../web/src/graphql/cache.ts)、[布局](../../web/src/app/AppLayout.tsx)。React/Router、urql、graphql-ws 与 i18next 沿现有体系使用，不引入第二套状态或界面框架。
 
@@ -63,13 +63,13 @@
 
 Home 的“我的订阅”保留大号订阅数、较小的最近检查异常数和管理入口；异常链接 `/performers?filter=error`，0 中性，未检查按需显示。人数读取当前订阅 ID/custom_fields 与本地最近检查投影，不拉全演员资料/目录；运行中不覆盖上次结果，历史任务重试失败不计检查异常。
 
-History 中性入口放在检查状态行右侧，左侧空闲显示安排/下次相对时间，运行显示演员/真实进度；窄屏只换行左侧。最近定时结果、保留统计和历史在抽屉按需读。订阅概况与检查状态独立加载/失败。Stash、索引器、下载器各有独立卡片，主页不再显示旧运行状态或规则作业失败区；详情及统计口径见[主页说明](../../docs/home-workspace.md)。
+History 中性入口放在检查状态行右侧，左侧空闲只显示下次检查安排，不常驻“自动检查已启用”；运行显示演员/真实进度，调度不可用时保留异常提示；窄屏只换行左侧。最近定时结果、保留统计和历史在抽屉按需读。订阅概况与检查状态独立加载/失败。Stash、索引器、下载器各有独立卡片，主页不再显示旧运行状态或规则作业失败区；详情及统计口径见[主页说明](../../docs/home-workspace.md)。
 
 任务选源由 useTaskIndexerSearch 管理 URL/请求，TaskIndexerSearch 呈现；sourcingTask/run/page/sort/筛选保留列表参数和 backgroundLocation。首次打开搜索，刷新恢复，过期不自动重搜；选资源只提交 ID/revision。站点/关键词筛选先作用于保留集合再分页，变更回第一页且不重新请求站点；明确重搜清筛选。结果摘要的已结束含失败/取消/中断/未执行，部分结果不能冒充全部成功。
 
 候选获取链接是独立动作，usePreparedTorrentDownload 管理准备/取消/失效和作用域。已就绪附件来自本站句柄，过期只移除入口，不自动重抓。TorrentCandidateLinks 校验协议和 userinfo，HTTP(S) 使用 noreferrer/no-referrer；不把私有定位 URL 放查询或外发。
 
-TaskDetail 在 TaskFiles 内嵌一份 DownloadManager，文件选择抽屉不加载下载器。删除确认每次默认不删除 Stash；无关联禁用、关联丢失清选，提交重验。配置入口 `/settings/tasks?panel=deletion` 不提交删除。
+TaskDetail 通过 TaskSummary 将影片封面、简要资料、任务状态和生命周期合并到一张摘要卡，不重复详情标题的番号。无 Stash 关联时使用任务影片快照，有关联时改用实际 Stash 资料及各影片跳转入口；封面放大并按原图比例完整显示，封面与标题、日期、片商、演员保持左右布局，跳转入口以图标与右侧影片标题同行；任务状态、原因和处理入口集中到流程节点，完成终点显示“已入库”，原生 title 提供动作提示；异常保留真实的加载、失败和删除提示。原始资料来源地址、媒体库位置、选源方式、分类及创建/更新时间归默认收起的详细信息。待资源任务的检查安排保持可见。TaskFiles 的下载文件/候选默认展开，跳过组以原生 details 默认收起、保留数量与大小；切换任务恢复收起，键盘可展开。TaskDetail 在 TaskFiles 内嵌一份 DownloadManager，文件选择抽屉不加载下载器。删除确认每次默认不删除 Stash；无关联禁用、关联丢失清选，提交重验。配置入口 `/settings/tasks?panel=deletion` 不提交删除。
 
 发行复核沿用现有标题、筛选和动作，表面/间距/边框使用主题及 token；封面复用 SceneArtwork，在空值或加载失败时显示占位。跨页选择、下载/拒绝和重新考虑语义不变。
 

@@ -196,7 +196,9 @@ for (const averageElapsedMs of [null,0,1500]) {
   await expect(summary.getByRole("link", {name:"查看最近检查异常的演员（1 位）"})).toHaveAttribute("href", "/performers?filter=error");
   await expect(summary.getByText("最近检查异常", {exact:true})).toBeVisible();
   await expect(summary.getByText("空闲", {exact:true})).toHaveCount(0);
-  await expect(summary.getByText("自动检查已启用", { exact: true })).toBeVisible();
+  await expect(summary.getByText("自动检查已启用", { exact: true })).toHaveCount(0);
+  await expect(summary.locator(".home-check-status")).toContainText("下次检查：");
+  await expect(summary.locator(".home-check-status")).not.toContainText("·");
   await expect(summary.locator(".home-check-history")).toHaveCount(0);
   expect((await summary.boundingBox())!.height).toBeLessThan(260);
   await expect(page.locator(".home-checks")).toHaveCount(0);
@@ -213,3 +215,15 @@ for (const averageElapsedMs of [null,0,1500]) {
   await history.locator(".home-check-statistics").focus();
   await expect(history.locator(".home-check-statistics")).toHaveAttribute("title", /0 次已结束运行/);
  });
+
+test.describe("unavailable subscription scheduler", () => {
+  test.use({graphqlOverrides:{homeSubscriptionChecks:{enabled:false,nextRunAt:null,activeCount:0,latestScheduled:null,latestFinishedScheduled:null,statistics:{runCount:0,succeededCount:0,failedCount:0,skippedCount:0},activeRuns:[],recentRuns:[]}}});
+  test("retains the unavailable state and history entry", async ({page}) => {
+    await page.goto("/");
+    const summary=page.locator(".home-subscriptions");
+    await expect(summary.getByText("Automatic checks unavailable",{exact:true})).toBeVisible();
+    await expect(summary.getByText("Automatic checks enabled",{exact:true})).toHaveCount(0);
+    await expect(summary.locator(".home-check-status time")).toHaveCount(0);
+    await expect(summary.getByRole("button",{name:"History",exact:true})).toBeVisible();
+  });
+});

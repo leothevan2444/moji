@@ -22,7 +22,7 @@ for (const locale of ["en", "zh-CN"] as const) {
       }, { locale, theme });
       await page.goto(`/tasks/${conflict.id}`);
       await expect(page.locator(".task-detail-overview")).toContainText(locale === "en" ? "studio name conflicts" : "片商名称与已有记录冲突");
-      const info = page.locator(".task-stash-scenes");
+      const info = page.locator(".task-detail-overview");
       await expect(info).toContainText(locale === "en" ? "title, code, release date, studio, performers" : "标题、番号、发行日期、片商、演员");
       await info.scrollIntoViewIfNeeded();
       expect(await info.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);

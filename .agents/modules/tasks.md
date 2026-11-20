@@ -1,6 +1,6 @@
 # 任务、寻源与实时工作台
 
-核对日期：2026-11-19；代码基线：`ec7b093`；状态：当前源码契约，不表示运行实例已更新。
+核对日期：2026-11-20（本轮详情布局与字段来源）；代码基线：`226da06` 及本轮工作树；状态：当前源码契约，不表示运行实例已更新。
 
 主要源码：[taskflow](../../internal/taskflow/service.go)、[影片确认](../../internal/taskflow/films.go)、[影片身份](../../internal/film/film.go)、[runtime](../../internal/taskruntime/service.go)、[寻源队列](../../internal/taskruntime/sourcing_queue.go)、[工作台](../../internal/taskruntime/task_workspace.go)、[事件](../../internal/taskruntime/task_events.go)。
 
@@ -22,7 +22,7 @@
 
 阶段为 `SOURCING → DOWNLOADING → PENDING_INGEST → TRANSFERRING → SCANNING → COMPLETED`，配合 `PENDING/RUNNING/BLOCKED/DONE`；SCANNING 包含生成、识别与验证。下载 100% 不表示入库完成。
 
-任务推进随应用启动并持续运行，无全局自动处理开关；非正检查间隔使用默认一分钟。订阅检查有独立开关。重要选择、附件、路径和外部意图先提交核心库，再执行副作用；revision/CAS 和 generation fence 拒绝旧 worker 写入。应用关闭取消并等待 worker。文件计划及完成判据见[媒体](media.md)。
+任务推进随应用启动并持续运行，频率为 HIGH/MEDIUM/LOW（30 秒/1 分钟/5 分钟），默认 MEDIUM；订阅检查按演员活跃度独立自动安排，无独立启用开关。重要选择、附件、路径和外部意图先提交核心库，再执行副作用；revision/CAS 和 generation fence 拒绝旧 worker 写入。应用关闭取消并等待 worker。文件计划及完成判据见[媒体](media.md)。
 
 暂时没有资源、搜索不完整、站点请求/冷却和自动取种失败进入等待资源，默认六小时重查（配置 1–168 小时），可立即检查或人工提供资源。人工已选资源获取失败保留冻结来源与规则 pin，重试同一资源。身份不符、重复、库核验失败、无效请求和诊断存储不可用等阻塞不能盲目循环。删除任务停止其追踪。
 
@@ -51,6 +51,14 @@ Home 使用聚合及有限样本；[HomeStats](../../internal/taskruntime/home_s
 删除确认的一次性 `deleteStashScene` 默认 false，不保存为偏好。无持久 scene ID 时禁用并用原生 title 说明；资格不依赖任务阶段或识别成功。Stash 删除先记录 external_commands，再按精确 ID 和任务交付目录核对文件归属，经原生 sceneDestroy 删除影片、funscript 和生成资源。逐个确认消失，超时/部分失败保留任务，重试先核对已消失 ID。Stash 步骤先于 qB 策略与任务删除，不承诺跨服务回滚。保护细节见[媒体交付](../../docs/media-delivery.md#optional-stash-deletion-when-deleting-a-task)。
 
 重新选种保留任务与影片身份，先清理旧种子、交付与 Stash 产物；全部成功后清空执行检查点并回到 `SOURCING/PENDING`，唤醒自动寻源。清理失败保持受阻；不排除旧资源，仍可能再次选中。没有旧状态自动迁移。
+
+## 详情信息与数据来源
+
+详情摘要保留影片封面、标题、发行日期、片商和演员，不重复详情页标题的番号，任务状态统一在流程区显示：当前节点展示真实状态和进度，阻塞原因及处理入口归对应节点，等待资源的检查安排放在寻源节点，完成终点显示“已入库”；影片资料区不再重复状态标签或错误横幅。无持久 Stash 影片关联时使用任务影片快照；有关联时读取实际 Stash 影片资料，并在摘要提供各影片的 Stash 跳转入口，不再显示独立的 Stash 影片信息卡。读取失败保留最近确认的 Stash 资料并提示重试；成功空结果提示关联影片未找到，不以原始资料冒充 Stash 内容。详细信息默认收起原始资料来源地址、媒体库位置、选源方式、分类和创建/更新时间。演员较多时摘要限制两行，展开后可查看完整名单。待资源检查安排直接可见，不隐藏需要操作的文件确认或失败原因。
+
+种子信息中的“内容位置”来自任务最后保存的 qB content_path，表示下载器环境中的内容根目录或单文件路径；缺少该值时仅显示“保存目录”（savePath）。savePath 在提交时可来自用户/默认设置，下载进度同步后可由 qB save_path 覆盖，不能统一当作已确认的文件位置。TorrentName 来自 qB name 的已保存观测，不回退为索引候选标题；它与独立下载器观测的更新节奏不同，可能是上次同步结果。显示与复制沿用各自原值，不拼接或推算内容路径。
+
+跳过文件默认折叠，标题保留文件数与大小；展开后可检查原路径和跳过原因。可选视频、已选下载文件和字幕保持直接展示，不改变文件选择、合并顺序或提交契约。
 
 ## 修改时验证
 

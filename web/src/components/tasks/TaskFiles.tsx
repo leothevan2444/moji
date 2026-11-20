@@ -4,8 +4,9 @@ import { faFileVideo } from "@fortawesome/free-solid-svg-icons/faFileVideo";
 import { faClosedCaptioning } from "@fortawesome/free-solid-svg-icons/faClosedCaptioning";
 import { faFile } from "@fortawesome/free-solid-svg-icons/faFile";
 import { faArrowUp } from "@fortawesome/free-solid-svg-icons/faArrowUp";
+import { faChevronRight } from "@fortawesome/free-solid-svg-icons/faChevronRight";
 import { faArrowDown } from "@fortawesome/free-solid-svg-icons/faArrowDown";
-import { type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "urql";
 import { useTranslation } from "react-i18next";
 import { ResolveTaskFilesDocumentDocument } from "../../graphql/generated/graphql";
@@ -95,16 +96,20 @@ export function TaskFiles({ task, onCopy, initialSelection, onSelectionChange, o
       {task.torrentName?.trim() ? <TaskValue className="torrent-info__name" label={t("taskDetail.torrentName")} value={task.torrentName.trim()} onCopy={onCopy} /> : null}
       {task.torrentHash?.trim() ? <TaskValue label={t("taskDetail.torrentHash")} value={task.torrentHash.trim()} onCopy={onCopy} /> : null}
       {task.torrentUrl?.trim() ? <TaskValue label={t(isMagnetLink(task.torrentUrl) ? "taskDetail.magnet" : "taskExperience.torrentUrl")} value={task.torrentUrl.trim()} onCopy={onCopy} /> : null}
-      {downloadLocation ? <TaskValue label={t("taskInfo.downloadLocation")} value={downloadLocation} onCopy={onCopy} /> : null}
+      {downloadLocation ? <TaskValue label={t(task.contentPath?.trim() ? "taskInfo.contentLocation" : "taskInfo.saveDirectory")} value={downloadLocation} onCopy={onCopy} /> : null}
       {task.tags?.trim() ? <TaskValue label={t("taskDetail.tags")} value={task.tags.trim()} onCopy={onCopy} /> : null}
     </dl>
     {torrentControls}
     {files.length > 0 ? <div className="task-files__groups">
-      {groups.filter(group => group.files.length > 0).map(group => <section key={group.key} className={`task-file-group task-file-group--${group.key}`} aria-label={group.label}>
-        <div className="task-file-group__heading">
-          <h4>{group.label}<span>{group.files.length}</span></h4>
+      {groups.filter(group => group.files.length > 0).map(group => {
+        const Body = group.key === "skipped" ? "details" : Fragment;
+        const Heading = group.key === "skipped" ? "summary" : "div";
+        return <section key={group.key} className={`task-file-group task-file-group--${group.key}`} aria-label={group.label}>
+        <Body>
+        <Heading className="task-file-group__heading">
+          <h4>{group.key === "skipped" ? <FontAwesomeIcon icon={faChevronRight} className="task-file-group__chevron" aria-hidden="true" /> : null}{group.label}<span>{group.files.length}</span></h4>
           <span>{formatBytes(group.files.reduce((sum, file) => sum + fileSize(file), 0))}</span>
-        </div>
+        </Heading>
         <ul className="task-file-list">
           {group.files.map(file => {
             const selectable = editable && isVideo(file);
@@ -142,7 +147,9 @@ export function TaskFiles({ task, onCopy, initialSelection, onSelectionChange, o
             </li>;
           })}
         </ul>
-      </section>)}
+        </Body>
+      </section>;
+      })}
     </div> : null}
     {editable && files.length > 0 ? <div className="task-files__footer">
       <span>{t("fileList.selected", { count: selected.length })}<strong>{formatBytes(selectedVideoFiles.reduce((sum, file) => sum + fileSize(file), 0))}</strong></span>

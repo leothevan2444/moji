@@ -21,7 +21,7 @@ describe("adaptive task lifecycle", () => {
     render(view({ stage, stageStatus: stage === TaskStage.Completed ? TaskStageStatus.Done : TaskStageStatus.Running }));
     const main = screen.getByRole("list", { name: "Lifecycle" });
     expect(main.children).toHaveLength(3);
-    for (const label of ["Source", "Download", "Ingest"]) expect(within(main).getByText(label)).toBeTruthy();
+    for (const label of ["Source", "Download", stage === TaskStage.Completed ? "In library" : "Ingest"]) expect(within(main).getByText(label)).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Ingest progress" })).toBeNull();
     expect(screen.queryByRole("list", { name: "Ingest steps" })).toBeNull();
     expect(main.querySelector("details")).toBeNull();

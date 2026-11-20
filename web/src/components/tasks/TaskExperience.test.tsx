@@ -23,6 +23,59 @@ beforeEach(async () => { await i18n.changeLanguage("en"); });
 afterEach(cleanup);
 
 describe("task experience", () => {
+  it("combines film identity and progress while keeping supplementary information collapsed", async () => {
+    const callbacks = props();
+    const film = {endpoint:"https://catalog.test/graphql",sceneId:"film-1",code:"DEMO-001",title:"A film with a clear identity",date:"2026-10-10",studio:"Example studio",performers:["Alice","Beth","Cara","Diana"],imageUrl:"",url:"",confirmationDigest:"fixture"};
+    const current = {...task,film,category:"private-category",sourcingMode:"USER_SELECTED"};
+    const {rerender} = render(<TaskDetail task={current} {...callbacks} />);
+    const overview = screen.getByRole("article",{name:"Task overview"});
+    const identity = overview.querySelector(".task-detail-summary")! as HTMLElement;
+    expect(within(identity).getByRole("heading",{name:film.title})).toBeTruthy();
+    for (const value of [film.date,film.studio,film.performers.join(" / ")]) expect(within(identity).getByText(value)).toBeTruthy();
+    expect(within(identity).queryByText(film.code,{exact:true})).toBeNull();
+    const details = overview.querySelector("details")!;
+    expect(details.open).toBe(false);
+    expect(within(overview).getByText(film.endpoint).closest("details")).toBe(details);
+    expect(within(overview).getByText("private-category").closest("details")).toBe(details);
+    expect(within(overview).getByText("Created").closest("details")).toBe(details);
+    expect(within(overview).getByRole("list",{name:"Lifecycle"})).toBeTruthy();
+    await userEvent.setup().click(details.querySelector("summary")!);
+    expect(details.open).toBe(true);
+    await userEvent.setup().click(within(details).getByRole("button",{name:"Copy Original metadata source"}));
+    expect(callbacks.onCopy).toHaveBeenCalledWith(film.endpoint,"Original metadata source copied");
+    rerender(<TaskDetail task={{...current,id:"task-2"}} {...callbacks} />);
+    expect(screen.getByRole("article",{name:"Task overview"}).querySelector("details")!.open).toBe(false);
+  });
+  it("places waiting state, schedule and actions in the sourcing node", () => {
+    render(<TaskDetail task={{...task,stage:TaskStage.Sourcing,stageStatus:TaskStageStatus.Pending,sourcingNextCheckAt:"2026-10-21T02:00:00Z"}} {...props()} />);
+    const overview = screen.getByRole("article",{name:"Task overview"});
+    expect(overview.querySelector(".task-detail-summary .status-chip")).toBeNull();
+    const current = overview.querySelector('.task-timeline > [aria-current="step"]')! as HTMLElement;
+    expect(within(current).getByText("Waiting for resources")).toBeTruthy();
+    expect(within(current).getByText("Next resource check")).toBeTruthy();
+    expect(within(current).getByRole("button",{name:"Check resources now: DEMO-001"})).toBeTruthy();
+  });
+
+  it("keeps the blocking reason and next action in the failed node", () => {
+    const currentTask={...task,stageStatus:TaskStageStatus.Blocked,stageErrorCode:"FILE_SELECTION_REQUIRED"};
+    render(<TaskDetail task={currentTask} {...props()} />);
+    const reason=taskFailureSummary(currentTask);
+    const overview = screen.getByRole("article",{name:"Task overview"});
+    expect(overview.querySelector(".task-detail-hero")).toBeNull();
+    expect(overview.querySelectorAll(".task-timeline__failure")).toHaveLength(1);
+    const current = overview.querySelector('.task-timeline > [aria-current="step"]')! as HTMLElement;
+    expect(within(current).getByText(reason.title,{selector:"strong"})).toBeTruthy();
+    expect(within(current).getByRole("button",{name:"Select movie files: DEMO-001"})).toBeTruthy();
+  });
+
+  it("marks the completed endpoint as in library without another status badge", () => {
+    render(<TaskDetail task={{...task,stage:TaskStage.Completed,stageStatus:TaskStageStatus.Done}} {...props()} />);
+    const overview = screen.getByRole("article",{name:"Task overview"});
+    expect(overview.querySelector(".task-detail-summary .status-chip")).toBeNull();
+    expect(within(overview).getByText("In library").closest("li")?.classList.contains("is-done")).toBe(true);
+    expect(overview.querySelector('[aria-current="step"]')).toBeNull();
+  });
+
   it("offers restarting a blocked ingest from selection and disables it while pending", async () => {
     const user = userEvent.setup();
     const onRestartTask = vi.fn();
@@ -141,9 +194,10 @@ describe("task experience", () => {
     const download = "/qb/downloads/movie.mkv";
     const { container } = render(<TaskDetail task={{ ...task, stashScanPath: path, contentPath: download, savePath: "/qb/downloads", tags: "favorites", mojiTransferPath: "/moji/library/movie.mkv" }} {...callbacks} />);
     expect(screen.queryByRole("article", { name: "Task information" })).toBeNull();
-    const information = screen.getByRole("article", { name: "Stash movie information" });
+    expect(screen.queryByRole("article",{name:"Stash movie information"})).toBeNull();
+    const information = screen.getByRole("article", { name: "Task overview" });
     const torrent = screen.getByRole("article", { name: "Torrent information" });
-    expect(information.querySelector("details")).toBeNull();
+    await user.click(information.querySelector(".task-detail-extra summary")!);
     expect(within(information).getByText(path).getAttribute("title")).toBe(path);
     expect(within(information).getByText(path).classList.contains("task-inline-value--truncate")).toBe(true);
     expect(within(torrent).getByText(download)).toBeTruthy();
@@ -152,8 +206,8 @@ describe("task experience", () => {
     expect(screen.queryByText("/moji/library/movie.mkv")).toBeNull();
     await user.click(within(information).getByRole("button", { name: "Copy Library location" }));
     expect(callbacks.onCopy).toHaveBeenCalledWith(path, "Library location copied");
-    await user.click(within(torrent).getByRole("button", { name: "Copy Download location" }));
-    expect(callbacks.onCopy).toHaveBeenCalledWith(download, "Download location copied");
+    await user.click(within(torrent).getByRole("button", { name: "Copy Content location" }));
+    expect(callbacks.onCopy).toHaveBeenCalledWith(download, "Content location copied");
     expect(screen.queryByRole("button", { name: "Sync all task progress" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Scan pending-ingest tasks" })).toBeNull();
     const actions = screen.getByRole("group", { name: "Actions" });
@@ -176,7 +230,7 @@ describe("task experience", () => {
     expect(message).toBe("Diagnostic information copied");
     const currentStep = screen.getByText("Generate").closest("li")!;
     expect(currentStep.getAttribute("aria-current")).toBe("step");
-    expect(currentStep.querySelector("p")?.textContent).toContain("then retry");
+    expect(within(currentStep).getByText(/then retry/)).toBeTruthy();
   });
 
   it("shows transfer details only in the active transfer substep", async () => {

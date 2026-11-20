@@ -954,7 +954,6 @@
     "statFailed": "Issues",
     "statSkipped": "Skipped",
     "statisticsHelp": "Actor outcomes from {{count}} recent retained finished runs (up to 100), with no fixed time window, including manual and automatic checks. Repeat checks count separately; interruptions count as issues.",
-    "automaticEnabled": "Automatic checks enabled",
     "automaticUnavailable": "Automatic checks unavailable",
     "allBusy": "A check of all subscriptions is running. Please try again shortly.",
     "title": "Release checks",
@@ -1277,7 +1276,8 @@
     "waiting": "Waiting to start source selection"
   },
   "taskInfo": {
-    "downloadLocation": "Download location",
+    "contentLocation": "Content location",
+    "saveDirectory": "Save directory",
     "libraryLocation": "Library location",
     "transferMethod": "Transfer method",
     "transferTarget": "Destination",
@@ -1286,19 +1286,17 @@
   },
   "taskStash": {
     "notFound": "Linked movies were not found in Stash. If you deleted them intentionally, remove the corresponding Moji task.",
-    "title": "Stash movie information",
-    "pending": "Movie information appears after ingest",
     "empty": "No linked Stash movies found",
     "loading": "Loading movie information…",
     "failed": "Stash movie information is temporarily unavailable",
     "retry": "Reload",
     "untitled": "Untitled movie",
-    "releaseDate": "Release date",
     "open": "View in Stash",
     "openLabel": "View in Stash: {{title}}",
     "missing": "Unavailable linked movies: {{count}}"
   },
   "taskFlow": {
+    "ingested": "In library",
     "running": {
       "scanning": "Scanning movie files",
       "generating": "Generating previews and playback assets",
@@ -1954,6 +1952,10 @@
     "cleanupDetail": "Click “Reselect torrent” again to resume cleanup. Copy diagnostics to inspect the failure."
   },
   "taskDetail": {
+    "moreInformation": "More information",
+    "sourcingMode": "Resource selection",
+    "originalMetadataSource": "Original metadata source",
+    "performers": "Performers",
     "overview": "Task overview",
     "created": "Created",
     "updated": "Last updated",

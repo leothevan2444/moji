@@ -28,8 +28,9 @@ The My subscriptions card keeps a large subscription total, a smaller latest-iss
 count and the heading's management link. The issue count opens
 `/performers?filter=error`; pending first checks appear when applicable. A neutral
 History action sits at the right of the check-status row. Its left side shows
-scheduling and the next relative deadline while idle, or actor/progress details
+the next check deadline while idle, without an always-on enabled message, or actor/progress details
 while active; narrow screens wrap that left content and retain the history entry.
+An unavailable scheduler still shows its unavailable state.
 
 `homeSubscriptionChecks` independently projects local run state: full active
 count, at most three active and three recent summaries, the latest scheduled run

@@ -84,11 +84,8 @@ export function HomeSubscriptions({ subscription, subscriptionError, onRetrySubs
         <div className="home-check-status">
           {error ? <div className="home-module-error" role="alert" aria-label={t("subscriptionChecks.title")}><p>{snapshot ? t("workbench.refreshFailed") : error}</p><button type="button" onClick={onRetry}>{t("common.retry")}</button></div> : null}
           {!snapshot ? !error && <div className="home-loading" aria-label={t("subscriptionChecks.loading")}><span /><span /><span /></div> : snapshot.activeRuns.length > 0 ? <div className="home-check-list" aria-label={t("subscriptionChecks.current")}><RunRow run={snapshot.activeRuns[0]} compact onOpen={onOpenRun} /></div> : <>
-            <span className="home-muted"><FontAwesomeIcon icon={faBinoculars} aria-hidden="true" /> {t(snapshot.enabled ? "subscriptionChecks.automaticEnabled" : "subscriptionChecks.automaticUnavailable")}</span>
-            {snapshot.activeCount > 0 ? <span className="home-muted">{t("subscriptionChecks.runningCount", { count: snapshot.activeCount })}</span> : snapshot.enabled ? <>
-              <span className="home-muted" aria-hidden="true">·</span>
-              <span className="home-muted">{snapshot.nextRunAt ? <time dateTime={snapshot.nextRunAt} title={formatDateTime(snapshot.nextRunAt)} aria-label={t("subscriptionChecks.nextCheckIn", { time: formatNextRun(snapshot.nextRunAt, i18n.language) })}>{formatNextRun(snapshot.nextRunAt, i18n.language)}</time> : t("subscriptionChecks.nextCheckUnknown")}</span>
-            </> : null}
+            {!snapshot.enabled ? <span className="home-muted"><FontAwesomeIcon icon={faBinoculars} aria-hidden="true" /> {t("subscriptionChecks.automaticUnavailable")}</span> : null}
+            {snapshot.activeCount > 0 ? <span className="home-muted">{t("subscriptionChecks.runningCount", { count: snapshot.activeCount })}</span> : snapshot.enabled ? <span className="home-muted"><FontAwesomeIcon icon={faBinoculars} aria-hidden="true" /> {snapshot.nextRunAt ? <time dateTime={snapshot.nextRunAt} title={formatDateTime(snapshot.nextRunAt)} aria-label={t("subscriptionChecks.nextCheckIn", { time: formatNextRun(snapshot.nextRunAt, i18n.language) })}>{t("subscriptionChecks.nextCheckIn", { time: formatNextRun(snapshot.nextRunAt, i18n.language) })}</time> : t("subscriptionChecks.nextCheckUnknown")}</span> : null}
           </>}
         </div>
         <button type="button" className="home-inline-button home-check-history-button" aria-haspopup="dialog" onClick={() => setHistoryOpen(true)}><FontAwesomeIcon icon={faClockRotateLeft} aria-hidden="true" />{t("performerActivity.history")}</button>

@@ -951,7 +951,6 @@
     "statFailed": "异常",
     "statSkipped": "跳过",
     "statisticsHelp": "统计最近保留的 {{count}} 次已结束运行（最多 100 次）中的演员检查结果，不按固定天数，包含手动和自动检查。重复检查分别计数，中断计入异常。",
-    "automaticEnabled": "自动检查已启用",
     "automaticUnavailable": "自动检查暂不可用",
     "allBusy": "全部订阅检查正在运行，请稍后再试。",
     "title": "作品检查",
@@ -1274,7 +1273,8 @@
     "waiting": "等待开始选种"
   },
   "taskInfo": {
-    "downloadLocation": "下载位置",
+    "contentLocation": "内容位置",
+    "saveDirectory": "保存目录",
     "libraryLocation": "入库位置",
     "transferMethod": "搬运方式",
     "transferTarget": "目标位置",
@@ -1283,19 +1283,17 @@
   },
   "taskStash": {
     "notFound": "未找到关联的 Stash 影片。如果已主动删除，可移除对应的 Moji 任务。",
-    "title": "Stash 影片信息",
-    "pending": "入库后显示影片信息",
     "empty": "未找到关联的 Stash 影片",
     "loading": "正在加载影片信息…",
     "failed": "暂时无法加载 Stash 影片信息",
     "retry": "重新加载",
     "untitled": "未命名影片",
-    "releaseDate": "发行日期",
     "open": "在 Stash 中查看",
     "openLabel": "在 Stash 中查看：{{title}}",
     "missing": "有 {{count}} 部关联影片未找到"
   },
   "taskFlow": {
+    "ingested": "已入库",
     "running": {
       "scanning": "正在扫描影片文件",
       "generating": "正在生成预览与播放资源",
@@ -1947,6 +1945,10 @@
     "cleanupDetail": "请再次点击“重新选种”以继续清理；可复制诊断信息查看失败原因。"
   },
   "taskDetail": {
+    "moreInformation": "详细信息",
+    "sourcingMode": "选源方式",
+    "originalMetadataSource": "原始资料来源",
+    "performers": "演员",
     "overview": "任务总览",
     "created": "创建时间",
     "updated": "最近更新",

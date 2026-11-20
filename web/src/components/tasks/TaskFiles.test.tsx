@@ -23,10 +23,11 @@ describe("TaskFiles", () => {
  it("uses the save directory when the content path is unavailable", async () => {
   const onCopy = vi.fn();
   render(<TaskFiles task={{ ...task, files: [], savePath: "/downloads/library", tags: " " }} onCopy={onCopy} />);
-  expect(screen.getByText("Download location")).toBeTruthy();
+  expect(screen.getByText("Save directory")).toBeTruthy();
+  expect(screen.queryByText("Content location")).toBeNull();
   expect(screen.queryByText("Tags")).toBeNull();
-  await userEvent.setup().click(screen.getByRole("button", { name: "Copy Download location" }));
-  expect(onCopy).toHaveBeenCalledWith("/downloads/library", "Download location copied");
+  await userEvent.setup().click(screen.getByRole("button", { name: "Copy Save directory" }));
+  expect(onCopy).toHaveBeenCalledWith("/downloads/library", "Save directory copied");
  });
  it("lets the user choose and order uncertain videos without selecting extras", async () => {
   const user = userEvent.setup(); render(<TaskFiles task={task} />);
@@ -38,19 +39,23 @@ describe("TaskFiles", () => {
   expect(resolve).toHaveBeenCalledWith({ id: task.id, videoIndices: [12, 7] });
   expect(await screen.findByRole("status")).toBeTruthy();
  });
- it("always shows the file groups and gives download files priority over skipped extras", () => {
+ it("keeps download files expanded and skipped extras collapsed until requested", async () => {
   const { rerender } = render(<TaskFiles task={{ ...task, stageStatus: "RUNNING" as DashboardTask["stageStatus"] }} />);
   expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
   const list = screen.getByRole("article", { name: "Torrent information" });
-  expect(list.querySelector("details, summary")).toBeNull();
+  expect(list.querySelector("details")?.open).toBe(false);
   const downloads = screen.getByRole("region", { name: "Download files" });
   const skipped = screen.getByRole("region", { name: "Skipped" });
   expect(within(downloads).getByText("movie.en.srt")).toBeTruthy();
+  const disclosure = skipped.querySelector("details")!;
+  expect(disclosure.open).toBe(false);
+  await userEvent.setup().click(disclosure.querySelector("summary")!);
+  expect(disclosure.open).toBe(true);
   expect(within(skipped).getByText("advert.mp4")).toBeTruthy();
   expect(within(skipped).getByText("unknown-a.mkv")).toBeTruthy();
   expect(screen.queryByText("Only selected movie files and retained subtitles are delivered to Stash. Multiple movie parts are merged in the order below.")).toBeNull();
   rerender(<TaskFiles task={{ ...task, id: "task-2" }} />);
-  expect(screen.getByRole("article", { name: "Torrent information" }).querySelector("details, summary")).toBeNull();
+  expect(screen.getByRole("article", { name: "Torrent information" }).querySelector("details")?.open).toBe(false);
  });
  it("shows filenames with complete paths on hover and copies the original path", async () => {
   const user = userEvent.setup();
