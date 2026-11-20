@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { DownloadManager } from "../downloader/DownloadManager";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons/faCopy";
@@ -29,6 +30,7 @@ interface TaskDetailProps {
 export function TaskDetail({ task, pendingRetry, pendingDelete,
   onCopy, onResolveTask, onRetryTask, onDeleteTask, onRestartTask, pendingRestart
 }: TaskDetailProps) {
+  useAppTimezone();
   const { t } = useTranslation();
   const presentation = taskPresentation(task);
   const failure = taskFailureSummary(task);

@@ -46,11 +46,11 @@ func TestPatchSettingsGraphQLDistinguishesOmissionFalseEmptyAndNull(t *testing.T
 	}
 }
 
-func TestSettingsPatchReleaseTimezone(t *testing.T) {
+func TestSettingsPatchTimezone(t *testing.T) {
 	manual := "America/New_York"
-	value := settingsPatchValue(reflect.ValueOf(model.SettingsPatchInput{System: &model.SystemPatchInput{ReleaseTimezone: &manual}}))
+	value := settingsPatchValue(reflect.ValueOf(model.SettingsPatchInput{System: &model.SystemPatchInput{Timezone: &manual}}))
 	patch := value.(map[string]any)
-	if patch["system"].(map[string]any)["release_timezone"] != manual {
+	if patch["system"].(map[string]any)["timezone"] != manual {
 		t.Fatalf("timezone lost: %+v", patch)
 	}
 }

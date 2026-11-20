@@ -95,7 +95,7 @@ const rootValue = {
   setIndexerEnabled: indexerInstances,
   refreshJackettIndexers: indexerInstances,
   reorderIndexers: indexerInstances,
- upcomingReleases: () => ({items:[],performers:[],totalCount:0,page:1,pageSize:24,totalPages:0,subscribedCount:2,automatic:true,timezone:"Asia/Shanghai",today:"2026-10-31"}),
+ upcomingReleases: () => ({items:[],performers:[],totalCount:0,page:1,pageSize:24,totalPages:0,subscribedCount:2,timezone:"Asia/Shanghai",today:"2026-10-31"}),
   version: "0.0.0-visual",
   testServiceConnection: {code:"OK"},
   refreshDownloader: true,
@@ -140,15 +140,14 @@ const rootValue = {
       transfer: { action: "COPY" },
     },
     automation: {
-      taskProgressSyncIntervalSeconds: 60, subscriptionCheckEnabled: true,
-      sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
+      taskProcessingFrequency: "MEDIUM", sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: {
         soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW",
         maxGroupPerformerCount: 5, releaseDateRange: "ALL",
       },
       torrentSelection: { enabled: false, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] },
     },
-    system: { releaseTimezone:"auto",effectiveReleaseTimezone:"Asia/Shanghai",
+    system: { timezone:"auto",effectiveTimezone:"UTC",systemTimezone:"UTC",
       developerMode: false,
       taskDeletePolicy: "KEEP_ONLY",
       imageCache: { enabled: true, maxSizeMb: 1024, retentionDays: 30 },
@@ -161,8 +160,8 @@ const rootValue = {
     qbittorrent: { configured: true, ready: true },
     ingest: { configured: true },
     automation: {
-      taskProgressSyncIntervalSeconds: 60,
-      subscriptionCheckEnabled: true, subscriptionPollEnabled: false,
+      taskProcessingFrequency: "MEDIUM",
+
     },
     stashBox: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null },
     stashLibraries: [{ path: "/library" }],

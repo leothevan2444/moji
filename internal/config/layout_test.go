@@ -1,12 +1,13 @@
 package config
 
 import (
-	"github.com/leothevan2444/moji/internal/releasedate"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/leothevan2444/moji/internal/apptime"
 )
 
 func TestV2UUIDShapedJackettIDStaysExternalDuringEverySave(t *testing.T) {
@@ -55,8 +56,7 @@ ingest:
   library: {moji_root: /lib, stash_root: /stash}
   transfer: {action: COPY}
 automation:
-  task_progress_sync_interval_seconds: 120
-  subscription_check_enabled: true
+  task_processing_frequency: LOW
   selected_stash_box_endpoints: [second, first]
   torrent_selection:
     enabled: true
@@ -112,7 +112,7 @@ custom: {untouched: true}
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Automation.StashBoxEndpoints[0] != "third" || got.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs[0] != "b" || got.Automation.TaskProgressSyncIntervalSeconds != 120 {
+	if got.Automation.StashBoxEndpoints[0] != "third" || got.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs[0] != "b" || got.Automation.TaskProcessingFrequency != "LOW" {
 		t.Fatal("section save overwrote another section")
 	}
 	// Subsequent writes must also preserve logging and unrelated fields.
@@ -222,15 +222,15 @@ func TestLanguageValidationAndDeletionConflict(t *testing.T) {
 	}
 }
 
-func TestReleaseTimezoneDefaultsAndValidation(t *testing.T) {
-	for _, tc := range []struct{ raw, want string }{{"config_version: 2\nsystem: {}\n", releasedate.EffectiveTimezone("auto")}, {"config_version: 2\nsystem: {release_timezone: Asia/Tokyo}\n", "Asia/Tokyo"}, {"system: {release_timezone: UTC}\n", "UTC"}} {
+func TestTimezoneDefaultsAndValidation(t *testing.T) {
+	for _, tc := range []struct{ raw, want string }{{"config_version: 2\nsystem: {}\n", apptime.EffectiveTimezone("auto")}, {"config_version: 2\nsystem: {timezone: Asia/Tokyo}\n", "Asia/Tokyo"}, {"system: {timezone: UTC}\n", "UTC"}} {
 		var cfg Config
-		if err := yaml.Unmarshal([]byte(tc.raw), &cfg); err != nil || cfg.System.EffectiveReleaseTimezone() != tc.want {
+		if err := yaml.Unmarshal([]byte(tc.raw), &cfg); err != nil || cfg.System.EffectiveTimezone() != tc.want {
 			t.Fatalf("timezone %+v %v", cfg.System, err)
 		}
 	}
 	var cfg Config
-	if err := yaml.Unmarshal([]byte("config_version: 2\nsystem: {release_timezone: invalid/timezone}\n"), &cfg); err == nil {
+	if err := yaml.Unmarshal([]byte("config_version: 2\nsystem: {timezone: invalid/timezone}\n"), &cfg); err == nil {
 		t.Fatal("invalid timezone accepted")
 	}
 }
@@ -251,14 +251,26 @@ func TestAutomaticChecksDefaultAndRemovedInterval(t *testing.T) {
 		if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
 			t.Fatal(err)
 		}
-		if !cfg.Automation.SubscriptionCheckEnabled {
-			t.Fatal("automatic checks should default to enabled")
-		}
+
 	}
 	for _, raw := range []string{"automation:\n  subscription_poll_interval_hours: 48\n", "config_version: 4\ntasks:\n  subscription_poll_interval_hours: -1\n"} {
 		var cfg Config
 		if err := yaml.Unmarshal([]byte(raw), &cfg); err == nil {
 			t.Fatal("removed interval must not silently change disabled state")
+		}
+	}
+}
+
+func TestRetiredSchedulingAndTimezoneFieldsRequireManualCleanup(t *testing.T) {
+	for _, raw := range []string{
+		"config_version: 4\ntasks: {subscription_check_enabled: false}\n",
+		"config_version: 4\ntasks: {task_progress_sync_interval_seconds: 60}\n",
+		"config_version: 4\nsystem: {release_timezone: Asia/Tokyo}\n",
+		"config_version: 4\ntasks: {task_processing_frequency: FAST}\n",
+	} {
+		var cfg Config
+		if err := yaml.Unmarshal([]byte(raw), &cfg); err == nil {
+			t.Fatal("obsolete or invalid setting silently accepted")
 		}
 	}
 }

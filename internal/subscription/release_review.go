@@ -334,7 +334,7 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 				return nil
 			}
 		}
-		if err := releasedate.Check(record.Date, s.now(), s.releaseTimezone()); err == releasedate.ErrNotReleased {
+		if err := releasedate.Check(record.Date, s.now(), s.timezone()); err == releasedate.ErrNotReleased {
 			return err
 		}
 	}
@@ -343,7 +343,7 @@ func (s *Service) downloadReviewLocked(ctx context.Context, record *ReleaseRevie
 
 // Both callers have checked library membership before requesting a task.
 func (s *Service) queueReviewTaskLocked(ctx context.Context, record *ReleaseReview, tasks map[string]*taskruntime.Task) error {
-	if err := releasedate.Check(record.Date, s.now(), s.releaseTimezone()); err == releasedate.ErrNotReleased {
+	if err := releasedate.Check(record.Date, s.now(), s.timezone()); err == releasedate.ErrNotReleased {
 		return err
 	}
 

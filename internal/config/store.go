@@ -65,6 +65,14 @@ func parseStore(path string, file []byte) (*Store, error) {
 	}, nil
 }
 
+// Timezone is a narrow read for frequent timestamp formatting; it avoids cloning
+// the full configuration for each log record.
+func (s *Store) Timezone() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.cfg.System.EffectiveTimezone()
+}
+
 func (s *Store) Config() *Config {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -145,17 +153,17 @@ func (s *Store) UpdateQBittorrent(url, username, password, defaultSavePath, cate
 	return cloneConfig(s.cfg), nil
 }
 
-func (s *Store) UpdateAutomation(taskProgressSyncIntervalSeconds int, subscriptionCheckEnabled bool, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
+func (s *Store) UpdateAutomation(taskProcessingFrequency string, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.updateAutomationLocked(taskProgressSyncIntervalSeconds, subscriptionCheckEnabled, stashBoxEndpoints, subscriptionReleasePolicy, torrentSelection, sourcingRetryIntervalHours...)
+	return s.updateAutomationLocked(taskProcessingFrequency, stashBoxEndpoints, subscriptionReleasePolicy, torrentSelection, sourcingRetryIntervalHours...)
 }
 
-func (s *Store) updateAutomationLocked(taskProgressSyncIntervalSeconds int, subscriptionCheckEnabled bool, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
-	switch taskProgressSyncIntervalSeconds {
-	case 30, 60, 120, 300:
+func (s *Store) updateAutomationLocked(taskProcessingFrequency string, stashBoxEndpoints []string, subscriptionReleasePolicy SubscriptionReleasePolicyConfig, torrentSelection TorrentSelectionConfig, sourcingRetryIntervalHours ...int) (*Config, error) {
+	switch taskProcessingFrequency {
+	case "HIGH", "MEDIUM", "LOW":
 	default:
-		return nil, fmt.Errorf("task processing interval must be 30, 60, 120 or 300 seconds")
+		return nil, fmt.Errorf("task processing frequency must be HIGH, MEDIUM or LOW")
 	}
 
 	if err := torrentSelection.Validate(); err != nil {
@@ -168,8 +176,7 @@ func (s *Store) updateAutomationLocked(taskProgressSyncIntervalSeconds int, subs
 		s.cfg.Automation.SourcingRetryIntervalHours = sourcingRetryIntervalHours[0]
 	}
 
-	s.cfg.Automation.TaskProgressSyncIntervalSeconds = taskProgressSyncIntervalSeconds
-	s.cfg.Automation.SubscriptionCheckEnabled = subscriptionCheckEnabled
+	s.cfg.Automation.TaskProcessingFrequency = taskProcessingFrequency
 	s.cfg.Automation.StashBoxEndpoints = cleanStrings(stashBoxEndpoints)
 	s.cfg.Automation.SubscriptionReleasePolicy = subscriptionReleasePolicy.Effective()
 	if !slices.Equal(s.cfg.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs, torrentSelection.FastRules.IndexerPreference.TrackerIDs) {
@@ -289,9 +296,8 @@ func (s *Store) updateConfigNode() (resultErr error) {
 		"category":          s.cfg.Connection.QBittorrent.Category,
 		"tags":              s.cfg.Connection.QBittorrent.Tags,
 	})
-	setIntScalar(mapValue(top, "automation"), "task_progress_sync_interval_seconds", s.cfg.Automation.TaskProgressSyncIntervalSeconds)
+	setScalar(mapValue(top, "automation"), "task_processing_frequency", s.cfg.Automation.EffectiveTaskProcessingFrequency())
 	setIntScalar(mapValue(top, "automation"), "sourcing_retry_interval_hours", s.cfg.Automation.EffectiveSourcingRetryIntervalHours())
-	setBoolScalar(mapValue(top, "automation"), "subscription_check_enabled", s.cfg.Automation.SubscriptionCheckEnabled)
 	setStringList(mapValue(top, "automation"), "selected_stash_box_endpoints", s.cfg.Automation.StashBoxEndpoints)
 	setNodeValue(mapValue(top, "downloader"), "cleanup", s.cfg.Downloader.Cleanup)
 	setNodeValue(mapValue(top, "automation"), "subscription_release_policy", s.cfg.Automation.SubscriptionReleasePolicy.Effective())
@@ -497,16 +503,15 @@ func (s *Store) UpdateAutomationSection(section string, update AutomationConfig)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	current := s.cfg.Automation
-	if current.TaskProgressSyncIntervalSeconds <= 0 {
-		current.TaskProgressSyncIntervalSeconds = 60
+	if current.TaskProcessingFrequency == "" {
+		current.TaskProcessingFrequency = "MEDIUM"
 	}
 	switch section {
 	case "", "ALL":
 		current = update
 	case "TASKS":
-		current.TaskProgressSyncIntervalSeconds = update.TaskProgressSyncIntervalSeconds
+		current.TaskProcessingFrequency = update.TaskProcessingFrequency
 		current.SourcingRetryIntervalHours = update.SourcingRetryIntervalHours
-		current.SubscriptionCheckEnabled = update.SubscriptionCheckEnabled
 		current.SubscriptionReleasePolicy = update.SubscriptionReleasePolicy
 	case "RESOURCES":
 		preference := current.TorrentSelection.FastRules.IndexerPreference
@@ -519,7 +524,7 @@ func (s *Store) UpdateAutomationSection(section string, update AutomationConfig)
 	default:
 		return nil, fmt.Errorf("unknown settings section %q", section)
 	}
-	return s.updateAutomationLocked(current.TaskProgressSyncIntervalSeconds, current.SubscriptionCheckEnabled, current.StashBoxEndpoints, current.SubscriptionReleasePolicy, current.TorrentSelection, current.EffectiveSourcingRetryIntervalHours())
+	return s.updateAutomationLocked(current.TaskProcessingFrequency, current.StashBoxEndpoints, current.SubscriptionReleasePolicy, current.TorrentSelection, current.EffectiveSourcingRetryIntervalHours())
 }
 
 func (s *Store) UpdateStashBoxCache(ttl int) (*Config, error) {

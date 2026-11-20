@@ -23,7 +23,7 @@ describe("route-owned GraphQL operations", () => {
   it("keeps each route query scoped to its surface", () => {
     expect(rootFields(HomePageDocumentDocument)).toEqual(["homeTaskSnapshot", "settings"]);
     expect(rootFields(HomeServiceStatusDocument)).toEqual(["settingsStatus"]);
-    expect(rootFields(TasksWorkspaceDocument)).toEqual(["settings", "settingsStatus", "taskPage"]);
+    expect(rootFields(TasksWorkspaceDocument)).toEqual(["settings", "taskPage"]);
     expect(rootFields(ServiceConnectionSettingsDocument)).toEqual(["settings"]);
     expect(rootFields(ServiceConnectionStatusDocument)).toEqual(["settingsStatus"]);
     expect(rootFields(LibraryDeliverySettingsDocument)).toEqual(["settings", "settingsStatus"]);

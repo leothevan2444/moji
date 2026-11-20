@@ -14,14 +14,24 @@ import (
 // values by business ownership; legacy documents are read without rewriting.
 func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 	for _, section := range []string{"tasks", "automation"} {
-		if group := existingMapValue(node, section); group != nil && existingMapValue(group, "subscription_poll_interval_hours") != nil {
-			return fmt.Errorf("%s.subscription_poll_interval_hours is no longer supported; use subscription_check_enabled (true or false)", section)
+		if group := existingMapValue(node, section); group != nil {
+			for _, retired := range []string{"subscription_poll_interval_hours", "subscription_check_enabled", "task_progress_sync_interval_seconds"} {
+				if existingMapValue(group, retired) != nil {
+					return fmt.Errorf("%s.%s is no longer supported; remove subscription switches and use task_processing_frequency (HIGH, MEDIUM or LOW)", section, retired)
+				}
+			}
+			if value := existingMapValue(group, "task_processing_frequency"); value != nil && value.Value != "HIGH" && value.Value != "MEDIUM" && value.Value != "LOW" {
+				return fmt.Errorf("task_processing_frequency must be HIGH, MEDIUM or LOW")
+			}
 		}
+	}
+	if system := existingMapValue(node, "system"); system != nil && existingMapValue(system, "release_timezone") != nil {
+		return fmt.Errorf("system.release_timezone is no longer supported; rename it to system.timezone")
 	}
 	type plain Config
 	*c = Config{}
 	c.Downloader.Cleanup = DefaultDownloaderCleanup()
-	c.Automation.SubscriptionCheckEnabled = true
+	c.Automation.TaskProcessingFrequency = "MEDIUM"
 	c.Automation.TorrentSelection = DefaultTorrentSelectionConfig()
 	c.Indexers = DefaultIndexersConfig()
 	var version struct {
@@ -234,8 +244,8 @@ func decanonicalizeConfigNode(top *yaml.Node) {
 }
 
 func validateSystemCalendar(system SystemConfig) error {
-	if _, err := time.LoadLocation(system.ReleaseTimezoneMode()); system.ReleaseTimezoneMode() != "auto" && err != nil {
-		return fmt.Errorf("invalid release timezone: %w", err)
+	if _, err := time.LoadLocation(system.TimezoneMode()); system.TimezoneMode() != "auto" && err != nil {
+		return fmt.Errorf("invalid timezone: %w", err)
 	}
 	return ValidateLanguage(system.Language)
 }

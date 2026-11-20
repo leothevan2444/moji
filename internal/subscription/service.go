@@ -46,15 +46,15 @@ type Service struct {
 	now              func() time.Time
 	eventPublisher   PerformerSubscriptionEventPublisher
 
-	policyMu      sync.RWMutex
-	releasePolicy ReleasePolicyConfig
-	operationMu   sync.Mutex
-	operations    map[string]*performerOperationLock
-	upcomingMu    sync.Mutex
-	timezone      func() string
-	reviewMu      sync.Mutex
-	reviews       ReleaseReviewStore
-	reviewTasks   ReviewTaskLister
+	policyMu         sync.RWMutex
+	releasePolicy    ReleasePolicyConfig
+	operationMu      sync.Mutex
+	operations       map[string]*performerOperationLock
+	upcomingMu       sync.Mutex
+	timezoneProvider func() string
+	reviewMu         sync.Mutex
+	reviews          ReleaseReviewStore
+	reviewTasks      ReviewTaskLister
 }
 
 func (s *Service) SetImageProxy(proxy *imagecache.Service, stashConfig func() (string, string)) {
@@ -712,7 +712,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 		}()
 	}
 
-	sample := newActivitySample(now, s.releaseTimezone())
+	sample := newActivitySample(now, s.timezone())
 	releaseDone := false
 	var releaseErr error
 	for page := 1; page <= releaseQueryBackfillMaxPages; page++ {
@@ -788,7 +788,7 @@ func (s *Service) fetchReleases(ctx context.Context, performer *stashgraphql.Per
 				continue
 			}
 			code := strings.TrimSpace(stringValue(scene.Code))
-			if code == "" && releasedate.Check(stringValue(scene.Date), now, s.releaseTimezone()) != releasedate.ErrNotReleased {
+			if code == "" && releasedate.Check(stringValue(scene.Date), now, s.timezone()) != releasedate.ErrNotReleased {
 				releaseErr = fmt.Errorf("subscription: stash-box scene %q is missing code", scene.ID)
 				continue
 			}

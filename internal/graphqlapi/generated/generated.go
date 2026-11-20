@@ -50,18 +50,16 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	AutomationSettings struct {
-		SourcingRetryIntervalHours      func(childComplexity int) int
-		StashBoxEndpoints               func(childComplexity int) int
-		SubscriptionCheckEnabled        func(childComplexity int) int
-		SubscriptionReleasePolicy       func(childComplexity int) int
-		TaskProgressSyncIntervalSeconds func(childComplexity int) int
-		TorrentSelection                func(childComplexity int) int
+		SourcingRetryIntervalHours func(childComplexity int) int
+		StashBoxEndpoints          func(childComplexity int) int
+		SubscriptionReleasePolicy  func(childComplexity int) int
+		TaskProcessingFrequency    func(childComplexity int) int
+		TorrentSelection           func(childComplexity int) int
 	}
 
 	AutomationStatus struct {
-		SubscriptionCheckEnabled        func(childComplexity int) int
-		SubscriptionPollEnabled         func(childComplexity int) int
-		TaskProgressSyncIntervalSeconds func(childComplexity int) int
+		SubscriptionPollEnabled func(childComplexity int) int
+		TaskProcessingFrequency func(childComplexity int) int
 	}
 
 	BuiltinIndexerResult struct {
@@ -1311,13 +1309,14 @@ type ComplexityRoot struct {
 	}
 
 	SystemSettings struct {
-		DeveloperMode            func(childComplexity int) int
-		EffectiveReleaseTimezone func(childComplexity int) int
-		ImageCache               func(childComplexity int) int
-		Language                 func(childComplexity int) int
-		ReleaseTimezone          func(childComplexity int) int
-		StashBoxDataCache        func(childComplexity int) int
-		TaskDeletePolicy         func(childComplexity int) int
+		DeveloperMode     func(childComplexity int) int
+		EffectiveTimezone func(childComplexity int) int
+		ImageCache        func(childComplexity int) int
+		Language          func(childComplexity int) int
+		StashBoxDataCache func(childComplexity int) int
+		SystemTimezone    func(childComplexity int) int
+		TaskDeletePolicy  func(childComplexity int) int
+		Timezone          func(childComplexity int) int
 	}
 
 	Task struct {
@@ -1631,7 +1630,6 @@ type ComplexityRoot struct {
 	}
 
 	UpcomingReleaseConnection struct {
-		Automatic       func(childComplexity int) int
 		Items           func(childComplexity int) int
 		Page            func(childComplexity int) int
 		PageSize        func(childComplexity int) int
@@ -1810,13 +1808,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AutomationSettings.StashBoxEndpoints(childComplexity), true
 
-	case "AutomationSettings.subscriptionCheckEnabled":
-		if e.complexity.AutomationSettings.SubscriptionCheckEnabled == nil {
-			break
-		}
-
-		return e.complexity.AutomationSettings.SubscriptionCheckEnabled(childComplexity), true
-
 	case "AutomationSettings.subscriptionReleasePolicy":
 		if e.complexity.AutomationSettings.SubscriptionReleasePolicy == nil {
 			break
@@ -1824,12 +1815,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AutomationSettings.SubscriptionReleasePolicy(childComplexity), true
 
-	case "AutomationSettings.taskProgressSyncIntervalSeconds":
-		if e.complexity.AutomationSettings.TaskProgressSyncIntervalSeconds == nil {
+	case "AutomationSettings.taskProcessingFrequency":
+		if e.complexity.AutomationSettings.TaskProcessingFrequency == nil {
 			break
 		}
 
-		return e.complexity.AutomationSettings.TaskProgressSyncIntervalSeconds(childComplexity), true
+		return e.complexity.AutomationSettings.TaskProcessingFrequency(childComplexity), true
 
 	case "AutomationSettings.torrentSelection":
 		if e.complexity.AutomationSettings.TorrentSelection == nil {
@@ -1838,13 +1829,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AutomationSettings.TorrentSelection(childComplexity), true
 
-	case "AutomationStatus.subscriptionCheckEnabled":
-		if e.complexity.AutomationStatus.SubscriptionCheckEnabled == nil {
-			break
-		}
-
-		return e.complexity.AutomationStatus.SubscriptionCheckEnabled(childComplexity), true
-
 	case "AutomationStatus.subscriptionPollEnabled":
 		if e.complexity.AutomationStatus.SubscriptionPollEnabled == nil {
 			break
@@ -1852,12 +1836,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AutomationStatus.SubscriptionPollEnabled(childComplexity), true
 
-	case "AutomationStatus.taskProgressSyncIntervalSeconds":
-		if e.complexity.AutomationStatus.TaskProgressSyncIntervalSeconds == nil {
+	case "AutomationStatus.taskProcessingFrequency":
+		if e.complexity.AutomationStatus.TaskProcessingFrequency == nil {
 			break
 		}
 
-		return e.complexity.AutomationStatus.TaskProgressSyncIntervalSeconds(childComplexity), true
+		return e.complexity.AutomationStatus.TaskProcessingFrequency(childComplexity), true
 
 	case "BuiltinIndexerResult.instance":
 		if e.complexity.BuiltinIndexerResult.Instance == nil {
@@ -8623,12 +8607,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SystemSettings.DeveloperMode(childComplexity), true
 
-	case "SystemSettings.effectiveReleaseTimezone":
-		if e.complexity.SystemSettings.EffectiveReleaseTimezone == nil {
+	case "SystemSettings.effectiveTimezone":
+		if e.complexity.SystemSettings.EffectiveTimezone == nil {
 			break
 		}
 
-		return e.complexity.SystemSettings.EffectiveReleaseTimezone(childComplexity), true
+		return e.complexity.SystemSettings.EffectiveTimezone(childComplexity), true
 
 	case "SystemSettings.imageCache":
 		if e.complexity.SystemSettings.ImageCache == nil {
@@ -8644,13 +8628,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SystemSettings.Language(childComplexity), true
 
-	case "SystemSettings.releaseTimezone":
-		if e.complexity.SystemSettings.ReleaseTimezone == nil {
-			break
-		}
-
-		return e.complexity.SystemSettings.ReleaseTimezone(childComplexity), true
-
 	case "SystemSettings.stashBoxDataCache":
 		if e.complexity.SystemSettings.StashBoxDataCache == nil {
 			break
@@ -8658,12 +8635,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SystemSettings.StashBoxDataCache(childComplexity), true
 
+	case "SystemSettings.systemTimezone":
+		if e.complexity.SystemSettings.SystemTimezone == nil {
+			break
+		}
+
+		return e.complexity.SystemSettings.SystemTimezone(childComplexity), true
+
 	case "SystemSettings.taskDeletePolicy":
 		if e.complexity.SystemSettings.TaskDeletePolicy == nil {
 			break
 		}
 
 		return e.complexity.SystemSettings.TaskDeletePolicy(childComplexity), true
+
+	case "SystemSettings.timezone":
+		if e.complexity.SystemSettings.Timezone == nil {
+			break
+		}
+
+		return e.complexity.SystemSettings.Timezone(childComplexity), true
 
 	case "Task.candidate":
 		if e.complexity.Task.Candidate == nil {
@@ -10247,13 +10238,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UpcomingRelease.Title(childComplexity), true
 
-	case "UpcomingReleaseConnection.automatic":
-		if e.complexity.UpcomingReleaseConnection.Automatic == nil {
-			break
-		}
-
-		return e.complexity.UpcomingReleaseConnection.Automatic(childComplexity), true
-
 	case "UpcomingReleaseConnection.items":
 		if e.complexity.UpcomingReleaseConnection.Items == nil {
 			break
@@ -11399,7 +11383,9 @@ extend type Subscription {
   serviceStatusEvents: ServiceStatusEvent!
 }
 `, BuiltIn: false},
-	{Name: "../../../graphql/moji/types/settings.graphql", Input: `extend type Query {
+	{Name: "../../../graphql/moji/types/settings.graphql", Input: `enum TaskProcessingFrequency { HIGH MEDIUM LOW }
+
+extend type Query {
   "Get editable configuration for the Settings surface"
   settings: Settings!
 
@@ -11698,8 +11684,8 @@ type QBittorrentSettings {
 
 type AutomationSettings {
   sourcingRetryIntervalHours: Int!
-  taskProgressSyncIntervalSeconds: Int!
-  subscriptionCheckEnabled: Boolean!
+  taskProcessingFrequency: TaskProcessingFrequency!
+
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
   stashBoxEndpoints: [String!]!
   subscriptionReleasePolicy: SubscriptionReleasePolicy!
@@ -11736,8 +11722,9 @@ enum TaskDeletePolicy {
 }
 
 type SystemSettings {
- releaseTimezone: String!
- effectiveReleaseTimezone: String!
+ timezone: String!
+ effectiveTimezone: String!
+ systemTimezone: String!
  language: String!
   developerMode: Boolean!
   taskDeletePolicy: TaskDeletePolicy!
@@ -11782,8 +11769,8 @@ type ServiceStatus {
 }
 
 type AutomationStatus {
-  taskProgressSyncIntervalSeconds: Int!
-  subscriptionCheckEnabled: Boolean!
+  taskProcessingFrequency: TaskProcessingFrequency!
+
   subscriptionPollEnabled: Boolean!
 }
 
@@ -11898,8 +11885,8 @@ enum AutomationSettingsSection { ALL TASKS RESOURCES METADATA INDEXERS TASK_DELE
 input UpdateAutomationSettingsInput {
   section: AutomationSettingsSection = ALL
   sourcingRetryIntervalHours: Int! = 6
-  taskProgressSyncIntervalSeconds: Int!
-  subscriptionCheckEnabled: Boolean!
+  taskProcessingFrequency: TaskProcessingFrequency!
+
   stashBoxEndpoints: [String!]!
   subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
   torrentSelection: TorrentSelectionSettingsInput!
@@ -11942,8 +11929,8 @@ input UpdateSettingsSectionInput {
  queryOrder: [String!]
 }
 input TaskSettingsInput {
- taskProgressSyncIntervalSeconds: Int!
- subscriptionCheckEnabled: Boolean!
+ taskProcessingFrequency: TaskProcessingFrequency!
+
  sourcingRetryIntervalHours: Int!
  subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
 }
@@ -12019,9 +12006,9 @@ input StashCachePatchInput {
 }
 
 input TasksPatchInput {
-  task_progress_sync_interval_seconds: Int
+  task_processing_frequency: TaskProcessingFrequency
   sourcing_retry_interval_hours: Int
-  subscription_check_enabled: Boolean
+
   task_delete_policy: TaskDeletePolicy
   subscription_release_policy: ReleasePolicyPatchInput
   torrent_selection: ResourceRulesPatchInput
@@ -12077,7 +12064,7 @@ input ToggleRulePatchInput {
 }
 
 input SystemPatchInput {
- release_timezone: String
+ timezone: String
   language: String
   developer_mode: Boolean
   image_cache: ImageCachePatchInput
@@ -13101,7 +13088,6 @@ type UpcomingReleaseConnection {
   pageSize: Int!
   totalPages: Int!
   subscribedCount: Int!
-  automatic: Boolean!
   timezone: String!
   today: String!
 }
@@ -16676,8 +16662,8 @@ func (ec *executionContext) fieldContext_AutomationSettings_sourcingRetryInterva
 	return fc, nil
 }
 
-func (ec *executionContext) _AutomationSettings_taskProgressSyncIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
+func (ec *executionContext) _AutomationSettings_taskProcessingFrequency(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationSettings_taskProcessingFrequency(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -16690,7 +16676,7 @@ func (ec *executionContext) _AutomationSettings_taskProgressSyncIntervalSeconds(
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TaskProgressSyncIntervalSeconds, nil
+		return obj.TaskProcessingFrequency, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -16702,63 +16688,19 @@ func (ec *executionContext) _AutomationSettings_taskProgressSyncIntervalSeconds(
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(model.TaskProcessingFrequency)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNTaskProcessingFrequency2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AutomationSettings_taskProcessingFrequency(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AutomationSettings",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AutomationSettings_subscriptionCheckEnabled(ctx context.Context, field graphql.CollectedField, obj *model.AutomationSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AutomationSettings_subscriptionCheckEnabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SubscriptionCheckEnabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AutomationSettings_subscriptionCheckEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AutomationSettings",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type TaskProcessingFrequency does not have child fields")
 		},
 	}
 	return fc, nil
@@ -16920,8 +16862,8 @@ func (ec *executionContext) fieldContext_AutomationSettings_torrentSelection(_ c
 	return fc, nil
 }
 
-func (ec *executionContext) _AutomationStatus_taskProgressSyncIntervalSeconds(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field)
+func (ec *executionContext) _AutomationStatus_taskProcessingFrequency(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AutomationStatus_taskProcessingFrequency(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -16934,7 +16876,7 @@ func (ec *executionContext) _AutomationStatus_taskProgressSyncIntervalSeconds(ct
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.TaskProgressSyncIntervalSeconds, nil
+		return obj.TaskProcessingFrequency, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -16946,63 +16888,19 @@ func (ec *executionContext) _AutomationStatus_taskProgressSyncIntervalSeconds(ct
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(model.TaskProcessingFrequency)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNTaskProcessingFrequency2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AutomationStatus_taskProgressSyncIntervalSeconds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AutomationStatus_taskProcessingFrequency(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AutomationStatus",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AutomationStatus_subscriptionCheckEnabled(ctx context.Context, field graphql.CollectedField, obj *model.AutomationStatus) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AutomationStatus_subscriptionCheckEnabled(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SubscriptionCheckEnabled, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AutomationStatus_subscriptionCheckEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AutomationStatus",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			return nil, errors.New("field of type TaskProcessingFrequency does not have child fields")
 		},
 	}
 	return fc, nil
@@ -49346,8 +49244,6 @@ func (ec *executionContext) fieldContext_Query_upcomingReleases(ctx context.Cont
 				return ec.fieldContext_UpcomingReleaseConnection_totalPages(ctx, field)
 			case "subscribedCount":
 				return ec.fieldContext_UpcomingReleaseConnection_subscribedCount(ctx, field)
-			case "automatic":
-				return ec.fieldContext_UpcomingReleaseConnection_automatic(ctx, field)
 			case "timezone":
 				return ec.fieldContext_UpcomingReleaseConnection_timezone(ctx, field)
 			case "today":
@@ -52469,10 +52365,8 @@ func (ec *executionContext) fieldContext_Settings_automation(_ context.Context, 
 			switch field.Name {
 			case "sourcingRetryIntervalHours":
 				return ec.fieldContext_AutomationSettings_sourcingRetryIntervalHours(ctx, field)
-			case "taskProgressSyncIntervalSeconds":
-				return ec.fieldContext_AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field)
-			case "subscriptionCheckEnabled":
-				return ec.fieldContext_AutomationSettings_subscriptionCheckEnabled(ctx, field)
+			case "taskProcessingFrequency":
+				return ec.fieldContext_AutomationSettings_taskProcessingFrequency(ctx, field)
 			case "stashBoxEndpoints":
 				return ec.fieldContext_AutomationSettings_stashBoxEndpoints(ctx, field)
 			case "subscriptionReleasePolicy":
@@ -52525,10 +52419,12 @@ func (ec *executionContext) fieldContext_Settings_system(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "releaseTimezone":
-				return ec.fieldContext_SystemSettings_releaseTimezone(ctx, field)
-			case "effectiveReleaseTimezone":
-				return ec.fieldContext_SystemSettings_effectiveReleaseTimezone(ctx, field)
+			case "timezone":
+				return ec.fieldContext_SystemSettings_timezone(ctx, field)
+			case "effectiveTimezone":
+				return ec.fieldContext_SystemSettings_effectiveTimezone(ctx, field)
+			case "systemTimezone":
+				return ec.fieldContext_SystemSettings_systemTimezone(ctx, field)
 			case "language":
 				return ec.fieldContext_SystemSettings_language(ctx, field)
 			case "developerMode":
@@ -52735,10 +52631,8 @@ func (ec *executionContext) fieldContext_SettingsStatus_automation(_ context.Con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "taskProgressSyncIntervalSeconds":
-				return ec.fieldContext_AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field)
-			case "subscriptionCheckEnabled":
-				return ec.fieldContext_AutomationStatus_subscriptionCheckEnabled(ctx, field)
+			case "taskProcessingFrequency":
+				return ec.fieldContext_AutomationStatus_taskProcessingFrequency(ctx, field)
 			case "subscriptionPollEnabled":
 				return ec.fieldContext_AutomationStatus_subscriptionPollEnabled(ctx, field)
 			}
@@ -62680,8 +62574,8 @@ func (ec *executionContext) fieldContext_SubscriptionReleasePolicy_releaseDateRa
 	return fc, nil
 }
 
-func (ec *executionContext) _SystemSettings_releaseTimezone(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SystemSettings_releaseTimezone(ctx, field)
+func (ec *executionContext) _SystemSettings_timezone(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SystemSettings_timezone(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -62694,7 +62588,7 @@ func (ec *executionContext) _SystemSettings_releaseTimezone(ctx context.Context,
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ReleaseTimezone, nil
+		return obj.Timezone, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -62711,7 +62605,7 @@ func (ec *executionContext) _SystemSettings_releaseTimezone(ctx context.Context,
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SystemSettings_releaseTimezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SystemSettings_timezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SystemSettings",
 		Field:      field,
@@ -62724,8 +62618,8 @@ func (ec *executionContext) fieldContext_SystemSettings_releaseTimezone(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _SystemSettings_effectiveReleaseTimezone(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SystemSettings_effectiveReleaseTimezone(ctx, field)
+func (ec *executionContext) _SystemSettings_effectiveTimezone(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SystemSettings_effectiveTimezone(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -62738,7 +62632,7 @@ func (ec *executionContext) _SystemSettings_effectiveReleaseTimezone(ctx context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.EffectiveReleaseTimezone, nil
+		return obj.EffectiveTimezone, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -62755,7 +62649,51 @@ func (ec *executionContext) _SystemSettings_effectiveReleaseTimezone(ctx context
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SystemSettings_effectiveReleaseTimezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SystemSettings_effectiveTimezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SystemSettings",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SystemSettings_systemTimezone(ctx context.Context, field graphql.CollectedField, obj *model.SystemSettings) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SystemSettings_systemTimezone(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SystemTimezone, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SystemSettings_systemTimezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SystemSettings",
 		Field:      field,
@@ -73812,50 +73750,6 @@ func (ec *executionContext) fieldContext_UpcomingReleaseConnection_subscribedCou
 	return fc, nil
 }
 
-func (ec *executionContext) _UpcomingReleaseConnection_automatic(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UpcomingReleaseConnection_automatic(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Automatic, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_UpcomingReleaseConnection_automatic(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "UpcomingReleaseConnection",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _UpcomingReleaseConnection_timezone(ctx context.Context, field graphql.CollectedField, obj *model.UpcomingReleaseConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UpcomingReleaseConnection_timezone(ctx, field)
 	if err != nil {
@@ -78602,20 +78496,20 @@ func (ec *executionContext) unmarshalInputSystemPatchInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"release_timezone", "language", "developer_mode", "image_cache"}
+	fieldsInOrder := [...]string{"timezone", "language", "developer_mode", "image_cache"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "release_timezone":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("release_timezone"))
+		case "timezone":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timezone"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.ReleaseTimezone = data
+			it.Timezone = data
 		case "language":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("language"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -78790,27 +78684,20 @@ func (ec *executionContext) unmarshalInputTaskSettingsInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"taskProgressSyncIntervalSeconds", "subscriptionCheckEnabled", "sourcingRetryIntervalHours", "subscriptionReleasePolicy"}
+	fieldsInOrder := [...]string{"taskProcessingFrequency", "sourcingRetryIntervalHours", "subscriptionReleasePolicy"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "taskProgressSyncIntervalSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProgressSyncIntervalSeconds"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
+		case "taskProcessingFrequency":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProcessingFrequency"))
+			data, err := ec.unmarshalNTaskProcessingFrequency2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TaskProgressSyncIntervalSeconds = data
-		case "subscriptionCheckEnabled":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscriptionCheckEnabled"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SubscriptionCheckEnabled = data
+			it.TaskProcessingFrequency = data
 		case "sourcingRetryIntervalHours":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourcingRetryIntervalHours"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -78838,20 +78725,20 @@ func (ec *executionContext) unmarshalInputTasksPatchInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"task_progress_sync_interval_seconds", "sourcing_retry_interval_hours", "subscription_check_enabled", "task_delete_policy", "subscription_release_policy", "torrent_selection"}
+	fieldsInOrder := [...]string{"task_processing_frequency", "sourcing_retry_interval_hours", "task_delete_policy", "subscription_release_policy", "torrent_selection"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "task_progress_sync_interval_seconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task_progress_sync_interval_seconds"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+		case "task_processing_frequency":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task_processing_frequency"))
+			data, err := ec.unmarshalOTaskProcessingFrequency2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TaskProgressSyncIntervalSeconds = data
+			it.TaskProcessingFrequency = data
 		case "sourcing_retry_interval_hours":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sourcing_retry_interval_hours"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -78859,13 +78746,6 @@ func (ec *executionContext) unmarshalInputTasksPatchInput(ctx context.Context, o
 				return it, err
 			}
 			it.SourcingRetryIntervalHours = data
-		case "subscription_check_enabled":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscription_check_enabled"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SubscriptionCheckEnabled = data
 		case "task_delete_policy":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("task_delete_policy"))
 			data, err := ec.unmarshalOTaskDeletePolicy2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskDeletePolicy(ctx, v)
@@ -79581,7 +79461,7 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 		asMap["sourcingRetryIntervalHours"] = 6
 	}
 
-	fieldsInOrder := [...]string{"section", "sourcingRetryIntervalHours", "taskProgressSyncIntervalSeconds", "subscriptionCheckEnabled", "stashBoxEndpoints", "subscriptionReleasePolicy", "torrentSelection"}
+	fieldsInOrder := [...]string{"section", "sourcingRetryIntervalHours", "taskProcessingFrequency", "stashBoxEndpoints", "subscriptionReleasePolicy", "torrentSelection"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -79602,20 +79482,13 @@ func (ec *executionContext) unmarshalInputUpdateAutomationSettingsInput(ctx cont
 				return it, err
 			}
 			it.SourcingRetryIntervalHours = data
-		case "taskProgressSyncIntervalSeconds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProgressSyncIntervalSeconds"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
+		case "taskProcessingFrequency":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskProcessingFrequency"))
+			data, err := ec.unmarshalNTaskProcessingFrequency2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.TaskProgressSyncIntervalSeconds = data
-		case "subscriptionCheckEnabled":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subscriptionCheckEnabled"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SubscriptionCheckEnabled = data
+			it.TaskProcessingFrequency = data
 		case "stashBoxEndpoints":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stashBoxEndpoints"))
 			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
@@ -79983,13 +79856,8 @@ func (ec *executionContext) _AutomationSettings(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "taskProgressSyncIntervalSeconds":
-			out.Values[i] = ec._AutomationSettings_taskProgressSyncIntervalSeconds(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "subscriptionCheckEnabled":
-			out.Values[i] = ec._AutomationSettings_subscriptionCheckEnabled(ctx, field, obj)
+		case "taskProcessingFrequency":
+			out.Values[i] = ec._AutomationSettings_taskProcessingFrequency(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -80042,13 +79910,8 @@ func (ec *executionContext) _AutomationStatus(ctx context.Context, sel ast.Selec
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AutomationStatus")
-		case "taskProgressSyncIntervalSeconds":
-			out.Values[i] = ec._AutomationStatus_taskProgressSyncIntervalSeconds(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "subscriptionCheckEnabled":
-			out.Values[i] = ec._AutomationStatus_subscriptionCheckEnabled(ctx, field, obj)
+		case "taskProcessingFrequency":
+			out.Values[i] = ec._AutomationStatus_taskProcessingFrequency(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -89024,13 +88887,18 @@ func (ec *executionContext) _SystemSettings(ctx context.Context, sel ast.Selecti
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SystemSettings")
-		case "releaseTimezone":
-			out.Values[i] = ec._SystemSettings_releaseTimezone(ctx, field, obj)
+		case "timezone":
+			out.Values[i] = ec._SystemSettings_timezone(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "effectiveReleaseTimezone":
-			out.Values[i] = ec._SystemSettings_effectiveReleaseTimezone(ctx, field, obj)
+		case "effectiveTimezone":
+			out.Values[i] = ec._SystemSettings_effectiveTimezone(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "systemTimezone":
+			out.Values[i] = ec._SystemSettings_systemTimezone(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -91021,11 +90889,6 @@ func (ec *executionContext) _UpcomingReleaseConnection(ctx context.Context, sel 
 			}
 		case "subscribedCount":
 			out.Values[i] = ec._UpcomingReleaseConnection_subscribedCount(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "automatic":
-			out.Values[i] = ec._UpcomingReleaseConnection_automatic(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -95205,6 +95068,16 @@ func (ec *executionContext) unmarshalNTaskPageInput2githubᚗcomᚋleothevan2444
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNTaskProcessingFrequency2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx context.Context, v any) (model.TaskProcessingFrequency, error) {
+	var res model.TaskProcessingFrequency
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTaskProcessingFrequency2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx context.Context, sel ast.SelectionSet, v model.TaskProcessingFrequency) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNTaskSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskSource(ctx context.Context, v any) (model.TaskSource, error) {
 	var res model.TaskSource
 	err := res.UnmarshalGQL(v)
@@ -97133,6 +97006,22 @@ func (ec *executionContext) unmarshalOTaskListStatus2ᚖgithubᚗcomᚋleothevan
 }
 
 func (ec *executionContext) marshalOTaskListStatus2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskListStatus(ctx context.Context, sel ast.SelectionSet, v *model.TaskListStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOTaskProcessingFrequency2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx context.Context, v any) (*model.TaskProcessingFrequency, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.TaskProcessingFrequency)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTaskProcessingFrequency2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskProcessingFrequency(ctx context.Context, sel ast.SelectionSet, v *model.TaskProcessingFrequency) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

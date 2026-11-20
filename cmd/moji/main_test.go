@@ -143,7 +143,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 			qbittorrent { configured url usernameConfigured passwordConfigured defaultSavePath }
 			stash { configured url apiKeyConfigured }
 			ingest { downloads { qbRoot mojiRoot } library { mojiRoot stashRoot } transfer { action } }
-			automation { taskProgressSyncIntervalSeconds subscriptionCheckEnabled stashBoxEndpoints }
+			automation { taskProcessingFrequency stashBoxEndpoints }
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
@@ -163,7 +163,7 @@ func TestHTTPHandlerServesSettingsSnapshot(t *testing.T) {
 	if resp.Data.SettingsStatus.Stash.Configured || resp.Data.SettingsStatus.Stash.Ready {
 		t.Fatalf("expected stash status to be disabled in handler test config, got %+v", resp.Data.SettingsStatus.Stash)
 	}
-	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
+	if resp.Data.Settings.Automation.TaskProcessingFrequency != "MEDIUM" {
 		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
 	}
 	if resp.Data.Settings.System.TaskDeletePolicy != "KEEP_ONLY" {
@@ -327,12 +327,12 @@ func TestConfigureProgressSyncInterval(t *testing.T) {
 		t.Fatalf("expected default interval %s, got %s", time.Minute, got)
 	}
 
-	cfg.Automation.TaskProgressSyncIntervalSeconds = 5
-	if got := configureProgressSyncInterval(cfg); got != 5*time.Second {
-		t.Fatalf("expected configured interval %s, got %s", 5*time.Second, got)
+	cfg.Automation.TaskProcessingFrequency = "HIGH"
+	if got := configureProgressSyncInterval(cfg); got != 30*time.Second {
+		t.Fatalf("expected configured interval %s, got %s", 30*time.Second, got)
 	}
 
-	cfg.Automation.TaskProgressSyncIntervalSeconds = -1
+	cfg.Automation.TaskProcessingFrequency = ""
 	if got := configureProgressSyncInterval(cfg); got != time.Minute {
 		t.Fatalf("expected default interval for a nonpositive value, got %s", got)
 	}
@@ -344,7 +344,7 @@ func TestBuildSettingsSnapshotNormalizesDefaults(t *testing.T) {
 	if snapshot.Jackett.URL != "http://jackett.invalid" || !snapshot.Jackett.APIKeyConfigured {
 		t.Fatalf("unexpected jackett snapshot: %+v", snapshot.Jackett)
 	}
-	if snapshot.Automation.TaskProgressSyncIntervalSeconds != 60 || snapshot.Automation.SubscriptionCheckEnabled != true {
+	if snapshot.Automation.TaskProcessingFrequency != "MEDIUM" {
 		t.Fatalf("unexpected automation snapshot: %+v", snapshot.Automation)
 	}
 	if snapshot.System.TaskDeletePolicy != "KEEP_ONLY" {
@@ -387,16 +387,15 @@ func TestTaskProcessingStartsImmediatelyAndCannotBeDisabledByInterval(t *testing
 	}
 }
 
-func TestTaskProcessingIntervalCannotStopProcessing(t *testing.T) {
+func TestTaskProcessingFrequencyTiers(t *testing.T) {
 	cfg := testConfig()
-	for _, seconds := range []int{-1, 0, 120} {
-		cfg.Automation.TaskProgressSyncIntervalSeconds = seconds
-		want := 60 * time.Second
-		if seconds > 0 {
-			want = time.Duration(seconds) * time.Second
-		}
-		if configureProgressSyncInterval(cfg) != want {
-			t.Fatal("invalid task processing interval", seconds)
+	for _, tc := range []struct {
+		frequency string
+		want      time.Duration
+	}{{"", time.Minute}, {"MEDIUM", time.Minute}, {"HIGH", 30 * time.Second}, {"LOW", 5 * time.Minute}} {
+		cfg.Automation.TaskProcessingFrequency = tc.frequency
+		if configureProgressSyncInterval(cfg) != tc.want {
+			t.Fatal("incorrect task processing frequency", tc.frequency)
 		}
 	}
 }
@@ -460,9 +459,8 @@ type graphQLResponse struct {
 				DefaultSavePath    string `json:"defaultSavePath"`
 			} `json:"qbittorrent"`
 			Automation struct {
-				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionCheckEnabled        bool     `json:"subscriptionCheckEnabled"`
-				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
+				TaskProcessingFrequency string   `json:"taskProcessingFrequency"`
+				StashBoxEndpoints       []string `json:"stashBoxEndpoints"`
 			} `json:"automation"`
 			System struct {
 				TaskDeletePolicy string `json:"taskDeletePolicy"`
@@ -529,7 +527,7 @@ func testConfig() *config.Config {
 	cfg.Connection.Jackett.APIKey = "test-api-key"
 	cfg.Ingest.Downloads.QBRoot = "/downloads"
 	cfg.Ingest.Library.StashRoot = "/library"
-	cfg.Automation.SubscriptionCheckEnabled = true
+
 	return &cfg
 }
 
@@ -626,15 +624,4 @@ func (fakeConfiguredStashService) FindJob(context.Context, string) (*stashsync.J
 
 func (fakeConfiguredStashService) CurrentConfig() stashsync.IntegrationConfig {
 	return stashsync.IntegrationConfig{}
-}
-
-func TestSubscriptionCheckSwitchPreservesDisabledConfiguration(t *testing.T) {
-	cfg := &config.Config{}
-	if configureSubscriptionCheckProvider(nil, cfg)() {
-		t.Fatal("disabled checks became enabled")
-	}
-	cfg.Automation.SubscriptionCheckEnabled = true
-	if !configureSubscriptionCheckProvider(nil, cfg)() {
-		t.Fatal("enabled checks became disabled")
-	}
 }

@@ -86,6 +86,12 @@ func main() {
 		logging.Fatalf("load config: %v", err)
 	}
 	if _, err := logging.ConfigureDefault(logging.Options{
+		Timezone: func() string {
+			if configStore != nil {
+				return configStore.Timezone()
+			}
+			return cfg.System.EffectiveTimezone()
+		},
 		Level:            cfg.EffectiveLogLevel(),
 		FilePath:         cfg.EffectiveLogFilePath(),
 		MaxEntries:       cfg.EffectiveLogMaxEntries(),
@@ -169,9 +175,9 @@ func main() {
 	taskSyncDone := startTaskSyncWorker(ctx, runtime.taskRuntimeService, runtime.stashService, configureProgressSyncIntervalProvider(configStore, cfg))
 	launch(func() { <-taskSyncDone })
 	launch(func() {
-		runUpcomingWorker(ctx, runtime.subscriptionService, configureSubscriptionCheckProvider(configStore, cfg))
+		runUpcomingWorker(ctx, runtime.subscriptionService)
 	})
-	subscriptionDone := startSubscriptionWorker(ctx, runtime.subscriptionService, configureSubscriptionCheckProvider(configStore, cfg))
+	subscriptionDone := startSubscriptionWorker(ctx, runtime.subscriptionService)
 	launch(func() { <-subscriptionDone })
 	if runtime.stashBoxCacheService != nil {
 		runtime.stashBoxCacheService.StartCleanup(ctx)
@@ -310,15 +316,15 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 		}
 	}
 	apiHandler := api.NewHandler(sourceTracker, apiOptions...)
-	releaseTimezone := func() string {
+	timezone := func() string {
 		if configStore != nil {
-			return configStore.Config().System.EffectiveReleaseTimezone()
+			return configStore.Timezone()
 		}
-		return cfg.System.EffectiveReleaseTimezone()
+		return cfg.System.EffectiveTimezone()
 	}
 	taskFlowService := configureTaskFlow(taskRuntimeService)
 	if taskFlowService != nil {
-		taskFlowService.SetReleaseTimezone(releaseTimezone)
+		taskFlowService.SetTimezone(timezone)
 	}
 	stashService := configureStashService(cfg, configStore, stashClient)
 	metadataService := configureMetadata(stashClient)
@@ -329,7 +335,7 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 	subscriptionService := configureSubscription(cfg, configStore, stashClient, metadataService, taskFlowService, imageService, manager)
 	if subscriptionService != nil {
 		subscriptionService.SetEventPublisher(performerSubscriptionEventBus)
-		subscriptionService.SetReleaseTimezone(releaseTimezone)
+		subscriptionService.SetTimezone(timezone)
 	}
 	applyAutomationSettings(cfg, subscriptionService, metadataService)
 	if taskFlowService != nil && metadataService != nil {
@@ -411,7 +417,7 @@ func newHTTPRuntimeWithContext(ctx context.Context, cfg *config.Config, version 
 		if err != nil {
 			logging.Fatalf("configure performer: %v", err)
 		}
-		performerService.SetReleaseTimezone(releaseTimezone)
+		performerService.SetTimezone(timezone)
 		performerService.SetUpcomingStateReader(subscriptionService)
 		resolver.Performer = performerService
 		resolver.Discovery = discovery.NewService(metadataService, taskFlowService, stashBoxImage)
@@ -636,11 +642,7 @@ func configureTaskStore(cfg *config.Config, managers ...*storage.Manager) (taskr
 }
 
 func configureProgressSyncInterval(cfg *config.Config) time.Duration {
-	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds
-	if seconds <= 0 {
-		seconds = 60
-	}
-	return time.Duration(seconds) * time.Second
+	return cfg.Automation.TaskProcessingInterval()
 }
 
 // configureProgressSyncIntervalProvider returns the current task sync
@@ -764,10 +766,9 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			Tags:               cfg.Connection.QBittorrent.Tags,
 		},
 		Automation: graphqlapi.AutomationSettingsSnapshot{
-			SourcingRetryIntervalHours:      cfg.Automation.EffectiveSourcingRetryIntervalHours(),
-			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
-			SubscriptionCheckEnabled:        cfg.Automation.SubscriptionCheckEnabled,
-			StashBoxEndpoints:               append([]string(nil), cfg.Automation.StashBoxEndpoints...),
+			SourcingRetryIntervalHours: cfg.Automation.EffectiveSourcingRetryIntervalHours(),
+			TaskProcessingFrequency:    effectiveTaskProcessingFrequency(cfg),
+			StashBoxEndpoints:          append([]string(nil), cfg.Automation.StashBoxEndpoints...),
 			SubscriptionReleasePolicy: graphqlapi.SubscriptionReleasePolicySnapshot{
 				SoloBehavior:           string(cfg.Automation.SubscriptionReleasePolicy.Effective().SoloBehavior),
 				GroupBehavior:          string(cfg.Automation.SubscriptionReleasePolicy.Effective().GroupBehavior),
@@ -779,13 +780,13 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 			TorrentSelection: torrentSelectionSnapshot(cfg.Automation.TorrentSelection.Effective()),
 		},
 		System: graphqlapi.SystemSettingsSnapshot{
-			ReleaseTimezone:          cfg.System.ReleaseTimezoneMode(),
-			EffectiveReleaseTimezone: cfg.System.EffectiveReleaseTimezone(),
-			DeveloperMode:            cfg.System.DeveloperMode,
-			Language:                 cfg.System.EffectiveLanguage(),
-			TaskDeletePolicy:         string(cfg.System.EffectiveTaskDeletePolicy()),
-			ImageCache:               graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
-			StashBoxDataCache:        graphqlapi.StashBoxDataCacheSettingsSnapshot{TTLHours: cfg.System.StashBoxDataCache.Normalize().TTLHours},
+			Timezone:          cfg.System.TimezoneMode(),
+			EffectiveTimezone: cfg.System.EffectiveTimezone(),
+			DeveloperMode:     cfg.System.DeveloperMode,
+			Language:          cfg.System.EffectiveLanguage(),
+			TaskDeletePolicy:  string(cfg.System.EffectiveTaskDeletePolicy()),
+			ImageCache:        graphqlapi.ImageCacheSettingsSnapshot{Enabled: cfg.System.ImageCache.EffectiveEnabled(), MaxSizeMB: cfg.System.ImageCache.Normalize().MaxSizeMB, RetentionDays: cfg.System.ImageCache.Normalize().RetentionDays},
+			StashBoxDataCache: graphqlapi.StashBoxDataCacheSettingsSnapshot{TTLHours: cfg.System.StashBoxDataCache.Normalize().TTLHours},
 		},
 	}
 }
@@ -893,9 +894,8 @@ func buildSettingsStatusSnapshot(cfg *config.Config, version string, stashEnable
 			Ready:      qbittorrentConfigured,
 		},
 		Automation: graphqlapi.AutomationStatusSnapshot{
-			TaskProgressSyncIntervalSeconds: effectiveTaskProgressSyncIntervalSeconds(cfg),
-			SubscriptionCheckEnabled:        cfg.Automation.SubscriptionCheckEnabled,
-			SubscriptionPollEnabled:         cfg.Automation.SubscriptionCheckEnabled && stashEnabled,
+			TaskProcessingFrequency: effectiveTaskProcessingFrequency(cfg),
+			SubscriptionPollEnabled: stashEnabled,
 		},
 		StashBox:                stashBoxStatus,
 		StashLibraries:          stashLibraries,
@@ -1142,10 +1142,6 @@ func configureSubscriptionStore(cfg *config.Config, managers ...*storage.Manager
 	return subscription.NewMemoryStore(), nil
 }
 
-func configureSubscriptionCheckProvider(store *config.Store, cfg *config.Config) func() bool {
-	return func() bool { return storeAutomation(cfg, store).Automation.SubscriptionCheckEnabled }
-}
-
 // storeAutomation returns the latest automation config block, falling back to
 // the startup snapshot when no Store is wired up.
 func storeAutomation(cfg *config.Config, store *config.Store) *config.Config {
@@ -1155,10 +1151,6 @@ func storeAutomation(cfg *config.Config, store *config.Store) *config.Config {
 	return cfg
 }
 
-func effectiveTaskProgressSyncIntervalSeconds(cfg *config.Config) int {
-	seconds := cfg.Automation.TaskProgressSyncIntervalSeconds
-	if seconds <= 0 {
-		return 60
-	}
-	return seconds
+func effectiveTaskProcessingFrequency(cfg *config.Config) string {
+	return cfg.Automation.EffectiveTaskProcessingFrequency()
 }

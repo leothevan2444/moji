@@ -1,5 +1,5 @@
 query InterfaceSettings {
-  settings { system { language developerMode } }
+  settings { system { language developerMode effectiveTimezone systemTimezone } }
 }
 subscription DatabasePerformanceDocument {
   databasePerformance {

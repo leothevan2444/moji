@@ -1,3 +1,4 @@
+import { TaskProcessingFrequency } from "../../graphql/generated/graphql";
 import { SettingsSubpanel, useSettingsPanel } from "./SettingsPanels";
 import { useMemo, useState } from "react";
 import { useMutation } from "urql";
@@ -99,8 +100,8 @@ function encodePolicy(form: PolicySettingsForm, area: SettingsPolicyArea) {
   if (area === "metadata") return {stash:{metadata_priority:form.stashBoxEndpoints}};
   const rules = form.torrentSelection.fastRules;
   if (area === "tasks") return {tasks:{
-    task_progress_sync_interval_seconds:numeric(form.taskProgressSyncIntervalSeconds),
-    subscription_check_enabled:form.subscriptionCheckEnabled,
+    task_processing_frequency:form.taskProcessingFrequency,
+
     sourcing_retry_interval_hours:numeric(form.sourcingRetryIntervalHours),
     subscription_release_policy:{solo_behavior:form.subscriptionReleasePolicy.soloBehavior,group_behavior:form.subscriptionReleasePolicy.groupBehavior,compilation_behavior:form.subscriptionReleasePolicy.compilationBehavior,vr_behavior:form.subscriptionReleasePolicy.vrBehavior,max_group_performer_count:numeric(form.subscriptionReleasePolicy.maxGroupPerformerCount),release_date_range:form.subscriptionReleasePolicy.releaseDateRange}
   }};
@@ -208,9 +209,9 @@ export function PolicySettingsEditor({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const initial = useMemo<PolicySettingsForm>(() => runtimeSettings ? ({
-      taskProgressSyncIntervalSeconds: String([30,60,120,300].includes(runtimeSettings.policies.taskProgressSyncIntervalSeconds) ? runtimeSettings.policies.taskProgressSyncIntervalSeconds : 60),
+      taskProcessingFrequency: runtimeSettings.policies.taskProcessingFrequency,
       sourcingRetryIntervalHours: String(runtimeSettings.policies.sourcingRetryIntervalHours || 6),
-      subscriptionCheckEnabled: runtimeSettings.policies.subscriptionCheckEnabled,
+
       stashBoxEndpoints:[...(runtimeSettings.policies.stashBoxEndpoints ?? [])],
       subscriptionReleasePolicy:{...runtimeSettings.policies.subscriptionReleasePolicy,vrBehavior:runtimeSettings.policies.subscriptionReleasePolicy.vrBehavior ?? SubscriptionReleaseBehavior.Review,maxGroupPerformerCount:String(runtimeSettings.policies.subscriptionReleasePolicy.maxGroupPerformerCount || 3)},
       torrentSelection:torrentSelectionFromRuntime(runtimeSettings)
@@ -403,11 +404,13 @@ export function PolicySettingsEditor({
           <SettingsSubpanel id="schedule">
           <section className="task-processing-settings">
             <label className="settings-field">
-              <span>{t("taskSettings.syncInterval")}</span>
-              <select value={policyForm.taskProgressSyncIntervalSeconds}
-                onChange={event => setPolicySettingsForm(current => ({ ...current, taskProgressSyncIntervalSeconds: event.target.value }))}>
-                {[30, 60, 120, 300].map(seconds => <option value={seconds} key={seconds}>{t(`taskSettings.intervalOptions.${seconds}`)}</option>)}
+              <span>{t("taskSettings.frequency")}</span>
+              <select aria-label={t("taskSettings.frequency")} aria-describedby="task-processing-frequency-help task-processing-frequency-scope" value={policyForm.taskProcessingFrequency}
+                onChange={event => setPolicySettingsForm(current => ({ ...current, taskProcessingFrequency: event.target.value as TaskProcessingFrequency }))}>
+                {[TaskProcessingFrequency.High, TaskProcessingFrequency.Medium, TaskProcessingFrequency.Low].map(frequency => <option value={frequency} key={frequency}>{t(`taskSettings.frequencyOptions.${frequency}`)}</option>)}
               </select>
+              <small id="task-processing-frequency-help">{t(`taskSettings.frequencyHelp.${policyForm.taskProcessingFrequency}`)}</small>
+              <small id="task-processing-frequency-scope">{t("taskSettings.frequencyScope")}</small>
             </label>
           </section>
           <label className="settings-field">
@@ -417,11 +420,7 @@ export function PolicySettingsEditor({
               onChange={event => setPolicySettingsForm(current => ({ ...current, sourcingRetryIntervalHours: event.target.value }))} />
             <small>{t("resourceTracking.intervalHelp")}</small>
           </label>
-          <label className="settings-toggle-row">
-            <input type="checkbox" checked={policyForm.subscriptionCheckEnabled}
-              onChange={event => setPolicySettingsForm(current => ({ ...current, subscriptionCheckEnabled: event.target.checked }))} />
-            <span>{t("performerActivity.automaticChecks")}</span>
-          </label>
+
 
           </SettingsSubpanel>
           <SettingsSubpanel id="releases">

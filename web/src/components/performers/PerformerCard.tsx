@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { ActivityLevelIcons } from "./ActivityLevelIcons";
 import { activityDisplayStatus, activityRankForDisplay } from "./performerActivityStatus";
 import type { PerformerActivityQuery } from "../../graphql/generated/graphql";
@@ -15,6 +16,7 @@ import type { PerformersPageProps, StashPerformerEntry, SubscribedPerformerEntry
 type CardPage = Pick<PerformersPageProps, "checkActivity" | "checksLoading" | "checksError" | "checkStarting" | "stashBaseURL" | "performerSelectionMode" | "selectedPerformerIds" | "performerBatchPending" | "pendingSubscriptionID" | "onTogglePerformerSelection" | "onOpenPerformer" | "onToggle" | "onRefreshOne" | "stashPerformersError">;
 
 export function PerformerCard({ performer, subscription, reviewCount, page, activity }: { activity?: PerformerActivityQuery["performerActivity"]; performer: StashPerformerEntry; subscription: SubscribedPerformerEntry | null; reviewCount: number; page: CardPage; }) {
+  useAppTimezone();
   const { t } = useTranslation();
   const [showCheckError, setShowCheckError] = useState(false);
   const { stashBaseURL, performerSelectionMode, selectedPerformerIds, performerBatchPending, pendingSubscriptionID, onTogglePerformerSelection, onOpenPerformer, onToggle, onRefreshOne } = page;

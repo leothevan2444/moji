@@ -118,14 +118,13 @@ type UpdateQBittorrentSettingsInput struct {
 type UpdateAutomationSettingsInput = SettingsSectionUpdate
 
 type SettingsSectionUpdate struct {
-	TaskDeletePolicy                *string
-	Section                         string
-	SourcingRetryIntervalHours      int
-	TaskProgressSyncIntervalSeconds int
-	SubscriptionCheckEnabled        bool
-	StashBoxEndpoints               []string
-	SubscriptionReleasePolicy       SubscriptionReleasePolicySnapshot
-	TorrentSelection                TorrentSelectionSettingsSnapshot
+	TaskDeletePolicy           *string
+	Section                    string
+	SourcingRetryIntervalHours int
+	TaskProcessingFrequency    string
+	StashBoxEndpoints          []string
+	SubscriptionReleasePolicy  SubscriptionReleasePolicySnapshot
+	TorrentSelection           TorrentSelectionSettingsSnapshot
 }
 
 type UpdateSystemSettingsInput struct {
@@ -252,12 +251,11 @@ type QBittorrentSettingsSnapshot struct {
 }
 
 type AutomationSettingsSnapshot struct {
-	SourcingRetryIntervalHours      int
-	TaskProgressSyncIntervalSeconds int
-	SubscriptionCheckEnabled        bool
-	StashBoxEndpoints               []string
-	SubscriptionReleasePolicy       SubscriptionReleasePolicySnapshot
-	TorrentSelection                TorrentSelectionSettingsSnapshot
+	SourcingRetryIntervalHours int
+	TaskProcessingFrequency    string
+	StashBoxEndpoints          []string
+	SubscriptionReleasePolicy  SubscriptionReleasePolicySnapshot
+	TorrentSelection           TorrentSelectionSettingsSnapshot
 }
 
 type SubscriptionReleasePolicySnapshot struct {
@@ -270,13 +268,13 @@ type SubscriptionReleasePolicySnapshot struct {
 }
 
 type SystemSettingsSnapshot struct {
-	ReleaseTimezone          string
-	EffectiveReleaseTimezone string
-	Language                 string
-	DeveloperMode            bool
-	TaskDeletePolicy         string
-	ImageCache               ImageCacheSettingsSnapshot
-	StashBoxDataCache        StashBoxDataCacheSettingsSnapshot
+	Timezone          string
+	EffectiveTimezone string
+	Language          string
+	DeveloperMode     bool
+	TaskDeletePolicy  string
+	ImageCache        ImageCacheSettingsSnapshot
+	StashBoxDataCache StashBoxDataCacheSettingsSnapshot
 }
 
 type StashLibrarySnapshot struct {
@@ -310,9 +308,8 @@ type ServiceStatusSnapshot struct {
 }
 
 type AutomationStatusSnapshot struct {
-	TaskProgressSyncIntervalSeconds int
-	SubscriptionCheckEnabled        bool
-	SubscriptionPollEnabled         bool
+	TaskProcessingFrequency string
+	SubscriptionPollEnabled bool
 }
 
 type StashBoxStatusSnapshot struct {

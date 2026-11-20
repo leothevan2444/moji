@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { SubscriptionCheckFieldsFragment } from "../../graphql/generated/graphql";
@@ -6,6 +7,7 @@ import { formatDateTime } from "../../utils";
 type Item = SubscriptionCheckFieldsFragment["items"][number];
 
 export function SubscriptionCheckItemDetails({ item }: { item: Item }) {
+  useAppTimezone();
   const { t } = useTranslation();
   const d = item.details;
   const reviews = `/performers/review?performer=${encodeURIComponent(item.performerId)}&status=FAILED`;

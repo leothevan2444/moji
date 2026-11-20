@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -24,7 +23,7 @@ func TestSubscriptionWorkerDispatchesOnStartupAndStops(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	s := &checkWorkerService{schedules: make(chan *time.Time, 10), calls: make(chan bool, 10)}
-	done := startSubscriptionWorker(ctx, s, func() bool { return true })
+	done := startSubscriptionWorker(ctx, s)
 	if s.configured != ctx {
 		t.Fatal("checks must use runtime lifetime")
 	}
@@ -44,24 +43,8 @@ func TestSubscriptionWorkerDispatchesOnStartupAndStops(t *testing.T) {
 		t.Fatal("shutdown must clear displayed deadline")
 	}
 }
-func TestSubscriptionWorkerEnablesWithoutRestart(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	s := &checkWorkerService{schedules: make(chan *time.Time, 10), calls: make(chan bool, 10)}
-	var enabled atomic.Bool
-	done := startSubscriptionWorker(ctx, s, enabled.Load)
-	<-s.schedules
-	enabled.Store(true)
-	select {
-	case <-s.calls:
-	case <-time.After(6 * time.Second):
-		t.Fatal("enabling did not dispatch")
-	}
-	cancel()
-	<-done
-}
 func TestUnavailableSubscriptionServiceDoesNotStartWorker(t *testing.T) {
-	done := startSubscriptionWorker(context.Background(), nil, func() bool { return true })
+	done := startSubscriptionWorker(context.Background(), nil)
 	select {
 	case <-done:
 	default:

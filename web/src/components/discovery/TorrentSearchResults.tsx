@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { PreparedTorrentDownloadActions } from "../tasks/PreparedTorrentDownloadActions";
 import { useTranslation } from "react-i18next";
 import { CandidateSeeders, candidateURL } from "../tasks/TorrentCandidateLinks";
@@ -6,6 +7,7 @@ import type { TorrentSearchFieldsFragment } from "../../graphql/generated/graphq
 
 type Candidate = TorrentSearchFieldsFragment["candidates"][number];
 export function TorrentSearchResults({ searchId, candidates, keywords, pending, onQueue }: { searchId: string; candidates: Candidate[]; keywords: string; pending: boolean; onQueue: (id: string, code: string) => Promise<boolean> }) {
+  useAppTimezone();
   const { t } = useTranslation();
   return <div className="discovery-results">{candidates.map(candidate => <article key={candidate.id} className="candidate-card candidate-card--indexer"><div className="candidate-card__content">
     <div className="candidate-card__head"><div><h3 title={candidate.title}>{candidate.title}</h3><p>{candidate.instanceName} · {candidate.size != null ? formatBytes(Number(candidate.size)) : t("torrentSearch.unknownSize")} · <CandidateSeeders seeders={candidate.seeders}/></p></div><span className="torrent-search__kind">{candidate.kind === "BUILTIN" ? t("torrentSearch.builtin") : "Jackett"}</span></div>

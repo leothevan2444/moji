@@ -206,7 +206,7 @@ export function Component() {
       taskSearch={filter.q} taskStatus={filter.status} taskSort={filter.sort} taskGroupOpen={groups}
       pendingTaskRetryId={pendingRetry} pendingTaskDeleteId={pendingDelete} selectedTaskIds={selectedTaskIds}
       batchPending={retryingTasks || deletingTasks} refreshing={fetching}
-      autoSyncIntervalSeconds={data?.settingsStatus.automation.taskProgressSyncIntervalSeconds ?? 0} lastRefreshedAt={lastRefreshedAt}
+      lastRefreshedAt={lastRefreshedAt}
       onSearchChange={(q) => updateFilter({ q })} onStatusChange={(status) => updateFilter({ status })} onSortChange={(sort) => updateFilter({ sort })}
       onToggleGroup={(group) => setGroups((current) => ({ ...current, [group]: !current[group] }))}
       onRefresh={requery}

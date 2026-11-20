@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { useState } from "react";
 import { Provider } from "urql";
 import { Link } from "react-router";
@@ -15,6 +16,7 @@ export function HomeIndexers() {
 }
 
 function Summary() {
+  useAppTimezone();
   const { t, i18n } = useTranslation();
   const [hours, setHours] = useState(72);
   const { snapshot, error, fetching, refresh } = useHomeIndexers(hours);

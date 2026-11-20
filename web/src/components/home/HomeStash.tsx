@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare, faRotate } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router";
@@ -23,6 +24,7 @@ function stashLink(value: string) {
 }
 
 export function HomeStash({ status, url, error, refreshing = false, onRefresh }: Props) {
+  useAppTimezone();
   const { t, i18n } = useTranslation();
   const state = !status || error ? "unknown" : !status.stash.configured ? "unconfigured"
     : status.stash.ready ? "connected" : status.stashStats?.lastError?.trim() ? "unavailable" : "unknown";

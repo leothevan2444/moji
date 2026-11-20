@@ -1,6 +1,6 @@
 # Web UI 与交互约定
 
-核对日期：2026-11-19；代码基线：`43dee38` 及 Stage2 工作树；状态：当前源码契约。跨页面体验要求统一见[产品规范](../standards/product.md)，这里定位已有能力与数据边界。
+核对日期：2026-11-20（本轮设置、调度及日期显示）；代码基线：`f1d35e9` 及本轮工作树；状态：当前源码契约。跨页面体验要求统一见[产品规范](../standards/product.md)，这里定位已有能力与数据边界。
 
 主要源码：[路由](../../web/src/app/routeConfig.tsx)、[providers](../../web/src/app/AppProviders.tsx)、[客户端](../../web/src/graphql/client.ts)、[缓存](../../web/src/graphql/cache.ts)、[布局](../../web/src/app/AppLayout.tsx)。React/Router、urql、graphql-ws 与 i18next 沿现有体系使用，不引入第二套状态或界面框架。
 
@@ -27,7 +27,7 @@
 | 设置外壳/字段/状态 | [SettingsPanels](../../web/src/components/settings/SettingsPanels.tsx)、[SettingsTabCommon](../../web/src/components/settings/SettingsTabCommon.tsx)、SettingsSwitch；PolicySettingsEditor 已复用 FieldLabel |
 | 说明浮层 | [Tooltip](../../web/src/components/common/Tooltip.tsx)、SettingsInfoTooltip；Portal、边界定位、Escape；任务删除缺少关联提示沿用原生 title |
 | 图片与候选链接 | SceneArtwork、[TorrentCandidateLinks/CandidateSeeders](../../web/src/components/tasks/TorrentCandidateLinks.tsx)、PreparedTorrentDownloadActions |
-| 日期/容量/qB 状态/用户错误 | [formatters](../../web/src/utils/formatters.ts)、[qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)、[queryError](../../web/src/services/queryError.ts)；时间戳/仅时分秒分别使用 formatDateTime/formatTime，遵循应用语言；发行日仍保留日历语义，不能从浏览器日期推断发行资格 |
+| 日期/容量/qB 状态/用户错误 | [formatters](../../web/src/utils/formatters.ts)、[qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)、[queryError](../../web/src/services/queryError.ts)；时间戳/仅时分秒分别使用 formatDateTime/formatTime，遵循应用语言及 system.timezone；时间消费者以 useAppTimezone 订阅变更，不依靠重挂载页面；发行日仍保留日历语义，不能从浏览器日期推断发行资格 |
 
 顶栏保留品牌、主导航与常驻工具。小于 1000px 展开两列导航，600px 以下隐藏可见页名并保留可访问名；aria-current、外部关闭、Escape 与路由关闭保持。ThemeMenu 使用 menuitemradio，方向键/Home/End、Tab 离开、选择/Escape 返回焦点；不套用已废弃的通用 listbox Menu。
 
@@ -37,7 +37,7 @@
 
 重新进入使用新鲜读取。useSettingsAutosave 在 500ms 后提交 typed 稀疏 patch，串行发送，只确认本次字段，晚响应不覆盖新输入；失败保留草稿并提供 SettingsSaveStatus 重试，空闲/成功不常驻提示。对象合并、列表替换、遗漏/null 不改，false/空值不能丢。配置冲突只有确认载入当前设置才丢弃草稿。副作用仍需显式操作，凭据/待保存项不写浏览器存储。
 
-语言只在系统设置并写 system.language，保存成功后生效；初次/恢复焦点读取，不让旧响应覆盖新设置。任务删除策略归任务与订阅；qB 原生传输设置直读写 qB，Moji 自动清理在 YAML。PolicySettingsEditor 当前只负责任务、资源、元数据三个分区；进一步职责收窄见[A-001](../TODO.md#a-001)。
+系统时区通过 IANA 下拉框写 system.timezone；useInterfaceSettings 初次/焦点读取并隔离旧响应，成功保存才更新全局时间显示，失败保留草稿及当前时区。任务推进频率只存 HIGH/MEDIUM/LOW（30 秒/1 分钟/5 分钟），默认 MEDIUM；订阅检查无独立启用开关。语言只在系统设置并写 system.language，保存成功后生效；初次/恢复焦点读取，不让旧响应覆盖新设置。任务删除策略归任务与订阅；qB 原生传输设置直读写 qB，Moji 自动清理在 YAML。PolicySettingsEditor 当前只负责任务、资源、元数据三个分区；进一步职责收窄见[A-001](../TODO.md#a-001)。
 
 服务连接测试使用当前输入，不保存，结果纯文字并五秒消失，输入变化清旧结果。站点连接测试不等于认证或完整诊断，后端预算见[索引器](indexers.md)。useIndexerConnections 独立管理各站请求/结果，不阻塞其他配置动作；配置事件只取消 connectionRevision 改变或已移除站点，离页取消全部所属请求。
 
@@ -75,7 +75,7 @@ TaskDetail 在 TaskFiles 内嵌一份 DownloadManager，文件选择抽屉不加
 
 ## 待发行、日志与文案
 
-待发行 `section=upcoming` 与 upcomingSearch/Performer/Days/Page 恢复筛选。卡片/详情复用 SceneArtwork、现有影片卡与 Drawer media，16:9 封面；无下载按钮、预告片未接入。状态来自服务端持久 upcomingState，已入库/已有任务优先，未来影片不进入可选集合；只移除当前页已确认不合资格项，其他跨页选择保留。相对天数基于服务端 today/effectiveReleaseTimezone。
+待发行 `section=upcoming` 与 upcomingSearch/Performer/Days/Page 恢复筛选。卡片/详情复用 SceneArtwork、现有影片卡与 Drawer media，16:9 封面；无下载按钮、预告片未接入。状态来自服务端持久 upcomingState，已入库/已有任务优先，未来影片不进入可选集合；只移除当前页已确认不合资格项，其他跨页选择保留。相对天数基于服务端 today/effectiveTimezone。
 
 日志最近 200 条按旧到新；上滚离底超过 24px 或暂停时冻结显示，后台缓存继续更新，恢复回底。切换级别重置跟随，复制当前顺序，下载是活动文件全部级别；不是历史文件查询。路径/轮转见[运维](operations.md)。
 
@@ -83,4 +83,4 @@ TaskDetail 在 TaskFiles 内嵌一份 DownloadManager，文件选择抽屉不加
 
 ## 修改时验证
 
-数据/交互选择最小有效 hook、组件、路由或 graphcache 测试；覆盖迟到结果、缺口、跨页及部分成功。可见布局/焦点改动按[开发流程](../workflows/development.md)运行相关 Playwright 并人工看图。本次视觉收敛、历史基线校准及验证范围见[Stage2 复核](../reviews/2026-11-19-ui-consistency.md)。
+数据/交互选择最小有效 hook、组件、路由或 graphcache 测试；覆盖迟到结果、缺口、跨页及部分成功。可见布局/焦点改动按[开发流程](../workflows/development.md)运行相关 Playwright 并人工看图。本次设置/共享时区及验证范围见[设置复核](../reviews/2026-11-20-settings.md)；前次视觉收敛、历史基线校准及验证范围见[Stage2 复核](../reviews/2026-11-19-ui-consistency.md)。

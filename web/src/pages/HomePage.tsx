@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../hooks/useAppTimezone";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -48,6 +49,7 @@ export interface HomePageProps {
 }
 
 export function HomePage(props: HomePageProps) {
+  useAppTimezone();
   const { t } = useTranslation();
   const { overview, runtimeSettings: settings, runtimeStatus: status } = props;
   const [query, setQuery] = useState(() => readSession("moji:home-search"));

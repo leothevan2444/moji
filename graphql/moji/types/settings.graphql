@@ -1,3 +1,5 @@
+enum TaskProcessingFrequency { HIGH MEDIUM LOW }
+
 extend type Query {
   "Get editable configuration for the Settings surface"
   settings: Settings!
@@ -297,8 +299,8 @@ type QBittorrentSettings {
 
 type AutomationSettings {
   sourcingRetryIntervalHours: Int!
-  taskProgressSyncIntervalSeconds: Int!
-  subscriptionCheckEnabled: Boolean!
+  taskProcessingFrequency: TaskProcessingFrequency!
+
   "Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is."
   stashBoxEndpoints: [String!]!
   subscriptionReleasePolicy: SubscriptionReleasePolicy!
@@ -335,8 +337,9 @@ enum TaskDeletePolicy {
 }
 
 type SystemSettings {
- releaseTimezone: String!
- effectiveReleaseTimezone: String!
+ timezone: String!
+ effectiveTimezone: String!
+ systemTimezone: String!
  language: String!
   developerMode: Boolean!
   taskDeletePolicy: TaskDeletePolicy!
@@ -381,8 +384,8 @@ type ServiceStatus {
 }
 
 type AutomationStatus {
-  taskProgressSyncIntervalSeconds: Int!
-  subscriptionCheckEnabled: Boolean!
+  taskProcessingFrequency: TaskProcessingFrequency!
+
   subscriptionPollEnabled: Boolean!
 }
 
@@ -497,8 +500,8 @@ enum AutomationSettingsSection { ALL TASKS RESOURCES METADATA INDEXERS TASK_DELE
 input UpdateAutomationSettingsInput {
   section: AutomationSettingsSection = ALL
   sourcingRetryIntervalHours: Int! = 6
-  taskProgressSyncIntervalSeconds: Int!
-  subscriptionCheckEnabled: Boolean!
+  taskProcessingFrequency: TaskProcessingFrequency!
+
   stashBoxEndpoints: [String!]!
   subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
   torrentSelection: TorrentSelectionSettingsInput!
@@ -541,8 +544,8 @@ input UpdateSettingsSectionInput {
  queryOrder: [String!]
 }
 input TaskSettingsInput {
- taskProgressSyncIntervalSeconds: Int!
- subscriptionCheckEnabled: Boolean!
+ taskProcessingFrequency: TaskProcessingFrequency!
+
  sourcingRetryIntervalHours: Int!
  subscriptionReleasePolicy: SubscriptionReleasePolicyInput!
 }
@@ -618,9 +621,9 @@ input StashCachePatchInput {
 }
 
 input TasksPatchInput {
-  task_progress_sync_interval_seconds: Int
+  task_processing_frequency: TaskProcessingFrequency
   sourcing_retry_interval_hours: Int
-  subscription_check_enabled: Boolean
+
   task_delete_policy: TaskDeletePolicy
   subscription_release_policy: ReleasePolicyPatchInput
   torrent_selection: ResourceRulesPatchInput
@@ -676,7 +679,7 @@ input ToggleRulePatchInput {
 }
 
 input SystemPatchInput {
- release_timezone: String
+ timezone: String
   language: String
   developer_mode: Boolean
   image_cache: ImageCachePatchInput

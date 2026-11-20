@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { formatTime } from "../../utils";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
@@ -8,6 +9,7 @@ import { describeQueryError } from "../../services/queryError";
 import { Drawer } from "../layout/Drawer";
 
 export function IndexerLoginDialog({ input, name, onClose }: { input: IndexerLoginInput; name: string; onClose: () => void }) {
+  useAppTimezone();
   const { t } = useTranslation();
   const login = useIndexerLogin(input);
   const [answer, setAnswer] = useState("");

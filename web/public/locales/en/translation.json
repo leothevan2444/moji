@@ -28,7 +28,6 @@
     "rankLabel": "Activity level {{rank}} / 5",
     "nextCheck": "Estimated next check",
     "lowerBound": "Confirmed minimum; level 5 is established.",
-    "automaticChecks": "Automatically check subscribed performers for releases",
     "history": "History",
     "recentRuns": "Recent runs",
     "loadFailed": "Unable to update activity and check schedule.",
@@ -455,15 +454,11 @@
     "INDEXER_BUSY": "The indexer is busy. Retry shortly."
   },
   "upcoming": {
-    "timezoneLabel": "Release date timezone",
-    "timezoneHelp": "Enter auto to follow the Moji runtime timezone, or an IANA timezone such as Asia/Shanghai. Effective timezone: {{timezone}}.",
     "title": "Upcoming releases",
     "viewAll": "View all",
     "collapse": "Collapse list",
     "unconfirmed": "Unconfirmed",
     "handedOff": "Sent to release processing",
-    "paused": "Automatic checks paused",
-    "settings": "Settings",
     "search": "Code or title",
     "performer": "Performer",
     "allPerformers": "All performers",
@@ -522,13 +517,6 @@
     "behaviorHelp": "Manual review records the release without starting a download.",
     "priorityHelp": "When policies overlap, Skip takes precedence, followed by Manual review.",
     "reviewHelp": "Handle pending releases in Release review on the Performers page. Policy changes do not reprocess recorded releases.",
-    "intervalOptions": {
-      "30": "30 seconds",
-      "60": "1 minute (recommended)",
-      "120": "2 minutes",
-      "300": "5 minutes"
-    },
-    "syncInterval": "Check tasks every",
     "policyTitle": "New-release download policy",
     "solo": "Single-performer releases",
     "group": "Multiple-performer releases",
@@ -536,7 +524,19 @@
     "compilationInfo": "Identified by compilation terms in the title, details or tags, or by having at least 10 performers.",
     "dateRange": "Release date range for automatic downloads",
     "dateRangeInfo": "Applies to single- and multiple-performer releases. Older releases or unknown dates go to review.",
-    "title": "Tasks & subscriptions"
+    "title": "Tasks & subscriptions",
+    "frequency": "Task processing frequency",
+    "frequencyOptions": {
+      "HIGH": "High",
+      "MEDIUM": "Medium (default)",
+      "LOW": "Low"
+    },
+    "frequencyHelp": {
+      "HIGH": "Confirms progress and advances library handoff sooner, with more frequent background checks and requests to the downloader and Stash.",
+      "MEDIUM": "Balances task responsiveness and background overhead for everyday use.",
+      "LOW": "Reduces background checks and requests to the downloader and Stash. Completion confirmation and library handoff may take longer."
+    },
+    "frequencyScope": "Does not change download speed, media-processing concurrency or automatic performer-check schedules."
   },
   "metadataSources": {
     "title": "Metadata source priority",
@@ -628,7 +628,9 @@
     "confirm": "Confirm clear",
     "cleared": "Image cache cleared.",
     "clearedBytes": "Image cache cleared, releasing {{size}}.",
-    "languageHelp": "A specific language applies to all visitors. Follow browser uses each visitor’s preferred language."
+    "languageHelp": "A specific language applies to all visitors. Follow browser uses each visitor’s preferred language.",
+    "timezone": "Timezone",
+    "timezoneAuto": "Follow system ({{timezone}})"
   },
   "taskDeletion": {
     "title": "Task deletion policy",
@@ -953,7 +955,7 @@
     "statSkipped": "Skipped",
     "statisticsHelp": "Actor outcomes from {{count}} recent retained finished runs (up to 100), with no fixed time window, including manual and automatic checks. Repeat checks count separately; interruptions count as issues.",
     "automaticEnabled": "Automatic checks enabled",
-    "automaticDisabled": "Automatic checks disabled",
+    "automaticUnavailable": "Automatic checks unavailable",
     "allBusy": "A check of all subscriptions is running. Please try again shortly.",
     "title": "Release checks",
     "followRun": "Follow this check on Home",
@@ -1720,7 +1722,6 @@
     "syncing": "Syncing…",
     "syncHelp": "Sync downloads and advance file preparation and Stash ingest",
     "syncComplete": "Download status synced and ingest workflow advanced.",
-    "autoSyncOn": "Check tasks automatically every {{seconds}} seconds",
     "updatedAt": "List updated at {{time}}",
     "selectionActions": "Selected task actions",
     "selectTask": "Select task: {{task}}",

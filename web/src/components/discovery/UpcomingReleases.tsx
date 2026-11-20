@@ -62,7 +62,6 @@ export function UpcomingReleases() {
     <div className="band-head"><div><h2 id="upcoming-title">{t("upcoming.title")}{data ? ` · ${data.totalCount}` : ""}</h2></div>
       <button className="ghost-button" onClick={() => patch("section", expanded ? "" : "upcoming")}>{t(expanded ? "upcoming.collapse" : "upcoming.viewAll")}</button>
     </div>
-    {data && !data.automatic && data.subscribedCount > 0 ? <p className="upcoming-notice">{t("upcoming.paused")} <Link to="/settings/tasks">{t("upcoming.settings")}</Link></p> : null}
     {expanded ? <form className="upcoming-filters" onSubmit={e => e.preventDefault()}>
       <label>{t("upcoming.search")}<input value={search} onChange={e => patch("upcomingSearch", e.target.value)} /></label>
       <label>{t("upcoming.performer")}<select value={performerId} onChange={e => patch("upcomingPerformer", e.target.value)}><option value="">{t("upcoming.allPerformers")}</option>{data?.performers.map(a => <option value={a.id} key={a.id}>{a.name}</option>)}</select></label>

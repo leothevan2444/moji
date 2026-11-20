@@ -1,3 +1,4 @@
+import { getAppTimezone, setAppTimezone } from "../../utils/appTimezone";
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -7,7 +8,7 @@ import { SettingsAutosaveProvider } from "./SettingsAutosaveProvider";
 const { updateSettings, languageChanged } = vi.hoisted(() => ({ updateSettings: vi.fn().mockResolvedValue({ data: {} }), languageChanged: vi.fn() }));
 
 vi.mock("react-i18next", async (importOriginal) => ({ ...await importOriginal<typeof import("react-i18next")>(), useTranslation: () => ({ t: (key: string) => key }) }));
-vi.mock("react-router", () => ({ useOutletContext: () => ({ pushToast: vi.fn(), copyText: vi.fn(), onLanguageChange: languageChanged }) }));
+vi.mock("react-router", () => ({ useOutletContext: () => ({ pushToast: vi.fn(), copyText: vi.fn(), onLanguageChange: languageChanged, onTimezoneChange: setAppTimezone }) }));
 vi.mock("./LogEventStream", () => ({ LogEventStream: () => null }));
 vi.mock("urql", async (importOriginal) => ({
   ...await importOriginal<typeof import("urql")>(),
@@ -16,7 +17,7 @@ vi.mock("urql", async (importOriginal) => ({
     const name = query.definitions[0]?.name?.value;
     if (name === "TaskDeletionSettings") return [{data:{settings:{system:{taskDeletePolicy:"KEEP_ONLY"}}},fetching:false,error:null},vi.fn()];
     if (name === "SettingsPolicySection") return [{ data: { settings: { policies: {
-      taskProgressSyncIntervalSeconds: 60, subscriptionCheckEnabled: true, sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
+      taskProcessingFrequency: "MEDIUM", sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: { soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW", maxGroupPerformerCount: 3, releaseDateRange: "ALL" },
       torrentSelection: { enabled: true, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] }
     } }, settingsStatus: { metadataSources: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null } } }, fetching: false, error: null }, vi.fn()];
@@ -32,7 +33,7 @@ import SystemSettingsTab from "./SystemSettingsTab";
 import TaskSubscriptionSettingsTab from "./TaskSubscriptionSettingsTab";
 
 const flush = async () => { await act(async () => { await vi.advanceTimersByTimeAsync(500); }); };
-beforeEach(()=>{ vi.useFakeTimers();updateSettings.mockReset().mockResolvedValue({data:{}});languageChanged.mockClear(); });
+beforeEach(()=>{ setAppTimezone("UTC");vi.useFakeTimers();updateSettings.mockReset().mockResolvedValue({data:{}});languageChanged.mockClear(); });
 afterEach(()=>{cleanup();vi.clearAllTimers();vi.useRealTimers();});
 
 describe("settings tab visual contracts", () => {
@@ -52,6 +53,22 @@ describe("settings tab visual contracts", () => {
     expect(languageChanged).toHaveBeenCalledWith("en");
     expect(updateSettings.mock.calls[1][0].input.system.language).toBe("en");
     expect(updateSettings.mock.calls[1][0].input).not.toHaveProperty("taskDeletePolicy");
+  });
+
+  it("uses a timezone select and applies only successful saves", async () => {
+    render(<SettingsAutosaveProvider><SystemSettingsTab /></SettingsAutosaveProvider>);
+    const select = screen.getByRole("combobox", { name: "systemSettings.timezone" }) as HTMLSelectElement;
+    expect(select.querySelector('option[value="Asia/Tokyo"]')).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "systemSettings.timezone" })).toBeNull();
+    updateSettings.mockResolvedValueOnce({error: new Error("save failed")});
+    fireEvent.change(select, {target:{value:"Asia/Tokyo"}});
+    await flush();
+    expect(getAppTimezone()).toBe("UTC");
+    expect(select.value).toBe("Asia/Tokyo");
+    fireEvent.click(screen.getByText("common.retry"));
+    await flush();
+    expect(getAppTimezone()).toBe("Asia/Tokyo");
+    expect(updateSettings).toHaveBeenLastCalledWith({input:{system:{timezone:"Asia/Tokyo"}}});
   });
 
   it("saves task deletion policy independently in tasks and subscriptions", async () => {
@@ -129,15 +146,16 @@ describe("settings tab visual contracts", () => {
     await flush();
     expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{sourcing_retry_interval_hours:12}}});
   });
-  it("offers preset task intervals without a processing switch", async () => {
+  it("offers three processing frequencies without a subscription switch", async () => {
     updateSettings.mockClear();
     render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
-    const interval = screen.getByLabelText(/taskSettings.syncInterval/) as HTMLSelectElement;
-    expect(Array.from(interval.options, option => option.value)).toEqual(["30", "60", "120", "300"]);
+    const interval = screen.getByLabelText(/taskSettings.frequency/) as HTMLSelectElement;
+    expect(Array.from(interval.options, option => option.value)).toEqual(["HIGH", "MEDIUM", "LOW"]);
     expect(interval.disabled).toBe(false);
-    fireEvent.change(interval, { target: { value: "120" } });
+    expect(screen.queryByText("performerActivity.automaticChecks")).toBeNull();
+    fireEvent.change(interval, { target: { value: "LOW" } });
     await flush();
-    expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{task_progress_sync_interval_seconds:120}}});
+    expect(updateSettings).toHaveBeenCalledWith({input:{tasks:{task_processing_frequency:"LOW"}}});
   });
 
   it("offers four roots and Copy or Move, and saves without an ingest mode", async () => {

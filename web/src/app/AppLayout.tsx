@@ -21,6 +21,7 @@ const HelpDrawer = lazy(() => import("../components/drawers/HelpDrawer").then((m
 export interface AppOutletContext {
   localeLoadError?: boolean;
   retryLocale?: () => void;
+  onTimezoneChange?: (timezone: string) => void;
   onLanguageChange?: (language: LocalePreference) => void;
   onDeveloperModeChange?: (enabled: boolean) => void;
   pushToast: ReturnType<typeof useToast>["pushToast"];
@@ -60,7 +61,7 @@ export function AppLayout() {
       <Header developerMode={interfaceSettings.developerMode} onOpenPerformance={() => setPerformanceOpen(true)} onOpenHelp={() => setHelpOpen(true)} theme={theme} />
       <main className="content">
         <Suspense fallback={<div className="skeleton skeleton-card" aria-label={t("common.loading")} />}>
-          <Outlet context={{ pushToast, copyText, openHelp, onDeveloperModeChange: interfaceSettings.updateDeveloperMode, onLanguageChange: interfaceSettings.updateLanguage, localeLoadError, retryLocale } satisfies AppOutletContext} />
+          <Outlet context={{ pushToast, copyText, openHelp, onDeveloperModeChange: interfaceSettings.updateDeveloperMode, onLanguageChange: interfaceSettings.updateLanguage, onTimezoneChange: interfaceSettings.updateTimezone, localeLoadError, retryLocale } satisfies AppOutletContext} />
         </Suspense>
       </main>
       {interfaceSettings.developerMode && performanceOpen ? (

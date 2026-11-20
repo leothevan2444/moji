@@ -1,4 +1,4 @@
-# Settings and configuration migration
+# Settings and configuration
 
 Settings are grouped into **Indexers**, **Downloader**, **Stash**, **Tasks & subscriptions**, **System**, **Logs**, and **About**. Service connections are edited in their business tab. Existing `/settings/connections`, `/settings/ingest`, and `/settings/automation` bookmarks redirect to Indexers, Stash, and Tasks & subscriptions respectively.
 
@@ -20,35 +20,9 @@ Interface language is saved in `system.language`; its browser copy is a display 
 
 Automatic cleanup has no database configuration fallback or automatic configuration conversion. See [Downloader](downloader.md#自动清理) for its YAML fields and when changes take effect. The configuration storage audit on 2026-11-13 found no additional application settings stored in databases that require relocation.
 
-## Current configuration and legacy field mapping
+## Current configuration
 
-The example is [docker/config.example.yaml](../docker/config.example.yaml). `config_version: 4` is the current layout. The ownership changes originally introduced in v2 are:
-
-| Old field | New field |
-| --- | --- |
-| `connection.jackett` | `indexers.jackett` |
-| `automation.torrent_selection.fast_rules.indexer_preference.tracker_ids` | `indexers.query_order` |
-| `connection.qbittorrent` | `downloader.qbittorrent` |
-| `connection.stash` | `stash.connection` |
-| `ingest` | `stash.ingest` |
-| `automation.selected_stash_box_endpoints` | `stash.metadata_priority` |
-| `system.stash_box_data_cache` | `stash.data_cache` |
-| Other `automation` fields | `tasks` |
-| `system.task_delete_policy` | `tasks.task_delete_policy` |
-| `system`, `logging` | Same ownership, except StashBox cache and deletion policy above |
-
-Unknown top-level fields and fields within moved sections survive normal saves. Unmodeled fields directly inside old `connection` are retained under `legacy_connection`. Runtime Go provider fields and legacy GraphQL reads retain compatibility names; v4 is the persisted YAML format. Mixed v2/legacy fields and unsupported config versions are rejected. Startup reads legacy configuration without rewriting it; a successful settings save writes v4 atomically. Failed writes restore the last persisted state.
-
-Do not let an old running binary save a v4 file. Stop it before replacing the actual configuration and start the new binary afterwards. To roll back the binary, restore the original configuration as well.
-
-The offline tool never opens the databases or contacts external services:
-
-```sh
-go run ./cmd/moji-config -config config.yaml
-go run ./cmd/moji-config -config config.yaml -output /tmp/moji-config-v4.yaml
-```
-
-The output path must be new and different from the source. The tool compares effective values after migration and does not print credentials. Keep a protected original, validate a copy, stop the old process, then replace the actual file with the validated copy. Configurations and backups contain secrets; do not commit them.
+The example is [docker/config.example.yaml](../docker/config.example.yaml). `config_version: 4` is the current layout, grouped by the business ownership listed above. Unsupported versions, mixed ownership layouts and retired fields are rejected. Settings saves validate and atomically persist the current configuration while preserving unrelated fields; failed saves retain the previous effective settings.
 
 ## Indexer order
 
@@ -83,7 +57,7 @@ Interface language is edited under System and persisted as `system.language`: `a
 
 Current UI components, query operations and translations use business names: service connections, media delivery, task/subscription settings, metadata sources and resource rules. Loading and failure states use these same current titles. The removed Connections, Ingest and Automation tabs have no active translation entries.
 
-The following names are intentional compatibility contracts: legacy `/settings/connections`, `/settings/ingest` and `/settings/automation` redirects; old YAML fields consumed by the migration adapter; existing GraphQL `Settings.automation`, `Settings.ingest`, `Settings.system.taskDeletePolicy` and the deprecated `updateAutomationSettings` aggregate mutation and enum. New code uses `updateSettingsSection` with `SettingsSection`. These protocol names do not imply an old UI tab still exists. Task ingest and automatic processing remain real workflow concepts. Task processing starts automatically with Moji and cannot be disabled through settings. The task check interval remains configurable; subscription checks have their own independent enable switch.
+The following names are intentional compatibility contracts: legacy `/settings/connections`, `/settings/ingest` and `/settings/automation` redirects; old YAML fields consumed by the migration adapter; existing GraphQL `Settings.automation`, `Settings.ingest`, `Settings.system.taskDeletePolicy` and the deprecated `updateAutomationSettings` aggregate mutation and enum. New code uses `updateSettingsSection` with `SettingsSection`. These protocol names do not imply an old UI tab still exists. Task ingest and automatic processing remain real workflow concepts. Task processing starts automatically with Moji and cannot be disabled through settings. Task processing frequency has three tiers; subscribed-performer checks always run automatically on their independent activity-based schedules.
 
 
 ## Incremental automatic saving
@@ -128,3 +102,11 @@ levels, via `/api/logs/current`. Rotated backups can be read from the log direct
 The separate `challenge_timeout_seconds` field has been removed; configure `network.flaresolverr.max_timeout_ms` instead. Removed keys are rejected, with no automatic conversion.
 
 The profile registry, per-site `network_profile`, and profile CRUD API have been removed. There is no automatic profile migration. Replace these removed keys manually before loading an existing configuration, retaining a private backup. The schema rejects the removed keys instead of silently ignoring them. Existing accepted task resource records retain their frozen transport parameters.
+
+## Task processing frequency and timezone
+
+Under **Tasks & subscriptions > Scheduling**, task processing frequency is High, Medium (default), or Low. `tasks.task_processing_frequency` accepts `HIGH`, `MEDIUM`, or `LOW`, corresponding to checks every 30 seconds, 1 minute, or 5 minutes after the previous pass. A pass confirms active task progress and triggers eligible Stash scans. High reduces the wait between passes at the cost of more background checks and downloader/Stash requests; Low reduces this overhead. Actual waits also depend on processing time and upstream availability. Download speed, media-processing concurrency, resource-search retry intervals and activity-based performer checks are separate.
+
+Subscribed-performer checks, upcoming-release handoff and release retries run automatically while Moji is running. Existing per-performer deadlines and failure backoff remain persisted across restart. Subscription membership and normal eligibility still apply.
+
+**System > General > Timezone** provides Follow system, UTC, and IANA geographic timezones. `system.timezone` defaults to `auto`; this follows the Moji process/container timezone, not the browser. The same setting controls calendar decisions, activity scoring, upcoming release boundaries, displayed timestamps and new log-file timestamp offsets. Instants stay stored in UTC; durations, relative elapsed times, remote protocol dates and film calendar dates do not move when the timezone changes. A successful save updates displays without discarding page state; a failed save keeps the active timezone and the pending draft.

@@ -17,24 +17,12 @@ func (s *upcomingWorkerService) ProcessDueUpcoming(context.Context) error {
 	s.cancel()
 	return nil
 }
-func TestUpcomingWorkerStartupAndDisabledSchedule(t *testing.T) {
-	for _, enabled := range []bool{true, false} {
-		ctx, cancel := context.WithCancel(context.Background())
-		service := &upcomingWorkerService{cancel: cancel}
-		runUpcomingWorker(ctx, service, func() bool {
-			if !enabled {
-				cancel()
-				return false
-			}
-			return true
-		})
-		cancel()
-		want := 0
-		if enabled {
-			want = 1
-		}
-		if service.calls != want {
-			t.Fatalf("enabled=%v calls=%d", enabled, service.calls)
-		}
+func TestUpcomingWorkerRunsAutomaticallyOnStartup(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	service := &upcomingWorkerService{cancel: cancel}
+	runUpcomingWorker(ctx, service)
+	if service.calls != 1 {
+		t.Fatalf("automatic upcoming check calls=%d", service.calls)
 	}
 }

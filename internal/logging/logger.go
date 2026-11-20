@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/leothevan2444/moji/internal/apptime"
 )
 
 const (
@@ -28,6 +30,7 @@ type Entry struct {
 }
 
 type Options struct {
+	Timezone         func() string
 	Level            string
 	ConsoleWriter    io.Writer
 	FilePath         string
@@ -91,8 +94,14 @@ func New(opts Options) (*Logger, error) {
 		eventSubscribers: make(map[uint64]logEventSubscriber),
 	}
 
+	handlerOptions := &slog.HandlerOptions{Level: levelVar, ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+		if len(groups) == 0 && attr.Key == slog.TimeKey && opts.Timezone != nil {
+			return slog.Time(attr.Key, attr.Value.Time().In(apptime.Location(opts.Timezone())))
+		}
+		return attr
+	}}
 	handlers := []slog.Handler{
-		slog.NewTextHandler(consoleWriter, &slog.HandlerOptions{Level: levelVar}),
+		slog.NewTextHandler(consoleWriter, handlerOptions),
 	}
 	closers := make([]io.Closer, 0, 1)
 
@@ -102,7 +111,7 @@ func New(opts Options) (*Logger, error) {
 			return nil, err
 		}
 		closers = append(closers, writer)
-		handlers = append(handlers, slog.NewTextHandler(writer, &slog.HandlerOptions{Level: levelVar}))
+		handlers = append(handlers, slog.NewTextHandler(writer, handlerOptions))
 	}
 
 	cacheHandler := &cacheHandler{

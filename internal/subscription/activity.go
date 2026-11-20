@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/apptime"
 	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/releasedate"
 	stashboxgraphql "github.com/leothevan2444/moji/pkg/stashbox/graphql"
@@ -84,7 +85,7 @@ func activityRank(value float64) int {
 // Calendar days are counted in the configured release timezone. Date-only
 // metadata retains its source calendar date, including across DST boundaries.
 func activityToday(now time.Time, zone string) time.Time {
-	day, _ := time.Parse("2006-01-02", now.In(releasedate.Location(zone)).Format("2006-01-02"))
+	day, _ := time.Parse("2006-01-02", now.In(apptime.Location(zone)).Format("2006-01-02"))
 	return day
 }
 

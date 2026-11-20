@@ -8,7 +8,7 @@ import (
 
 func TestLatestReleaseUsesValidSourceDates(t *testing.T) {
 	str := func(s string) *string { return &s }
-	svc := &Service{releaseTimezone: func() string { return "Asia/Shanghai" }}
+	svc := &Service{timezoneProvider: func() string { return "Asia/Shanghai" }}
 	now := time.Date(2026, 11, 9, 17, 0, 0, 0, time.UTC)
 	scenes := []*stashboxgraphql.SceneFragment{
 		{Title: str("old"), Date: str("2026-09-01")},

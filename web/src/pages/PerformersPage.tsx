@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../hooks/useAppTimezone";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons/faArrowLeft";
 import { faBinoculars } from "@fortawesome/free-solid-svg-icons/faBinoculars";
 import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
@@ -26,6 +27,7 @@ import {
 } from "../utils";
 
 export function PerformersPage(props: PerformersPageProps) {
+  useAppTimezone();
   const {
     stashPerformerPage,
     stashPerformers,

@@ -39,7 +39,6 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof TasksPage>> =
     selectedTaskIds={[]}
     batchPending={false}
     refreshing={false}
-    autoSyncIntervalSeconds={60}
     lastRefreshedAt={null}
     {...callbacks}
     {...overrides}
@@ -80,7 +79,7 @@ describe("TasksPage task controls", () => {
 
   it("offers refresh without a manual task-processing button", () => {
     renderPage();
-    expect(screen.getByText("Check tasks automatically every 60 seconds")).toBeTruthy();
+    expect(screen.queryByText("Check tasks automatically every 60 seconds")).toBeNull();
     expect(screen.queryByText(/processing is paused/)).toBeNull();
     expect(screen.getByRole("button", { name: "Refresh" }).classList.contains("task-icon-button--bordered")).toBe(true);
     expect(screen.queryByRole("button", { name: "Sync now" })).toBeNull();

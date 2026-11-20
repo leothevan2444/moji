@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router";
@@ -11,6 +12,7 @@ import { useSettingsAutosave } from "./useSettingsAutosave";
 import { FieldLabel, SettingsCard, SettingsSaveStatus, SettingsError, SettingsLoading } from "./SettingsTabCommon";
 
 export default function StashBoxCacheSettings() {
+  useAppTimezone();
   const { t } = useTranslation();
   const { pushToast } = useOutletContext<AppOutletContext>();
   const [{ data, fetching, error }, refresh] = useQuery({ query: SystemSettingsTabDocument });
@@ -31,9 +33,9 @@ export default function StashBoxCacheSettings() {
   return <SettingsCard title={t("stashBoxCacheUi.title")}>
     <form className="settings-form" onSubmit={event => event.preventDefault()}>
       <label className="settings-field"><FieldLabel text={t("stashBoxCacheUi.ttl")} info={t("stashBoxCacheUi.ttlInfo")} /><input type="number" required min="12" max="360" value={ttl} onChange={event => setTtl(event.target.value)} /></label>
+    <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemSettings.usage", { size: formatBytes(Number(cache?.usedBytes ?? 0)) })}</span><span>{t("stashBoxCacheUi.scenes", { count: cache?.sceneCount ?? 0 })}</span><span>{t("stashBoxCacheUi.performers", { count: cache?.performerCount ?? 0 })}</span><span>{t("systemSettings.cleanup", { time: formatDateTime(cache?.lastCleanupAt) })}</span></div></div><button type="button" className="image-cache-management__clear" disabled={clearing || (!cache?.sceneCount && !cache?.performerCount)} onClick={() => setConfirming(true)}>{t(clearing ? "systemSettings.clearing" : "stashBoxCacheUi.clear")}</button></div>
       <SettingsSaveStatus {...autosave} />
     </form>
-    <div className="image-cache-management"><div><div className="settings-meta"><span>{t("systemSettings.usage", { size: formatBytes(Number(cache?.usedBytes ?? 0)) })}</span><span>{t("stashBoxCacheUi.scenes", { count: cache?.sceneCount ?? 0 })}</span><span>{t("stashBoxCacheUi.performers", { count: cache?.performerCount ?? 0 })}</span><span>{t("systemSettings.cleanup", { time: formatDateTime(cache?.lastCleanupAt) })}</span></div></div><button type="button" className="image-cache-management__clear" disabled={clearing || (!cache?.sceneCount && !cache?.performerCount)} onClick={() => setConfirming(true)}>{t(clearing ? "systemSettings.clearing" : "stashBoxCacheUi.clear")}</button></div>
     {confirming ? <ConfirmationDialog title={t("stashBoxCacheUi.clearTitle")} confirmLabel={t(clearing ? "systemSettings.clearing" : "systemSettings.confirm")} cancelLabel={t("systemSettings.cancel")} pending={clearing} error={clearError} onConfirm={() => { setClearError(null); void clearCache(); }} onCancel={() => { setConfirming(false); setClearError(null); }}>
       <p>{t("stashBoxCacheUi.clearDescription")}</p>
     </ConfirmationDialog> : null}

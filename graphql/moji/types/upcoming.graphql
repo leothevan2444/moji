@@ -36,7 +36,6 @@ type UpcomingReleaseConnection {
   pageSize: Int!
   totalPages: Int!
   subscribedCount: Int!
-  automatic: Boolean!
   timezone: String!
   today: String!
 }

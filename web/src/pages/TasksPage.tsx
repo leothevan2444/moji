@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../hooks/useAppTimezone";
 import { TaskGroupSection } from "../components/tasks";
 import {
   formatTime,
@@ -39,7 +40,6 @@ interface TasksPageProps {
   selectedTaskIds: string[];
   batchPending: boolean;
   refreshing: boolean;
-  autoSyncIntervalSeconds: number;
   lastRefreshedAt: Date | null;
   onSearchChange: (value: string) => void;
   onStatusChange: (status: TaskStatusFilter) => void;
@@ -71,7 +71,6 @@ export function TasksPage({
   selectedTaskIds,
   batchPending,
   refreshing,
-  autoSyncIntervalSeconds,
   lastRefreshedAt,
   onSearchChange,
   onStatusChange,
@@ -89,6 +88,7 @@ export function TasksPage({
   onBatchRetry,
   onBatchDelete
 }: TasksPageProps) {
+  useAppTimezone();
   const { t } = useTranslation();
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
   const [selectionMode, setSelectionMode] = useState(false);
@@ -224,9 +224,8 @@ export function TasksPage({
         <button type="button" className="ghost-button" disabled={refreshing || serverPage.page >= serverPage.totalPages} onClick={() => onPageChange?.(serverPage.page + 1)}>{t("performerUi.next")}</button>
         {updatesPending ? <button type="button" className="ghost-button" disabled={refreshing} onClick={onRefresh}>{t("taskList.updates")}</button> : null}
       </div> : null}
-      {autoSyncIntervalSeconds > 0 || lastRefreshedAt ? <p className="task-sync-meta">
-        {autoSyncIntervalSeconds > 0 ? t("taskBatch.autoSyncOn", { seconds: autoSyncIntervalSeconds }) : null}
-        {lastRefreshedAt ? ` · ${t("taskBatch.updatedAt", { time: formatTime(lastRefreshedAt) })}` : ""}
+      {lastRefreshedAt ? <p className="task-sync-meta">
+        {lastRefreshedAt ? t("taskBatch.updatedAt", { time: formatTime(lastRefreshedAt) }) : ""}
       </p> : null}
 
       {!visibleTasks.length ? (

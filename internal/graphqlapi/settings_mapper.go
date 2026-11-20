@@ -3,10 +3,10 @@ package graphqlapi
 import (
 	"time"
 
+	"github.com/leothevan2444/moji/internal/apptime"
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/imagecache"
-	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/stashboxcache"
 	"github.com/leothevan2444/moji/internal/stats"
 )
@@ -70,8 +70,8 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			},
 			Jackett:     &model.JackettSettings{},
 			Qbittorrent: &model.QBittorrentSettings{},
-			Automation:  &model.AutomationSettings{},
-			System:      &model.SystemSettings{ReleaseTimezone: "auto", EffectiveReleaseTimezone: releasedate.EffectiveTimezone(""), ImageCache: &model.ImageCacheSettings{}, StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: 24}},
+			Automation:  &model.AutomationSettings{TaskProcessingFrequency: model.TaskProcessingFrequencyMedium},
+			System:      &model.SystemSettings{Timezone: "auto", EffectiveTimezone: apptime.EffectiveTimezone(""), SystemTimezone: apptime.EffectiveTimezone(""), ImageCache: &model.ImageCacheSettings{}, StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: 24}},
 		}
 	}
 
@@ -117,21 +117,21 @@ func settingsSnapshotToModel(snapshot *SettingsSnapshot, appVersion string) *mod
 			Tags:               snapshot.QBittorrent.Tags,
 		},
 		Automation: &model.AutomationSettings{
-			SourcingRetryIntervalHours:      snapshot.Automation.SourcingRetryIntervalHours,
-			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
-			SubscriptionCheckEnabled:        snapshot.Automation.SubscriptionCheckEnabled,
-			StashBoxEndpoints:               append([]string(nil), snapshot.Automation.StashBoxEndpoints...),
-			SubscriptionReleasePolicy:       subscriptionReleasePolicyToModel(snapshot.Automation.SubscriptionReleasePolicy),
-			TorrentSelection:                torrentSelectionSettingsToModel(snapshot.Automation.TorrentSelection),
+			SourcingRetryIntervalHours: snapshot.Automation.SourcingRetryIntervalHours,
+			TaskProcessingFrequency:    model.TaskProcessingFrequency(snapshot.Automation.TaskProcessingFrequency),
+			StashBoxEndpoints:          append([]string(nil), snapshot.Automation.StashBoxEndpoints...),
+			SubscriptionReleasePolicy:  subscriptionReleasePolicyToModel(snapshot.Automation.SubscriptionReleasePolicy),
+			TorrentSelection:           torrentSelectionSettingsToModel(snapshot.Automation.TorrentSelection),
 		},
 		System: &model.SystemSettings{
-			ReleaseTimezone:          effectiveReleaseTimezoneMode(snapshot.System.ReleaseTimezone),
-			EffectiveReleaseTimezone: releasedate.EffectiveTimezone(snapshot.System.ReleaseTimezone),
-			DeveloperMode:            snapshot.System.DeveloperMode,
-			Language:                 effectiveSnapshotLanguage(snapshot.System.Language),
-			TaskDeletePolicy:         model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
-			ImageCache:               &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
-			StashBoxDataCache:        &model.StashBoxDataCacheSettings{TTLHours: snapshot.System.StashBoxDataCache.TTLHours},
+			Timezone:          effectiveTimezoneMode(snapshot.System.Timezone),
+			EffectiveTimezone: apptime.EffectiveTimezone(snapshot.System.Timezone),
+			SystemTimezone:    apptime.EffectiveTimezone(""),
+			DeveloperMode:     snapshot.System.DeveloperMode,
+			Language:          effectiveSnapshotLanguage(snapshot.System.Language),
+			TaskDeletePolicy:  model.TaskDeletePolicy(snapshot.System.TaskDeletePolicy),
+			ImageCache:        &model.ImageCacheSettings{Enabled: snapshot.System.ImageCache.Enabled, MaxSizeMb: snapshot.System.ImageCache.MaxSizeMB, RetentionDays: snapshot.System.ImageCache.RetentionDays},
+			StashBoxDataCache: &model.StashBoxDataCacheSettings{TTLHours: snapshot.System.StashBoxDataCache.TTLHours},
 		},
 	}
 }
@@ -235,9 +235,8 @@ func settingsStatusSnapshotToModel(snapshot *SettingsStatusSnapshot) *model.Sett
 			Ready:      snapshot.QBittorrent.Ready,
 		},
 		Automation: &model.AutomationStatus{
-			TaskProgressSyncIntervalSeconds: snapshot.Automation.TaskProgressSyncIntervalSeconds,
-			SubscriptionCheckEnabled:        snapshot.Automation.SubscriptionCheckEnabled,
-			SubscriptionPollEnabled:         snapshot.Automation.SubscriptionPollEnabled,
+			TaskProcessingFrequency: model.TaskProcessingFrequency(snapshot.Automation.TaskProcessingFrequency),
+			SubscriptionPollEnabled: snapshot.Automation.SubscriptionPollEnabled,
 		},
 		StashBox: &model.StashBoxStatus{
 			StashBoxes:          subscriptionStashBoxesToModel(snapshot.StashBox.StashBoxes),
@@ -400,7 +399,7 @@ func effectiveSnapshotLanguage(language string) string {
 	return language
 }
 
-func effectiveReleaseTimezoneMode(value string) string {
+func effectiveTimezoneMode(value string) string {
 	if value == "" {
 		return "auto"
 	}

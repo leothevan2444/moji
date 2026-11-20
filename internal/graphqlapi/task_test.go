@@ -548,9 +548,8 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			Tags:               "auto",
 		},
 		Automation: AutomationSettingsSnapshot{
-			TaskProgressSyncIntervalSeconds: 60,
-			SubscriptionCheckEnabled:        true,
-			StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
+			TaskProcessingFrequency: "MEDIUM",
+			StashBoxEndpoints:       []string{"https://javstash.example.org/graphql"},
 			TorrentSelection: TorrentSelectionSettingsSnapshot{
 				Enabled: true,
 				FastRules: []TorrentSelectionRuleSnapshot{
@@ -568,9 +567,8 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	}
 	resolver.RuntimeStatus = &SettingsStatusSnapshot{
 		Automation: AutomationStatusSnapshot{
-			TaskProgressSyncIntervalSeconds: 60,
-			SubscriptionCheckEnabled:        true,
-			SubscriptionPollEnabled:         true,
+			TaskProcessingFrequency: "MEDIUM",
+			SubscriptionPollEnabled: true,
 		},
 	}
 
@@ -580,11 +578,11 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 			ingest { downloads { qbRoot } library { stashRoot } }
 			jackett { configured url apiKeyConfigured }
 			qbittorrent { configured url username usernameConfigured passwordConfigured defaultSavePath category tags }
-			automation { taskProgressSyncIntervalSeconds subscriptionCheckEnabled stashBoxEndpoints torrentSelection { enabled fastRules { type seeders { direction } } torrentRules { type } } }
+			automation { taskProcessingFrequency stashBoxEndpoints torrentSelection { enabled fastRules { type seeders { direction } } torrentRules { type } } }
 			system { taskDeletePolicy }
 		}
 		settingsStatus {
-			automation { taskProgressSyncIntervalSeconds }
+			automation { taskProcessingFrequency }
 		}
 	}`)
 	if len(resp.Errors) > 0 {
@@ -605,7 +603,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	if resp.Data.Settings.Qbittorrent.Username != "operator" {
 		t.Fatalf("unexpected qbittorrent username: %+v", resp.Data.Settings.Qbittorrent)
 	}
-	if resp.Data.Settings.Automation.TaskProgressSyncIntervalSeconds != 60 {
+	if resp.Data.Settings.Automation.TaskProcessingFrequency != "MEDIUM" {
 		t.Fatalf("unexpected automation settings: %+v", resp.Data.Settings.Automation)
 	}
 	if len(resp.Data.Settings.Automation.StashBoxEndpoints) != 1 {
@@ -614,7 +612,7 @@ func TestSettingsQueryReturnsRuntimeSnapshot(t *testing.T) {
 	if resp.Data.Settings.System.TaskDeletePolicy != "KEEP_ONLY" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
-	if resp.Data.SettingsStatus.Automation.TaskProgressSyncIntervalSeconds != 60 {
+	if resp.Data.SettingsStatus.Automation.TaskProcessingFrequency != "MEDIUM" {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
 }
@@ -654,9 +652,8 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	resolver.SettingsEditor = &fakeSettingsEditor{
 		snapshot: &SettingsSnapshot{
 			Automation: AutomationSettingsSnapshot{
-				TaskProgressSyncIntervalSeconds: 60,
-				SubscriptionCheckEnabled:        true,
-				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
+				TaskProcessingFrequency: "MEDIUM",
+				StashBoxEndpoints:       []string{"https://javstash.example.org/graphql"},
 				TorrentSelection: TorrentSelectionSettingsSnapshot{
 					Enabled: true,
 					FastRules: []TorrentSelectionRuleSnapshot{
@@ -674,13 +671,13 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 		},
 		statusSnapshot: &SettingsStatusSnapshot{
 			Automation: AutomationStatusSnapshot{
-				SubscriptionCheckEnabled: true,
-				SubscriptionPollEnabled:  true,
+
+				SubscriptionPollEnabled: true,
 			},
 		},
 	}
 
-	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } automation { subscriptionCheckEnabled stashBoxEndpoints torrentSelection { enabled fastRules { type } torrentRules { type } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionCheckEnabled subscriptionPollEnabled } } }`)
+	resp := executeGraphQL(t, resolver, `{ settings { qbittorrent { url username } automation { stashBoxEndpoints torrentSelection { enabled fastRules { type } torrentRules { type } } } system { taskDeletePolicy } } settingsStatus { automation { subscriptionPollEnabled } } }`)
 	if len(resp.Errors) > 0 {
 		t.Fatalf("expected no errors, got %+v", resp.Errors)
 	}
@@ -693,7 +690,7 @@ func TestSettingsQueryUsesSettingsEditorSnapshot(t *testing.T) {
 	if resp.Data.Settings.System.TaskDeletePolicy != "REMOVE_TORRENT" {
 		t.Fatalf("unexpected system settings: %+v", resp.Data.Settings.System)
 	}
-	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled || resp.Data.SettingsStatus.Automation.SubscriptionCheckEnabled != true {
+	if !resp.Data.SettingsStatus.Automation.SubscriptionPollEnabled {
 		t.Fatalf("unexpected automation status: %+v", resp.Data.SettingsStatus.Automation)
 	}
 	if len(resp.Data.Settings.Automation.TorrentSelection.FastRules) != 1 {
@@ -837,9 +834,8 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 	editor := &fakeSettingsEditor{
 		updateAutomationSnapshot: &SettingsSnapshot{
 			Automation: AutomationSettingsSnapshot{
-				TaskProgressSyncIntervalSeconds: 60,
-				SubscriptionCheckEnabled:        true,
-				StashBoxEndpoints:               []string{"https://javstash.example.org/graphql"},
+				TaskProcessingFrequency: "MEDIUM",
+				StashBoxEndpoints:       []string{"https://javstash.example.org/graphql"},
 				SubscriptionReleasePolicy: SubscriptionReleasePolicySnapshot{
 					SoloBehavior:           "DOWNLOAD",
 					GroupBehavior:          "REVIEW",
@@ -861,8 +857,7 @@ func TestUpdateAutomationSettingsMutation(t *testing.T) {
 
 	resp := executeGraphQL(t, resolver, `mutation {
 		updateAutomationSettings(input: {
-			taskProgressSyncIntervalSeconds: 60
-			subscriptionCheckEnabled: true
+			taskProcessingFrequency: MEDIUM
 			stashBoxEndpoints: ["https://javstash.example.org/graphql"]
 				subscriptionReleasePolicy: {
 					soloBehavior: DOWNLOAD
@@ -1229,10 +1224,9 @@ type graphQLTaskResponse struct {
 				Tags               string `json:"tags"`
 			} `json:"qbittorrent"`
 			Automation struct {
-				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionCheckEnabled        bool     `json:"subscriptionCheckEnabled"`
-				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
-				TorrentSelection                struct {
+				TaskProcessingFrequency string   `json:"taskProcessingFrequency"`
+				StashBoxEndpoints       []string `json:"stashBoxEndpoints"`
+				TorrentSelection        struct {
 					Enabled   bool `json:"enabled"`
 					FastRules []struct {
 						Type string `json:"type"`
@@ -1248,9 +1242,8 @@ type graphQLTaskResponse struct {
 		} `json:"settings"`
 		SettingsStatus struct {
 			Automation struct {
-				TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionCheckEnabled        bool `json:"subscriptionCheckEnabled"`
-				SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
+				TaskProcessingFrequency string `json:"taskProcessingFrequency"`
+				SubscriptionPollEnabled bool   `json:"subscriptionPollEnabled"`
 			} `json:"automation"`
 		} `json:"settingsStatus"`
 		StashPerformers struct {
@@ -1306,10 +1299,9 @@ type graphQLTaskResponse struct {
 		} `json:"updateJackettSettings"`
 		UpdateAutomationSettings struct {
 			Automation struct {
-				TaskProgressSyncIntervalSeconds int      `json:"taskProgressSyncIntervalSeconds"`
-				SubscriptionCheckEnabled        bool     `json:"subscriptionCheckEnabled"`
-				StashBoxEndpoints               []string `json:"stashBoxEndpoints"`
-				SubscriptionReleasePolicy       struct {
+				TaskProcessingFrequency   string   `json:"taskProcessingFrequency"`
+				StashBoxEndpoints         []string `json:"stashBoxEndpoints"`
+				SubscriptionReleasePolicy struct {
 					VRBehavior string `json:"vrBehavior"`
 				} `json:"subscriptionReleasePolicy"`
 				TorrentSelection struct {

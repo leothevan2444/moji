@@ -4,7 +4,7 @@ Tasks & subscriptions controls background scheduling, release decisions, and res
 
 ## Scheduling and release policy
 
-Task processing starts with Moji and continues while the application runs. Download progress synchronization and automatic ingest have no global pause switch. Task check intervals are 30 seconds, 1 minute, 2 minutes or 5 minutes. Subscription checks run independently and retain their own enable switch. Manual checks remain available.
+Task processing and subscribed-performer checks run automatically with Moji. Task processing frequency offers High, Medium (default), and Low. High confirms progress and advances library handoff sooner with more background checks and requests to the downloader and Stash. Low reduces overhead, with longer waits for completion confirmation and handoff. This does not change download speed, media-processing concurrency or activity-based performer-check schedules.
 
 The new-release download policy applies to scheduled subscription checks and manual checks of one, selected or all performers, including historical releases found during the first check. Subscribing only marks a performer as subscribed. Direct downloads from performer lists or search results, manual task creation and existing task retries do not apply this policy.
 

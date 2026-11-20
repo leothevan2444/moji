@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
 import { Link, useOutletContext, useSearchParams } from "react-router";
 import { useMutation, useQuery } from "urql";
@@ -19,6 +20,7 @@ const reconsiderable = (status: ReleaseReviewStatus) => status === ReleaseReview
 const safeURL = (url: string | null | undefined) => url && /^https?:\/\//iu.test(url) ? url : null;
 
 export function Component() {
+  useAppTimezone();
   const { t } = useTranslation();
   const { pushToast } = useOutletContext<AppOutletContext>();
   const [params, setParams] = useSearchParams();

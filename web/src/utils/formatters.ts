@@ -1,3 +1,4 @@
+import { getAppTimezone } from "./appTimezone";
 import type { LogsDocumentQuery } from "../graphql/generated/graphql";
 import i18n from "../i18n/i18n";
 
@@ -8,18 +9,19 @@ function activeLocale() {
 const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
 const relativeTimeFormatters = new Map<string, Intl.RelativeTimeFormat>();
 
-function dateTimeFormatter(style: "full" | "date" | "compact" | "time" = "full") {
+function dateTimeFormatter(style: "full" | "date" | "compact" | "time" = "full", calendarDate = false) {
   const locale = activeLocale();
-  const key = `${locale}:${style}`;
+  const timezone = calendarDate ? "UTC" : getAppTimezone();
+  const key = `${locale}:${timezone}:${style}`;
   let formatter = dateTimeFormatters.get(key);
   if (!formatter) {
-    formatter = new Intl.DateTimeFormat(locale, style === "time"
+    formatter = new Intl.DateTimeFormat(locale, { timeZone: timezone, ...(style === "time"
       ? { hour: "2-digit", minute: "2-digit", second: "2-digit" }
       : style === "compact"
       ? { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }
       : style === "date"
       ? { month: "short", day: "numeric" }
-      : { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      : { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) });
     dateTimeFormatters.set(key, formatter);
   }
   return formatter;
@@ -76,23 +78,22 @@ export function formatRelativeDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return dateTimeFormatter("date").format(date);
+  return dateTimeFormatter("date", /^\d{4}-\d{2}-\d{2}$/.test(value)).format(date);
 }
 
 /**
- * 把 Jackett/Tracker 返回的 publishDate 规范成 yyyy-mm-dd。Tracker 返回的
- * 日期格式各异（ISO、带时间、本地化字符串等），这里统一抽取前 10 位作为
- * 日期。空字符串返回 "—" 让调用方有占位渲染。
+ * 把来源 publishDate 规范成 yyyy-mm-dd：日历日期保留原值，时间戳按
+ * Moji 时区转换。无法解析的值保留来源前 10 位；空值显示占位。
  */
 export function formatPublishDate(value?: string | null) {
   if (!value) return "—";
-  // 优先尝试 Date 解析，对 ISO 时间戳和本地化字符串都更稳。
+  // A calendar date has no offset; timestamps follow the configured timezone.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
   const parsed = new Date(value);
   if (!Number.isNaN(parsed.getTime())) {
-    const year = parsed.getFullYear();
-    const month = String(parsed.getMonth() + 1).padStart(2, "0");
-    const day = String(parsed.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    const parts = new Intl.DateTimeFormat("en", { timeZone: getAppTimezone(), year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(parsed);
+    const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(item => item.type === type)?.value;
+    return `${part("year")}-${part("month")}-${part("day")}`;
   }
   // 解析失败时回退到字符串前 10 位（如 "2025-01-08 12:34" → "2025-01-08"）。
   return value.slice(0, 10);

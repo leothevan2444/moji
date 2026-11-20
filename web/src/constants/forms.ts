@@ -1,4 +1,5 @@
 import {
+  TaskProcessingFrequency,
   LogLevel,
   SubscriptionReleaseBehavior,
   SubscriptionReleaseDateRange,
@@ -58,8 +59,8 @@ export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
 
 export const EMPTY_POLICY_SETTINGS_FORM = {
   sourcingRetryIntervalHours: "6",
-  taskProgressSyncIntervalSeconds: "60",
-  subscriptionCheckEnabled: true,
+  taskProcessingFrequency: TaskProcessingFrequency.Medium,
+
   stashBoxEndpoints: [] as string[],
   subscriptionReleasePolicy: {
     soloBehavior: SubscriptionReleaseBehavior.Download,

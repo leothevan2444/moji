@@ -38,8 +38,8 @@ query LibraryDeliverySettings {
 query SettingsPolicySection {
   settings {
     policies: automation {
-      taskProgressSyncIntervalSeconds
-      subscriptionCheckEnabled
+      taskProcessingFrequency
+
       sourcingRetryIntervalHours
       stashBoxEndpoints
       subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior vrBehavior maxGroupPerformerCount releaseDateRange }
@@ -68,7 +68,7 @@ query SettingsPolicySection {
 
 query SystemSettingsTab {
   settings {
-    system { language releaseTimezone effectiveReleaseTimezone developerMode
+    system { language timezone effectiveTimezone systemTimezone developerMode
       taskDeletePolicy imageCache { enabled maxSizeMb retentionDays } stashBoxDataCache { ttlHours } }
   }
   settingsStatus {

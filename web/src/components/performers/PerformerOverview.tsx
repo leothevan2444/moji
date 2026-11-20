@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { ActivityLevelIcons } from "./ActivityLevelIcons";
 import { activityDisplayStatus, activityRankForDisplay } from "./performerActivityStatus";
 import { faRotateRight } from "@fortawesome/free-solid-svg-icons/faRotateRight";
@@ -27,6 +28,7 @@ import { performerCheckRun } from "../../hooks/useSubscriptionChecks";
 import type { PerformerSummary, PerformersPageProps, StashPerformerDetail, SubscribedPerformerEntry } from "./types";
 
 export function PerformerOverview({ performerDetail, performerSummary, performerSubscription, page }: { performerDetail: NonNullable<StashPerformerDetail>; performerSummary?: PerformerSummary | null; performerSubscription: SubscribedPerformerEntry | null; page: Pick<PerformersPageProps, "checkActivity" | "checksLoading" | "checksError" | "checkStarting" | "stashBaseURL" | "reviewCounts" | "pendingSubscriptionID" | "onToggle" | "onRefreshOne" | "fetchingPerformerSummary" | "performerActivity" | "performerActivityError" | "onRefreshActivity" | "onOpenActivityHelp">; }) {
+  useAppTimezone();
   const { t } = useTranslation();
   const checkRun = performerCheckRun(page.checkActivity, performerDetail.performer.id);
   const checkItem = checkRun;

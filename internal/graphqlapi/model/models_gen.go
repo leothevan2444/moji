@@ -12,9 +12,8 @@ import (
 )
 
 type AutomationSettings struct {
-	SourcingRetryIntervalHours      int  `json:"sourcingRetryIntervalHours"`
-	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionCheckEnabled        bool `json:"subscriptionCheckEnabled"`
+	SourcingRetryIntervalHours int                     `json:"sourcingRetryIntervalHours"`
+	TaskProcessingFrequency    TaskProcessingFrequency `json:"taskProcessingFrequency"`
 	// Endpoint URLs in the user-defined order used for subscription lookups. Endpoints not listed here are still queried, in their Stash order, appended after the listed ones. An empty list means use Stash's order as-is.
 	StashBoxEndpoints         []string                   `json:"stashBoxEndpoints"`
 	SubscriptionReleasePolicy *SubscriptionReleasePolicy `json:"subscriptionReleasePolicy"`
@@ -22,9 +21,8 @@ type AutomationSettings struct {
 }
 
 type AutomationStatus struct {
-	TaskProgressSyncIntervalSeconds int  `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionCheckEnabled        bool `json:"subscriptionCheckEnabled"`
-	SubscriptionPollEnabled         bool `json:"subscriptionPollEnabled"`
+	TaskProcessingFrequency TaskProcessingFrequency `json:"taskProcessingFrequency"`
+	SubscriptionPollEnabled bool                    `json:"subscriptionPollEnabled"`
 }
 
 type BuiltinIndexerInput struct {
@@ -1543,20 +1541,21 @@ type SubscriptionReleasePolicyInput struct {
 }
 
 type SystemPatchInput struct {
-	ReleaseTimezone *string               `json:"release_timezone,omitempty"`
-	Language        *string               `json:"language,omitempty"`
-	DeveloperMode   *bool                 `json:"developer_mode,omitempty"`
-	ImageCache      *ImageCachePatchInput `json:"image_cache,omitempty"`
+	Timezone      *string               `json:"timezone,omitempty"`
+	Language      *string               `json:"language,omitempty"`
+	DeveloperMode *bool                 `json:"developer_mode,omitempty"`
+	ImageCache    *ImageCachePatchInput `json:"image_cache,omitempty"`
 }
 
 type SystemSettings struct {
-	ReleaseTimezone          string                     `json:"releaseTimezone"`
-	EffectiveReleaseTimezone string                     `json:"effectiveReleaseTimezone"`
-	Language                 string                     `json:"language"`
-	DeveloperMode            bool                       `json:"developerMode"`
-	TaskDeletePolicy         TaskDeletePolicy           `json:"taskDeletePolicy"`
-	ImageCache               *ImageCacheSettings        `json:"imageCache"`
-	StashBoxDataCache        *StashBoxDataCacheSettings `json:"stashBoxDataCache"`
+	Timezone          string                     `json:"timezone"`
+	EffectiveTimezone string                     `json:"effectiveTimezone"`
+	SystemTimezone    string                     `json:"systemTimezone"`
+	Language          string                     `json:"language"`
+	DeveloperMode     bool                       `json:"developerMode"`
+	TaskDeletePolicy  TaskDeletePolicy           `json:"taskDeletePolicy"`
+	ImageCache        *ImageCacheSettings        `json:"imageCache"`
+	StashBoxDataCache *StashBoxDataCacheSettings `json:"stashBoxDataCache"`
 }
 
 type Task struct {
@@ -1716,10 +1715,9 @@ type TaskPageInput struct {
 }
 
 type TaskSettingsInput struct {
-	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionCheckEnabled        bool                            `json:"subscriptionCheckEnabled"`
-	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
-	SubscriptionReleasePolicy       *SubscriptionReleasePolicyInput `json:"subscriptionReleasePolicy"`
+	TaskProcessingFrequency    TaskProcessingFrequency         `json:"taskProcessingFrequency"`
+	SourcingRetryIntervalHours int                             `json:"sourcingRetryIntervalHours"`
+	SubscriptionReleasePolicy  *SubscriptionReleasePolicyInput `json:"subscriptionReleasePolicy"`
 }
 
 // A Stash scene linked to a task's ingest result.
@@ -1763,12 +1761,11 @@ type TaskSummary struct {
 }
 
 type TasksPatchInput struct {
-	TaskProgressSyncIntervalSeconds *int                     `json:"task_progress_sync_interval_seconds,omitempty"`
-	SourcingRetryIntervalHours      *int                     `json:"sourcing_retry_interval_hours,omitempty"`
-	SubscriptionCheckEnabled        *bool                    `json:"subscription_check_enabled,omitempty"`
-	TaskDeletePolicy                *TaskDeletePolicy        `json:"task_delete_policy,omitempty"`
-	SubscriptionReleasePolicy       *ReleasePolicyPatchInput `json:"subscription_release_policy,omitempty"`
-	TorrentSelection                *ResourceRulesPatchInput `json:"torrent_selection,omitempty"`
+	TaskProcessingFrequency    *TaskProcessingFrequency `json:"task_processing_frequency,omitempty"`
+	SourcingRetryIntervalHours *int                     `json:"sourcing_retry_interval_hours,omitempty"`
+	TaskDeletePolicy           *TaskDeletePolicy        `json:"task_delete_policy,omitempty"`
+	SubscriptionReleasePolicy  *ReleasePolicyPatchInput `json:"subscription_release_policy,omitempty"`
+	TorrentSelection           *ResourceRulesPatchInput `json:"torrent_selection,omitempty"`
 }
 
 type TestIndexerInput struct {
@@ -2012,7 +2009,6 @@ type UpcomingReleaseConnection struct {
 	PageSize        int                  `json:"pageSize"`
 	TotalPages      int                  `json:"totalPages"`
 	SubscribedCount int                  `json:"subscribedCount"`
-	Automatic       bool                 `json:"automatic"`
 	Timezone        string               `json:"timezone"`
 	Today           string               `json:"today"`
 }
@@ -2026,13 +2022,12 @@ type UpcomingReleaseQueryInput struct {
 }
 
 type UpdateAutomationSettingsInput struct {
-	Section                         *AutomationSettingsSection      `json:"section,omitempty"`
-	SourcingRetryIntervalHours      int                             `json:"sourcingRetryIntervalHours"`
-	TaskProgressSyncIntervalSeconds int                             `json:"taskProgressSyncIntervalSeconds"`
-	SubscriptionCheckEnabled        bool                            `json:"subscriptionCheckEnabled"`
-	StashBoxEndpoints               []string                        `json:"stashBoxEndpoints"`
-	SubscriptionReleasePolicy       *SubscriptionReleasePolicyInput `json:"subscriptionReleasePolicy"`
-	TorrentSelection                *TorrentSelectionSettingsInput  `json:"torrentSelection"`
+	Section                    *AutomationSettingsSection      `json:"section,omitempty"`
+	SourcingRetryIntervalHours int                             `json:"sourcingRetryIntervalHours"`
+	TaskProcessingFrequency    TaskProcessingFrequency         `json:"taskProcessingFrequency"`
+	StashBoxEndpoints          []string                        `json:"stashBoxEndpoints"`
+	SubscriptionReleasePolicy  *SubscriptionReleasePolicyInput `json:"subscriptionReleasePolicy"`
+	TorrentSelection           *TorrentSelectionSettingsInput  `json:"torrentSelection"`
 }
 
 type UpdateIngestSettingsInput struct {
@@ -4442,6 +4437,63 @@ func (e *TaskListStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e TaskListStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TaskProcessingFrequency string
+
+const (
+	TaskProcessingFrequencyHigh   TaskProcessingFrequency = "HIGH"
+	TaskProcessingFrequencyMedium TaskProcessingFrequency = "MEDIUM"
+	TaskProcessingFrequencyLow    TaskProcessingFrequency = "LOW"
+)
+
+var AllTaskProcessingFrequency = []TaskProcessingFrequency{
+	TaskProcessingFrequencyHigh,
+	TaskProcessingFrequencyMedium,
+	TaskProcessingFrequencyLow,
+}
+
+func (e TaskProcessingFrequency) IsValid() bool {
+	switch e {
+	case TaskProcessingFrequencyHigh, TaskProcessingFrequencyMedium, TaskProcessingFrequencyLow:
+		return true
+	}
+	return false
+}
+
+func (e TaskProcessingFrequency) String() string {
+	return string(e)
+}
+
+func (e *TaskProcessingFrequency) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskProcessingFrequency(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskProcessingFrequency", str)
+	}
+	return nil
+}
+
+func (e TaskProcessingFrequency) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TaskProcessingFrequency) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TaskProcessingFrequency) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

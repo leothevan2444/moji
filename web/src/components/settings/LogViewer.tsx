@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LogLevel } from "../../graphql/generated/graphql";
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function LogViewer({ entries, onCopy, loading = false }: Props) {
+  useAppTimezone();
   const { t } = useTranslation();
   const viewport = useRef<HTMLDivElement>(null);
   // Keep the actual rows stable while reading, even when the live cache evicts old rows.

@@ -11,8 +11,8 @@ import (
 // An unknown date is never replaced by a discovery or library import timestamp.
 func (s *Service) latestSourceRelease(scenes []*stashboxgraphql.SceneFragment, now time.Time) *LatestRelease {
 	zone := ""
-	if s.releaseTimezone != nil {
-		zone = s.releaseTimezone()
+	if s.timezoneProvider != nil {
+		zone = s.timezoneProvider()
 	}
 	var latest *LatestRelease
 	for _, scene := range scenes {

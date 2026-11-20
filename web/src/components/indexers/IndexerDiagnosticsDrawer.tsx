@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { useCallback, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "urql";
@@ -17,6 +18,7 @@ function Identifier({label,value}:{label:string;value:string}) {
  return <span className="indexer-record-id"><span>{label}</span><button type="button" className="home-inline-button" title={value} aria-label={copied?t("indexerRecordUi.copiedIdentifier",{label}):t("indexerRecordUi.copyIdentifier",{label,value})} onClick={async()=>{try{await navigator.clipboard.writeText(value);setCopied(true);setFailed(false);}catch{setFailed(true);}}}><code>{value.length>18?`${value.slice(0,10)}…${value.slice(-6)}`:value}</code><FontAwesomeIcon icon={copied?faCheck:faCopy} aria-hidden="true"/></button>{failed?<span role="status">{t("indexerRecordUi.copyFailed")}</span>:null}</span>;
 }
 function Record({record}:{record:Report}){
+  useAppTimezone();
  const {t}=useTranslation();const cancelled=record.errorCode==="INDEXER_CANCELLED";const failed=!cancelled&&Boolean(record.errorCode||record.partial);
  const outcome=cancelled?"cancelled":failed?"failed":"succeeded";
  const ids=[["task",record.taskId],["searchId",record.searchId],["resource",record.resourceId],["correlation",record.correlationId],["config",record.configRevision],["rules",record.bundleRevision]].filter(([,value])=>value);

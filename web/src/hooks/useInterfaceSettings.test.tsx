@@ -1,10 +1,11 @@
+import { getAppTimezone, setAppTimezone } from "../utils/appTimezone";
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 const { query } = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("../graphql/client", () => ({ settingsClient: { query } }));
 import { useInterfaceSettings } from "./useInterfaceSettings";
-afterEach(() => { cleanup();vi.clearAllMocks(); });
+afterEach(() => { cleanup();vi.clearAllMocks();setAppTimezone("UTC"); });
 it("loads the saved mode and prevents an older read undoing a successful save", async () => {
   let finish!: (value: unknown) => void;
   query.mockReturnValue({ toPromise: () => new Promise((resolve) => { finish = resolve; }) });
@@ -27,4 +28,20 @@ it("loads instance language and fences old reads after a successful language sav
   act(()=>result.current.updateLanguage("zh-CN"));
   await act(async()=>finish({data:{settings:{system:{developerMode:false,language:"en"}}}}));
   expect(result.current.language).toBe("zh-CN");
+});
+
+it("loads the server timezone and fences old reads after timezone saves", async () => {
+ query.mockReturnValue({toPromise:async()=>({data:{settings:{system:{developerMode:false,language:"en",effectiveTimezone:"Asia/Tokyo"}}}})});
+ const {result} = renderHook(()=>useInterfaceSettings());
+ await waitFor(()=>expect(getAppTimezone()).toBe("Asia/Tokyo"));
+ let stale!: (value: unknown)=>void;
+ query.mockReturnValueOnce({toPromise:()=>new Promise(resolve=>{stale=resolve;})});
+ act(()=>window.dispatchEvent(new Event("focus")));
+ query.mockReturnValue({toPromise:async()=>({data:{settings:{system:{effectiveTimezone:"America/New_York"}}}})});
+ act(()=>result.current.updateTimezone("America/New_York"));
+ await act(async()=>stale({data:{settings:{system:{effectiveTimezone:"Asia/Tokyo"}}}}));
+ expect(getAppTimezone()).toBe("America/New_York");
+ query.mockReturnValue({toPromise:async()=>({data:{settings:{system:{effectiveTimezone:"UTC"}}}})});
+ act(()=>result.current.updateTimezone("auto"));
+ await waitFor(()=>expect(getAppTimezone()).toBe("UTC"));
 });

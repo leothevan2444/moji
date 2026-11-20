@@ -1,6 +1,6 @@
 query UpcomingReleases($input: UpcomingReleaseQueryInput!) {
   upcomingReleases(input: $input) {
-    totalCount page pageSize totalPages subscribedCount automatic timezone today
+    totalCount page pageSize totalPages subscribedCount timezone today
     performers { id name }
     items { key code title date imageUrl sourceUrl state decision errorCode metadataCheckedAt performers { id name } }
   }

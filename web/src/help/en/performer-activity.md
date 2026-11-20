@@ -12,7 +12,7 @@ The rating measures recent release activity. Career length, retirement, populari
 
 ## Calculating the value
 
-Moji uses works linked to the performer at the preferred StashBox, including cached source records. This is not a local folder or the list of scenes already in Stash. Only valid **release dates** in the past 365 days count, never discovery or catalog entry dates. Future releases do not count. The configured release timezone determines today.
+Moji uses works linked to the performer at the preferred StashBox, including cached source records. This is not a local folder or the list of scenes already in Stash. Only valid **release dates** in the past 365 days count, never discovery or catalog entry dates. Future releases do not count. The configured application timezone determines today.
 
 A valid release code identifies one work; otherwise the source scene ID does. If a code has multiple release dates, the latest valid date that has arrived is used once. Multiple releases on one date contribute only the highest daily weight:
 
@@ -38,7 +38,7 @@ Activity value = sum of [daily weight × 2^(-days since release / 60)]
 
 A performer releasing their first ordinary work today usually starts at level 3. Continued releases accumulate contributions, while inactivity naturally reduces them. Compilations after retirement still make smaller contributions. Ratings are recalculated during successful source checks, rather than continuously reduced on the page.
 
-Enable or disable automatic checks in **Settings > Tasks & subscriptions**. The level determines the interval; it cannot be set manually. Manual checks also update the rating and schedule. Saved deadlines survive restarts. They are estimates: queues, downtime, or source failures can delay execution.
+Checks run automatically with Moji. The level determines the interval; it cannot be set manually. Manual checks also update the rating and schedule. Saved deadlines survive restarts. They are estimates: queues, downtime, or source failures can delay execution.
 
 ## Why a value has ≥
 

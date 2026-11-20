@@ -31,16 +31,16 @@ type StashImageProxy func(context.Context, string) string
 type StashBoxImageProxy func(context.Context, string, string) string
 
 type Service struct {
-	upcomingStates  UpcomingStateReader
-	releaseTimezone func() string
-	reads           singleflight.Group
-	stash           StashClient
-	metadata        *metadata.Service
-	taskCreator     TaskCreator
-	taskLister      TaskLister
-	customFieldKey  string
-	stashImage      StashImageProxy
-	stashBoxImage   StashBoxImageProxy
+	upcomingStates   UpcomingStateReader
+	timezoneProvider func() string
+	reads            singleflight.Group
+	stash            StashClient
+	metadata         *metadata.Service
+	taskCreator      TaskCreator
+	taskLister       TaskLister
+	customFieldKey   string
+	stashImage       StashImageProxy
+	stashBoxImage    StashBoxImageProxy
 }
 
 func NewService(stash StashClient, source *metadata.Service, creator TaskCreator, lister TaskLister, stashImage StashImageProxy, stashBoxImage StashBoxImageProxy) (*Service, error) {
@@ -124,6 +124,6 @@ func endpointKey(v string) string {
 	return strings.NewReplacer("/", "_", ":", "_").Replace(strings.ToLower(strings.TrimSpace(v)))
 }
 
-func (s *Service) SetReleaseTimezone(provider func() string) { s.releaseTimezone = provider }
+func (s *Service) SetTimezone(provider func() string) { s.timezoneProvider = provider }
 
 func (s *Service) SetUpcomingStateReader(reader UpcomingStateReader) { s.upcomingStates = reader }

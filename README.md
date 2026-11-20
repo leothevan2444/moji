@@ -292,6 +292,6 @@ GraphQL UI errors use `extensions.code`, `params`, and `correlationId`. Translat
 the stable error code instead of displaying raw server diagnostics; unknown codes
 use a generic localized message, with the correlation ID available for log lookup.
 
-Settings layout, resource rules and offline configuration migration are documented in [Settings](docs/settings.md).
+Settings layout, resource rules and current configuration are documented in [Settings](docs/settings.md).
 
 Performer activity scoring and durable automatic-check schedules are documented in [演员活跃度与自动作品检查](docs/performer-activity.md).

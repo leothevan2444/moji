@@ -202,22 +202,20 @@ func (s *runtimeSettingsEditor) UpdateSettingsSection(input graphqlapi.SettingsS
 		interval = s.store.Config().Automation.EffectiveSourcingRetryIntervalHours()
 	}
 	cfg, err := s.store.UpdateAutomationSection(input.Section, config.AutomationConfig{
-		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
-		SubscriptionCheckEnabled:        input.SubscriptionCheckEnabled,
-		StashBoxEndpoints:               input.StashBoxEndpoints,
-		SubscriptionReleasePolicy:       subscriptionReleasePolicyConfigFromSnapshot(input.SubscriptionReleasePolicy),
-		TorrentSelection:                config.NewTorrentSelectionConfig(input.TorrentSelection.Enabled, input.TorrentSelection.InspectionCandidateLimit, torrentSelectionConfigRulesFromSnapshot(input.TorrentSelection)),
-		SourcingRetryIntervalHours:      interval,
+		TaskProcessingFrequency:    input.TaskProcessingFrequency,
+		StashBoxEndpoints:          input.StashBoxEndpoints,
+		SubscriptionReleasePolicy:  subscriptionReleasePolicyConfigFromSnapshot(input.SubscriptionReleasePolicy),
+		TorrentSelection:           config.NewTorrentSelectionConfig(input.TorrentSelection.Enabled, input.TorrentSelection.InspectionCandidateLimit, torrentSelectionConfigRulesFromSnapshot(input.TorrentSelection)),
+		SourcingRetryIntervalHours: interval,
 	})
 	if err != nil {
 		logging.Errorf("settings: save policy section failed: %v", err)
 		return nil, err
 	}
 	logging.Infof(
-		"settings: policy section %s saved task_sync_interval=%d subscription_check_enabled=%t selected_endpoints=%d",
+		"settings: policy section %s saved task_processing_frequency=%s selected_endpoints=%d",
 		input.Section,
-		cfg.Automation.TaskProgressSyncIntervalSeconds,
-		cfg.Automation.SubscriptionCheckEnabled,
+		cfg.Automation.TaskProcessingFrequency,
 		len(cfg.Automation.StashBoxEndpoints),
 	)
 	applyAutomationSettings(cfg, s.subscriptionService, s.metadataService)

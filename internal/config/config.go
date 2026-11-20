@@ -6,9 +6,10 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/leothevan2444/moji/internal/apptime"
 	"github.com/leothevan2444/moji/internal/logging"
-	"github.com/leothevan2444/moji/internal/releasedate"
 	"gopkg.in/yaml.v3"
 )
 
@@ -216,7 +217,7 @@ func NormalizeTaskDeletePolicy(value string) TaskDeletePolicy {
 }
 
 type SystemConfig struct {
-	ReleaseTimezone   string                  `yaml:"release_timezone,omitempty"`
+	Timezone          string                  `yaml:"timezone,omitempty"`
 	Language          string                  `yaml:"language"`
 	DeveloperMode     bool                    `yaml:"developer_mode"`
 	TaskDeletePolicy  TaskDeletePolicy        `yaml:"task_delete_policy"`
@@ -301,12 +302,30 @@ func (s StashConfig) GraphQLEndpoint() string {
 }
 
 type AutomationConfig struct {
-	SourcingRetryIntervalHours      int                             `yaml:"sourcing_retry_interval_hours"`
-	TaskProgressSyncIntervalSeconds int                             `yaml:"task_progress_sync_interval_seconds"`
-	SubscriptionCheckEnabled        bool                            `yaml:"subscription_check_enabled"`
-	StashBoxEndpoints               []string                        `yaml:"selected_stash_box_endpoints"`
-	SubscriptionReleasePolicy       SubscriptionReleasePolicyConfig `yaml:"subscription_release_policy"`
-	TorrentSelection                TorrentSelectionConfig          `yaml:"torrent_selection"`
+	SourcingRetryIntervalHours int                             `yaml:"sourcing_retry_interval_hours"`
+	TaskProcessingFrequency    string                          `yaml:"task_processing_frequency"`
+	StashBoxEndpoints          []string                        `yaml:"selected_stash_box_endpoints"`
+	SubscriptionReleasePolicy  SubscriptionReleasePolicyConfig `yaml:"subscription_release_policy"`
+	TorrentSelection           TorrentSelectionConfig          `yaml:"torrent_selection"`
+}
+
+// EffectiveTaskProcessingFrequency defaults to the balanced tier.
+func (a AutomationConfig) EffectiveTaskProcessingFrequency() string {
+	if a.TaskProcessingFrequency == "" {
+		return "MEDIUM"
+	}
+	return a.TaskProcessingFrequency
+}
+
+func (a AutomationConfig) TaskProcessingInterval() time.Duration {
+	switch a.EffectiveTaskProcessingFrequency() {
+	case "HIGH":
+		return 30 * time.Second
+	case "LOW":
+		return 5 * time.Minute
+	default:
+		return time.Minute
+	}
 }
 
 func (a AutomationConfig) EffectiveSourcingRetryIntervalHours() int {
@@ -1080,13 +1099,13 @@ func ValidateLanguage(language string) error {
 	}
 }
 
-// EffectiveReleaseTimezone controls date-only release gates, independently of browser timezone.
-func (s SystemConfig) EffectiveReleaseTimezone() string {
-	return releasedate.EffectiveTimezone(s.ReleaseTimezone)
+// EffectiveTimezone resolves the shared application timezone independently of the browser.
+func (s SystemConfig) EffectiveTimezone() string {
+	return apptime.EffectiveTimezone(s.Timezone)
 }
-func (s SystemConfig) ReleaseTimezoneMode() string {
-	if strings.TrimSpace(s.ReleaseTimezone) == "" {
+func (s SystemConfig) TimezoneMode() string {
+	if strings.TrimSpace(s.Timezone) == "" {
 		return "auto"
 	}
-	return strings.TrimSpace(s.ReleaseTimezone)
+	return strings.TrimSpace(s.Timezone)
 }

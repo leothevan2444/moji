@@ -9,8 +9,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/apptime"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
-	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/subscription"
 )
 
@@ -29,7 +29,16 @@ func (r *mutationResolver) RefreshUpcomingRelease(ctx context.Context, key strin
 
 // UpcomingReleases is the resolver for the upcomingReleases field.
 func (r *queryResolver) UpcomingReleases(ctx context.Context, input model.UpcomingReleaseQueryInput) (*model.UpcomingReleaseConnection, error) {
-	empty := &model.UpcomingReleaseConnection{Items: []*model.UpcomingRelease{}, Performers: []*model.UpcomingPerformer{}, Page: 1, PageSize: 24, Timezone: releasedate.EffectiveTimezone(""), Today: time.Now().In(time.Local).Format("2006-01-02")}
+	zone := ""
+	snapshot := r.RuntimeSettings
+	if r.SettingsEditor != nil {
+		snapshot = r.SettingsEditor.Snapshot()
+	}
+	if snapshot != nil {
+		zone = snapshot.System.Timezone
+	}
+	zone = apptime.EffectiveTimezone(zone)
+	empty := &model.UpcomingReleaseConnection{Items: []*model.UpcomingRelease{}, Performers: []*model.UpcomingPerformer{}, Page: 1, PageSize: 24, Timezone: zone, Today: time.Now().In(apptime.Location(zone)).Format("2006-01-02")}
 	service, ok := r.PerformerSubscription.(upcomingService)
 	if !ok {
 		return empty, nil
@@ -46,13 +55,6 @@ func (r *queryResolver) UpcomingReleases(ctx context.Context, input model.Upcomi
 		return nil, err
 	}
 	out := &model.UpcomingReleaseConnection{Items: []*model.UpcomingRelease{}, Performers: []*model.UpcomingPerformer{}, TotalCount: page.TotalCount, Page: page.Page, PageSize: page.PageSize, TotalPages: page.TotalPages, SubscribedCount: page.SubscribedCount, Timezone: page.Timezone, Today: page.Today}
-	snapshot := r.RuntimeSettings
-	if r.SettingsEditor != nil {
-		snapshot = r.SettingsEditor.Snapshot()
-	}
-	if snapshot != nil {
-		out.Automatic = snapshot.Automation.SubscriptionCheckEnabled
-	}
 	for _, record := range page.Items {
 		out.Items = append(out.Items, upcomingToModel(record))
 	}

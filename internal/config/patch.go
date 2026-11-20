@@ -136,11 +136,11 @@ func validatePatch(patch map[string]any, cfg *Config) error {
 			return fmt.Errorf("%v must be between %d and %d", check.path, check.min, check.max)
 		}
 	}
-	if _, ok := patchValue(patch, "tasks", "task_progress_sync_interval_seconds"); ok {
-		switch cfg.Automation.TaskProgressSyncIntervalSeconds {
-		case 30, 60, 120, 300:
+	if _, ok := patchValue(patch, "tasks", "task_processing_frequency"); ok {
+		switch cfg.Automation.TaskProcessingFrequency {
+		case "HIGH", "MEDIUM", "LOW":
 		default:
-			return fmt.Errorf("task interval must be 30, 60, 120 or 300 seconds")
+			return fmt.Errorf("task processing frequency must be HIGH, MEDIUM or LOW")
 		}
 	}
 	if action := cfg.Ingest.Transfer.Action; action != "" && action != "COPY" && action != "MOVE" {

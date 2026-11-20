@@ -119,3 +119,23 @@ func TestRollingFileLayoutRetentionAndRestart(t *testing.T) {
 		t.Fatalf("expected current + 2 backups, got %d, %v", len(files), err)
 	}
 }
+
+func TestConfiguredTimezoneIsAppliedToLogOutput(t *testing.T) {
+	var output bytes.Buffer
+	zone := "Asia/Tokyo"
+	logger, err := New(Options{ConsoleWriter: &output, Timezone: func() string { return zone }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer logger.Close()
+	logger.logf(parseLevel("info"), "configured zone")
+	if !strings.Contains(output.String(), "+09:00") {
+		t.Fatal("configured timezone missing from log timestamp", output.String())
+	}
+	output.Reset()
+	zone = "America/New_York"
+	logger.logf(parseLevel("info"), "updated zone")
+	if !strings.Contains(output.String(), "-05:00") && !strings.Contains(output.String(), "-04:00") {
+		t.Fatal("updated timezone missing from log timestamp", output.String())
+	}
+}

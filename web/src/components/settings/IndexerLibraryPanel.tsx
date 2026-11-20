@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { formatDateTime } from "../../utils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBinoculars } from "@fortawesome/free-solid-svg-icons/faBinoculars";
@@ -14,6 +15,7 @@ import { SettingsCard, SettingsError, SettingsLoading } from "./SettingsTabCommo
 import { describeQueryError } from "../../services/queryError";
 
 export function IndexerLibraryPanel() {
+  useAppTimezone();
   const { t } = useTranslation();
   const library = useIndexerLibrary();
   const [confirm, setConfirm] = useState<{ activeRevision: string; previousRevision: string } | null>(null);

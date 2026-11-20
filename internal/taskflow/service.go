@@ -2,9 +2,9 @@ package taskflow
 
 import (
 	"context"
+	"github.com/leothevan2444/moji/internal/apptime"
 
 	"github.com/leothevan2444/moji/internal/film"
-	"github.com/leothevan2444/moji/internal/releasedate"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
 
@@ -23,7 +23,7 @@ type DiscoveredSceneResolver interface {
 type ResolvedScene = film.Snapshot
 
 type Service struct {
-	timezone                func() string
+	timezoneProvider        func() string
 	taskRuntime             TaskRuntime
 	discoveredSceneResolver DiscoveredSceneResolver
 	filmImageProxy          func(context.Context, string, string) string
@@ -100,10 +100,10 @@ func (s *Service) ListReviewTasks(ctx context.Context) ([]*taskruntime.Task, err
 	return s.ListTasks(ctx)
 }
 
-func (s *Service) SetReleaseTimezone(provider func() string) { s.timezone = provider }
-func (s *Service) releaseTimezone() string {
-	if s.timezone != nil {
-		return s.timezone()
+func (s *Service) SetTimezone(provider func() string) { s.timezoneProvider = provider }
+func (s *Service) timezone() string {
+	if s.timezoneProvider != nil {
+		return s.timezoneProvider()
 	}
-	return releasedate.DefaultTimezone
+	return apptime.DefaultTimezone
 }

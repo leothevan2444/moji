@@ -55,8 +55,7 @@ docker run --rm -i --network none --entrypoint sh \
     -c 'cat > /data/config.yaml' <<'YAML'
 config_version: 3
 tasks:
-  task_progress_sync_interval_seconds: -1
-  subscription_check_enabled: false
+  task_processing_frequency: LOW
 YAML
 
 # A fresh installation must serve its UI without Jackett or a rule download.

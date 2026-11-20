@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleCheck } from "@fortawesome/free-solid-svg-icons/faCircleCheck";
 import { faClock } from "@fortawesome/free-solid-svg-icons/faClock";
@@ -55,6 +56,7 @@ interface TaskTimelineProps extends StageInformation {
 }
 
 export function TaskTimeline({ steps, downloadProgress, transfer, onCopy, animateIngest }: TaskTimelineProps) {
+  useAppTimezone();
   const { t } = useTranslation();
   const ingestSteps = steps.filter(step => !["sourcing", "downloading", "completed"].includes(step.key));
   const active = ingestSteps.find(isActive);

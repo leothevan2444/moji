@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { formatDateTime } from "../../utils";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
@@ -8,6 +9,7 @@ import { FieldLabel, SettingsCard } from "./SettingsTabCommon";
 import { describeQueryError } from "../../services/queryError";
 
 export function IndexerExternalPanel() {
+  useAppTimezone();
   const { t } = useTranslation();
   const management = useIndexerManagement();
   return <SettingsCard title={t("indexers.jackettConnection")} actions={

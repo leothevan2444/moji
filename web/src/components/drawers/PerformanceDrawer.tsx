@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useSubscription } from "urql";
 import { useTranslation } from "react-i18next";
@@ -8,6 +9,7 @@ import { formatBytes, formatDateTime } from "../../utils";
 import "../../styles/performance.scss";
 
 export default function PerformanceDrawer() {
+  useAppTimezone();
   const { t, i18n } = useTranslation();
   const [visible, setVisible] = useState(() => document.visibilityState === "visible");
   useEffect(() => {

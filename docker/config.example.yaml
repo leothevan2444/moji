@@ -71,6 +71,8 @@ stash:
         ttl_hours: 24
         max_size_mb: 512
 system:
+    # Shared timezone for date decisions, log timestamps and UI time displays.
+    timezone: auto
     developer_mode: false
     image_cache:
         enabled: true
@@ -82,11 +84,10 @@ logging:
 # Developer tools are hidden by default.
 
 tasks:
-    # Independently pause/resume automatic download checks and Stash ingest.
-    # Task heartbeat in seconds: 30, 60 (recommended), 120, or 300.
-    task_progress_sync_interval_seconds: 60
-    # Per-performer check intervals are determined by release activity.
-    subscription_check_enabled: true
+    # Task processing frequency: HIGH (30s), MEDIUM (1m, default), LOW (5m).
+    # Higher frequency advances tasks sooner with more downloader/Stash requests.
+    task_processing_frequency: MEDIUM
+    # Performer checks always run automatically, scheduled by release activity.
     sourcing_retry_interval_hours: 6
     subscription_release_policy:
         solo_behavior: REVIEW

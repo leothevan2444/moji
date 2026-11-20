@@ -1,4 +1,4 @@
-package releasedate
+package apptime
 
 import (
 	"os"

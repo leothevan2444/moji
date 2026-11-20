@@ -39,7 +39,7 @@ func (s *Service) queueFilm(ctx context.Context, source taskruntime.TaskSource, 
 	if s == nil || s.taskRuntime == nil || v == nil || v.Validate() != nil {
 		return nil, film.ErrRequired
 	}
-	if err := releasedate.Check(v.Date, time.Now(), s.releaseTimezone()); err == releasedate.ErrNotReleased {
+	if err := releasedate.Check(v.Date, time.Now(), s.timezone()); err == releasedate.ErrNotReleased {
 		return nil, err
 	}
 	copy := v.Clone()
@@ -65,7 +65,7 @@ func (s *Service) ConfirmFilm(ctx context.Context, input ConfirmFilmInput) (*tas
 	if input.Digest == "" || input.Digest != v.Digest() {
 		return nil, film.ErrChanged
 	}
-	if err = releasedate.Check(v.Date, time.Now(), s.releaseTimezone()); err == releasedate.ErrNotReleased {
+	if err = releasedate.Check(v.Date, time.Now(), s.timezone()); err == releasedate.ErrNotReleased {
 		return nil, err
 	}
 	v.ConfirmedAt = time.Now().UTC()

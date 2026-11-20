@@ -34,6 +34,7 @@ func effective(cfg *config.Config) []byte {
 	enabled := copy.System.ImageCache.EffectiveEnabled()
 	copy.System.ImageCache.Enabled = &enabled
 	copy.System.StashBoxDataCache = copy.System.StashBoxDataCache.Normalize()
+	copy.Automation.TaskProcessingFrequency = copy.Automation.EffectiveTaskProcessingFrequency()
 	copy.Automation.SourcingRetryIntervalHours = copy.Automation.EffectiveSourcingRetryIntervalHours()
 	// Site order is independent of the old candidate-ranking enable switch.
 	copy.Automation.TorrentSelection.FastRules.IndexerPreference.Enabled = true

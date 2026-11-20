@@ -20,7 +20,7 @@ connection:
 tasks:
   progress_sync_interval_seconds: 60
 automation:
-  task_progress_sync_interval_seconds: 90
+  task_processing_frequency: MEDIUM
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
@@ -52,8 +52,8 @@ automation:
 	if err != nil {
 		t.Fatalf("reload config: %v", err)
 	}
-	if reloaded.Automation.TaskProgressSyncIntervalSeconds != 90 {
-		t.Fatalf("expected automation interval preserved, got %d", reloaded.Automation.TaskProgressSyncIntervalSeconds)
+	if reloaded.Automation.TaskProcessingFrequency != "MEDIUM" {
+		t.Fatalf("expected automation frequency preserved, got %s", reloaded.Automation.TaskProcessingFrequency)
 	}
 	if reloaded.Connection.QBittorrent.Username != "operator" {
 		t.Fatalf("expected updated username, got %q", reloaded.Connection.QBittorrent.Username)
@@ -72,7 +72,7 @@ func TestResourceSearchIntervalPersistsAndRejectsInvalidValues(t *testing.T) {
 	if store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 6 {
 		t.Fatal("legacy configuration lost the default interval")
 	}
-	if _, err := store.UpdateAutomation(60, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err != nil {
+	if _, err := store.UpdateAutomation("MEDIUM", nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err != nil {
 		t.Fatal(err)
 	}
 	reopened, err := OpenStore(path)
@@ -80,7 +80,7 @@ func TestResourceSearchIntervalPersistsAndRejectsInvalidValues(t *testing.T) {
 		t.Fatalf("resource interval not persisted: %v", err)
 	}
 	for _, value := range []int{0, -1, 169} {
-		if _, err := store.UpdateAutomation(60, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), value); err == nil {
+		if _, err := store.UpdateAutomation("MEDIUM", nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), value); err == nil {
 			t.Fatalf("invalid interval %d accepted", value)
 		}
 	}
@@ -104,7 +104,7 @@ func TestVRReleasePolicyDefaultsAndPersists(t *testing.T) {
 	for _, behavior := range []SubscriptionReleaseBehavior{SubscriptionReleaseBehaviorDownload, SubscriptionReleaseBehaviorReview, SubscriptionReleaseBehaviorBlock} {
 		policy := DefaultSubscriptionReleasePolicyConfig()
 		policy.VRBehavior = behavior
-		if _, err := store.UpdateAutomation(60, true, nil, policy, DefaultTorrentSelectionConfig(), 6); err != nil {
+		if _, err := store.UpdateAutomation("MEDIUM", nil, policy, DefaultTorrentSelectionConfig(), 6); err != nil {
 			t.Fatal(err)
 		}
 		reloaded, err := OpenStore(path)
@@ -126,8 +126,7 @@ func TestStoreUpdateAutomationPersistsTorrentSelection(t *testing.T) {
     api_key: "secret"
     password: "pw"
 automation:
-  task_progress_sync_interval_seconds: 60
-  subscription_check_enabled: true
+  task_processing_frequency: MEDIUM
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
@@ -138,7 +137,7 @@ automation:
 		t.Fatalf("open store: %v", err)
 	}
 
-	cfg, err := store.UpdateAutomation(60, true, []string{"https://javstash.example.org/graphql"}, DefaultSubscriptionReleasePolicyConfig(), NewTorrentSelectionConfig(
+	cfg, err := store.UpdateAutomation("MEDIUM", []string{"https://javstash.example.org/graphql"}, DefaultSubscriptionReleasePolicyConfig(), NewTorrentSelectionConfig(
 		true,
 		8,
 		[]TorrentSelectionRule{
@@ -406,21 +405,21 @@ func TestTaskProcessingIntervalPersistsAndRejectsUnsupportedIntervals(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, interval := range []int{30, 60, 120, 300} {
-		cfg, err := store.UpdateAutomation(interval, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 6)
-		if err != nil || cfg.Automation.TaskProgressSyncIntervalSeconds != interval {
+	for _, interval := range []string{"HIGH", "MEDIUM", "LOW"} {
+		cfg, err := store.UpdateAutomation(interval, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 6)
+		if err != nil || cfg.Automation.TaskProcessingFrequency != interval {
 			t.Fatal("interval lost", interval, err)
 		}
 		reopened, err := OpenStore(path)
-		if err != nil || reopened.Config().Automation.TaskProgressSyncIntervalSeconds != interval {
+		if err != nil || reopened.Config().Automation.TaskProcessingFrequency != interval {
 			t.Fatal("interval was not persisted", err)
 		}
 	}
-	for _, interval := range []int{-1, 0, 45, 600} {
-		if _, err := store.UpdateAutomation(interval, true, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err == nil {
+	for _, interval := range []string{"", "FAST", "30", "medium"} {
+		if _, err := store.UpdateAutomation(interval, nil, DefaultSubscriptionReleasePolicyConfig(), DefaultTorrentSelectionConfig(), 12); err == nil {
 			t.Fatal("invalid interval accepted", interval)
 		}
-		if store.Config().Automation.TaskProgressSyncIntervalSeconds != 300 || store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 6 {
+		if store.Config().Automation.TaskProcessingFrequency != "LOW" || store.Config().Automation.EffectiveSourcingRetryIntervalHours() != 6 {
 			t.Fatal("invalid save changed configuration")
 		}
 	}

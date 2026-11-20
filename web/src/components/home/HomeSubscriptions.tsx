@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { createPortal } from "react-dom";
 import { useState } from "react";
 import { Link } from "react-router";
@@ -21,6 +22,7 @@ export type HomeChecksView = Omit<HomeSubscriptionChecksQuery["homeSubscriptionC
 };
 
 function RunRow({ run, onOpen, compact = false }: { run: HomeCheckRunView; onOpen: (id: string) => void; compact?: boolean }) {
+  useAppTimezone();
   const { t } = useTranslation();
   const running = run.status === "RUNNING";
   const warning = ["FAILED", "PARTIAL", "INTERRUPTED"].includes(run.status);
@@ -54,6 +56,7 @@ export function HomeSubscriptions({ subscription, subscriptionError, onRetrySubs
   onRetry: () => void;
   onOpenRun: (id: string) => void;
 }) {
+  useAppTimezone();
   const { t, i18n } = useTranslation();
   const [historyOpen,setHistoryOpen]=useState(false);
   return <section className="home-panel home-subscriptions" id="subscription-checks" aria-labelledby="home-subscriptions-title">
@@ -81,7 +84,7 @@ export function HomeSubscriptions({ subscription, subscriptionError, onRetrySubs
         <div className="home-check-status">
           {error ? <div className="home-module-error" role="alert" aria-label={t("subscriptionChecks.title")}><p>{snapshot ? t("workbench.refreshFailed") : error}</p><button type="button" onClick={onRetry}>{t("common.retry")}</button></div> : null}
           {!snapshot ? !error && <div className="home-loading" aria-label={t("subscriptionChecks.loading")}><span /><span /><span /></div> : snapshot.activeRuns.length > 0 ? <div className="home-check-list" aria-label={t("subscriptionChecks.current")}><RunRow run={snapshot.activeRuns[0]} compact onOpen={onOpenRun} /></div> : <>
-            <span className="home-muted"><FontAwesomeIcon icon={faBinoculars} aria-hidden="true" /> {t(snapshot.enabled ? "subscriptionChecks.automaticEnabled" : "subscriptionChecks.automaticDisabled")}</span>
+            <span className="home-muted"><FontAwesomeIcon icon={faBinoculars} aria-hidden="true" /> {t(snapshot.enabled ? "subscriptionChecks.automaticEnabled" : "subscriptionChecks.automaticUnavailable")}</span>
             {snapshot.activeCount > 0 ? <span className="home-muted">{t("subscriptionChecks.runningCount", { count: snapshot.activeCount })}</span> : snapshot.enabled ? <>
               <span className="home-muted" aria-hidden="true">·</span>
               <span className="home-muted">{snapshot.nextRunAt ? <time dateTime={snapshot.nextRunAt} title={formatDateTime(snapshot.nextRunAt)} aria-label={t("subscriptionChecks.nextCheckIn", { time: formatNextRun(snapshot.nextRunAt, i18n.language) })}>{formatNextRun(snapshot.nextRunAt, i18n.language)}</time> : t("subscriptionChecks.nextCheckUnknown")}</span>
@@ -98,6 +101,7 @@ export function HomeSubscriptions({ subscription, subscriptionError, onRetrySubs
 }
 
 function CheckHistory({ onOpen, snapshot }: { onOpen: (id: string) => void; snapshot: HomeChecksView | null }) {
+  useAppTimezone();
  const {t}=useTranslation();
  const [{data,error,fetching},refresh]=useQuery({query:SubscriptionCheckHistoryDocument,requestPolicy:"network-only"});
  const statistics = snapshot?.statistics;

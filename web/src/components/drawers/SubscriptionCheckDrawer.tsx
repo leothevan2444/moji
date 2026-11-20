@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { formatDateTime } from "../../utils";
@@ -5,6 +6,7 @@ import type { SubscriptionCheckFieldsFragment } from "../../graphql/generated/gr
 import { SubscriptionCheckItemDetails } from "./SubscriptionCheckItemDetails";
 
 export function SubscriptionCheckDrawer({ run }: { run: SubscriptionCheckFieldsFragment }) {
+  useAppTimezone();
   const { t, i18n } = useTranslation();
   const reason = (value: string) => i18n.exists(`subscriptionChecks.reasons.${value}`) ? t(`subscriptionChecks.reasons.${value}`) : value;
   return <div className="home-check-detail">

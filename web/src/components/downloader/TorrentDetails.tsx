@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { useTranslation } from "react-i18next";
 import type { DownloaderDocumentQuery } from "../../graphql/generated/graphql";
 import { formatBytes, formatDateTime, formatDurationSeconds } from "../../utils/formatters";
@@ -5,6 +6,7 @@ import { formatBytes, formatDateTime, formatDurationSeconds } from "../../utils/
 export type Torrent = DownloaderDocumentQuery["downloader"]["torrents"][number];
 
 export function TorrentNotice({ torrent }: { torrent: Torrent }) {
+  useAppTimezone();
   const { t } = useTranslation();
   return <>
     {torrent.state === "missing" || torrent.state === "missingFiles" ? <p className={torrent.needsAttention ? "settings-feedback tone-danger" : "home-muted"}>{t(torrent.allCompleted ? "downloader.completedSourceGone" : "downloader.missingHint")}</p> : null}
@@ -13,6 +15,7 @@ export function TorrentNotice({ torrent }: { torrent: Torrent }) {
   </>;
 }
 export function TorrentDetails({ torrent, showNotice = true }: { torrent: Torrent; showNotice?: boolean }) {
+  useAppTimezone();
   const { t } = useTranslation();
   return <div className="torrent-details">{showNotice ? <TorrentNotice torrent={torrent} /> : null}<dl className="download-details">
     <dt>{t("downloader.hash")}</dt><dd>{torrent.hash}</dd>

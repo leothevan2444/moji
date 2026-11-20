@@ -28,7 +28,6 @@
     "rankLabel": "活跃度 {{rank}} / 5",
     "nextCheck": "预计下次检查",
     "lowerBound": "已读取作品的活跃值下限，已确认 5 档。",
-    "automaticChecks": "自动检查订阅演员的作品",
     "history": "历史记录",
     "recentRuns": "最近运行记录",
     "loadFailed": "无法更新活跃度与检查安排。",
@@ -453,15 +452,11 @@
     "INDEXER_BUSY": "索引器正忙，请稍后重试。"
   },
   "upcoming": {
-    "timezoneLabel": "发行日期时区",
-    "timezoneHelp": "输入 auto 跟随 Moji 运行环境时区，或填写 Asia/Shanghai 等 IANA 时区。当前生效：{{timezone}}。",
     "title": "待发行",
     "viewAll": "查看全部",
     "collapse": "收起列表",
     "unconfirmed": "待确认",
     "handedOff": "已转入发行流程",
-    "paused": "自动检查已关闭",
-    "settings": "设置",
     "search": "番号或标题",
     "performer": "演员",
     "allPerformers": "全部演员",
@@ -520,13 +515,6 @@
     "behaviorHelp": "人工复核只记录作品，不启动下载。",
     "priorityHelp": "同时命中多项策略时，优先跳过，其次人工复核。",
     "reviewHelp": "待复核作品在演员页的“发行复核”中处理。修改策略不会重新处理已记录的作品。",
-    "intervalOptions": {
-      "30": "30 秒",
-      "60": "1 分钟",
-      "120": "2 分钟",
-      "300": "5 分钟"
-    },
-    "syncInterval": "任务检查间隔",
     "policyTitle": "新发行下载策略",
     "solo": "单人作品",
     "group": "多人作品",
@@ -534,7 +522,19 @@
     "compilationInfo": "标题、简介或标签含合集特征，或演员不少于 10 人时归为合集。",
     "dateRange": "自动下载的发行日期范围",
     "dateRangeInfo": "仅限单人和多人作品；超出范围或日期未知时进入复核。",
-    "title": "任务与订阅"
+    "title": "任务与订阅",
+    "frequency": "任务推进频率",
+    "frequencyOptions": {
+      "HIGH": "高",
+      "MEDIUM": "中（默认）",
+      "LOW": "低"
+    },
+    "frequencyHelp": {
+      "HIGH": "更及时地确认任务进度并推进后续入库，后台检查更频繁，对下载器和 Stash 的请求更多。",
+      "MEDIUM": "平衡任务响应速度与后台开销，适合日常使用。",
+      "LOW": "减少后台检查和对下载器、Stash 的请求，任务完成后的确认及后续入库可能等待更久。"
+    },
+    "frequencyScope": "不改变下载速度、媒体处理并发或演员订阅的自动检查安排。"
   },
   "metadataSources": {
     "title": "元数据来源优先级",
@@ -625,7 +625,9 @@
     "confirm": "确认清空",
     "cleared": "图片缓存已清空。",
     "clearedBytes": "图片缓存已清空，释放 {{size}}。",
-    "languageHelp": "指定语言会应用到所有访问者；跟随浏览器时，各自使用浏览器偏好语言。"
+    "languageHelp": "指定语言会应用到所有访问者；跟随浏览器时，各自使用浏览器偏好语言。",
+    "timezone": "时区",
+    "timezoneAuto": "跟随系统（{{timezone}}）"
   },
   "taskDeletion": {
     "title": "删除任务策略",
@@ -950,7 +952,7 @@
     "statSkipped": "跳过",
     "statisticsHelp": "统计最近保留的 {{count}} 次已结束运行（最多 100 次）中的演员检查结果，不按固定天数，包含手动和自动检查。重复检查分别计数，中断计入异常。",
     "automaticEnabled": "自动检查已启用",
-    "automaticDisabled": "自动检查已关闭",
+    "automaticUnavailable": "自动检查暂不可用",
     "allBusy": "全部订阅检查正在运行，请稍后再试。",
     "title": "作品检查",
     "followRun": "在主页查看本次检查进度",
@@ -1714,7 +1716,6 @@
     "syncing": "同步中…",
     "syncHelp": "同步下载状态并推进文件整理与 Stash 入库",
     "syncComplete": "已同步下载状态并推进入库流程。",
-    "autoSyncOn": "每 {{seconds}} 秒自动检查任务",
     "updatedAt": "列表更新于 {{time}}",
     "selectionActions": "所选任务操作",
     "selectTask": "选择任务：{{task}}",

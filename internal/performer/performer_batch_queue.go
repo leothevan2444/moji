@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/leothevan2444/moji/internal/apptime"
 	"strings"
 	"time"
 
@@ -123,9 +124,9 @@ func (s *Service) queuePerformerSceneSelection(ctx context.Context, byKey map[st
 		}
 	}
 
-	zone := releasedate.DefaultTimezone
-	if s.releaseTimezone != nil {
-		zone = s.releaseTimezone()
+	zone := apptime.DefaultTimezone
+	if s.timezoneProvider != nil {
+		zone = s.timezoneProvider()
 	}
 	if err := releasedate.Check(current.Date, time.Now(), zone); err == releasedate.ErrNotReleased {
 		return QueueSceneResult{Key: selection.Key, Status: QueueSceneStatusSkipped, ReasonCode: "RELEASE_NOT_AVAILABLE"}

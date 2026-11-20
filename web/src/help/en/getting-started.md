@@ -15,7 +15,7 @@ The Moji server must be able to reach the services and sites you use. If you use
 1. Download definitions and add built-in sites, or configure and enable optional Jackett, under **Settings > Indexers**; configure qBittorrent under **Settings > Downloader**, and Stash under **Settings > Stash**. Changes save automatically.
 2. Return to **Home**. A service is ready only after a recent probe succeeds; “configured” alone does not prove connectivity.
 3. Open **Settings > Stash**. Changes save automatically. Configure the qB download, Moji download, Moji library, and Stash library roots, then choose Copy or Move.
-4. Open **Settings > Tasks & subscriptions**. Set the task check interval and automatic subscription check switch and review release and resource policies. StashBox priority is under **Settings > Stash**. Changes save automatically.
+4. Open **Settings > Tasks & subscriptions**. Choose a task processing frequency and review release and resource policies. StashBox priority is under **Settings > Stash**. Changes save automatically.
 5. Search in **Discover**, or open **Performers** and queue a scene. Follow the resulting item in **Tasks** until delivery, Stash scanning, generation, identification and verification complete.
 
 ## A safe first run

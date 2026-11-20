@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/apptime"
 	"github.com/leothevan2444/moji/internal/imagecache"
 	"github.com/leothevan2444/moji/internal/metadata"
 	"github.com/leothevan2444/moji/internal/performer"
@@ -14,12 +15,12 @@ import (
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
 )
 
-func (s *Service) SetReleaseTimezone(provider func() string) { s.timezone = provider }
-func (s *Service) releaseTimezone() string {
-	if s.timezone != nil {
-		return s.timezone()
+func (s *Service) SetTimezone(provider func() string) { s.timezoneProvider = provider }
+func (s *Service) timezone() string {
+	if s.timezoneProvider != nil {
+		return s.timezoneProvider()
 	}
-	return releasedate.EffectiveTimezone("")
+	return apptime.EffectiveTimezone("")
 }
 func (s *Service) upcomingStore() (UpcomingStore, error) {
 	store, ok := s.store.(UpcomingStore)
@@ -39,7 +40,7 @@ func (s *Service) captureUpcoming(ctx context.Context, release Release, performe
 	if err != nil {
 		return false, err
 	}
-	future := errors.Is(releasedate.Check(release.Date, s.now(), s.releaseTimezone()), releasedate.ErrNotReleased)
+	future := errors.Is(releasedate.Check(release.Date, s.now(), s.timezone()), releasedate.ErrNotReleased)
 	if record == nil && !future {
 		return false, nil
 	}
@@ -86,7 +87,7 @@ func (s *Service) captureUpcoming(ctx context.Context, release Release, performe
 func (s *Service) nextUpcomingCheck(date string, now time.Time) time.Time {
 	next := now.Add(24 * time.Hour)
 	if parsed, ok := releasedate.Parse(date); ok {
-		midnight := releasedate.Midnight(parsed, s.releaseTimezone())
+		midnight := releasedate.Midnight(parsed, s.timezone())
 		if midnight.After(now) && midnight.Before(next) {
 			next = midnight
 		}
@@ -120,7 +121,7 @@ func (s *Service) ListUpcomingReleases(ctx context.Context, q UpcomingQuery) (Up
 		ids = append(ids, id)
 	}
 	if q.Days > 0 {
-		q.Before = s.now().In(releasedate.Location(s.releaseTimezone())).AddDate(0, 0, q.Days).Format("2006-01-02")
+		q.Before = s.now().In(apptime.Location(s.timezone())).AddDate(0, 0, q.Days).Format("2006-01-02")
 	}
 	page, err := store.QueryUpcoming(ctx, q, ids)
 	// Display current names once per performer, without merging release identities.
@@ -144,8 +145,8 @@ func (s *Service) ListUpcomingReleases(ctx context.Context, q UpcomingQuery) (Up
 		}
 	}
 	page.SubscribedCount = len(ids)
-	page.Timezone = s.releaseTimezone()
-	page.Today = s.now().In(releasedate.Location(page.Timezone)).Format("2006-01-02")
+	page.Timezone = s.timezone()
+	page.Today = s.now().In(apptime.Location(page.Timezone)).Format("2006-01-02")
 	return page, err
 }
 func (s *Service) RefreshUpcomingRelease(ctx context.Context, key string) (*UpcomingRelease, error) {
@@ -287,7 +288,7 @@ func (s *Service) refreshUpcomingLocked(ctx context.Context, key string, active 
 	}
 	record.MetadataCheckedAt = now
 	record.LastErrorCode = ""
-	gate := releasedate.Check(record.Release.Date, now, s.releaseTimezone())
+	gate := releasedate.Check(record.Release.Date, now, s.timezone())
 	if errors.Is(gate, releasedate.ErrNotReleased) {
 		record.State = "WAITING"
 		record.NextCheckAt = s.nextUpcomingCheck(record.Release.Date, now)

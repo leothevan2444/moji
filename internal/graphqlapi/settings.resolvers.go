@@ -162,11 +162,10 @@ func (r *mutationResolver) UpdateAutomationSettings(ctx context.Context, input m
 		vrBehavior = string(*input.SubscriptionReleasePolicy.VrBehavior)
 	}
 	snapshot, err := r.SettingsEditor.UpdateAutomationSettings(UpdateAutomationSettingsInput{
-		Section:                         section,
-		SourcingRetryIntervalHours:      input.SourcingRetryIntervalHours,
-		TaskProgressSyncIntervalSeconds: input.TaskProgressSyncIntervalSeconds,
-		SubscriptionCheckEnabled:        input.SubscriptionCheckEnabled,
-		StashBoxEndpoints:               append([]string(nil), input.StashBoxEndpoints...),
+		Section:                    section,
+		SourcingRetryIntervalHours: input.SourcingRetryIntervalHours,
+		TaskProcessingFrequency:    string(input.TaskProcessingFrequency),
+		StashBoxEndpoints:          append([]string(nil), input.StashBoxEndpoints...),
 		SubscriptionReleasePolicy: SubscriptionReleasePolicySnapshot{
 			SoloBehavior:           string(input.SubscriptionReleasePolicy.SoloBehavior),
 			GroupBehavior:          string(input.SubscriptionReleasePolicy.GroupBehavior),

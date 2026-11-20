@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { FilmTaskConfirmation, type ResourceChoice } from "../../components/discovery/FilmTaskConfirmation";
 import "../../styles/film-confirmation.scss";
 import { useDeferredValue, useEffect, useState, type FormEvent } from "react";
@@ -28,6 +29,7 @@ const FILE_KEY = "moji.discovery.previewFileRules";
 const stored = (key: string) => { try { return localStorage.getItem(key) === "true"; } catch { return false; } };
 
 export function Component() {
+  useAppTimezone();
   const { t } = useTranslation(); const navigate = useNavigate(); const location = useLocation();
   const [params, setParams] = useSearchParams(); const state = parseDiscoverSearchParams(params);
   const { pushToast, openHelp } = useOutletContext<AppOutletContext>();

@@ -54,7 +54,7 @@ flowchart TD
 | `internal/storage`、`internal/durablefile` | 连接、迁移、恢复、原子文件持久化 | [存储](modules/storage.md) |
 | `internal/downloader` | 独立 qB 观测、控制、保留策略与删除核对 | [运维](modules/operations.md) |
 | `internal/imagecache` | 鉴权图片代理、磁盘缓存、头像派生图 | [目录](modules/catalog.md) |
-| `internal/releasedate` | 发行日期校验与业务日历/时区，多个入口共享 | [订阅](modules/subscriptions.md) |
+| `internal/apptime`、`internal/releasedate` | 共享应用时区、发行日期资格与业务日历，多个入口共享 | [订阅](modules/subscriptions.md) |
 | `internal/stats`、`internal/logging` | 依赖状态、运行统计、日志与事件 | [运维](modules/operations.md) |
 | `internal/controller/api`、`internal/webui` | 辅助 HTTP API、健康检查与 SPA 静态文件 | [运维](modules/operations.md) |
 | `pkg/{stash,stashbox,jackett,qbittorrent,flaresolverr}` | 可复用的外部服务客户端 | [运维](modules/operations.md) |

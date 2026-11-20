@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"github.com/leothevan2444/moji/internal/apptime"
 	"strings"
 	"time"
 
@@ -56,7 +57,7 @@ func evaluateReleasePolicy(policy ReleasePolicyConfig, now time.Time, targetPerf
 		applyReleaseDateRange(&evaluation, policy.ReleaseDateRange, now, scene)
 	}
 	if evaluation.Decision == ReleaseDecisionDownloaded {
-		if err := releasedate.Check(stringValue(scene.Date), now, releasedate.DefaultTimezone); err == releasedate.ErrUnknown {
+		if err := releasedate.Check(stringValue(scene.Date), now, apptime.DefaultTimezone); err == releasedate.ErrUnknown {
 			evaluation.Decision = ReleaseDecisionQueued
 			evaluation.DecisionReason = "release_date_unknown_review"
 		}

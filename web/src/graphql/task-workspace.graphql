@@ -11,7 +11,6 @@ query TasksWorkspace($input: TaskPageInput!) {
     stats { total active completed downloading pendingScans failed attention waiting }
   }
   settings { system { taskDeletePolicy } }
-  settingsStatus { automation { taskProgressSyncIntervalSeconds } }
 }
 query TaskSelectionSummaries($ids: [ID!]!) { taskSelection: taskPage(input: {ids: $ids, pageSize:100}) {items { ...TaskListSummary } sequence streamId} }
 query TaskAttentionQueue { taskAttentionQueue { items { id version revision source code stage stageStatus progress createdAt updatedAt } sequence streamId } }

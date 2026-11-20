@@ -19,7 +19,7 @@ func TestVRSettingsPreserveOmittedFieldAndPersistExplicitChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	editor := newRuntimeSettingsEditor(store, "test", false, nil, nil, nil)
-	input := graphqlapi.UpdateAutomationSettingsInput{TaskProgressSyncIntervalSeconds: 60, SubscriptionCheckEnabled: true,
+	input := graphqlapi.UpdateAutomationSettingsInput{TaskProcessingFrequency: "MEDIUM",
 		SubscriptionReleasePolicy: graphqlapi.SubscriptionReleasePolicySnapshot{SoloBehavior: "DOWNLOAD", GroupBehavior: "REVIEW", CompilationBehavior: "BLOCK"}}
 	for _, behavior := range []string{"", "DOWNLOAD", "REVIEW", "BLOCK"} {
 		input.SubscriptionReleasePolicy.VRBehavior = behavior

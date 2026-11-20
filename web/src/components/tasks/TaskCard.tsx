@@ -1,3 +1,4 @@
+import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { memo, useSyncExternalStore } from "react";
 import {
   formatDateTime, formatRelative, taskFailureSummary, taskCardPresentation,
@@ -32,6 +33,7 @@ function subscribeClock(listener: () => void) {
   };
 }
 function TaskCardTime({ value, label }: { value: string; label: string }) {
+  useAppTimezone();
   const { t } = useTranslation();
   useSyncExternalStore(subscribeClock, getClockSnapshot, getClockSnapshot);
   return <time dateTime={value} title={t(label, { time: formatDateTime(value) })}>
@@ -56,6 +58,7 @@ interface TaskCardProps {
 export const TaskCard = memo(function TaskCard({ task, compact = false, pendingRetryId, pendingDeleteId,
   onOpen, onRetry, onResolve, onDelete, selectionMode = false, selected = false, onToggleSelection
 }: TaskCardProps) {
+  useAppTimezone();
   const { t } = useTranslation();
   const presentation = taskCardPresentation(task);
   const failure = taskFailureSummary(task);

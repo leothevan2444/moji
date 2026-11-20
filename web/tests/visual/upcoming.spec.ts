@@ -7,7 +7,7 @@ for (const locale of ["zh-CN", "en"] as const) {
  for (const theme of ["light", "dark"] as const) {
  test.describe(`${locale} ${theme} upcoming`, () => {
   test.use({ graphqlOverrides: {
-   upcomingReleases: ({ input }: { input: { pageSize?: number; search?: string } }) => { const filtered = records.filter(r => !input.search || r.code.includes(input.search));return { items: filtered.slice(0, input.pageSize ?? 24), performers: actors, totalCount: filtered.length, page: 1, pageSize: input.pageSize ?? 24, totalPages: 1, subscribedCount: 2, automatic: true, timezone: "Asia/Shanghai",today:"2026-10-31" }; },
+   upcomingReleases: ({ input }: { input: { pageSize?: number; search?: string } }) => { const filtered = records.filter(r => !input.search || r.code.includes(input.search));return { items: filtered.slice(0, input.pageSize ?? 24), performers: actors, totalCount: filtered.length, page: 1, pageSize: input.pageSize ?? 24, totalPages: 1, subscribedCount: 2,  timezone: "Asia/Shanghai",today:"2026-10-31" }; },
    refreshUpcomingRelease: () => ({ ...records[0], date: "2026-11-20" })
   } });
   test("cards, filtering and detail", async ({ page }, testInfo) => {
@@ -53,11 +53,11 @@ for (const locale of ["zh-CN", "en"] as const) {
  }
 }
 
-test.describe("release timezone settings", () => {
- test.use({graphqlOverrides:{patchSettings:({input}:{input:{system?:{release_timezone?:string}}})=>({...settingsSnapshot,system:{...settingsSnapshot.system,language:"auto",releaseTimezone:input.system?.release_timezone??"auto",effectiveReleaseTimezone:input.system?.release_timezone??"Asia/Shanghai"}})}});
+test.describe("global timezone settings", () => {
+ test.use({graphqlOverrides:{patchSettings:({input}:{input:{system?:{timezone?:string}}})=>({...settingsSnapshot,system:{...settingsSnapshot.system,language:"auto",timezone:input.system?.timezone??"auto",effectiveTimezone:input.system?.timezone??"Asia/Shanghai"}})}});
 
 for (const locale of ["zh-CN", "en"] as const) {
- test(`${locale} system release timezone supports auto and manual values`, async ({ page }, info) => {
+ test(`${locale} system timezone supports auto and named zones`, async ({ page }, info) => {
   await page.addInitScript(value => localStorage.setItem("moji:locale",value),locale);
   const patches: Array<Record<string, unknown>> = [];
   await page.route("**/graphql",async route => {
@@ -65,14 +65,14 @@ for (const locale of ["zh-CN", "en"] as const) {
    await route.fallback();
   });
   await page.goto("/settings/system?panel=general");
-  const field=page.getByLabel(locale==="zh-CN"?"发行日期时区":"Release date timezone",{exact:true});
+  const field=page.getByLabel(locale==="zh-CN"?"时区":"Timezone",{exact:true});
   await expect(field).toHaveValue("auto");
-  await expect(page.getByText(locale==="zh-CN"? /当前生效：Asia\/Shanghai/:/Effective timezone: Asia\/Shanghai/)).toBeVisible();
+  await expect(field.locator('option[value="auto"]')).toHaveText(locale==="zh-CN"?"跟随系统（UTC）":"Follow system (UTC)");
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
   await page.screenshot({path:info.outputPath(`${locale}-release-timezone.png`),fullPage:true});
-  await field.fill("America/New_York");
+  await field.selectOption("America/New_York");
   await expect.poll(()=>patches.length).toBe(1);
-  expect(patches[0]).toEqual({system:{release_timezone:"America/New_York"}});
+  expect(patches[0]).toEqual({system:{timezone:"America/New_York"}});
  });
 }
 
