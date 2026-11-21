@@ -141,11 +141,7 @@ func prepareTorrentFile(code string, candidate Candidate, metadata downloadedTor
 func validateTorrentCode(code string, metadata downloadedTorrentMetadata) error {
 	matched := false
 	for _, name := range append([]string{metadata.Name}, metadata.IdentityNames...) {
-		found, err := validateCodeEvidence(code, name)
-		if err != nil {
-			return err
-		}
-		matched = matched || found
+		matched = film.Match(code, name) || matched
 	}
 	videos := 0
 	paths := append(append([]string(nil), metadata.Paths...), metadata.IdentityPaths...)
@@ -154,11 +150,7 @@ func validateTorrentCode(code string, metadata downloadedTorrentMetadata) error 
 			continue
 		}
 		videos++
-		fileMatched, err := validateCodeEvidence(code, file)
-		if err != nil {
-			return err
-		}
-		matched = matched || fileMatched
+		matched = film.Match(code, file) || matched
 	}
 	if !matched || videos == 0 {
 		return candidateError(TaskStageErrorCandidateUnverified, "torrent name and video files do not establish the task code")

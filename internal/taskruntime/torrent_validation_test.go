@@ -32,8 +32,6 @@ func TestSourcingValidationBlocksBeforeDownloaderSubmission(t *testing.T) {
 	}{
 		{name: "fuzzy title", title: "OFJE-667", torrentName: "OFJE-657", files: []string{"OFJE-657.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
 		{name: "wrong torrent name", title: "OFJE-657", torrentName: "OFJE-667", files: []string{"movie.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
-		{name: "wrong video despite matching name", title: "OFJE-657", torrentName: "OFJE-657", files: []string{"OFJE-667.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
-		{name: "conflicting videos", title: "OFJE-657", torrentName: "OFJE-657", files: []string{"OFJE-657.mp4", "OFJE-667.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
 		{name: "longer number is not the target", title: "OFJE-6570", torrentName: "OFJE-657", files: []string{"OFJE-657.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
 		{name: "unknown identity", title: "release", torrentName: "release", files: []string{"movie.mp4"}, errorCode: TaskStageErrorCandidateUnverified},
 		{name: "no video", title: "OFJE-657", torrentName: "OFJE-657", files: []string{"readme.txt"}, errorCode: TaskStageErrorCandidateUnverified},
@@ -124,6 +122,50 @@ func TestSourcingFallsBackAfterMetadataMismatch(t *testing.T) {
 	}
 }
 
+func TestSourcingAcceptsTargetTorrentWithAdvertisementVideos(t *testing.T) {
+	body := testTorrentFile("PPPE-454", []string{"4k688.com@PPPE-454.mp4", "18+游戏大全(996gg.cc).mp4", "javcall.com.mp4"})
+	qbt := &fakeTorrentAdder{}
+	s, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: "+++ [FHD] PPPE-454", Link: "http://indexer.invalid/file"}}}, qbt, NewMemoryTaskStore(), torrentResponse(body, http.StatusOK))
+	if err != nil {
+		t.Fatal(err)
+	}
+	task, err := s.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("PPPE-454"), Code: "PPPE-454"})
+	if err != nil || task.Stage != TaskStageDownloading || len(qbt.options.Torrents) != 1 || !bytes.Equal(qbt.options.Torrents[0].Data, []byte(body)) {
+		t.Fatalf("target torrent with advertisement videos rejected: task=%+v err=%v", task, err)
+	}
+}
+
+func TestTorrentCodeRequiresTargetEvidenceButAllowsUnidentifiedVideos(t *testing.T) {
+	for _, tc := range []struct {
+		name, torrentName string
+		files             []string
+		wantError         bool
+	}{
+		{name: "target in torrent name", torrentName: "PPPE-454", files: []string{"movie.mp4", "javcall.com.mp4"}},
+		{name: "target in video name", torrentName: "release", files: []string{"PPPE-454.mp4", "movie.mp4"}},
+		{name: "quality and part labels", torrentName: "PPPE-454", files: []string{"HD720.mp4", "PART01.mp4"}},
+		{name: "compact number is not target evidence", torrentName: "release", files: []string{"PPPE454.mp4"}, wantError: true},
+		{name: "longer number is not target evidence", torrentName: "release", files: []string{"PPPE-4540.mp4"}, wantError: true},
+		{name: "different number is not target evidence", torrentName: "release", files: []string{"PPPE-455.mp4"}, wantError: true},
+		{name: "no target evidence", torrentName: "release", files: []string{"movie.mp4", "javcall.com.mp4"}, wantError: true},
+		{name: "different video code", torrentName: "PPPE-454", files: []string{"PPPE-454.mp4", "PPPE-455.mp4"}},
+		{name: "different compact code", torrentName: "PPPE-454", files: []string{"PPPE455.mp4"}},
+		{name: "longer number", torrentName: "PPPE-454", files: []string{"PPPE-4540.mp4"}},
+		{name: "different torrent code", torrentName: "PPPE-455", files: []string{"PPPE-454.mp4"}},
+		{name: "no video", torrentName: "PPPE-454", files: []string{"readme.txt"}, wantError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			metadata, err := parseTorrentMetadata([]byte(testTorrentFile(tc.torrentName, tc.files)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := validateTorrentCode("PPPE-454", metadata); (err != nil) != tc.wantError {
+				t.Fatalf("validation error=%v, wantError=%v", err, tc.wantError)
+			}
+		})
+	}
+}
+
 func TestMagnetCodeValidation(t *testing.T) {
 	for _, tc := range []struct {
 		title, dn string
@@ -205,7 +247,7 @@ func TestTorrentHashMismatchAndMalformedMetadataAreRejected(t *testing.T) {
 	}
 }
 
-func TestTorrentUTF8NamesCannotHideConflictingCodes(t *testing.T) {
+func TestTorrentUTF8NamesRetainTargetEvidence(t *testing.T) {
 	for _, key := range []string{"name.utf-8", "path.utf-8"} {
 		t.Run(key, func(t *testing.T) {
 			body := testTorrentFile("OFJE-657", []string{"OFJE-657.mp4"})
@@ -220,8 +262,16 @@ func TestTorrentUTF8NamesCannotHideConflictingCodes(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if err := validateTorrentCode("OFJE-657", metadata); err != nil {
+				t.Fatalf("target evidence in original encoding lost for %s: %v", key, err)
+			}
+			body = strings.ReplaceAll(body, "OFJE-657", "OFJE-667")
+			metadata, err = parseTorrentMetadata([]byte(body))
+			if err != nil {
+				t.Fatal(err)
+			}
 			if err := validateTorrentCode("OFJE-657", metadata); err == nil {
-				t.Fatalf("conflicting %s was ignored", key)
+				t.Fatalf("metainfo without target evidence accepted for %s", key)
 			}
 		})
 	}
