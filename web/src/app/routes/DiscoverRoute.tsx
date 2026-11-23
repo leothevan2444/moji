@@ -1,7 +1,10 @@
+import { ResourceRuleGroupPicker } from "../../components/discovery/ResourceRuleGroupPicker";
+import { SelectionTargetPicker } from "../../components/discovery/SelectionTargetPicker";
+import type { TaskFilmFieldsFragment } from "../../graphql/generated/graphql";
 import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { FilmTaskConfirmation, type ResourceChoice } from "../../components/discovery/FilmTaskConfirmation";
 import "../../styles/film-confirmation.scss";
-import { useDeferredValue, useEffect, useState, type FormEvent } from "react";
+import { useDeferredValue, useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useOutletContext, useSearchParams } from "react-router";
 import { DiscoveryPage } from "../../pages/DiscoveryPage";
 import { Drawer } from "../../components/layout/Drawer";
@@ -24,14 +27,12 @@ import "../../styles/discovery-toolbar.scss";
 import "../../styles/torrent-search.scss";
 import { useTranslation } from "react-i18next";
 
-const FAST_KEY = "moji.discovery.previewFastRules";
-const FILE_KEY = "moji.discovery.previewFileRules";
-const stored = (key: string) => { try { return localStorage.getItem(key) === "true"; } catch { return false; } };
-
 export function Component() {
   useAppTimezone();
   const { t } = useTranslation(); const navigate = useNavigate(); const location = useLocation();
   const [params, setParams] = useSearchParams(); const state = parseDiscoverSearchParams(params);
+  const latestSearch=useRef({search:location.search,state});
+  if(latestSearch.current.search!==location.search)latestSearch.current={search:location.search,state};
   const { pushToast, openHelp } = useOutletContext<AppOutletContext>();
   const [draft, setDraft] = useState(state.q); const [focused, setFocused] = useState(false); const [historyVisible, setHistoryVisible] = useState(false);
   const [confirmResource,setConfirmResource]=useState<ResourceChoice|null>(null);
@@ -40,21 +41,23 @@ export function Component() {
   const query = useDeferredValue(state.q); const mode = state.source;
   const stashSort = state.sort.toUpperCase().replaceAll("-", "_") as DiscoverSortBy;
   const torrentSort = state.sort.toUpperCase().replaceAll("-", "_") as TorrentSearchSort;
-  const fastRules = state.fastRules ?? stored(FAST_KEY); const fileRules = state.fileRules ?? stored(FILE_KEY);
-  useEffect(() => { try { localStorage.setItem(FAST_KEY, String(fastRules)); localStorage.setItem(FILE_KEY, String(fileRules)); } catch { /* unavailable */ } }, [fastRules, fileRules]);
+  const [ruleGroup,setRuleGroup]=useState(state.ruleGroup);
+  useEffect(()=>setRuleGroup(state.ruleGroup),[state.ruleGroup]);
+ const [selectionTarget,setSelectionTarget]=useState<TaskFilmFieldsFragment|null>(null);
   const update = (patch: Partial<typeof state>, replace = true) => {
-    const next = serializeDiscoverSearchParams({ ...state, ...patch });
+    const nextState={...latestSearch.current.state,...patch};
+    latestSearch.current.state=nextState;
+    const next = serializeDiscoverSearchParams(nextState);
     if (replace) setParams(next, { replace: true }); else navigate(`/discover${next.size ? `?${next}` : ""}`);
   };
   const discovered = useDiscoverScenes(query, { enabled: mode === "stashbox", sortBy: stashSort });
   const runID = mode === "indexers" && state.run ? state.run : null;
   const torrents = useTorrentSearch(runID, (state.page - 1) * DISCOVERY_PAGE_SIZE, DISCOVERY_PAGE_SIZE, torrentSort);
   const preview = useTorrentSelectionPreview();
-  const [previewFlags, setPreviewFlags] = useState({ fast: false, file: false, sort: torrentSort });
   useEffect(() => { preview.clear(); }, [runID]);
   const snapshot = torrents.snapshot;
   const running = snapshot?.state === TorrentSearchState.Queued || snapshot?.state === TorrentSearchState.Running;
-  const activePreview = preview.value?.searchId === runID && preview.value.searchRevision === snapshot?.revision && preview.value.offset === (state.page - 1) * DISCOVERY_PAGE_SIZE && previewFlags.fast === fastRules && previewFlags.file === fileRules && previewFlags.sort === torrentSort ? preview.value : null;
+  const activePreview = preview.value?.searchId === runID && preview.value.searchRevision === snapshot?.revision && preview.value.offset === (state.page - 1) * DISCOVERY_PAGE_SIZE ? preview.value : null;
   const candidates = activePreview?.candidates ?? snapshot?.candidates ?? [];
   const total = mode === "stashbox" ? discovered.results.length : activePreview?.total ?? snapshot?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / DISCOVERY_PAGE_SIZE));
@@ -71,8 +74,10 @@ export function Component() {
   const submit = (event: FormEvent) => { event.preventDefault(); const q = draft.trim(); if (!q) return; if (mode === "indexers") void beginSearch(q); else { history.push(q); setHistoryVisible(false); update({ q, page: 1 }, false); } };
   const applyPreview = async (targetPage = state.page, sort = torrentSort) => {
     if (!runID || running) return false;
-    const ok = await preview.preview({ searchId: runID, applyFastRules: fastRules, applyFileRules: fileRules, offset: (targetPage - 1) * DISCOVERY_PAGE_SIZE, limit: DISCOVERY_PAGE_SIZE, sortBy: sort });
-    if (ok) setPreviewFlags({ fast: fastRules, file: fileRules, sort }); return ok;
+    if(!selectionTarget)return false;
+    const result = await preview.preview({searchId:runID,groupID:ruleGroup,endpoint:selectionTarget.endpoint,sceneId:selectionTarget.sceneId,confirmationDigest:selectionTarget.confirmationDigest,offset:(targetPage-1)*DISCOVERY_PAGE_SIZE,limit:DISCOVERY_PAGE_SIZE,sortBy:sort});
+    if(result)update({ruleGroup,page:targetPage,sort:String(sort).toLowerCase().replaceAll("_","-")});
+    return !!result;
   };
   const move = async (targetPage: number, sort = state.sort) => {
     if (activePreview && !await applyPreview(targetPage, sort.toUpperCase().replaceAll("-", "_") as TorrentSearchSort)) return;
@@ -91,7 +96,7 @@ export function Component() {
     <DiscoveryPage query={draft} searching={mode === "stashbox" ? discovered.fetching : torrents.starting} inputFocused={focused} mode={mode} history={history.history} historyVisible={historyVisible}
       onQueryChange={value => { setDraft(value); setHistoryVisible(!value.trim() && focused); }}
       onInputFocus={() => { setFocused(true); setHistoryVisible(!draft.trim()); }} onInputBlur={() => { setFocused(false); setHistoryVisible(false); }}
-      onSubmit={submit} onModeChange={source => update({ source, run: "", sort: "relevance", page: 1 })}
+      onSubmit={submit} onModeChange={source => update({ source, run: "",  sort: "relevance", page: 1 })}
       onPickHistory={q => { setDraft(q); setHistoryVisible(false); if (mode === "indexers") void beginSearch(q); else { history.push(q); update({ q, page: 1 }, false); } }}
       onRemoveHistory={history.remove} onClearHistory={history.clear} onDismissHistory={() => setHistoryVisible(false)} onOpenHelp={() => openHelp()}/>
     {mode === "indexers" && torrents.error && !state.q && !state.run ? <p className="inline-error">{describeQueryError(torrents.error)}</p> : null}
@@ -102,7 +107,7 @@ export function Component() {
           <div className="torrent-search__actions"><span role="status">{snapshot ? t(`torrentSearch.states.${snapshot.state}`) : t(torrents.fetching ? "torrentSearch.loading" : "torrentSearch.ready")}</span>
             {running ? <button type="button" className="ghost-button" disabled={!!snapshot?.cancelRequested || torrents.cancelling} onClick={() => void torrents.cancel()}>{t(snapshot?.cancelRequested ? "torrentSearch.cancelling" : "torrentSearch.cancel")}</button> : null}
             <button type="button" disabled={torrents.starting || !keywords.trim()} onClick={() => void beginSearch(keywords, true)}>{t(state.run ? "torrentSearch.searchAgain" : "torrentSearch.search")}</button>
-            {state.run ? <button type="button" className="ghost-button" onClick={() => { preview.clear(); torrents.refresh(); }}>{t("torrentSearch.refresh")}</button> : null}
+            {state.run ? <button type="button" className="ghost-button" onClick={() => { torrents.refresh(); }}>{t("torrentSearch.refresh")}</button> : null}
           </div>
           {torrents.error || preview.error ? <p className="inline-error">{describeQueryError(torrents.error ?? preview.error)}</p> : null}
           {snapshot?.errorCode ? <p className="inline-error">{t(`indexerErrors.${snapshot.errorCode}`, { defaultValue: t("indexerErrors.INDEXER_SEARCH_INCOMPLETE") })}</p> : null}
@@ -113,18 +118,17 @@ export function Component() {
           onSortChange={value => { if (!preview.busy) void move(1, String(value).toLowerCase().replaceAll("_", "-")); }} page={page} totalPages={pages} total={total}
           onPrevPage={() => { if (!preview.busy) void move(Math.max(1, page - 1)); }} onNextPage={() => { if (!preview.busy) void move(Math.min(pages, page + 1)); }}
           extraContent={mode === "indexers" ? <div className="discovery-toolbar__preview">
-            <label className="switch-row"><span>{t("discoverUi.fastPreview")}</span><input type="checkbox" checked={fastRules} disabled={preview.busy} onChange={event => update({ fastRules: event.target.checked, page: 1 })}/></label>
-            <label className="switch-row"><span>{t("discoverUi.filePreview")}</span><input type="checkbox" checked={fileRules} disabled={preview.busy} onChange={event => update({ fileRules: event.target.checked, page: 1 })}/></label>
-            <button type="button" className="ghost-button" disabled={!runID || !snapshot || running || preview.busy || (!fastRules && !fileRules) || snapshot.total === 0} onClick={() => { void applyPreview(1).then(ok => { if (ok) update({ page: 1 }); }); }}>{t(preview.busy ? "discoverUi.inspecting" : "torrentSearch.preview")}</button>
-            {activePreview ? <button type="button" className="ghost-button" onClick={preview.clear}>{t("torrentSearch.clearPreview")}</button> : null}
-            {fileRules ? <span>{t("torrentSearch.fileCost")}</span> : null}
-            {activePreview?.meta.appliedFileRules ? <span>{t("torrentSearch.inspection", { count: activePreview.meta.inspectedCount, limit: activePreview.meta.inspectionCandidateLimit })}</span> : null}
+            <ResourceRuleGroupPicker value={ruleGroup} disabled={preview.busy} onChange={ruleGroup=>{setRuleGroup(ruleGroup);preview.clear();update({ruleGroup});}}/>
+            <SelectionTargetPicker keywords={keywords} value={selectionTarget} onChange={value=>{setSelectionTarget(value);preview.clear();}}/>
+            <button type="button" className="ghost-button" disabled={!selectionTarget||!runID||!snapshot||running||preview.busy||snapshot.total===0} onClick={()=>void applyPreview(1)}>{t(preview.busy?"resourceSelection.previewing":"resourceSelection.preview")}</button>
+            {activePreview?<button className="ghost-button" type="button" onClick={()=>{preview.clear();}}>{t("torrentSearch.clearPreview")}</button>:null}
+            {activePreview?.partial?<span>{t("resourceSelection.partial")}</span>:null}
           </div> : null}/>
         {mode === "stashbox" ? <DiscoveryDrawer query={query} searching={discovered.fetching} error={discovered.error ?? null} pendingAddId={pendingAdd}
           discoverItems={discovered.results.slice((page - 1) * DISCOVERY_PAGE_SIZE, page * DISCOVERY_PAGE_SIZE)} hasAnyResults={discovered.results.length > 0} usedStashBoxName={discovered.result?.usedStashBox?.name}
           onQueueDiscovered={item => void queueScene(item)} onTryIndexers={() => void beginSearch(state.q)}/> : <>
           {snapshot && !running && total === 0 ? <p>{t(activePreview ? "torrentSearch.noMatching" : "discoverUi.result.noResults")}</p> : null}
-          <TorrentSearchResults key={runID} searchId={runID ?? ""} candidates={candidates} keywords={keywords} pending={torrents.queueing} onQueue={queueCandidate}/>
+          <TorrentSearchResults key={runID} searchId={runID ?? ""} candidates={candidates} evaluations={activePreview?.evaluations} keywords={keywords} pending={torrents.queueing} onQueue={queueCandidate}/>
         </>}
       </article></div>
     </Drawer> : null}

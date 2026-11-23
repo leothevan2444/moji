@@ -219,6 +219,7 @@ SELECT
   stage_status,
   stage_error_code,
   stage_error_message,
+  selection_report_json,
   sourcing_request_json,
   restart_state_json,
   torrent_file_data,
@@ -278,6 +279,7 @@ type sqliteTaskRow struct {
 	TorrentFileData         []byte         `db:"torrent_file_data"`
 	SourcingLastCheckedAt   sql.NullString `db:"sourcing_last_checked_at"`
 	SourcingNextCheckAt     sql.NullString `db:"sourcing_next_check_at"`
+	SelectionReportJSON     sql.NullString `db:"selection_report_json"`
 	SourcingRequestJSON     sql.NullString `db:"sourcing_request_json"`
 	FilePlanJSON            sql.NullString `db:"file_plan_json"`
 	ID                      string         `db:"id"`
@@ -345,6 +347,7 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 		RestartStateJSON:        nullableStringValue(r.RestartStateJSON),
 		TorrentFileData:         r.TorrentFileData,
 		SourcingRequestJSON:     r.SourcingRequestJSON.String,
+		SelectionReportJSON:     r.SelectionReportJSON.String,
 		FilePlanJSON:            nullableStringValue(r.FilePlanJSON),
 		ID:                      r.ID,
 		Source:                  TaskSource(r.Source),
@@ -456,6 +459,7 @@ type sqliteTaskParams struct {
 	TorrentFileData         []byte  `db:"torrent_file_data"`
 	SourcingLastCheckedAt   any     `db:"sourcing_last_checked_at"`
 	SourcingNextCheckAt     any     `db:"sourcing_next_check_at"`
+	SelectionReportJSON     any     `db:"selection_report_json"`
 	SourcingRequestJSON     any     `db:"sourcing_request_json"`
 	FilePlanJSON            any     `db:"file_plan_json"`
 	ID                      string  `db:"id"`
@@ -525,6 +529,7 @@ func taskToSQLiteParams(task *Task) sqliteTaskParams {
 		RestartStateJSON:        nullableStringParam(task.RestartStateJSON),
 		TorrentFileData:         task.TorrentFileData,
 		SourcingRequestJSON:     nullableStringParam(task.SourcingRequestJSON),
+		SelectionReportJSON:     nullableStringParam(task.SelectionReportJSON),
 		FilePlanJSON:            nullableStringParam(task.FilePlanJSON),
 		ID:                      task.ID,
 		Source:                  string(source),
@@ -581,7 +586,7 @@ func upsertTaskRow(ctx context.Context, tx *sqlx.Tx, task *Task, isUpdate bool) 
 	params := taskToSQLiteParams(task)
 	query := `
 INSERT INTO tasks (
-  film_json, sourcing_mode, resource_confirmed, id, source, code, stage, stage_status, stage_error_code, stage_error_message, restart_state_json, sourcing_request_json, torrent_file_data, sourcing_last_checked_at, sourcing_next_check_at, file_plan_json, torrent_url, save_path, category, tags,
+  film_json, sourcing_mode, resource_confirmed, id, source, code, stage, stage_status, stage_error_code, stage_error_message, restart_state_json, sourcing_request_json, selection_report_json, torrent_file_data, sourcing_last_checked_at, sourcing_next_check_at, file_plan_json, torrent_url, save_path, category, tags,
   torrent_identity_hash, torrent_identity_magnet, torrent_hash, torrent_name, progress, qbittorrent_state, content_path,
   last_progress_at, sourcing_completed_at, download_completed_at, ingest_completed_at, moji_source_path, transfer_action, moji_transfer_path,
   stash_ingest_phase, stash_generate_job_id, stash_identify_job_id, stash_scene_ids_json, stash_scene_recovery_count,
@@ -589,7 +594,7 @@ INSERT INTO tasks (
   stash_scan_started_at, selected_title, selected_tracker, selected_info_hash, selected_link, selected_magnet_uri,
   selected_size, selected_seeders, selected_peers, created_at, updated_at
 ) VALUES (
-  :film_json, :sourcing_mode, :resource_confirmed, :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :restart_state_json, :sourcing_request_json, :torrent_file_data, :sourcing_last_checked_at, :sourcing_next_check_at, :file_plan_json, :torrent_url, :save_path, :category, :tags,
+  :film_json, :sourcing_mode, :resource_confirmed, :id, :source, :code, :stage, :stage_status, :stage_error_code, :stage_error_message, :restart_state_json, :sourcing_request_json, :selection_report_json, :torrent_file_data, :sourcing_last_checked_at, :sourcing_next_check_at, :file_plan_json, :torrent_url, :save_path, :category, :tags,
   :torrent_identity_hash, :torrent_identity_magnet, :torrent_hash, :torrent_name, :progress, :qbittorrent_state, :content_path,
   :last_progress_at, :sourcing_completed_at, :download_completed_at, :ingest_completed_at, :moji_source_path, :transfer_action, :moji_transfer_path,
   :stash_ingest_phase, :stash_generate_job_id, :stash_identify_job_id, :stash_scene_ids_json, :stash_scene_recovery_count,
@@ -608,6 +613,7 @@ ON CONFLICT(id) DO UPDATE SET
   stage_error_code = excluded.stage_error_code,
   stage_error_message = excluded.stage_error_message,
   sourcing_request_json = excluded.sourcing_request_json,
+ selection_report_json=excluded.selection_report_json,
   restart_state_json = excluded.restart_state_json,
   torrent_file_data = excluded.torrent_file_data,
   sourcing_last_checked_at = excluded.sourcing_last_checked_at,

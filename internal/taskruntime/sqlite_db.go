@@ -108,7 +108,7 @@ func ensureSQLiteRuntimeState(db *sqlx.DB) error {
 		}
 	}
 
-	for _, column := range []string{"restart_state_json", "sourcing_last_checked_at", "sourcing_next_check_at", "sourcing_request_json", "last_progress_at", "sourcing_completed_at", "ingest_completed_at", "file_plan_json", "stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
+	for _, column := range []string{"selection_report_json", "restart_state_json", "sourcing_last_checked_at", "sourcing_next_check_at", "sourcing_request_json", "last_progress_at", "sourcing_completed_at", "ingest_completed_at", "file_plan_json", "stash_ingest_phase", "stash_generate_job_id", "stash_identify_job_id", "stash_scene_ids_json"} {
 		exists, err := sqliteColumnExists(db, "tasks", column)
 		if err != nil {
 			return err

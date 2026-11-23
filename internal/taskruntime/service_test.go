@@ -67,7 +67,7 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	service, err := NewService(
 		fakeTracker{results: []indexer.SelectionCandidate{
 			{Title: "SONE-000 low seeders", Link: "https://example.test/low.torrent", Seeders: 1, Size: 100},
-			{Title: "SONE-000 best", MagnetURI: "magnet:?xt=urn:btih:best", Seeders: 10, Size: 50},
+			{Title: "SONE-000 best", MagnetURI: "magnet:?xt=urn:btih:C5F5E4D75252D9788CE20300D00023FA1CCD4D19", Seeders: 10, Size: 50},
 		}},
 		qbt,
 		store,
@@ -97,7 +97,7 @@ func TestDownloadMediaContextAddsBestTorrent(t *testing.T) {
 	if task.Candidate.Title != "SONE-000 best" {
 		t.Fatalf("expected best candidate, got %q", task.Candidate.Title)
 	}
-	if got := qbt.options.URLs; len(got) != 1 || got[0] != "magnet:?xt=urn:btih:best" {
+	if got := qbt.options.URLs; len(got) != 1 || got[0] != "magnet:?xt=urn:btih:C5F5E4D75252D9788CE20300D00023FA1CCD4D19" {
 		t.Fatalf("unexpected qBittorrent URLs: %v", got)
 	}
 
@@ -132,8 +132,8 @@ func TestResolveBlockedSourcingTaskUsesSelectedTorrentOnExistingTask(t *testing.
 	}
 
 	task, err := service.ResolveBlockedSourcingTask(context.Background(), blocked.ID, ResolveBlockedSourcingRequest{
-		URL:   "magnet:?xt=urn:btih:selected123&dn=ABCD-123+manual",
-		Title: "ABCD-123 selected", Tracker: "manual-indexer", InfoHash: "selected123",
+		URL:   "magnet:?xt=urn:btih:CE01EA0924EF04C9EBACC364641D1B5D949FB2C7&dn=ABCD-123+manual",
+		Title: "ABCD-123 selected", Tracker: "manual-indexer", InfoHash: "CE01EA0924EF04C9EBACC364641D1B5D949FB2C7",
 		Size: 42, Seeders: 7, Peers: 3,
 	})
 	if err != nil {
@@ -167,7 +167,7 @@ func TestResolveBlockedSourcingTaskRejectsOtherStages(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewService failed: %v", err)
 	}
-	if _, err := service.ResolveBlockedSourcingTask(context.Background(), task.ID, ResolveBlockedSourcingRequest{URL: "magnet:?xt=urn:btih:test"}); err == nil {
+	if _, err := service.ResolveBlockedSourcingTask(context.Background(), task.ID, ResolveBlockedSourcingRequest{URL: "magnet:?xt=urn:btih:A94A8FE5CCB19BA61C4C0873D391E987982FBBD3"}); err == nil {
 		t.Fatal("expected non-blocked sourcing task to be rejected")
 	}
 }
@@ -176,7 +176,7 @@ func TestDownloadMediaContextRecordsAddFailure(t *testing.T) {
 	qbtErr := errors.New("qbt rejected torrent")
 	service, err := NewService(
 		fakeTracker{results: []indexer.SelectionCandidate{
-			{Title: "SONE-000 candidate", MagnetURI: "magnet:?xt=urn:btih:failed", Seeders: 1},
+			{Title: "SONE-000 candidate", MagnetURI: "magnet:?xt=urn:btih:5F5F8758F5F22D523E531F58123B6DB9161683A4", Seeders: 1},
 		}},
 		&fakeTorrentAdder{err: qbtErr},
 		NewMemoryTaskStore(),
@@ -216,7 +216,7 @@ func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 
 	service, err := NewService(
 		fakeTracker{results: []indexer.SelectionCandidate{
-			{Title: "SONE-000 best release", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
+			{Title: "SONE-000 best release", MagnetURI: "magnet:?xt=urn:btih:28140FCC563EFE65DB34B801C9ADEA8CE3497674", Seeders: 10},
 		}},
 		&fakeTorrentAdder{},
 		store,
@@ -237,7 +237,7 @@ func TestDownloadMediaContextRejectsDuplicateCodeTask(t *testing.T) {
 func TestDownloadMediaContextRejectsExistingStashLibraryCode(t *testing.T) {
 	service, err := NewService(
 		fakeTracker{results: []indexer.SelectionCandidate{
-			{Title: "SONE-000 best release", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
+			{Title: "SONE-000 best release", MagnetURI: "magnet:?xt=urn:btih:28140FCC563EFE65DB34B801C9ADEA8CE3497674", Seeders: 10},
 		}},
 		&fakeTorrentAdder{},
 		NewMemoryTaskStore(),
@@ -261,7 +261,7 @@ func TestDownloadMediaContextRejectsExistingStashLibraryCode(t *testing.T) {
 func TestDownloadMediaContextRequiresCode(t *testing.T) {
 	service, err := NewService(
 		fakeTracker{results: []indexer.SelectionCandidate{
-			{Title: "plain title without number", MagnetURI: "magnet:?xt=urn:btih:newhash", Seeders: 10},
+			{Title: "plain title without number", MagnetURI: "magnet:?xt=urn:btih:28140FCC563EFE65DB34B801C9ADEA8CE3497674", Seeders: 10},
 		}},
 		&fakeTorrentAdder{},
 		NewMemoryTaskStore(),
@@ -290,13 +290,7 @@ func TestParseTorrentMetadataIncludesPaths(t *testing.T) {
 	if metadata.FilePath != "disc1/SONE-001.mp4" {
 		t.Fatalf("unexpected first path: %+v", metadata)
 	}
-	inspection := inspectTorrentMetadata(metadata)
-	if !inspection.SingleVideo {
-		t.Fatalf("expected single video inspection, got %+v", inspection)
-	}
-	if len(inspection.VideoPaths) != 1 || inspection.VideoPaths[0] != "disc1/SONE-001.mp4" {
-		t.Fatalf("unexpected video paths: %+v", inspection.VideoPaths)
-	}
+
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -489,7 +483,7 @@ func TestSyncProgressUpdatesTaskFromTorrentList(t *testing.T) {
 		Code:        "ABCD-123",
 		Stage:       TaskStageDownloading,
 		StageStatus: TaskStageStatusRunning,
-		TorrentURL:  "magnet:?xt=urn:btih:sync",
+		TorrentURL:  "magnet:?xt=urn:btih:6B387CED110858DCBCDA36EDB044DC18F91A0894",
 		CreatedAt:   time.Unix(100, 0).UTC(),
 		UpdatedAt:   time.Unix(100, 0).UTC(),
 	}); err != nil {
@@ -501,7 +495,7 @@ func TestSyncProgressUpdatesTaskFromTorrentList(t *testing.T) {
 			{
 				Hash:        "hash-sync",
 				Name:        "ABCD-123",
-				MagnetURI:   "magnet:?xt=urn:btih:sync",
+				MagnetURI:   "magnet:?xt=urn:btih:6B387CED110858DCBCDA36EDB044DC18F91A0894",
 				Progress:    0.5,
 				State:       qbittorrent.TorrentStateDownloading,
 				ContentPath: "/downloads/ABCD-123.mp4",
@@ -591,11 +585,11 @@ func TestSpecifiedResourceAdmissionPersistsFilmBeforeAnyDownload(t *testing.T) {
 	adder := &fakeTorrentAdder{}
 	store := NewMemoryTaskStore()
 	service, _ := NewService(fakeTracker{}, adder, store)
-	if _, err := service.AddTorrentContext(ctx, AddTorrentRequest{URL: "magnet:?xt=urn:btih:abc&dn=title"}); !errors.Is(err, film.ErrRequired) {
+	if _, err := service.AddTorrentContext(ctx, AddTorrentRequest{URL: "magnet:?xt=urn:btih:A9993E364706816ABA3E25717850C26C9CD0D89D&dn=title"}); !errors.Is(err, film.ErrRequired) {
 		t.Fatal("missing film accepted", err)
 	}
 	target := testFilm("300MIUM-1437")
-	task, err := service.AddTorrentContext(ctx, AddTorrentRequest{Film: target, URL: "magnet:?xt=urn:btih:abc&dn=Unnumbered"})
+	task, err := service.AddTorrentContext(ctx, AddTorrentRequest{Film: target, URL: "magnet:?xt=urn:btih:A9993E364706816ABA3E25717850C26C9CD0D89D&dn=300MIUM-1437"})
 	if err != nil || task.Stage != TaskStageDownloading || task.Film == nil || !task.ResourceConfirmed || len(adder.options.URLs) > 0 {
 		t.Fatalf("admission performed work or lost metadata: %+v %v", task, err)
 	}
@@ -606,7 +600,7 @@ func TestSpecifiedResourceAdmissionPersistsFilmBeforeAnyDownload(t *testing.T) {
 	if stored.StageStatus != TaskStageStatusRunning || len(adder.options.URLs) != 1 || stored.SourcingMode != "USER_SELECTED" {
 		t.Fatalf("selected resource did not resume: %+v", stored)
 	}
-	if _, err = service.AddTorrentContext(ctx, AddTorrentRequest{Film: target, URL: "magnet:?xt=urn:btih:other"}); !errors.Is(err, ErrDuplicateCodeTask) {
+	if _, err = service.AddTorrentContext(ctx, AddTorrentRequest{Film: target, URL: "magnet:?xt=urn:btih:D0941E68DA8F38151FF86A61FC59F7C5CF9FCAA2"}); !errors.Is(err, ErrDuplicateCodeTask) {
 		t.Fatal("duplicate film admitted", err)
 	}
 }

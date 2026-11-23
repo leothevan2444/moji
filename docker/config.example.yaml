@@ -97,34 +97,8 @@ tasks:
         max_group_performer_count: 3
         release_date_range: ALL
     torrent_selection:
-        enabled: true
-        inspection_candidate_limit: 5
-        fast_rule_order:
-            - TITLE_MATCH
-            - PUBLISH_DATE
-            - TITLE_SIMILARITY
-            - SEEDERS
-            - SIZE
-        fast_rules:
-            title_match:
-                enabled: true
-                clauses: []
-            publish_date:
-                enabled: true
-                direction: DESC
-            title_similarity:
-                enabled: true
-            seeders:
-                enabled: true
-                direction: DESC
-            size:
-                enabled: true
-                direction: DESC
-        torrent_rules:
-            torrent_single_video:
-                enabled: true
-            torrent_file_name_match:
-                enabled: true
-                clauses: []
-    task_delete_policy: KEEP_ONLY
+        version: 7
+        active_group: ""
+        rules: []
+        groups: []
 config_version: 4

@@ -3,59 +3,13 @@ import {
   LogLevel,
   SubscriptionReleaseBehavior,
   SubscriptionReleaseDateRange,
-  TorrentFileMatchEffect,
-  TitleMatchEffect,
-  TitleMatchPatternMode,
-  TorrentSelectionDirection,
-  TorrentSelectionRuleType,
+  type ResourceRuleInput,
+ type ResourceRuleGroupInput,
 } from "../graphql/generated/graphql";
 
-function makeDefaultTorrentSelectionRule(type: TorrentSelectionRuleType) {
-  return {
-    type,
-    enabled: true,
-    indexerPreference: {
-      trackerIds: [] as string[]
-    },
-    titleMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TitleMatchEffect;
-      }>
-    },
-    publishDate: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    seeders: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    size: {
-      direction: TorrentSelectionDirection.Desc
-    },
-    torrentFileNameMatch: {
-      clauses: [] as Array<{
-        pattern: string;
-        patternMode: TitleMatchPatternMode;
-        effect: TorrentFileMatchEffect;
-      }>
-    }
-  };
-}
-
-export const DEFAULT_TORRENT_SELECTION_RULES = [
-  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.IndexerPreference),
-  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TitleMatch),
-  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.PublishDate),
-  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TitleSimilarity),
-  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.Seeders),
-  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.Size)
-];
-
-export const DEFAULT_TORRENT_FILE_INSPECTION_RULES = [
-  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TorrentSingleVideo),
-  makeDefaultTorrentSelectionRule(TorrentSelectionRuleType.TorrentFileNameMatch)
-];
+export const DEFAULT_RESOURCE_SELECTION = {
+ version:7, activeGroup:"", rules:[] as ResourceRuleInput[], groups:[] as ResourceRuleGroupInput[]
+};
 
 export const EMPTY_POLICY_SETTINGS_FORM = {
   sourcingRetryIntervalHours: "6",
@@ -70,12 +24,7 @@ export const EMPTY_POLICY_SETTINGS_FORM = {
     maxGroupPerformerCount: "3",
     releaseDateRange: SubscriptionReleaseDateRange.All
   },
-  torrentSelection: {
-    enabled: true,
-    inspectionCandidateLimit: "5",
-    fastRules: DEFAULT_TORRENT_SELECTION_RULES.map((rule) => structuredClone(rule)),
-    torrentRules: DEFAULT_TORRENT_FILE_INSPECTION_RULES.map((rule) => structuredClone(rule))
-  }
+  torrentSelection: structuredClone(DEFAULT_RESOURCE_SELECTION)
 };
 
 export const SUBSCRIPTION_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;

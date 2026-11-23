@@ -112,8 +112,7 @@ export interface DiscoverSearchState {
   page: number;
   instances: string[];
   run: string;
-  fastRules?: boolean;
-  fileRules?: boolean;
+  ruleGroup?: string;
 }
 
 const STASHBOX_SORTS = new Set(["relevance", "date-desc", "date-asc", "duration-desc", "title-asc"]);
@@ -123,10 +122,6 @@ export function parseDiscoverSearchParams(params: URLSearchParams): DiscoverSear
   const source = ["indexers", "jackett"].includes(params.get("source") ?? "") ? "indexers" : "stashbox";
   const rawSort = params.get("sort") ?? "relevance";
   const allowed = source === "stashbox" ? STASHBOX_SORTS : INDEXER_SORTS;
-  const booleanParam = (key: string) => {
-    const value = params.get(key);
-    return value === "1" ? true : value === "0" ? false : undefined;
-  };
   return {
     q: params.get("q")?.trim() ?? "",
     source,
@@ -134,8 +129,7 @@ export function parseDiscoverSearchParams(params: URLSearchParams): DiscoverSear
     page: source === "indexers" ? Math.min(100,positiveInt(params.get("page"), 1)) : positiveInt(params.get("page"), 1),
     instances: [...new Set((params.get("sites") ?? params.get("trackers") ?? "").split(",").map((item) => item.trim()).filter(Boolean).map(id => !params.has("sites") && !id.startsWith("jackett/") ? `jackett/${id}` : id))].sort(),
     run: (params.get("run") ?? "").slice(0,128),
-    fastRules: booleanParam("fastRules"),
-    fileRules: booleanParam("fileRules")
+    ruleGroup: params.get("ruleGroup") ?? undefined
   };
 }
 
@@ -147,7 +141,6 @@ export function serializeDiscoverSearchParams(state: DiscoverSearchState): URLSe
   if (state.page !== 1) params.set("page", String(state.page));
   if (state.instances.length) params.set("sites", [...new Set(state.instances)].sort().join(","));
   if (state.run) params.set("run", state.run);
-  if (state.fastRules !== undefined) params.set("fastRules", state.fastRules ? "1" : "0");
-  if (state.fileRules !== undefined) params.set("fileRules", state.fileRules ? "1" : "0");
+  if (state.ruleGroup) params.set("ruleGroup",state.ruleGroup);
   return params;
 }

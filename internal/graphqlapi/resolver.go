@@ -6,6 +6,7 @@ package graphqlapi
 
 import (
 	"context"
+	"github.com/leothevan2444/moji/internal/resourceselection"
 
 	"github.com/leothevan2444/moji/internal/discovery"
 	"github.com/leothevan2444/moji/internal/downloader"
@@ -192,51 +193,7 @@ type JackettSettingsSnapshot struct {
 	Password           string
 }
 
-type TorrentSelectionSettingsSnapshot struct {
-	Enabled                  bool
-	InspectionCandidateLimit int
-	FastRules                []TorrentSelectionRuleSnapshot
-	TorrentRules             []TorrentSelectionRuleSnapshot
-}
-
-type TorrentSelectionRuleSnapshot struct {
-	Type                 string
-	Enabled              bool
-	IndexerPreference    IndexerPreferenceRuleSnapshot
-	TitleMatch           TitleMatchRuleSnapshot
-	PublishDate          DirectionRuleSnapshot
-	Seeders              DirectionRuleSnapshot
-	Size                 DirectionRuleSnapshot
-	TorrentFileNameMatch TorrentFileNameMatchRuleSnapshot
-}
-
-type DirectionRuleSnapshot struct {
-	Direction string
-}
-
-type IndexerPreferenceRuleSnapshot struct {
-	TrackerIDs []string
-}
-
-type TitleMatchRuleSnapshot struct {
-	Clauses []TitleMatchClauseSnapshot
-}
-
-type TitleMatchClauseSnapshot struct {
-	Pattern     string
-	PatternMode string
-	Effect      string
-}
-
-type TorrentFileNameMatchRuleSnapshot struct {
-	Clauses []TorrentFileNameMatchClauseSnapshot
-}
-
-type TorrentFileNameMatchClauseSnapshot struct {
-	Pattern     string
-	PatternMode string
-	Effect      string
-}
+type TorrentSelectionSettingsSnapshot = resourceselection.Policy
 
 type QBittorrentSettingsSnapshot struct {
 	Configured         bool

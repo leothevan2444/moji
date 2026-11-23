@@ -35,9 +35,7 @@ func (c indexerConfiguration) snapshot() (*config.Config, string) {
 	if cfg.Indexers.Builtin.Definitions.Source == "" {
 		cfg.Indexers = config.DefaultIndexersConfig()
 		cfg.Indexers.Jackett.Enabled = cfg.Connection.Jackett.URL != ""
-		for _, id := range cfg.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs {
-			cfg.Indexers.QueryOrder = append(cfg.Indexers.QueryOrder, "jackett/"+id)
-		}
+
 	}
 	return &cfg, indexerFingerprint(cfg)
 }

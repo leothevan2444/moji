@@ -35,7 +35,7 @@ func TestTaskWorkspaceGraphQLSnapshots(t *testing.T) {
 	defer manager.Close()
 	bus := taskruntime.NewTaskEventBus(8)
 	defer bus.Close()
-	store, err := taskruntime.NewEventingTaskStore(taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations), bus)
+	store, err := taskruntime.NewEventingTaskStore(taskruntime.NewRelationalTaskStore(manager.Core, manager.Runtime, manager.Observations), bus)
 	if err != nil {
 		t.Fatal(err)
 	}

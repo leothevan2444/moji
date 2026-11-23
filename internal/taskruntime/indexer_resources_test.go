@@ -7,6 +7,7 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/indexer"
+	"github.com/leothevan2444/moji/internal/resourceselection"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -39,12 +40,15 @@ func (a *persistedTorrentAdder) AddNewTorrent(ctx context.Context, options qbitt
 	return a.fakeTorrentAdder.AddNewTorrent(ctx, options)
 }
 
-func TestIndexedSourcingInspectsAndSubmitsIdenticalPersistedBytes(t *testing.T) {
+func TestChosenIndexedResourceSubmitsIdenticalPersistedBytes(t *testing.T) {
 	data := []byte(testTorrentFile("ABCD-123", []string{"ABCD-123.mp4"}))
 	source := &indexedFixture{data: data}
 	store, _ := relationalStore(t)
 	adder := &persistedTorrentAdder{store: store, expected: data, t: t}
-	rules := candidateSelectionConfig(true, 1, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTorrentFileNameMatch, Enabled: true, TorrentFileNameMatch: config.TorrentFileNameMatchRuleConfig{Clauses: []config.TorrentFileNameMatchClause{{Pattern: "sample", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TorrentFileMatchEffectExclude}}}}})
+	rules := config.DefaultCandidateSelectionConfig()
+	rules.Rules = []resourceselection.Rule{{ID: "sample", Name: "exclude sample", Conditions: []resourceselection.Condition{{Scope: "TITLE", Value: "sample"}}}}
+	rules.ActiveGroup = "main"
+	rules.Groups = []resourceselection.Group{{Fallback: true, ID: "main", Name: "Main", Exclude: []string{"sample"}, Tiers: []resourceselection.Tier{}}}
 	service, err := NewService(nil, adder, store, WithIndexers(source), WithIDGenerator(func() string { return "indexed-task" }), WithCandidateSelectionProvider(func() config.CandidateSelectionConfig { return rules }))
 	if err != nil {
 		t.Fatal(err)
@@ -54,10 +58,10 @@ func TestIndexedSourcingInspectsAndSubmitsIdenticalPersistedBytes(t *testing.T) 
 		t.Fatal(err)
 	}
 	if source.fetches != 1 {
-		t.Fatalf("inspection and preparation grabbed %d times", source.fetches)
+		t.Fatalf("chosen resource was acquired %d times", source.fetches)
 	}
 	if len(adder.options.Torrents) != 1 || !bytes.Equal(adder.options.Torrents[0].Data, data) || !bytes.Equal(task.TorrentFileData, data) {
-		t.Fatal("download does not use inspected and persisted bytes")
+		t.Fatal("download does not use acquired and persisted bytes")
 	}
 	if task.Candidate.Link != "indexer-resource:opaque-resource" {
 		t.Fatal("stable source reference missing")

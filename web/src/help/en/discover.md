@@ -14,7 +14,7 @@ Choose **Indexers** to search enabled built-in and Jackett sites. You can select
 
 The page URL restores search progress and results. Refreshing or returning reads the existing search; closing the panel does not cancel it. Cancelling stops unfinished work and retains existing results. Results expire after 30 minutes. A service restart marks unfinished searches as interrupted; start a new search to continue.
 
-Select fast or file rules and click **Apply preview** when needed. File previews may acquire torrents, within the configured inspection budget. Rules run over the complete candidate set before paging. Reloading the page does not automatically inspect files again.
+Choose the target film and rule group, then click **Preview selection** to match indexer titles, sizes and seeder counts. Rules rank the complete result set before paging. Previews acquire no torrent metadata and create no background jobs; click preview again after refreshing.
 
 Choose **Create task** and review the suggested StashBox film. Search for and select the correct film if needed, then confirm. A code without a film association cannot create a task. Moji saves the selected source and lets the task acquire and validate the resource. Acquisition failure does not silently select another resource. Missing sizes or seeder counts remain unknown. Detail links use only safe detail URLs supplied by the site.
 

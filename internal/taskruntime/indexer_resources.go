@@ -18,10 +18,10 @@ func (s *Service) resolveIndexedResource(ctx context.Context, handle string) (do
 }
 
 func (s *Service) resolveIndexedArtifact(ctx context.Context, handle string, acquire func(context.Context) (indexer.Artifact, error)) (downloadedTorrentMetadata, string, error) {
-	key := normalizeTorrentInspectionCacheKey(handle, "")
-	s.inspectionCacheMu.Lock()
-	entry, ok := s.inspectionCache[key]
-	s.inspectionCacheMu.Unlock()
+	key := artifactCacheKey(handle)
+	s.artifactCacheMu.Lock()
+	entry, ok := s.artifactCache[key]
+	s.artifactCacheMu.Unlock()
 	if ok && entry.expiresAt.After(s.now().UTC()) {
 		if entry.metadata != nil {
 			return *entry.metadata, "", nil
@@ -53,17 +53,14 @@ func (s *Service) resolveIndexedArtifact(ctx context.Context, handle string, acq
 }
 
 func (s *Service) storeCachedArtifact(key string, metadata *downloadedTorrentMetadata, magnet string) {
-	next := cachedTorrentInspection{metadata: metadata, magnet: magnet, expiresAt: s.now().UTC().Add(torrentInspectionCacheTTL)}
-	if metadata != nil {
-		next.inspection = inspectTorrentMetadata(*metadata)
-	}
-	s.storeInspectionEntry(key, next)
+	next := cachedArtifact{metadata: metadata, magnet: magnet, expiresAt: s.now().UTC().Add(artifactCacheTTL)}
+	s.storeArtifactEntry(key, next)
 }
 
-func (s *Service) storeInspectionEntry(key string, next cachedTorrentInspection) {
-	s.inspectionCacheMu.Lock()
-	defer s.inspectionCacheMu.Unlock()
-	size := func(e cachedTorrentInspection) int {
+func (s *Service) storeArtifactEntry(key string, next cachedArtifact) {
+	s.artifactCacheMu.Lock()
+	defer s.artifactCacheMu.Unlock()
+	size := func(e cachedArtifact) int {
 		n := len(e.magnet) + 1024
 		if e.metadata != nil {
 			n += len(e.metadata.Data) + len(e.metadata.Name)
@@ -76,25 +73,32 @@ func (s *Service) storeInspectionEntry(key string, next cachedTorrentInspection)
 		return n
 	}
 	used := 0
-	for id, e := range s.inspectionCache {
+	for id, e := range s.artifactCache {
 		if !e.expiresAt.After(s.now().UTC()) {
-			delete(s.inspectionCache, id)
+			delete(s.artifactCache, id)
 		} else {
 			used += size(e)
 		}
 	}
-	for len(s.inspectionCache) >= 256 || used+size(next) > 32<<20 {
+	for len(s.artifactCache) >= 256 || used+size(next) > 32<<20 {
 		oldest := ""
-		for id, e := range s.inspectionCache {
-			if oldest == "" || e.expiresAt.Before(s.inspectionCache[oldest].expiresAt) {
+		for id, e := range s.artifactCache {
+			if oldest == "" || e.expiresAt.Before(s.artifactCache[oldest].expiresAt) {
 				oldest = id
 			}
 		}
 		if oldest == "" {
 			return
 		}
-		used -= size(s.inspectionCache[oldest])
-		delete(s.inspectionCache, oldest)
+		used -= size(s.artifactCache[oldest])
+		delete(s.artifactCache, oldest)
 	}
-	s.inspectionCache[normalizeTorrentInspectionCacheKey(key, "")] = next
+	s.artifactCache[artifactCacheKey(key)] = next
+}
+
+func artifactCacheKey(handle string) string {
+	if strings.TrimSpace(handle) == "" {
+		return ""
+	}
+	return "url:" + strings.TrimSpace(handle)
 }

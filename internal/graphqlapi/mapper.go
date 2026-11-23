@@ -89,6 +89,7 @@ func taskToModel(task *taskruntime.Task) *model.Task {
 		Tags:                  nilIfEmpty(task.Tags),
 		TorrentHash:           nilIfEmpty(task.TorrentHash),
 		TorrentName:           nilIfEmpty(task.TorrentName),
+		SelectionReport:       selectionReportModel(task.SelectionReportJSON),
 		Progress:              task.Progress,
 		QbittorrentState:      nilIfEmpty(task.QBittorrentState),
 		ContentPath:           nilIfEmpty(task.ContentPath),

@@ -78,7 +78,7 @@ const rootValue = {
   startTorrentSearch: ({input}:{input:{keywords:string;taskId?:string}})=>({...torrentSearchSnapshot,id:input.taskId?`task-search-${input.taskId}`:"search-one",taskId:input.taskId??null,keywords:input.keywords,state:"QUEUED",total:0,candidates:[]}),
   resolveTaskSourcingCandidate: ({input}:{input:{taskId:string;expectedRevision:number}})=>homeTask(input.taskId,"SOURCING","PENDING",{revision:input.expectedRevision+1,sourcingNextCheckAt:null}),
   cancelTorrentSearch: ({id}:{id:string})=>({...torrentSearchSnapshot,id,state:"CANCELLED",cancelRequested:true}),
-  previewTorrentSelection: ({input}:{input:{searchId:string;offset?:number;limit?:number;applyFastRules:boolean;applyFileRules:boolean}})=>({searchId:input.searchId,searchRevision:1,total:1,offset:input.offset??0,limit:input.limit??100,candidates:[searchCandidate],meta:{appliedFastRules:input.applyFastRules,appliedFileRules:input.applyFileRules,inspectedCount:input.applyFileRules?1:0,inspectableCount:input.applyFileRules?1:0,inspectionCandidateLimit:input.applyFileRules?5:0}}),
+  previewTorrentSelection: ({input}:{input:{searchId:string;offset?:number;limit?:number}})=>({searchId:input.searchId,searchRevision:1,partial:false,total:1,offset:input.offset??0,limit:input.limit??100,candidates:[searchCandidate],evaluations:[]}),
   queueTorrentCandidate: homeTask("queued-candidate","SOURCING","PENDING"),
   torrentSearchEvents: ({id}:{id:string})=>({streamId:"search-stream",sequence:0,searchId:id}),
 
@@ -146,7 +146,7 @@ const rootValue = {
         soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW",
         maxGroupPerformerCount: 5, releaseDateRange: "ALL",
       },
-      torrentSelection: { enabled: false, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] },
+      torrentSelection: {version:7,activeGroup:"",rules:[],groups:[]},
     },
     system: { timezone:"auto",effectiveTimezone:"UTC",systemTimezone:"UTC",
       developerMode: false,

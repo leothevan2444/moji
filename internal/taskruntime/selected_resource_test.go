@@ -99,7 +99,7 @@ func TestAcceptedSelectionSurvivesRestartExpiryAndAccountChange(t *testing.T) {
 	}
 	defer func() { m.Close() }()
 	seedSelectionBundle(t, m)
-	store := NewRelationalTaskStore(m.Core, m.Observations)
+	store := NewRelationalTaskStore(m.Core, m.Runtime, m.Observations)
 	source := &selectedSource{record: selectionRecord(), data: []byte(testTorrentFile("ABCD-123", []string{"ABCD-123.mp4"}))}
 	adder := &selectedArtifactAdder{store: store, data: source.data, t: t}
 	service, err := NewService(nil, adder, store, WithIndexers(source), WithIDGenerator(func() string { return "selected-task" }))
@@ -130,7 +130,7 @@ func TestAcceptedSelectionSurvivesRestartExpiryAndAccountChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	store = NewRelationalTaskStore(m.Core, m.Observations)
+	store = NewRelationalTaskStore(m.Core, m.Runtime, m.Observations)
 	adder.store = store
 	service, err = NewService(nil, adder, store, WithIndexers(source))
 	if err != nil {
@@ -158,7 +158,7 @@ func TestFailedSelectedCandidateRetainsItsChoiceAndAcquisitionForExplicitRetry(t
 	ctx := context.Background()
 	store, m := relationalStore(t)
 	seedSelectionBundle(t, m)
-	source := &selectedSource{record: selectionRecord(), data: []byte(testTorrentFile("ABCD-999", []string{"ABCD-999.mp4"}))}
+	source := &selectedSource{record: selectionRecord(), data: []byte(testTorrentFile("ABCD-123", []string{"ABCD-123.mp4"}))}
 	adder := &fakeTorrentAdder{err: errors.New("downloader unavailable")}
 	service, err := NewService(nil, adder, store, WithIndexers(source))
 	if err != nil {
@@ -247,7 +247,7 @@ func TestCoreV5MigrationRetainsExistingTaskAndRejectsUnknownResourcePayload(t *t
 		t.Fatal(err)
 	}
 	defer m.Close()
-	store := NewRelationalTaskStore(m.Core, m.Observations)
+	store := NewRelationalTaskStore(m.Core, m.Runtime, m.Observations)
 	old, err := store.Find(ctx, "old-task")
 	if err != nil || old.Candidate.Source == nil || old.Candidate.Source.InstanceID != "old-source" || old.IndexerResource != nil {
 		t.Fatal("v5 migration lost old task/provenance", err)

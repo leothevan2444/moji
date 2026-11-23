@@ -94,7 +94,7 @@ func Prepare(ctx context.Context, sourcePath, cachePath, destination string) (re
 		return result, err
 	}
 	defer func() { err = errors.Join(err, manager.Close()) }()
-	store := taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations)
+	store := taskruntime.NewRelationalTaskStore(manager.Core, manager.Runtime, manager.Observations)
 	if err := store.ImportLegacyTasks(ctx, tasks); err != nil {
 		return result, err
 	}

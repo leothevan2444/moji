@@ -78,7 +78,7 @@ func TestCodeFallbackPersistsChoiceAndReusesItAfterRestart(t *testing.T) {
 	}
 	// Rebuild the production store and event wrapper. The next search would
 	// return a different scene, but recovery must use the recorded selection.
-	reopened := NewRelationalTaskStore(manager.Core, manager.Observations)
+	reopened := NewRelationalTaskStore(manager.Core, manager.Runtime, manager.Observations)
 	wrapped, err := NewEventingTaskStore(reopened, NewTaskEventBus(16))
 	if err != nil {
 		t.Fatal(err)

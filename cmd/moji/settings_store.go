@@ -99,56 +99,6 @@ func (s *runtimeSettingsEditor) UpdateJackettSettings(input graphqlapi.UpdateJac
 	return buildSettingsSnapshot(cfg, s.version), nil
 }
 
-func torrentSelectionConfigRules(rules []graphqlapi.TorrentSelectionRuleSnapshot) []config.TorrentSelectionRule {
-	out := make([]config.TorrentSelectionRule, 0, len(rules))
-	for _, rule := range rules {
-		item := config.TorrentSelectionRule{
-			Type:    config.TorrentSelectionRuleType(strings.TrimSpace(rule.Type)),
-			Enabled: rule.Enabled,
-			IndexerPreference: config.IndexerPreferenceRuleConfig{
-				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
-			},
-			PublishDate: config.PublishDateRuleConfig{
-				Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.PublishDate.Direction)),
-			},
-			Seeders: config.SeedersRuleConfig{
-				Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.Seeders.Direction)),
-			},
-			Size: config.SizeRuleConfig{
-				Direction: config.TorrentSelectionDirection(strings.TrimSpace(rule.Size.Direction)),
-			},
-		}
-		if len(rule.TitleMatch.Clauses) > 0 {
-			item.TitleMatch.Clauses = make([]config.TitleMatchClause, 0, len(rule.TitleMatch.Clauses))
-			for _, clause := range rule.TitleMatch.Clauses {
-				item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, config.TitleMatchClause{
-					Pattern:     strings.TrimSpace(clause.Pattern),
-					PatternMode: config.TitleMatchPatternMode(strings.TrimSpace(clause.PatternMode)),
-					Effect:      config.TitleMatchEffect(strings.TrimSpace(clause.Effect)),
-				})
-			}
-		}
-		if len(rule.TorrentFileNameMatch.Clauses) > 0 {
-			item.TorrentFileNameMatch.Clauses = make([]config.TorrentFileNameMatchClause, 0, len(rule.TorrentFileNameMatch.Clauses))
-			for _, clause := range rule.TorrentFileNameMatch.Clauses {
-				item.TorrentFileNameMatch.Clauses = append(item.TorrentFileNameMatch.Clauses, config.TorrentFileNameMatchClause{
-					Pattern:     strings.TrimSpace(clause.Pattern),
-					PatternMode: config.TitleMatchPatternMode(strings.TrimSpace(clause.PatternMode)),
-					Effect:      config.TorrentFileMatchEffect(strings.TrimSpace(clause.Effect)),
-				})
-			}
-		}
-		out = append(out, item)
-	}
-	return out
-}
-
-func torrentSelectionConfigRulesFromSnapshot(snapshot graphqlapi.TorrentSelectionSettingsSnapshot) []config.TorrentSelectionRule {
-	rules := append([]graphqlapi.TorrentSelectionRuleSnapshot(nil), snapshot.FastRules...)
-	rules = append(rules, snapshot.TorrentRules...)
-	return torrentSelectionConfigRules(rules)
-}
-
 func subscriptionReleasePolicyConfigFromSnapshot(snapshot graphqlapi.SubscriptionReleasePolicySnapshot) config.SubscriptionReleasePolicyConfig {
 	return config.SubscriptionReleasePolicyConfig{
 		SoloBehavior:           config.SubscriptionReleaseBehavior(strings.TrimSpace(snapshot.SoloBehavior)),
@@ -205,7 +155,7 @@ func (s *runtimeSettingsEditor) UpdateSettingsSection(input graphqlapi.SettingsS
 		TaskProcessingFrequency:    input.TaskProcessingFrequency,
 		StashBoxEndpoints:          input.StashBoxEndpoints,
 		SubscriptionReleasePolicy:  subscriptionReleasePolicyConfigFromSnapshot(input.SubscriptionReleasePolicy),
-		TorrentSelection:           config.NewTorrentSelectionConfig(input.TorrentSelection.Enabled, input.TorrentSelection.InspectionCandidateLimit, torrentSelectionConfigRulesFromSnapshot(input.TorrentSelection)),
+		TorrentSelection:           input.TorrentSelection,
 		SourcingRetryIntervalHours: interval,
 	})
 	if err != nil {

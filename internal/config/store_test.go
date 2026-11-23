@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/leothevan2444/moji/internal/resourceselection"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,71 +119,29 @@ func TestVRReleasePolicyDefaultsAndPersists(t *testing.T) {
 }
 
 func TestStoreUpdateAutomationPersistsTorrentSelection(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	content := `connection:
-  jackett:
-    url: "http://localhost:9117"
-    api_key: "secret"
-    password: "pw"
-automation:
-  task_processing_frequency: MEDIUM
-`
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatalf("write config: %v", err)
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("automation: {}\n"), 0600); err != nil {
+		t.Fatal(err)
 	}
-
 	store, err := OpenStore(path)
 	if err != nil {
-		t.Fatalf("open store: %v", err)
+		t.Fatal(err)
 	}
-
-	cfg, err := store.UpdateAutomation("MEDIUM", []string{"https://javstash.example.org/graphql"}, DefaultSubscriptionReleasePolicyConfig(), NewTorrentSelectionConfig(
-		true,
-		8,
-		[]TorrentSelectionRule{
-			{
-				Type:    TorrentSelectionRuleTypeIndexerPreference,
-				Enabled: true,
-				IndexerPreference: IndexerPreferenceRuleConfig{
-					TrackerIDs: []string{"alpha", "beta"},
-				},
-			},
-		},
-	))
+	p := DefaultTorrentSelectionConfig()
+	p.Rules = []resourceselection.Rule{{ID: "kept", Name: "Kept", Conditions: []resourceselection.Condition{{Scope: "TITLE", Value: "label"}}}}
+	if _, err = store.UpdateAutomation("MEDIUM", nil, DefaultSubscriptionReleasePolicyConfig(), p); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadFromPath(path)
 	if err != nil {
-		t.Fatalf("update automation: %v", err)
+		t.Fatal(err)
 	}
-	if len(cfg.Automation.TorrentSelection.OrderedRules()) != 8 {
-		t.Fatalf("unexpected torrent selection: %+v", cfg.Automation.TorrentSelection)
+	if len(got.Automation.TorrentSelection.Rules) != 1 {
+		t.Fatalf("policy lost: %+v", got.Automation.TorrentSelection)
 	}
-	if len(cfg.Automation.StashBoxEndpoints) != 1 {
-		t.Fatalf("unexpected stash-box endpoints: %+v", cfg.Automation.StashBoxEndpoints)
-	}
-
-	updated, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read config: %v", err)
-	}
-	text := string(updated)
-	if !strings.Contains(text, "fast_rule_order:") || !strings.Contains(text, "fast_rules:") || !strings.Contains(text, "torrent_rules:") {
-		t.Fatalf("expected singleton torrent selection structure, got:\n%s", text)
-	}
-
-	reloaded, err := LoadFromPath(path)
-	if err != nil {
-		t.Fatalf("reload config: %v", err)
-	}
-	got := reloaded.Automation.TorrentSelection.Effective()
-	ordered := got.OrderedRules()
-	if !got.Enabled || len(ordered) != 8 {
-		t.Fatalf("expected persisted torrent selection, got %+v", got)
-	}
-	if got.InspectionCandidateLimit != 8 {
-		t.Fatalf("expected persisted inspection candidate limit, got %+v", got)
-	}
-	if len(got.FastRules.IndexerPreference.TrackerIDs) != 2 {
-		t.Fatalf("expected persisted indexer query order, got %+v", got.FastRules.IndexerPreference)
+	data, _ := os.ReadFile(path)
+	if strings.Contains(string(data), "fast_rules:") || !strings.Contains(string(data), "version: 4") {
+		t.Fatal("retired config persisted")
 	}
 }
 
@@ -216,7 +175,7 @@ ingest:
 	}
 }
 
-func TestLoadFromPathRejectsDuplicateFastRuleOrderTypes(t *testing.T) {
+func TestLoadFromPathRejectsRetiredResourceRules(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
 	content := `automation:
@@ -232,8 +191,8 @@ func TestLoadFromPathRejectsDuplicateFastRuleOrderTypes(t *testing.T) {
 	}
 
 	_, err := LoadFromPath(path)
-	if err == nil || !strings.Contains(err.Error(), "duplicate type SEEDERS") {
-		t.Fatalf("expected duplicate type error, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "is retired") {
+		t.Fatalf("expected explicit manual conversion error, got %v", err)
 	}
 }
 

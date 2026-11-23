@@ -46,14 +46,15 @@ describe("performer search params", () => {
 
 describe("discover search params", () => {
   it("maps saved Jackett links and validates source-specific sorting", () => {
-    const state = parseDiscoverSearchParams(new URLSearchParams("source=jackett&sort=title-asc&trackers=b,a,b&fastRules=1"));
+    const state = parseDiscoverSearchParams(new URLSearchParams("source=jackett&sort=title-asc&trackers=b,a,b&inspect=1"));
     expect(state.sort).toBe("relevance");
     expect(state.instances).toEqual(["jackett/a", "jackett/b"]);
-    expect(state.fastRules).toBe(true);
+    expect(serializeDiscoverSearchParams(state).has("inspect")).toBe(false);
+    expect(serializeDiscoverSearchParams(state).has("preview")).toBe(false);
   });
 
   it("round trips canonical discovery state", () => {
-    const state = parseDiscoverSearchParams(new URLSearchParams("q=abc&source=jackett&sort=seeders-desc&page=2&trackers=b,a&fastRules=1&fileRules=0"));
+    const state = parseDiscoverSearchParams(new URLSearchParams("q=abc&source=jackett&sort=seeders-desc&page=2&trackers=b,a&inspect=1&preview=job1"));
     expect(parseDiscoverSearchParams(serializeDiscoverSearchParams(state))).toEqual(state);
   });
 });

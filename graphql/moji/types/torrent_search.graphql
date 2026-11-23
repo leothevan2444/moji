@@ -85,10 +85,13 @@ type TorrentSearchEvent { streamId: String!, sequence: Long!, searchId: ID! }
 
 extend type Mutation { previewTorrentSelection(input: PreviewTorrentSelectionInput!): TorrentSelectionPreview! }
 input PreviewTorrentSelectionInput {
+ groupID: ID
  searchId: ID!
  candidateIds: [ID!]
- applyFastRules: Boolean! = false
- applyFileRules: Boolean! = false
+ taskId: ID
+ endpoint: String
+ sceneId: ID
+ confirmationDigest: String
  offset: Int = 0
  limit: Int = 100
  sortBy: TorrentSearchSort = RELEVANCE
@@ -96,19 +99,18 @@ input PreviewTorrentSelectionInput {
 type TorrentSelectionPreview {
  searchId: ID!
  searchRevision: Long!
+ partial: Boolean!
+ evaluations: [ResourceEvaluation!]!
  total: Int!
  offset: Int!
  limit: Int!
  candidates: [TorrentSearchCandidate!]!
- meta: TorrentSelectionPreviewMeta!
 }
-type TorrentSelectionPreviewMeta {
- appliedFastRules: Boolean!
- appliedFileRules: Boolean!
- inspectedCount: Int!
- inspectableCount: Int!
- inspectionCandidateLimit: Int!
-}
+type ResourceEvaluation {
+ evidenceOmitted: Int!
+ groupName: String!
+ tierName: String! candidateId: ID title: String! status: String! preferred: Boolean! reasons: [String!]! unknownRules: [String!]! evidence: [ResourceEvidence!]! }
+type ResourceEvidence { attribute: String! value: String! source: String! text: String! }
 extend type Mutation { resolveTaskSourcingCandidate(input: ResolveTaskSourcingCandidateInput!): Task! }
 input ResolveTaskSourcingCandidateInput {
  taskId: ID!

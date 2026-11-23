@@ -1,0 +1,1 @@
+DROP TABLE torrent_selection_previews;

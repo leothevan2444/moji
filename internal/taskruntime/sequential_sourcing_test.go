@@ -10,11 +10,12 @@ import (
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/indexer"
+	"github.com/leothevan2444/moji/internal/resourceselection"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/jackett"
 )
 
-func TestSourcingRejectsInvalidLocksAndFallsBackNormally(t *testing.T) {
+func TestSourcingRetainsFallbackAndContinuesUntilPreferred(t *testing.T) {
 	calls := []string{}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v2.0/indexers" {
@@ -31,16 +32,20 @@ func TestSourcingRejectsInvalidLocksAndFallsBackNormally(t *testing.T) {
 		return tracker.JackettConfig{URL: server.URL, QueryOrder: []string{"a", "b", "c", "d"}}
 	})
 	service, err := NewService(tr, &fakeTorrentAdder{}, NewMemoryTaskStore(), WithCandidateSelectionProvider(func() config.CandidateSelectionConfig {
-		return candidateSelectionConfig(true, 1, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTitleMatch, Enabled: true, TitleMatch: config.TitleMatchRuleConfig{Clauses: []config.TitleMatchClause{
-			{Pattern: "required", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TitleMatchEffectLock},
-			{Pattern: "excluded", PatternMode: config.TitleMatchPatternModePlain, Effect: config.TitleMatchEffectExclude},
-		}}}})
+		p := config.DefaultCandidateSelectionConfig()
+		p.Rules = []resourceselection.Rule{
+			{ID: "preferred", Name: "preferred", Conditions: []resourceselection.Condition{{Scope: "TITLE", Value: "required"}}},
+			{ID: "excluded", Name: "excluded", Conditions: []resourceselection.Condition{{Scope: "TITLE", Value: "excluded"}}},
+		}
+		p.ActiveGroup = "main"
+		p.Groups = []resourceselection.Group{{Fallback: true, ID: "main", Name: "Main", Exclude: []string{"excluded"}, Tiers: []resourceselection.Tier{{ID: "first", Name: "First", Rules: []string{"preferred"}}}}}
+		return p
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	task, err := service.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("ABCD-123"), Code: "ABCD-123"})
-	if err != nil || task.Stage != TaskStageDownloading || !reflect.DeepEqual(calls, []string{"a", "b", "c"}) {
+	if err != nil || task.Stage != TaskStageDownloading || !reflect.DeepEqual(calls, []string{"a", "b", "c", "d"}) {
 		t.Fatalf("task=%+v calls=%v err=%v", task, calls, err)
 	}
 }

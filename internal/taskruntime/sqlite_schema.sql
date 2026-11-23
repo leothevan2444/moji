@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 
   restart_state_json TEXT,
   sourcing_request_json TEXT,
+ selection_report_json TEXT,
   torrent_file_data BLOB,
   sourcing_last_checked_at TEXT,
   sourcing_next_check_at TEXT,

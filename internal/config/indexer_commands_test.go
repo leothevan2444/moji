@@ -11,7 +11,7 @@ import (
 
 func TestIndexerMigrationRetainsLegacyConnectionOrderAndUnrelatedSettings(t *testing.T) {
 	for _, raw := range []string{
-		"connection:\n  jackett: {url: 'http://jackett.example', api_key: synthetic-key}\nautomation:\n  torrent_selection:\n    fast_rules:\n      indexer_preference: {tracker_ids: [b, a]}\nextra: {retained: yes}\n",
+
 		"config_version: 2\nindexers:\n  jackett: {url: 'http://jackett.example', api_key: synthetic-key}\n  query_order: [b, a]\nextra: {retained: yes}\n",
 	} {
 		path := filepath.Join(t.TempDir(), "config.yaml")

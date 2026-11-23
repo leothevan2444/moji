@@ -13,13 +13,17 @@ mutation CancelTorrentSearch($id: ID!) { cancelTorrentSearch(id: $id) { id ...To
 subscription TorrentSearchEvents($id: ID!) { torrentSearchEvents(id: $id) { streamId sequence searchId } }
 mutation PreviewTorrentSelection($input: PreviewTorrentSelectionInput!) {
  previewTorrentSelection(input: $input) {
-  searchId searchRevision total offset limit
+  searchId searchRevision total offset limit partial
+  evaluations { evidenceOmitted groupName tierName candidateId title status preferred reasons unknownRules evidence { attribute value source text } }
   candidates { id instanceId instanceName kind title detailsUrl infoHash size seeders peers publishedAt categories }
-  meta { appliedFastRules appliedFileRules inspectedCount inspectableCount inspectionCandidateLimit }
  }
 }
 query TorrentSearchSources { indexerInstances { revision ruleErrorCode catalogErrorCode items { id name kind enabled errorCode } } }
 mutation ResolveTaskSourcingCandidate($input: ResolveTaskSourcingCandidateInput!) { resolveTaskSourcingCandidate(input: $input) { id code stage stageStatus revision version sourcingNextCheckAt stageErrorCode stageErrorMessage updatedAt } }
 mutation PrepareTorrentDownload($input: PrepareTorrentDownloadInput!) {
  prepareTorrentDownload(input: $input) { kind downloadUrl expiresAt }
+}
+
+query ResourceRuleGroups {
+ settings { policies: automation { torrentSelection { activeGroup groups { id name } } } }
 }

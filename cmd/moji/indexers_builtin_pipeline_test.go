@@ -85,7 +85,7 @@ func TestBuiltinManagedPipelineFiltersAndPersistsBeforeDownloadUnderQueuedLoad(t
 		switch r.URL.Path {
 		case "/search":
 			w.Header().Set("Content-Type", "text/html")
-			fmt.Fprintf(w, `<article><h2>%s</h2><a href="/sample?q=%s">get</a></article><article><h2>%s</h2><a href="/torrent?q=%s">get</a></article>`, code, code, code, code)
+			fmt.Fprintf(w, `<article><h2>%s sample</h2><a href="/sample?q=%s">get</a></article><article><h2>%s</h2><a href="/torrent?q=%s">get</a></article>`, code, code, code, code)
 		case "/sample", "/torrent":
 			w.Header().Set("Content-Type", "application/x-bittorrent")
 			w.Write(builtinPipelineTorrent(code, r.URL.Path == "/sample"))
@@ -98,7 +98,11 @@ func TestBuiltinManagedPipelineFiltersAndPersistsBeforeDownloadUnderQueuedLoad(t
 	store := indexerTestStore(t)
 	if _, err = store.ApplyPatch(map[string]any{
 		"indexers": map[string]any{"jackett": map[string]any{"enabled": false}},
-		"tasks":    map[string]any{"torrent_selection": map[string]any{"enabled": true, "torrent_rules": map[string]any{"torrent_file_name_match": map[string]any{"enabled": true, "clauses": []any{map[string]any{"pattern": "sample", "pattern_mode": "PLAIN", "effect": "EXCLUDE"}}}}}},
+		"tasks": map[string]any{"torrent_selection": map[string]any{
+			"active_group": "main",
+			"rules":        []any{map[string]any{"id": "sample", "name": "exclude sample", "conditions": []any{map[string]any{"scope": "TITLE", "value": "sample"}}}},
+			"groups":       []any{map[string]any{"id": "main", "name": "Main", "fallback": true, "require": []any{}, "exclude": []any{"sample"}, "tiers": []any{}}},
+		}},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +135,7 @@ func TestBuiltinManagedPipelineFiltersAndPersistsBeforeDownloadUnderQueuedLoad(t
 	if err != nil {
 		t.Fatal(err)
 	}
-	core := taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations)
+	core := taskruntime.NewRelationalTaskStore(manager.Core, manager.Runtime, manager.Observations)
 	downloader := &builtinPipelineDownloader{t: t, store: core, sourceID: saved.Instance.ID, adds: map[string]int{}}
 	service := configureTaskRuntimeWithIndexers(store.Config(), store, nil, runtime.service, downloader, nil, taskruntime.NewTaskEventBus(8), manager)
 	const count = 8
@@ -198,16 +202,19 @@ func TestBuiltinManagedPipelineFiltersAndPersistsBeforeDownloadUnderQueuedLoad(t
 	<-done
 	for i := range count {
 		code := fmt.Sprintf("ABCD-%d", 100+i)
+		if requests["/sample?q="+code] != 0 {
+			t.Error("selection fetched a filtered candidate")
+		}
 		if downloader.adds[code] != 1 {
 			t.Errorf("%s: qB submissions = %d", code, downloader.adds[code])
 		}
-		for _, path := range []string{"/search", "/sample", "/torrent"} {
+		for _, path := range []string{"/search", "/torrent"} {
 			if requests[path+"?q="+code] != 1 {
 				t.Errorf("%s: %s requests = %d", code, path, requests[path+"?q="+code])
 			}
 		}
 	}
-	if len(requests) != count*3 || source.downloads.Load() != 1 {
+	if len(requests) != count*2 || source.downloads.Load() != 1 {
 		t.Fatal("pipeline repeated or omitted network work", len(requests), source.downloads.Load())
 	}
 	sort.Slice(samples, func(i, j int) bool { return samples[i] < samples[j] })

@@ -8,7 +8,7 @@ import i18n from "../../i18n/i18n";
 import { TaskIndexerSearch } from "./TaskIndexerSearch";
 import type { DashboardTask } from "../../utils";
 const state=vi.hoisted(()=>({start:vi.fn(),cancel:vi.fn(),refresh:vi.fn(),resolve:vi.fn(),read:vi.fn(),reread:vi.fn(()=>({toPromise:()=>Promise.resolve({data:null})})),snapshot:null as unknown,error:null as unknown,starting:false}));
-vi.mock("urql",()=>({useClient:()=>({query:state.reread}),useMutation:()=>[{fetching:false},state.resolve]}));
+vi.mock("urql",()=>({useQuery:()=>[{data:undefined,fetching:false}],useClient:()=>({query:state.reread}),useMutation:()=>[{fetching:false},state.resolve]}));
 vi.mock("../../hooks/useTorrentSearch",()=>({useTorrentSearch:(id:string|null,offset:number,limit:number,sort:string)=>{state.read(id,offset,limit,sort);return {snapshot:state.snapshot,start:state.start,cancel:state.cancel,refresh:state.refresh,error:state.error,starting:state.starting,fetching:false,cancelling:false}}}));
 const task={id:"one",code:"ABCD-123",revision:7,stage:"SOURCING",stageStatus:"BLOCKED"} as DashboardTask;
 const candidate={id:"candidate",instanceId:"site",instanceName:"Site",kind:"BUILTIN",title:"ABCD-123 synthetic release",detailsUrl:"https://example.test/details/1",size:null,seeders:null,peers:null,publishedAt:null,categories:[]};

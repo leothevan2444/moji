@@ -1,6 +1,10 @@
 import { expect } from "@playwright/test";
 import { test, torrentSearchSnapshot, searchCandidate } from "./fixtures";
-const url = "/discover?source=indexers&q=MOJI-102&run=search-one&fastRules=1&fileRules=1";
+const url = "/discover?source=indexers&q=MOJI-102&run=search-one";
+const film={endpoint:"https://metadata.example/graphql",sceneId:"preview-film",code:"MOJI-102",title:"Preview target film",date:"2026-01-01",studio:"Synthetic",performers:[],imageUrl:"",url:"",confirmationDigest:"preview-digest"};
+test.use({graphqlOverrides:{taskFilmSources:()=>[{name:"Synthetic",endpoint:film.endpoint}],taskFilmCandidates:()=>[film],taskFilm:()=>film,createFilmTask:()=>({id:"queued-candidate",code:film.code,stage:"DOWNLOADING",stageStatus:"PENDING"})}});
+async function chooseTarget(page:import("@playwright/test").Page){await page.getByRole("button",{name:"Choose a film to preview rules",exact:true}).click();await page.getByRole("button",{name:"MOJI-102 · Preview target film",exact:true}).click();}
+
 
 test("refresh restores a run without starting or inspecting again", async ({page})=>{
  const operations:string[]=[];page.on("request",request=>{if(request.url().endsWith("/graphql")&&request.method()==="POST")operations.push(request.postDataJSON().operationName)});
@@ -18,10 +22,10 @@ test("site scope requires an explicit search and admission persists its run URL"
 });
 
 test.describe("empty rule preview",()=>{
- test.use({graphqlOverrides:{previewTorrentSelection:{searchId:"search-one",searchRevision:1,total:0,offset:0,limit:10,candidates:[],meta:{appliedFastRules:true,appliedFileRules:true,inspectedCount:1,inspectableCount:1,inspectionCandidateLimit:5}}}});
+ test.use({graphqlOverrides:{taskFilmCandidates:()=>[film],taskFilm:()=>film,previewTorrentSelection:{searchId:"search-one",searchRevision:1,state:"COMPLETED",evaluations:[],total:0,offset:0,limit:10,candidates:[],meta:{partial:false,inspectedCount:1,inspectionCandidateLimit:5}}}});
  test("empty filtered results never fall back to unfiltered candidates",async({page})=>{
   await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto(url);await expect(page.locator(".candidate-card--indexer")).toHaveCount(1);
-  await page.getByRole("button",{name:"Apply preview",exact:true}).click();await expect(page.getByText("No results match the current rules.")).toBeVisible();await expect(page.locator(".candidate-card--indexer")).toHaveCount(0);
+  await chooseTarget(page);await page.getByRole("button",{name:"Preview selection",exact:true}).click();await expect(page.getByText("No results match the current rules.")).toBeVisible();await expect(page.locator(".candidate-card--indexer")).toHaveCount(0);
   await expect(page.getByText("Inspected 1; this request allows up to 5")).toBeVisible();await page.getByRole("button",{name:"Clear preview",exact:true}).click();await expect(page.locator(".candidate-card--indexer")).toHaveCount(1);
  });
 });
@@ -36,10 +40,13 @@ test.describe("durable cancellation",()=>{
  });
 });
 
-test("candidate admission sends code and server identities only",async({page})=>{
- const queued:unknown[]=[];page.on("request",request=>{if(request.url().endsWith("/graphql")&&request.method()==="POST"){const body=request.postDataJSON();if(body.operationName==="QueueTorrentCandidate")queued.push(body.variables.input)}});
- await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto(url);await page.locator(".candidate-card--indexer").getByRole("button",{name:"Create task",exact:true}).click();await page.getByRole("textbox",{name:"Code",exact:true}).fill("MOJI-102");await page.getByRole("button",{name:"Confirm creation",exact:true}).click();await expect(page).toHaveURL(/tasks\/queued-candidate/);
- expect(queued).toEqual([{candidateId:"candidate-one",searchId:"search-one",code:"MOJI-102"}]);
+test("candidate admission sends confirmed film and server identities only",async({page})=>{
+ const queued:unknown[]=[];page.on("request",request=>{if(request.url().endsWith("/graphql")&&request.method()==="POST"){const body=request.postDataJSON();if(body.operationName==="CreateFilmTask")queued.push(body.variables.input)}});
+ await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto(url);
+ await page.locator(".candidate-card--indexer").getByRole("button",{name:"Create task",exact:true}).click();
+ const dialog=page.getByRole("dialog",{name:"Confirm film",exact:true});await dialog.getByRole("button",{name:/MOJI-102/}).click();await dialog.getByRole("checkbox").check();
+ await dialog.getByRole("button",{name:"Create task",exact:true}).click();await expect(page).toHaveURL(/tasks\/queued-candidate/);
+ expect(queued).toHaveLength(1);expect(queued[0]).toMatchObject({endpoint:film.endpoint,sceneId:film.sceneId,confirmationDigest:film.confirmationDigest,candidateId:"candidate-one",searchId:"search-one",resourceConfirmed:true});expect(queued[0]).not.toHaveProperty("code");
 });
 
 test("an expired URL reports expiry without rerunning the search",async({page})=>{
@@ -63,10 +70,10 @@ for(const locale of ["en","zh-CN","ar-XB"] as const){
  });
 
 test.describe("preview pagination",()=>{
- test.use({graphqlOverrides:{torrentSearch:({id,offset,limit}:{id:string;offset:number;limit:number})=>({...torrentSearchSnapshot,id,offset,limit,total:21,candidates:Array.from({length:21},(_,i)=>({...searchCandidate,id:`candidate-${i}`,title:`MOJI-102 page-${i}`})).slice(offset,offset+limit)}),previewTorrentSelection:({input}:{input:{searchId:string;offset:number;limit:number}})=>({searchId:input.searchId,searchRevision:1,total:1,offset:input.offset,limit:input.limit,candidates:[{...searchCandidate,title:"MOJI-102 globally locked"}],meta:{appliedFastRules:true,appliedFileRules:false,inspectedCount:0,inspectableCount:0,inspectionCandidateLimit:0}})}});
+ test.use({graphqlOverrides:{taskFilmCandidates:()=>[film],taskFilm:()=>film,torrentSearch:({id,offset,limit}:{id:string;offset:number;limit:number})=>({...torrentSearchSnapshot,id,offset,limit,total:21,candidates:Array.from({length:21},(_,i)=>({...searchCandidate,id:`candidate-${i}`,title:`MOJI-102 page-${i}`})).slice(offset,offset+limit)}),previewTorrentSelection:({input}:{input:{searchId:string;offset:number;limit:number}})=>({searchId:input.searchId,searchRevision:1,state:"COMPLETED",evaluations:[],total:1,offset:input.offset,limit:input.limit,candidates:[{...searchCandidate,title:"MOJI-102 globally preferred"}],meta:{partial:false,inspectedCount:0,inspectionCandidateLimit:0}})}});
  test("rules start on page one after evaluating the whole run",async({page})=>{
   await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto(url+"&page=2");await expect(page.locator(".candidate-card--indexer")).toHaveCount(10);await expect(page.locator(".candidate-card--indexer").first()).toContainText("page-10");
-  await page.getByRole("button",{name:"Apply preview",exact:true}).click();await expect(page.locator(".candidate-card--indexer")).toHaveCount(1);await expect(page.locator(".candidate-card--indexer")).toContainText("globally locked");await expect.poll(()=>new URL(page.url()).searchParams.get("page")).toBeNull();
+  await chooseTarget(page);await page.getByRole("button",{name:"Preview selection",exact:true}).click();await expect(page.locator(".candidate-card--indexer")).toHaveCount(1);await expect(page.locator(".candidate-card--indexer")).toContainText("globally preferred");await expect.poll(()=>new URL(page.url()).searchParams.get("page")).toBeNull();
  });
  test("out-of-range saved pages return to the available last page",async({page})=>{
   await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto(url+"&page=99");await expect(page.locator(".candidate-card--indexer")).toHaveCount(1);await expect(page.locator(".candidate-card--indexer")).toContainText("page-20");await expect.poll(()=>new URL(page.url()).searchParams.get("page")).toBe("3");

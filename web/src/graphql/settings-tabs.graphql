@@ -43,22 +43,7 @@ query SettingsPolicySection {
       sourcingRetryIntervalHours
       stashBoxEndpoints
       subscriptionReleasePolicy { soloBehavior groupBehavior compilationBehavior vrBehavior maxGroupPerformerCount releaseDateRange }
-      torrentSelection {
-        enabled
-        inspectionCandidateLimit
-        fastRules {
-          type enabled publishDate { direction } seeders { direction } size { direction }
-          indexerPreference { trackerIds }
-          titleMatch { clauses { pattern patternMode effect } }
-          torrentFileNameMatch { clauses { pattern patternMode effect } }
-        }
-        torrentRules {
-          type enabled publishDate { direction } seeders { direction } size { direction }
-          indexerPreference { trackerIds }
-          titleMatch { clauses { pattern patternMode effect } }
-          torrentFileNameMatch { clauses { pattern patternMode effect } }
-        }
-      }
+      torrentSelection { version activeGroup rules { id name conditions { scope value minimum maximum } } groups { id name fallback require exclude tiers { id name rules } } }
     }
   }
   settingsStatus {

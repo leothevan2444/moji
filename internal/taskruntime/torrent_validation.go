@@ -7,11 +7,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/film"
-	"github.com/leothevan2444/moji/internal/indexer"
-	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/mediafiles"
+	"github.com/leothevan2444/moji/internal/torrentmeta"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
 
@@ -91,7 +89,11 @@ func (s *Service) prepareTorrentWithMetadata(ctx context.Context, code string, c
 		return preparedTorrent{}, candidateError(TaskStageErrorTorrentMetadata, "invalid torrent URL")
 	}
 	if strings.EqualFold(parsed.Scheme, "magnet") {
-		if !matched || normalizeMagnetURI(torrentURL) == "" {
+		_, magnetErr := torrentmeta.ParseMagnet(torrentURL)
+		if normalizeMagnetURI(torrentURL) == "" || magnetErr != nil {
+			return preparedTorrent{}, candidateError(TaskStageErrorTorrentMetadata, "invalid magnet resource")
+		}
+		if !matched {
 			return preparedTorrent{}, candidateError(TaskStageErrorCandidateUnverified, "unable to verify magnet code from its title or display name")
 		}
 		return preparedTorrent{candidate: candidate, options: qbittorrent.AddTorrentOptions{URLs: []string{torrentURL}}}, nil
@@ -100,9 +102,9 @@ func (s *Service) prepareTorrentWithMetadata(ctx context.Context, code string, c
 		return preparedTorrent{}, candidateError(TaskStageErrorTorrentMetadata, "torrent URL must use HTTP, HTTPS or magnet")
 	}
 	if metadata == nil {
-		s.inspectionCacheMu.Lock()
-		entry, ok := s.inspectionCache[normalizeTorrentInspectionCacheKey(torrentURL, "")]
-		s.inspectionCacheMu.Unlock()
+		s.artifactCacheMu.Lock()
+		entry, ok := s.artifactCache[artifactCacheKey(torrentURL)]
+		s.artifactCacheMu.Unlock()
 		if ok && entry.metadata != nil && entry.expiresAt.After(s.now().UTC()) {
 			metadata = entry.metadata
 		} else {
@@ -156,58 +158,6 @@ func validateTorrentCode(code string, metadata downloadedTorrentMetadata) error 
 		return candidateError(TaskStageErrorCandidateUnverified, "torrent name and video files do not establish the task code")
 	}
 	return nil
-}
-
-func (s *Service) selectVerifiedCandidate(ctx context.Context, selector CandidateSelector, code string, results []indexer.SelectionCandidate, cfg config.CandidateSelectionConfig, taskID string) (indexer.SelectionCandidate, preparedTorrent, error) {
-	remaining := make([]indexer.SelectionCandidate, 0, len(results))
-	var rejected error
-	for _, result := range results {
-		if _, err := validateCodeEvidence(code, result.Title, magnetDisplayName(preferredTorrentURL(result))); err != nil {
-			rejected = err
-			continue
-		}
-		remaining = append(remaining, result)
-	}
-	for len(remaining) > 0 {
-		if err := ctx.Err(); err != nil {
-			return indexer.SelectionCandidate{}, preparedTorrent{}, err
-		}
-		result, err := selector.Select(ctx, code, remaining, cfg)
-		if err != nil {
-			if rejected != nil {
-				err = rejected
-			}
-			return indexer.SelectionCandidate{}, preparedTorrent{}, err
-		}
-		prepared, err := s.prepareTorrent(ctx, code, candidateFromSearchResult(result), preferredTorrentURL(result))
-		if err == nil {
-			identity := torrentIdentityFromCandidate(prepared.candidate, preferredTorrentURL(result))
-			err = s.ensureTaskIdentityAvailable(ctx, taskID, identity)
-			if err == nil {
-				return result, prepared, nil
-			}
-		}
-		if errors.Is(err, indexer.ErrStateUnavailable) {
-			return indexer.SelectionCandidate{}, preparedTorrent{}, err
-		}
-		rejected = err
-		logging.Infof("taskruntime: rejected candidate for code %s: %v", code, err)
-		removed := false
-		for i, candidate := range remaining {
-			if candidate.Title == result.Title && preferredTorrentURL(candidate) == preferredTorrentURL(result) {
-				remaining = append(remaining[:i], remaining[i+1:]...)
-				removed = true
-				break
-			}
-		}
-		if !removed {
-			break
-		}
-	}
-	if rejected == nil {
-		rejected = errors.New("taskruntime: no downloadable torrent candidate found")
-	}
-	return indexer.SelectionCandidate{}, preparedTorrent{}, rejected
 }
 
 func (s *Service) blockSourcingValidation(ctx context.Context, task *Task, err error) error {

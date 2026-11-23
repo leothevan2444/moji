@@ -120,7 +120,7 @@ func TestRestartSourcingDeletesArtifactsAndReusesOriginalTask(t *testing.T) {
 	if len(qbt.deleteHashes) != 1 {
 		t.Fatal("duplicate restart repeated downloader deletion")
 	}
-	search := &queuedTracker{results: []indexer.SelectionCandidate{{Title: "SNOS-184 new", MagnetURI: "magnet:?xt=urn:btih:new184&dn=SNOS-184", Seeders: 10}}}
+	search := &queuedTracker{results: []indexer.SelectionCandidate{{Title: "SNOS-184 new", MagnetURI: "magnet:?xt=urn:btih:C0B76F2134FA27FC98B7663042389F234F850725&dn=SNOS-184", Seeders: 10}}}
 	worker, err := NewService(search, qbt, store)
 	if err != nil {
 		t.Fatal(err)
@@ -257,7 +257,7 @@ func TestRestartBeforeFirstDownloadPollRemovesValidatedTorrentIdentity(t *testin
 	qbt, store := &fakeTorrentAdder{}, NewMemoryTaskStore()
 	now := time.Now().UTC()
 	task := &Task{ID: "new-download", Code: "SNOS-184", Stage: TaskStageDownloading, StageStatus: TaskStageStatusRunning,
-		TorrentIdentityHash: "VALIDATED-HASH", TorrentURL: "magnet:?xt=urn:btih:VALIDATED-HASH", CreatedAt: now, UpdatedAt: now}
+		TorrentIdentityHash: "AFCEA9F1DCF016458F16AF62462CEE91F45B0651", TorrentURL: "magnet:?xt=urn:btih:AFCEA9F1DCF016458F16AF62462CEE91F45B0651", CreatedAt: now, UpdatedAt: now}
 	if err := store.Create(ctx, task); err != nil {
 		t.Fatal(err)
 	}
@@ -265,7 +265,7 @@ func TestRestartBeforeFirstDownloadPollRemovesValidatedTorrentIdentity(t *testin
 	if _, err := s.RestartTaskSourcing(ctx, task.ID, nil); err != nil {
 		t.Fatal(err)
 	}
-	if len(qbt.deleteHashes) != 1 || qbt.deleteHashes[0] != "VALIDATED-HASH" || !qbt.deleteFiles {
+	if len(qbt.deleteHashes) != 1 || qbt.deleteHashes[0] != task.TorrentIdentityHash || !qbt.deleteFiles {
 		t.Fatal("unpolled torrent and downloaded files must be removed")
 	}
 }

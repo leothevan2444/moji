@@ -64,6 +64,7 @@ func (s *Service) QueueIndexedResourceContext(ctx context.Context, req QueueInde
 	}
 	now := s.now().UTC()
 	task := &Task{Film: req.Film, SourcingMode: "USER_SELECTED", ResourceConfirmed: true, ID: s.newID(), Code: code, Source: TaskSourceSearch, Candidate: candidate, TorrentURL: "indexer-resource:" + record.Ref.ID, SelectedResourceID: record.Ref.ID, IndexerResource: &record, SavePath: req.SavePath, Category: req.Category, Tags: req.Tags, SourcingRequestJSON: string(request), CreatedAt: now, UpdatedAt: now}
+	task.SelectionReportJSON = s.manualSelectionReport(task)
 	setTaskStage(task, TaskStageDownloading, TaskStageStatusPending)
 	if err = creator.CreateIndexedTask(ctx, task); err != nil {
 		return nil, err
@@ -187,6 +188,8 @@ func (s *Service) ResolveIndexedResourceContext(ctx context.Context, id string, 
 	}
 	release := indexer.Release{Title: record.Ref.Locator.Title, InstanceID: record.Instance.ID, InstanceName: record.Instance.Name, Kind: record.Instance.Kind, InfoHash: record.Ref.Locator.InfoHash, Resource: record.Ref}
 	next.Candidate = candidateFromSearchResult(indexer.SelectionFromRelease(release))
+	next.SelectionReportJSON = ""
+	next.SelectionReportJSON = s.manualSelectionReport(next)
 	next.SelectedResourceID = record.Ref.ID
 	next.IndexerResource = &record
 	next.TorrentURL = "indexer-resource:" + record.Ref.ID

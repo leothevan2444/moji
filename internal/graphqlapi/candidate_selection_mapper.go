@@ -1,78 +1,38 @@
 package graphqlapi
 
-import "github.com/leothevan2444/moji/internal/graphqlapi/model"
+import (
+	"github.com/leothevan2444/moji/internal/graphqlapi/model"
+	"github.com/leothevan2444/moji/internal/resourceselection"
+)
 
 func torrentSelectionSettingsFromModel(input *model.TorrentSelectionSettingsInput) TorrentSelectionSettingsSnapshot {
 	if input == nil {
 		return TorrentSelectionSettingsSnapshot{}
 	}
-	fastRules := torrentSelectionRulesFromModel(input.FastRules)
-	torrentRules := torrentSelectionRulesFromModel(input.TorrentRules)
-	return TorrentSelectionSettingsSnapshot{
-		Enabled:                  input.Enabled,
-		InspectionCandidateLimit: input.InspectionCandidateLimit,
-		FastRules:                fastRules,
-		TorrentRules:             torrentRules,
-	}
-}
-
-func torrentSelectionRulesFromModel(rules []*model.TorrentSelectionRuleInput) []TorrentSelectionRuleSnapshot {
-	out := make([]TorrentSelectionRuleSnapshot, 0, len(rules))
-	for _, rule := range rules {
-		if rule == nil {
+	p := resourceselection.Policy{Version: input.Version, ActiveGroup: input.ActiveGroup, Rules: []resourceselection.Rule{}, Groups: []resourceselection.Group{}}
+	for _, r := range input.Rules {
+		if r == nil {
 			continue
 		}
-		item := TorrentSelectionRuleSnapshot{
-			Type:    string(rule.Type),
-			Enabled: rule.Enabled,
-		}
-		if rule.IndexerPreference != nil {
-			item.IndexerPreference = IndexerPreferenceRuleSnapshot{
-				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIds...),
+		v := resourceselection.Rule{ID: r.ID, Name: r.Name, Conditions: []resourceselection.Condition{}}
+		for _, c := range r.Conditions {
+			if c != nil {
+				v.Conditions = append(v.Conditions, resourceselection.Condition{Scope: c.Scope, Value: c.Value, Minimum: c.Minimum, Maximum: c.Maximum})
 			}
 		}
-		if rule.TitleMatch != nil {
-			item.TitleMatch.Clauses = make([]TitleMatchClauseSnapshot, 0, len(rule.TitleMatch.Clauses))
-			for _, clause := range rule.TitleMatch.Clauses {
-				if clause == nil {
-					continue
-				}
-				item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, TitleMatchClauseSnapshot{
-					Pattern:     clause.Pattern,
-					PatternMode: string(clause.PatternMode),
-					Effect:      string(clause.Effect),
-				})
-			}
-		}
-		if rule.PublishDate != nil {
-			item.PublishDate = DirectionRuleSnapshot{
-				Direction: string(rule.PublishDate.Direction),
-			}
-		}
-		if rule.Seeders != nil {
-			item.Seeders = DirectionRuleSnapshot{
-				Direction: string(rule.Seeders.Direction),
-			}
-		}
-		if rule.Size != nil {
-			item.Size = DirectionRuleSnapshot{
-				Direction: string(rule.Size.Direction),
-			}
-		}
-		if rule.TorrentFileNameMatch != nil {
-			item.TorrentFileNameMatch.Clauses = make([]TorrentFileNameMatchClauseSnapshot, 0, len(rule.TorrentFileNameMatch.Clauses))
-			for _, clause := range rule.TorrentFileNameMatch.Clauses {
-				if clause == nil {
-					continue
-				}
-				item.TorrentFileNameMatch.Clauses = append(item.TorrentFileNameMatch.Clauses, TorrentFileNameMatchClauseSnapshot{
-					Pattern:     clause.Pattern,
-					PatternMode: string(clause.PatternMode),
-					Effect:      string(clause.Effect),
-				})
-			}
-		}
-		out = append(out, item)
+		p.Rules = append(p.Rules, v)
 	}
-	return out
+	for _, g := range input.Groups {
+		if g == nil {
+			continue
+		}
+		v := resourceselection.Group{ID: g.ID, Name: g.Name, Fallback: g.Fallback, Require: g.Require, Exclude: g.Exclude, Tiers: []resourceselection.Tier{}}
+		for _, t := range g.Tiers {
+			if t != nil {
+				v.Tiers = append(v.Tiers, resourceselection.Tier{ID: t.ID, Name: t.Name, Rules: append([]string{}, t.Rules...)})
+			}
+		}
+		p.Groups = append(p.Groups, v)
+	}
+	return p
 }

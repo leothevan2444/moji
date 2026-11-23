@@ -126,7 +126,6 @@ func validatePatch(patch map[string]any, cfg *Config) error {
 	}{
 		{[]string{"tasks", "sourcing_retry_interval_hours"}, 1, 168},
 		{[]string{"tasks", "subscription_release_policy", "max_group_performer_count"}, 1, math.MaxInt},
-		{[]string{"tasks", "torrent_selection", "inspection_candidate_limit"}, 1, math.MaxInt},
 		{[]string{"stash", "data_cache", "ttl_hours"}, 12, 360},
 		{[]string{"system", "image_cache", "max_size_mb"}, 64, 20480},
 		{[]string{"system", "image_cache", "retention_days"}, 1, 365},

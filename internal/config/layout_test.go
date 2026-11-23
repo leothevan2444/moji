@@ -58,18 +58,7 @@ ingest:
 automation:
   task_processing_frequency: LOW
   selected_stash_box_endpoints: [second, first]
-  torrent_selection:
-    enabled: true
-    inspection_candidate_limit: 3
-    fast_rules:
-      indexer_preference: {enabled: true, tracker_ids: [b, a]}
-      title_match:
-        enabled: true
-        clauses: [{pattern: sample, pattern_mode: PLAIN, effect: AVOID}]
-    torrent_rules:
-      torrent_file_name_match:
-        enabled: true
-        clauses: [{pattern: movie, pattern_mode: PLAIN, effect: LOCK}]
+
 system: {developer_mode: true, stash_box_data_cache: {ttl_hours: 36, max_size_mb: 99}}
 logging: {level: debug, file_path: /tmp/moji.log, max_entries: 88}
 custom: {untouched: true}
@@ -89,7 +78,7 @@ custom: {untouched: true}
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"config_version: 4", "indexers:", "query_order:", "downloader:", "metadata_priority:", "tasks:", "DEMOTE", "LOCK", "logging:", "untouched: true"} {
+	for _, expected := range []string{"config_version: 4", "indexers:", "query_order:", "downloader:", "metadata_priority:", "tasks:", "logging:", "untouched: true"} {
 		if !strings.Contains(string(data), expected) {
 			t.Fatalf("missing canonical field %s", expected)
 		}
@@ -112,7 +101,7 @@ custom: {untouched: true}
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Automation.StashBoxEndpoints[0] != "third" || got.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs[0] != "b" || got.Automation.TaskProcessingFrequency != "LOW" {
+	if got.Automation.StashBoxEndpoints[0] != "third" || got.Automation.TaskProcessingFrequency != "LOW" {
 		t.Fatal("section save overwrote another section")
 	}
 	// Subsequent writes must also preserve logging and unrelated fields.
@@ -151,7 +140,7 @@ func TestSectionFailureAndSystemSavePreserveCache(t *testing.T) {
 	}
 	before, _ := os.ReadFile(path)
 	bad := DefaultTorrentSelectionConfig()
-	bad.FastRules.TitleMatch = TitleMatchRuleSettings{Enabled: true, Clauses: []TitleMatchClause{{Pattern: "[", PatternMode: TitleMatchPatternModeRegex, Effect: TitleMatchEffectExclude}}}
+	bad.ActiveGroup = "missing"
 	if _, err := store.UpdateAutomationSection("RESOURCES", AutomationConfig{TorrentSelection: bad}); err == nil {
 		t.Fatal("accepted invalid hard rule regex")
 	}
@@ -272,5 +261,81 @@ func TestRetiredSchedulingAndTimezoneFieldsRequireManualCleanup(t *testing.T) {
 		if err := yaml.Unmarshal([]byte(raw), &cfg); err == nil {
 			t.Fatal("obsolete or invalid setting silently accepted")
 		}
+	}
+}
+
+func TestResourcePolicyRejectsRemovedAndUnknownFields(t *testing.T) {
+	for _, content := range []string{
+		"tasks:\n  torrent_selection:\n    version: 4\n    rules: [{id: old, name: Old, mode: ANY, conditions: [{scope: TITLE, value: test}]}]\n",
+		"tasks:\n  torrent_selection:\n    version: 4\n    rules: [{id: old, name: Old, conditions: [{scope: TITLE, value: test, operator: CONTAINS}]}]\n",
+		"tasks:\n  torrent_selection:\n    version: 4\n    rules: [{id: old, name: Old, scope: TITLE, value: test, conditions: []}]\n",
+		"tasks:\n  torrent_selection:\n    version: 4\n    rules: [{id: old, name: Old, scope: TITLE, value: test, mode: ALL}]\n",
+		"tasks:\n  torrent_selection:\n    version: 1\n    original: true\n",
+		"tasks:\n  torrent_selection:\n    version: 2\n    rules:\n      - id: test\n        name: Test\n        mode: ALL\n        action: EXCLUDE\n        conditions: []\n",
+	} {
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		if err := os.WriteFile(path, []byte(content), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := LoadFromPath(path); err == nil {
+			t.Fatal("silently discarded removed fields")
+		}
+	}
+}
+
+func TestLegacyDefaultGroupKeyRequiresExplicitRename(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("tasks:\n  torrent_selection:\n    version: 2\n    default_group: old\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadFromPath(path); err == nil {
+		t.Fatal("legacy config key silently accepted")
+	}
+}
+
+func TestGlobalRuleReferencesRejectLegacyRelationsInYAML(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	raw := `tasks:
+  torrent_selection:
+    version: 2
+    active_group: main
+    groups:
+      - id: main
+        name: Main
+        require:
+          - rule_id: example
+            negate: true
+        exclude: []
+        tiers: []
+`
+	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadFromPath(path); err == nil {
+		t.Fatal("global relation silently accepted in YAML")
+	}
+}
+
+func TestFixedGroupsRejectRetiredCombinationFields(t *testing.T) {
+	for _, field := range []string{"require_mode: ANY", "exclude_mode: ANY", "tiers: [{id: old, name: Old, mode: ALL, rules: []}]", "tiers: [{id: old, name: Old, match_all: true, rules: []}]"} {
+		raw := "tasks:\n  torrent_selection:\n    version: 5\n    groups:\n      - id: old\n        name: Old\n        fallback: true\n        " + field + "\n"
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := LoadFromPath(path); err == nil || !strings.Contains(err.Error(), "not found in type") {
+			t.Fatalf("retired field was not strictly rejected: %s %v", field, err)
+		}
+	}
+}
+
+func TestPositiveTierIDsRejectRemovedRelationsInYAML(t *testing.T) {
+	raw := "config_version: 4\ntasks:\n  torrent_selection:\n    version: 7\n    groups:\n      - id: main\n        name: Main\n        tiers:\n          - id: first\n            name: First\n            rules: [{rule_id: label, negate: false}]\n"
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadFromPath(path); err == nil || !strings.Contains(err.Error(), "cannot unmarshal") {
+		t.Fatal("legacy tier relation silently accepted", err)
 	}
 }

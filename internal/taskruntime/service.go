@@ -21,6 +21,7 @@ import (
 	"github.com/leothevan2444/moji/internal/indexer"
 	"github.com/leothevan2444/moji/internal/logging"
 	"github.com/leothevan2444/moji/internal/mediafiles"
+	"github.com/leothevan2444/moji/internal/resourceselection"
 	"github.com/leothevan2444/moji/internal/stashsync"
 	"github.com/leothevan2444/moji/internal/tracker"
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
@@ -67,6 +68,7 @@ const (
 )
 
 type Task struct {
+	SelectionReportJSON     string
 	Film                    *film.Snapshot
 	SourcingMode            string
 	ResourceConfirmed       bool
@@ -199,7 +201,6 @@ type Service struct {
 	store              TaskStore
 	httpClient         *http.Client
 	libraryCodeChecker LibraryCodeChecker
-	selector           CandidateSelector
 	fileOps            FileOperator
 	candidateSelection func() config.CandidateSelectionConfig
 	taskDeletePolicy   func() config.TaskDeletePolicy
@@ -207,8 +208,8 @@ type Service struct {
 	newID              func() string
 	metadataHostsMu    sync.Mutex
 	metadataHosts      map[string]*torrentMetadataHost
-	inspectionCacheMu  sync.Mutex
-	inspectionCache    map[string]cachedTorrentInspection
+	artifactCacheMu    sync.Mutex
+	artifactCache      map[string]cachedArtifact
 	taskLocksMu        sync.Mutex
 	taskLocks          map[string]*taskOperationLock
 }
@@ -242,40 +243,25 @@ type FileOperator interface {
 	Transfer(ctx context.Context, sourcePath string, action stashsync.TransferAction, targetPath string) error
 }
 
-type CandidateSelector interface {
-	Select(ctx context.Context, query string, results []indexer.SelectionCandidate, cfg config.CandidateSelectionConfig) (indexer.SelectionCandidate, error)
-	Preview(ctx context.Context, query string, results []indexer.SelectionCandidate, cfg config.CandidateSelectionConfig, applyFastRules bool, applyFileRules bool) (CandidateSelectionPreview, error)
-}
-
 type CandidateSelectionPreview struct {
-	Results []indexer.SelectionCandidate
-	Meta    CandidateSelectionPreviewMeta
-}
-
-type CandidateSelectionPreviewMeta struct {
-	AppliedFastRules         bool
-	AppliedFileRules         bool
-	InspectedCount           int
-	InspectableCount         int
-	InspectionCandidateLimit int
+	VisibleIDs  []string
+	Evaluations []resourceselection.Evaluation
+	Results     []indexer.SelectionCandidate
 }
 
 type PreviewTorrentSelectionRequest struct {
-	Query                    string
-	Results                  []indexer.SelectionCandidate
-	ApplyFastRules           bool
-	ApplyFileRules           bool
-	InspectionCandidateLimit int
+	Policy  *resourceselection.Policy
+	Query   string
+	Results []indexer.SelectionCandidate
 }
 
-type cachedTorrentInspection struct {
-	inspection torrentInspection
-	metadata   *downloadedTorrentMetadata
-	magnet     string
-	expiresAt  time.Time
+type cachedArtifact struct {
+	metadata  *downloadedTorrentMetadata
+	magnet    string
+	expiresAt time.Time
 }
 
-const torrentInspectionCacheTTL = 20 * time.Minute
+const artifactCacheTTL = 20 * time.Minute
 
 func WithClock(now func() time.Time) Option {
 	return func(s *Service) {
@@ -319,10 +305,10 @@ func NewService(tr tracker.Tracker, qbt TorrentClient, store TaskStore, options 
 		taskDeletePolicy: func() config.TaskDeletePolicy {
 			return config.TaskDeletePolicyKeepOnly
 		},
-		now:             time.Now,
-		newID:           newTaskID,
-		inspectionCache: make(map[string]cachedTorrentInspection),
-		taskLocks:       make(map[string]*taskOperationLock),
+		now:           time.Now,
+		newID:         newTaskID,
+		artifactCache: make(map[string]cachedArtifact),
+		taskLocks:     make(map[string]*taskOperationLock),
 	}
 	for _, option := range options {
 		option(s)
@@ -337,14 +323,6 @@ func WithCandidateSelectionProvider(provider func() config.CandidateSelectionCon
 	return func(s *Service) {
 		if provider != nil {
 			s.candidateSelection = provider
-		}
-	}
-}
-
-func WithCandidateSelector(selector CandidateSelector) Option {
-	return func(s *Service) {
-		if selector != nil {
-			s.selector = selector
 		}
 	}
 }
@@ -374,36 +352,20 @@ func WithTaskDeletePolicyProvider(provider func() config.TaskDeletePolicy) Optio
 }
 
 func (s *Service) PreviewTorrentSelectionContext(ctx context.Context, req PreviewTorrentSelectionRequest) (*CandidateSelectionPreview, error) {
-	query := strings.TrimSpace(req.Query)
-	if query == "" {
-		return nil, errors.New("taskruntime: query is required")
+	if strings.TrimSpace(req.Query) == "" {
+		return nil, errors.New("target film code required")
 	}
-	if !req.ApplyFastRules && !req.ApplyFileRules {
-		return &CandidateSelectionPreview{
-			Results: append([]indexer.SelectionCandidate(nil), req.Results...),
-		}, nil
-	}
-
-	selectionConfig := config.DefaultCandidateSelectionConfig()
+	cfg := config.DefaultCandidateSelectionConfig()
 	if s.candidateSelection != nil {
-		selectionConfig = s.candidateSelection().Effective()
+		cfg = s.candidateSelection().Effective()
 	}
-	if req.InspectionCandidateLimit > 0 {
-		selectionConfig.InspectionCandidateLimit = req.InspectionCandidateLimit
+	if req.Policy != nil {
+		cfg = req.Policy.Effective()
 	}
 
-	selector := s.selector
-	if selector == nil {
-		selector = defaultCandidateSelector{inspectTorrent: s.inspectCurrentSearchResultTorrent}
-	}
-	preview, err := selector.Preview(ctx, query, req.Results, selectionConfig, req.ApplyFastRules, req.ApplyFileRules)
-	if err != nil {
-		return nil, err
-	}
-	if preview.Meta.AppliedFileRules {
-		preview.Meta.InspectionCandidateLimit = config.NormalizeTorrentInspectionCandidateLimit(selectionConfig.InspectionCandidateLimit)
-	}
-	return &preview, nil
+	selector := defaultCandidateSelector{}
+	out, err := selector.Preview(ctx, req.Query, req.Results, cfg)
+	return &out, err
 }
 
 func (s *Service) FindTask(ctx context.Context, id string) (*Task, error) {
@@ -591,6 +553,8 @@ func (s *Service) ResolveBlockedSourcingTask(ctx context.Context, id string, req
 	next.SourcingNextCheckAt = nil
 	setTaskStage(next, TaskStageSourcing, TaskStageStatusRunning)
 	next.Candidate = candidate
+	next.SelectionReportJSON = ""
+	next.SelectionReportJSON = s.manualSelectionReport(next)
 	next.TorrentURL = torrentURL
 	next.TorrentIdentityHash = identity.InfoHash
 	next.TorrentIdentityMagnet = identity.MagnetURI
@@ -870,68 +834,51 @@ func (s *Service) runSourcingFlow(ctx context.Context, task *Task, req DownloadR
 	if s.candidateSelection != nil {
 		selectionConfig = s.candidateSelection().Effective()
 	}
-	selector := s.selector
-	if selector == nil {
-		selector = defaultCandidateSelector{inspectTorrent: s.inspectSearchResultTorrent}
-	}
+	round := newSelectionRound(s.now, code, selectionConfig)
+	searchCtx, cancelSearch := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancelSearch()
+	accept := func(rows []indexer.SelectionCandidate) (bool, error) { return round.add(searchCtx, rows) }
 	if s.indexers != nil {
-		accepted := false
-		var selectionErr error
-		_, err = s.indexers.SearchSequential(ctx, indexer.Query{Keywords: code, InstanceIDs: req.Trackers, Categories: req.Categories, Limit: req.Limit}, func(siteCtx context.Context, batch indexer.Batch) (bool, error) {
+		report, searchErr := s.indexers.SearchSequential(searchCtx, indexer.Query{Keywords: code, InstanceIDs: req.Trackers, Categories: req.Categories, Limit: func() int {
+			if req.Limit > 0 {
+				return minInt(req.Limit, 100)
+			}
+			return 100
+		}()}, func(_ context.Context, batch indexer.Batch) (bool, error) {
 			rows := make([]indexer.SelectionCandidate, 0, len(batch.Releases))
 			for _, release := range batch.Releases {
 				rows = append(rows, indexer.SelectionFromRelease(release))
 			}
-			result, prepared, selectionErr = s.selectVerifiedCandidate(siteCtx, selector, code, rows, selectionConfig, task.ID)
-			if errors.Is(selectionErr, indexer.ErrStateUnavailable) {
-				return false, selectionErr
-			}
-			if ctx.Err() != nil {
-				return false, ctx.Err()
-			}
-			accepted = selectionErr == nil
-			return accepted, nil
+			return accept(rows)
 		})
-		if err == nil && !accepted {
-			err = selectionErr
-			if err == nil {
-				err = errors.New("taskruntime: no downloadable torrent candidate found")
-			}
-		}
+		round.report.Sites = report.Sites
+		round.report.Partial = round.report.Partial || report.Partial
+		err = searchErr
 	} else if sequential, ok := s.tracker.(tracker.SequentialSearcher); ok {
-		var selectionErr error
-		accepted := false
-		err = sequential.SearchSequential(ctx, code, func(batch []indexer.SelectionCandidate) (bool, error) {
-			if len(batch) == 0 {
-				return false, nil
-			}
-			result, prepared, selectionErr = s.selectVerifiedCandidate(ctx, selector, code, batch, selectionConfig, task.ID)
-			if ctx.Err() != nil {
-				return false, ctx.Err()
-			}
-			accepted = selectionErr == nil
-			return accepted, nil
-		}, searchOptions...)
-		if err == nil && !accepted {
-			err = selectionErr
-			if err == nil {
-				err = errors.New("taskruntime: no downloadable torrent candidate found")
-			}
-		}
+		err = sequential.SearchSequential(searchCtx, code, accept, searchOptions...)
 	} else {
-		var results []indexer.SelectionCandidate
-		results, err = s.tracker.Search(code, searchOptions...)
-		if err == nil && len(results) == 0 {
-			err = errors.New("no candidate found for the current code")
-			if persistErr := s.recordSourcingFailure(ctx, task, TaskStageErrorNoCandidate, err.Error()); persistErr != nil {
-				return task, persistErr
-			}
-			return task, err
-		}
+		var rows []indexer.SelectionCandidate
+		rows, err = s.tracker.Search(code, searchOptions...)
 		if err == nil {
-			result, prepared, err = s.selectVerifiedCandidate(ctx, selector, code, results, selectionConfig, task.ID)
+			_, err = accept(rows)
 		}
 	}
+	if !errors.Is(err, indexer.ErrStateUnavailable) && !errors.Is(err, indexer.ErrInvalidQuery) && !errors.Is(err, indexer.ErrInvalidScope) && ctx.Err() == nil {
+		result, err = round.finish(searchCtx)
+	}
+	if errors.Is(err, indexer.ErrStateUnavailable) {
+		round.report.End = "STATE_UNAVAILABLE"
+	}
+	if errors.Is(err, indexer.ErrInvalidQuery) || errors.Is(err, indexer.ErrInvalidScope) {
+		round.report.End = "INVALID_REQUEST"
+	}
+	task.SelectionReportJSON = round.json()
+	// Selection is complete before acquiring the single chosen resource. Keep the
+	// existing submission validation; this is not a candidate acquisition loop.
+	if err == nil {
+		prepared, err = s.prepareTorrent(ctx, code, candidateFromSearchResult(result), preferredTorrentURL(result))
+	}
+
 	if ctx.Err() != nil && !errors.Is(err, indexer.ErrStateUnavailable) {
 		return task, ctx.Err()
 	}
@@ -1610,4 +1557,11 @@ func (s *Service) WaitBackground() {
 	}
 	s.mediaMu.Unlock()
 	s.mediaWG.Wait()
+}
+
+func (s *Service) ResourceSelectionPolicy() resourceselection.Policy {
+	if s.candidateSelection != nil {
+		return s.candidateSelection().Effective()
+	}
+	return config.DefaultCandidateSelectionConfig()
 }

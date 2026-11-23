@@ -49,7 +49,7 @@ func benchmarkRelationalStore(b *testing.B) *RelationalTaskStore {
 	}); err != nil {
 		b.Fatal(err)
 	}
-	return NewRelationalTaskStore(m.Core, m.Observations)
+	return NewRelationalTaskStore(m.Core, m.Runtime, m.Observations)
 }
 func BenchmarkRelationalEventStats1000Tasks(b *testing.B) {
 	s := benchmarkRelationalStore(b)

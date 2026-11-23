@@ -23,7 +23,7 @@ func TestSpecifiedURLFailurePreservesChoiceAndRetrySkipsSearch(t *testing.T) {
 	if err != nil || blocked.Stage != TaskStageDownloading || blocked.StageStatus != TaskStageStatusBlocked || blocked.TorrentURL != url || blocked.SourcingNextCheckAt != nil {
 		t.Fatalf("explicit resource fell back to automatic sourcing: %+v %v", blocked, err)
 	}
-	torrentResponse(testTorrentFile("user-confirmed-resource", []string{"unknown.mp4"}), 200)(s)
+	torrentResponse(testTorrentFile("SGKI-105B", []string{"unknown.mp4"}), 200)(s)
 	if _, err = s.RetryTask(ctx, task.ID, nil); err != nil {
 		t.Fatal(err)
 	}

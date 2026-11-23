@@ -202,87 +202,15 @@ type JackettSettings {
 }
 
 type TorrentSelectionSettings {
-  enabled: Boolean!
-  inspectionCandidateLimit: Int!
-  fastRules: [TorrentSelectionRule!]!
-  torrentRules: [TorrentSelectionRule!]!
+ version: Int!
+ activeGroup: String!
+ rules: [ResourceRule!]!
+ groups: [ResourceRuleGroup!]!
 }
-
-enum TorrentSelectionRuleType {
-  INDEXER_PREFERENCE
-  TITLE_MATCH
-  PUBLISH_DATE
-  TITLE_SIMILARITY
-  SEEDERS
-  SIZE
-  TORRENT_SINGLE_VIDEO
-  TORRENT_FILE_NAME_MATCH
-}
-
-enum TorrentSelectionDirection {
-  ASC
-  DESC
-}
-
-enum TitleMatchPatternMode {
-  PLAIN
-  REGEX
-}
-
-enum TitleMatchEffect {
-  LOCK
-  EXCLUDE
-  DEMOTE
-  PREFER
-  AVOID
-}
-
-enum TorrentFileMatchEffect {
-  LOCK
-  EXCLUDE
-  DEMOTE
-  PREFER
-  AVOID
-}
-
-type TorrentSelectionRule {
-  type: TorrentSelectionRuleType!
-  enabled: Boolean!
-  indexerPreference: IndexerPreferenceRule!
-  titleMatch: TitleMatchRule!
-  publishDate: DirectionRule!
-  seeders: DirectionRule!
-  size: DirectionRule!
-  torrentFileNameMatch: TorrentFileNameMatchRule!
-}
-
-type DirectionRule {
-  direction: TorrentSelectionDirection!
-}
-
-type IndexerPreferenceRule {
-  trackerIds: [String!]!
-}
-
-type TitleMatchRule {
-  clauses: [TitleMatchClause!]!
-}
-
-type TitleMatchClause {
-  pattern: String!
-  patternMode: TitleMatchPatternMode!
-  effect: TitleMatchEffect!
-}
-
-type TorrentFileNameMatchRule {
-  clauses: [TorrentFileNameMatchClause!]!
-}
-
-type TorrentFileNameMatchClause {
-  pattern: String!
-  patternMode: TitleMatchPatternMode!
-  effect: TorrentFileMatchEffect!
-}
+type ResourceRule { id: ID! name: String! conditions: [ResourceCondition!]! }
+type ResourceCondition { scope: String! value: String! minimum: String! maximum: String! }
+type ResourceRuleGroup { id: ID! name: String! fallback: Boolean! require: [ID!]! exclude: [ID!]! tiers: [ResourceRuleTier!]! }
+type ResourceRuleTier { id: ID! name: String! rules: [ID!]! }
 
 type QBittorrentSettings {
   configured: Boolean!
@@ -439,50 +367,15 @@ input UpdateJackettSettingsInput {
 }
 
 input TorrentSelectionSettingsInput {
-  enabled: Boolean!
-  inspectionCandidateLimit: Int!
-  fastRules: [TorrentSelectionRuleInput!]
-  torrentRules: [TorrentSelectionRuleInput!]
+ version: Int!
+ activeGroup: String!
+ rules: [ResourceRuleInput!]!
+ groups: [ResourceRuleGroupInput!]!
 }
-
-input TorrentSelectionRuleInput {
-  type: TorrentSelectionRuleType!
-  enabled: Boolean!
-  indexerPreference: IndexerPreferenceRuleInput
-  titleMatch: TitleMatchRuleInput
-  publishDate: DirectionRuleInput
-  seeders: DirectionRuleInput
-  size: DirectionRuleInput
-  torrentFileNameMatch: TorrentFileNameMatchRuleInput
-}
-
-input DirectionRuleInput {
-  direction: TorrentSelectionDirection!
-}
-
-input IndexerPreferenceRuleInput {
-  trackerIds: [String!]!
-}
-
-input TitleMatchRuleInput {
-  clauses: [TitleMatchClauseInput!]!
-}
-
-input TitleMatchClauseInput {
-  pattern: String!
-  patternMode: TitleMatchPatternMode!
-  effect: TitleMatchEffect!
-}
-
-input TorrentFileNameMatchRuleInput {
-  clauses: [TorrentFileNameMatchClauseInput!]!
-}
-
-input TorrentFileNameMatchClauseInput {
-  pattern: String!
-  patternMode: TitleMatchPatternMode!
-  effect: TorrentFileMatchEffect!
-}
+input ResourceRuleInput { id: ID! name: String! conditions: [ResourceConditionInput!]! }
+input ResourceConditionInput { scope: String! value: String! minimum: String! maximum: String! }
+input ResourceRuleGroupInput { id: ID! name: String! fallback: Boolean! require: [ID!]! exclude: [ID!]! tiers: [ResourceRuleTierInput!]! }
+input ResourceRuleTierInput { id: ID! name: String! rules: [ID!]! }
 
 input UpdateQBittorrentSettingsInput {
   url: String!
@@ -639,43 +532,10 @@ input ReleasePolicyPatchInput {
 }
 
 input ResourceRulesPatchInput {
-  enabled: Boolean
-  inspection_candidate_limit: Int
-  fast_rule_order: [TorrentSelectionRuleType!]
-  fast_rules: FastRulesPatchInput
-  torrent_rules: FileRulesPatchInput
-}
-
-input FastRulesPatchInput {
-  title_match: TitleRulePatchInput
-  publish_date: DirectionRulePatchInput
-  title_similarity: ToggleRulePatchInput
-  seeders: DirectionRulePatchInput
-  size: DirectionRulePatchInput
-}
-
-input FileRulesPatchInput {
-  torrent_single_video: ToggleRulePatchInput
-  torrent_file_name_match: FileNameRulePatchInput
-}
-
-input TitleRulePatchInput {
-  enabled: Boolean
-  clauses: [TitleClausePatchInput!]
-}
-
-input FileNameRulePatchInput {
-  enabled: Boolean
-  clauses: [FileClausePatchInput!]
-}
-
-input DirectionRulePatchInput {
-  enabled: Boolean
-  direction: TorrentSelectionDirection
-}
-
-input ToggleRulePatchInput {
-  enabled: Boolean
+ version: Int
+ active_group: String
+ rules: [ResourceRuleInput!]
+ groups: [ResourceRuleGroupInput!]
 }
 
 input SystemPatchInput {
@@ -689,16 +549,4 @@ input ImageCachePatchInput {
   enabled: Boolean
   max_size_mb: Int
   retention_days: Int
-}
-
-input TitleClausePatchInput {
-  pattern: String!
-  pattern_mode: TitleMatchPatternMode!
-  effect: TitleMatchEffect!
-}
-
-input FileClausePatchInput {
-  pattern: String!
-  pattern_mode: TitleMatchPatternMode!
-  effect: TorrentFileMatchEffect!
 }

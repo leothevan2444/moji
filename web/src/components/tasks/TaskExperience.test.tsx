@@ -206,6 +206,7 @@ describe("task experience", () => {
     expect(screen.queryByText("/moji/library/movie.mkv")).toBeNull();
     await user.click(within(information).getByRole("button", { name: "Copy Library location" }));
     expect(callbacks.onCopy).toHaveBeenCalledWith(path, "Library location copied");
+    await user.click(torrent.querySelector(".torrent-information summary")!);
     await user.click(within(torrent).getByRole("button", { name: "Copy Content location" }));
     expect(callbacks.onCopy).toHaveBeenCalledWith(download, "Content location copied");
     expect(screen.queryByRole("button", { name: "Sync all task progress" })).toBeNull();

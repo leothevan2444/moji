@@ -1,0 +1,1 @@
+ALTER TABLE task_checkpoints ADD COLUMN selection_report_json TEXT CHECK(selection_report_json IS NULL OR (json_valid(selection_report_json) AND length(CAST(selection_report_json AS BLOB)) <= 262144));

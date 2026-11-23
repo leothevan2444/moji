@@ -23,7 +23,7 @@ func indexedResolutionFixture(t *testing.T) (*storage.Manager, *RelationalTaskSt
 	}
 	t.Cleanup(func() { m.Close() })
 	seedSelectionBundle(t, m)
-	store := NewRelationalTaskStore(m.Core, m.Observations)
+	store := NewRelationalTaskStore(m.Core, m.Runtime, m.Observations)
 	now := time.Now().UTC()
 	task := &Task{ID: "selected-task", Code: "ABCD-123", Source: TaskSourceSubscription, SavePath: "original-save", Category: "original-category", Tags: "original-tags", CreatedAt: now, UpdatedAt: now}
 	blockTask(task, TaskStageErrorNoCandidate, "no candidate", now)

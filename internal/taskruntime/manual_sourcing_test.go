@@ -37,7 +37,7 @@ func TestWaitingTaskAcceptsManualMagnetOrUploadedTorrent(t *testing.T) {
 			body := []byte(testTorrentFile("ofje00657", []string{"OFJE-657.mp4"}))
 			req := ResolveBlockedSourcingRequest{TorrentData: body}
 			if mode == "magnet" {
-				req = ResolveBlockedSourcingRequest{URL: "magnet:?xt=urn:btih:manual657&dn=OFJE-657"}
+				req = ResolveBlockedSourcingRequest{URL: "magnet:?xt=urn:btih:80CBB922CB7388C43B4C65C107D9BCE176D31988&dn=OFJE-657"}
 			}
 			resolved, err := s.ResolveBlockedSourcingTask(ctx, task.ID, req)
 			if err != nil {
@@ -71,7 +71,7 @@ func TestWaitingTaskAcceptsManualMagnetOrUploadedTorrent(t *testing.T) {
 func TestBadManualResourcePreservesWaitingScheduleAndNeverSubmits(t *testing.T) {
 	for _, req := range []ResolveBlockedSourcingRequest{
 		{}, {URL: "magnet:?dn=unknown"}, {TorrentData: []byte("<html>not a torrent</html>")},
-		{URL: "magnet:?xt=urn:btih:both&dn=OFJE-657", TorrentData: []byte("both")},
+		{URL: "magnet:?xt=urn:btih:FC39B18F287D8BBFACEAE020F4A4EB32AC5C1E70&dn=OFJE-657", TorrentData: []byte("both")},
 		{TorrentData: []byte{}}, {TorrentData: make([]byte, MaxTorrentBytes+1)},
 	} {
 		store := NewMemoryTaskStore()

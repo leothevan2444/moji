@@ -16,9 +16,8 @@ func TestSettingsSectionRejectsUnrelatedPayloads(t *testing.T) {
 			t.Fatalf("accepted invalid section payload: %+v", input)
 		}
 	}
-	update, err := settingsSectionInput(model.UpdateSettingsSectionInput{Section: model.SettingsSectionIndexers, QueryOrder: []string{"b", "a"}})
-	if err != nil || update.Section != "INDEXERS" || update.TorrentSelection.FastRules[0].IndexerPreference.TrackerIDs[0] != "b" {
-		t.Fatalf("incorrect site order mapping: %+v %v", update, err)
+	if _, err := settingsSectionInput(model.UpdateSettingsSectionInput{Section: model.SettingsSectionIndexers, QueryOrder: []string{"b", "a"}}); err == nil {
+		t.Fatal("legacy indexer order accepted through resource settings")
 	}
 	if _, err := settingsSectionInput(model.UpdateSettingsSectionInput{Section: model.SettingsSectionMetadata, MetadataPriority: []string{}}); err != nil {
 		t.Fatal("cannot clear priority", err)

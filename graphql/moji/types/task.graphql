@@ -89,7 +89,9 @@ enum TaskSource {
   SUBSCRIPTION
 }
 
+type ResourceSelectionReport { end: String! partial: Boolean! selected: String! evaluations: [ResourceEvaluation!]! }
 type Task {
+ selectionReport: ResourceSelectionReport
   film: TaskFilm!
   sourcingMode: String!
   version: String!

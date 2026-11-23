@@ -23,7 +23,7 @@ func relationalStore(t *testing.T) (*RelationalTaskStore, *storage.Manager) {
 			t.Error(err)
 		}
 	})
-	return NewRelationalTaskStore(m.Core, m.Observations), m
+	return NewRelationalTaskStore(m.Core, m.Runtime, m.Observations), m
 }
 func richRelationalTask() *Task {
 	now := time.Date(2026, 10, 27, 5, 2, 3, 123456789, time.UTC)

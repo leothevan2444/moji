@@ -1,6 +1,9 @@
 package graphqlapi
 
 import (
+	"github.com/leothevan2444/moji/internal/config"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -52,5 +55,56 @@ func TestSettingsPatchTimezone(t *testing.T) {
 	patch := value.(map[string]any)
 	if patch["system"].(map[string]any)["timezone"] != manual {
 		t.Fatalf("timezone lost: %+v", patch)
+	}
+}
+
+func TestResourceGroupPatchPreservesReferenceNamesAndFalse(t *testing.T) {
+	p := settingsPatchValue(reflect.ValueOf(model.ResourceRulesPatchInput{Groups: []*model.ResourceRuleGroupInput{{ID: "main", Name: "Main", Require: []string{}, Exclude: []string{}, Tiers: []*model.ResourceRuleTierInput{{ID: "one", Name: "One", Rules: []string{"shared"}}}}}})).(map[string]any)
+	g := p["groups"].([]any)[0].(map[string]any)
+	tier := g["tiers"].([]any)[0].(map[string]any)
+	ref := tier["rules"].([]any)[0]
+	if g["fallback"] != false || ref != "shared" {
+		t.Fatalf("invalid YAML patch keys: %#v", p)
+	}
+}
+
+func TestGlobalRuleReferencesAreScalarIDsInPatch(t *testing.T) {
+	input := model.ResourceRuleGroupInput{ID: "main", Name: "Main", Require: []string{"wanted"}, Exclude: []string{"unwanted"}, Tiers: []*model.ResourceRuleTierInput{}}
+	value := settingsPatchValue(reflect.ValueOf(input)).(map[string]any)
+	if !reflect.DeepEqual(value["require"], []any{"wanted"}) || !reflect.DeepEqual(value["exclude"], []any{"unwanted"}) {
+		t.Fatalf("global references still carry relations: %#v", value)
+	}
+}
+
+func TestAtomicResourcePatchSurvivesConfigReload(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte("config_version: 4\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store, err := config.OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	version, active := 7, "main"
+	input := model.ResourceRulesPatchInput{
+		Version: &version, ActiveGroup: &active,
+		Rules: []*model.ResourceRuleInput{
+			{ID: "text", Name: "Literal label", Conditions: []*model.ResourceConditionInput{{Scope: "TITLE", Value: "a.b"}}},
+			{ID: "size", Name: "Size", Conditions: []*model.ResourceConditionInput{{Scope: "SIZE", Minimum: "1073741824", Maximum: "21474836480"}}},
+		},
+		Groups: []*model.ResourceRuleGroupInput{{ID: "main", Name: "Main", Require: []string{"text", "size"}, Exclude: []string{}, Tiers: []*model.ResourceRuleTierInput{{ID: "first", Name: "First", Rules: []string{"text"}}}}},
+	}
+	patch := settingsPatchValue(reflect.ValueOf(input))
+	if _, err := store.ApplyPatch(map[string]any{"tasks": map[string]any{"torrent_selection": patch}}); err != nil {
+		t.Fatal(err)
+	}
+	next, err := config.OpenStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := next.Config().Automation.TorrentSelection
+	g := p.Groups[0]
+	if p.Version != 7 || p.Rules[0].Conditions[0].Value != "a.b" || p.Rules[1].Conditions[0].Minimum != "1073741824" || p.Rules[1].Conditions[0].Maximum != "21474836480" || g.Fallback || len(g.Exclude) != 0 || g.Tiers[0].Rules[0] != "text" {
+		t.Fatalf("resource settings lost on reload: %#v", p)
 	}
 }

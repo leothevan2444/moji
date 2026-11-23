@@ -1,9 +1,7 @@
 query DiscoverConfigDocument {
   settings {
     automation {
-      torrentSelection {
-        inspectionCandidateLimit
-      }
+      torrentSelection { version activeGroup rules { id name conditions { scope value minimum maximum } } groups { id name fallback require exclude tiers { id name rules } } }
     }
   }
 }

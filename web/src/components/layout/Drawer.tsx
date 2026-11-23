@@ -7,6 +7,8 @@ interface DrawerProps {
   visibleDrawer: Exclude<DrawerKey, null>;
   closing: boolean;
   title: string;
+  titleContent?: ReactNode;
+  initialFocus?: "first" | "panel";
   titleIcon?: ReactNode;
   onClose: () => void;
   children: ReactNode;
@@ -16,11 +18,11 @@ interface DrawerProps {
   className?: string;
 }
 
-export function Drawer({ visibleDrawer, closing, title, titleIcon, onClose, children, footer, closeDisabled = false, variant: variantOverride, className = "" }: DrawerProps) {
+export function Drawer({ visibleDrawer, closing, title, titleContent, titleIcon, initialFocus = "first", onClose, children, footer, closeDisabled = false, variant: variantOverride, className = "" }: DrawerProps) {
   const { t } = useTranslation();
   const panelRef = useRef<HTMLElement>(null);
   const titleId = useId();
-  useModalFocus(panelRef, onClose);
+  useModalFocus(panelRef, onClose, initialFocus);
   const isTaskDrawer = visibleDrawer === "task" || visibleDrawer === "task-resolution" || visibleDrawer === "task-queue";
   const variant = variantOverride ?? (isTaskDrawer ? "task" : visibleDrawer === "confirm" ? "confirm" : "modal");
   return (
@@ -32,14 +34,15 @@ export function Drawer({ visibleDrawer, closing, title, titleIcon, onClose, chil
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={titleId}
+        aria-labelledby={titleContent ? undefined : titleId}
+        aria-label={titleContent ? title : undefined}
         tabIndex={-1}
         className={`drawer drawer--${variant} ${className} ${closing ? "is-closing" : ""}`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="drawer__head">
           <div>
-            <h2 id={titleId}>{titleIcon ? <span className="drawer__title-icon" aria-hidden="true">{titleIcon}</span> : null}{title}</h2>
+            <h2 id={titleId}>{titleIcon ? <span className="drawer__title-icon" aria-hidden="true">{titleIcon}</span> : null}{titleContent ?? title}</h2>
           </div>
           <button type="button" className="ghost-button" disabled={closeDisabled} onClick={onClose}>
             {t("common.close")}

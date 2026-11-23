@@ -14,6 +14,7 @@ import (
 // Selection contains only server-owned metadata and internal opaque references.
 // It does not expose locators, account configuration or credentials.
 type Selection struct {
+	Partial    bool
 	SearchID   string
 	Revision   int64
 	Query      indexer.Query
@@ -45,11 +46,12 @@ func (s *Store) selection(ctx context.Context, id string, ids []string, now time
 	defer tx.Rollback()
 	var run struct {
 		State    string
+		Partial  bool
 		Version  int `db:"payload_version"`
 		Revision int64
 		Query    string `db:"query_json"`
 	}
-	err = tx.GetContext(ctx, &run, `SELECT state,payload_version,revision,query_json FROM torrent_search_runs WHERE id=? AND expires_at>?`, id, instant(now))
+	err = tx.GetContext(ctx, &run, `SELECT state,partial,payload_version,revision,query_json FROM torrent_search_runs WHERE id=? AND expires_at>?`, id, instant(now))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Selection{}, ErrExpired
 	}
@@ -62,7 +64,7 @@ func (s *Store) selection(ctx context.Context, id string, ids []string, now time
 	if !terminal(run.State) {
 		return Selection{}, ErrBusy
 	}
-	out := Selection{SearchID: id, Revision: run.Revision, Candidates: []SelectionItem{}}
+	out := Selection{Partial: run.Partial, SearchID: id, Revision: run.Revision, Candidates: []SelectionItem{}}
 	if json.Unmarshal([]byte(run.Query), &out.Query) != nil {
 		return Selection{}, ErrInvalid
 	}
@@ -108,8 +110,7 @@ func (s Selection) RankingCandidates() []indexer.SelectionCandidate {
 	return out
 }
 
-// Project maps a ranking back to immutable public rows before paging. Rules run
-// on the complete selected set, so a LOCK match cannot disappear across pages.
+// Project maps a complete evaluation order back to immutable public rows before paging.
 func (s Selection) Project(ranked []indexer.SelectionCandidate, page Page) ([]Candidate, int, error) {
 	page, err := page.normalized()
 	if err != nil {

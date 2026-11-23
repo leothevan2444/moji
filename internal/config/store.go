@@ -3,9 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
-	"slices"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/leothevan2444/moji/internal/durablefile"
@@ -167,7 +165,7 @@ func (s *Store) updateAutomationLocked(taskProcessingFrequency string, stashBoxE
 	}
 
 	if err := torrentSelection.Validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %v", ErrInvalidSettings, err)
 	}
 	if len(sourcingRetryIntervalHours) > 0 {
 		if sourcingRetryIntervalHours[0] < 1 || sourcingRetryIntervalHours[0] > 168 {
@@ -179,18 +177,6 @@ func (s *Store) updateAutomationLocked(taskProcessingFrequency string, stashBoxE
 	s.cfg.Automation.TaskProcessingFrequency = taskProcessingFrequency
 	s.cfg.Automation.StashBoxEndpoints = cleanStrings(stashBoxEndpoints)
 	s.cfg.Automation.SubscriptionReleasePolicy = subscriptionReleasePolicy.Effective()
-	if !slices.Equal(s.cfg.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs, torrentSelection.FastRules.IndexerPreference.TrackerIDs) {
-		// The retained legacy settings command can still change site order.
-		// Resolve against configured builtin identities, rather than UUID shape.
-		s.cfg.Indexers.QueryOrder = nil
-		for _, id := range torrentSelection.FastRules.IndexerPreference.TrackerIDs {
-			_, builtin := s.cfg.Indexers.Builtin.Instances[id]
-			if !builtin && !strings.HasPrefix(id, "jackett/") {
-				id = "jackett/" + id
-			}
-			s.cfg.Indexers.QueryOrder = append(s.cfg.Indexers.QueryOrder, id)
-		}
-	}
 	s.cfg.Automation.TorrentSelection = torrentSelection.Effective()
 
 	if err := s.updateConfigNode(); err != nil {
@@ -514,13 +500,9 @@ func (s *Store) UpdateAutomationSection(section string, update AutomationConfig)
 		current.SourcingRetryIntervalHours = update.SourcingRetryIntervalHours
 		current.SubscriptionReleasePolicy = update.SubscriptionReleasePolicy
 	case "RESOURCES":
-		preference := current.TorrentSelection.FastRules.IndexerPreference
 		current.TorrentSelection = update.TorrentSelection
-		current.TorrentSelection.FastRules.IndexerPreference = preference
 	case "METADATA":
 		current.StashBoxEndpoints = update.StashBoxEndpoints
-	case "INDEXERS":
-		current.TorrentSelection.FastRules.IndexerPreference = update.TorrentSelection.FastRules.IndexerPreference
 	default:
 		return nil, fmt.Errorf("unknown settings section %q", section)
 	}

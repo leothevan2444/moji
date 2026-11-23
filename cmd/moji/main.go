@@ -499,7 +499,7 @@ func configureJackettConfigProvider(store *config.Store, cfg *config.Config) tra
 		}
 		current := currentConfig.Connection.Jackett
 		return tracker.JackettConfig{
-			QueryOrder: currentConfig.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs,
+			QueryOrder: currentConfig.Indexers.QueryOrder,
 			URL:        current.URL,
 			APIKey:     current.APIKey,
 			Password:   current.Password,
@@ -630,7 +630,7 @@ func configureTorrentSelectionProvider(store *config.Store, cfg *config.Config) 
 
 func configureTaskStore(cfg *config.Config, managers ...*storage.Manager) (taskruntime.TaskStore, error) {
 	if len(managers) > 0 && managers[0] != nil {
-		store := taskruntime.NewRelationalTaskStore(managers[0].Core, managers[0].Observations)
+		store := taskruntime.NewRelationalTaskStore(managers[0].Core, managers[0].Runtime, managers[0].Observations)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := store.ValidateFilmTasks(ctx); err != nil {
@@ -792,62 +792,7 @@ func buildSettingsSnapshot(cfg *config.Config, version string) *graphqlapi.Setti
 }
 
 func torrentSelectionSnapshot(cfg config.TorrentSelectionConfig) graphqlapi.TorrentSelectionSettingsSnapshot {
-	cfg = cfg.Effective()
-	orderedRules := cfg.OrderedRules()
-	fastRuleTypes := make(map[config.TorrentSelectionRuleType]struct{}, len(cfg.FastRuleOrder))
-	for _, ruleType := range cfg.FastRuleOrder {
-		fastRuleTypes[ruleType] = struct{}{}
-	}
-	out := graphqlapi.TorrentSelectionSettingsSnapshot{
-		Enabled:                  cfg.Enabled,
-		InspectionCandidateLimit: cfg.InspectionCandidateLimit,
-		FastRules:                make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(cfg.FastRuleOrder)),
-		TorrentRules:             make([]graphqlapi.TorrentSelectionRuleSnapshot, 0, len(orderedRules)),
-	}
-	for _, rule := range orderedRules {
-		item := graphqlapi.TorrentSelectionRuleSnapshot{
-			Type:    string(rule.Type),
-			Enabled: rule.Enabled,
-			IndexerPreference: graphqlapi.IndexerPreferenceRuleSnapshot{
-				TrackerIDs: append([]string(nil), rule.IndexerPreference.TrackerIDs...),
-			},
-			PublishDate: graphqlapi.DirectionRuleSnapshot{
-				Direction: string(rule.PublishDate.Direction),
-			},
-			Seeders: graphqlapi.DirectionRuleSnapshot{
-				Direction: string(rule.Seeders.Direction),
-			},
-			Size: graphqlapi.DirectionRuleSnapshot{
-				Direction: string(rule.Size.Direction),
-			},
-		}
-		if len(rule.TitleMatch.Clauses) > 0 {
-			item.TitleMatch.Clauses = make([]graphqlapi.TitleMatchClauseSnapshot, 0, len(rule.TitleMatch.Clauses))
-			for _, clause := range rule.TitleMatch.Clauses {
-				item.TitleMatch.Clauses = append(item.TitleMatch.Clauses, graphqlapi.TitleMatchClauseSnapshot{
-					Pattern:     clause.Pattern,
-					PatternMode: string(clause.PatternMode),
-					Effect:      string(clause.Effect),
-				})
-			}
-		}
-		if len(rule.TorrentFileNameMatch.Clauses) > 0 {
-			item.TorrentFileNameMatch.Clauses = make([]graphqlapi.TorrentFileNameMatchClauseSnapshot, 0, len(rule.TorrentFileNameMatch.Clauses))
-			for _, clause := range rule.TorrentFileNameMatch.Clauses {
-				item.TorrentFileNameMatch.Clauses = append(item.TorrentFileNameMatch.Clauses, graphqlapi.TorrentFileNameMatchClauseSnapshot{
-					Pattern:     clause.Pattern,
-					PatternMode: string(clause.PatternMode),
-					Effect:      string(clause.Effect),
-				})
-			}
-		}
-		if _, ok := fastRuleTypes[rule.Type]; ok {
-			out.FastRules = append(out.FastRules, item)
-		} else {
-			out.TorrentRules = append(out.TorrentRules, item)
-		}
-	}
-	return out
+	return cfg.Effective()
 }
 
 func buildSettingsStatusSnapshot(cfg *config.Config, version string, stashEnabled bool, stashClient *stash.Client, stashBoxService graphqlapi.StashBoxService) *graphqlapi.SettingsStatusSnapshot {

@@ -65,6 +65,7 @@ func (s *Service) Start(ctx context.Context) error {
 	if err := s.store.interrupt(ctx, s.now()); err != nil {
 		return err
 	}
+
 	s.started = true
 	return nil
 }

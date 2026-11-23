@@ -21,7 +21,7 @@ func TestHomepageWidgetReadsManagedTasksWithoutUpstreams(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer manager.Close()
-	store := taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations)
+	store := taskruntime.NewRelationalTaskStore(manager.Core, manager.Runtime, manager.Observations)
 	now := time.Now().Add(-time.Hour)
 	if err := store.Create(ctx, &taskruntime.Task{Film: &film.Snapshot{Endpoint: "https://example.test/graphql", SceneID: "completed", Code: "TEST-1"}, ID: "completed", Code: "TEST-1", Source: taskruntime.TaskSourceManual, Stage: taskruntime.TaskStageCompleted, StageStatus: taskruntime.TaskStageStatusDone, CreatedAt: now, UpdatedAt: now, IngestCompletedAt: &now}); err != nil {
 		t.Fatal(err)

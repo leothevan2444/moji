@@ -19,7 +19,7 @@ vi.mock("urql", async (importOriginal) => ({
     if (name === "SettingsPolicySection") return [{ data: { settings: { policies: {
       taskProcessingFrequency: "MEDIUM", sourcingRetryIntervalHours: 6, stashBoxEndpoints: [],
       subscriptionReleasePolicy: { soloBehavior: "DOWNLOAD", groupBehavior: "REVIEW", compilationBehavior: "BLOCK", vrBehavior: "REVIEW", maxGroupPerformerCount: 3, releaseDateRange: "ALL" },
-      torrentSelection: { enabled: true, inspectionCandidateLimit: 5, fastRules: [], torrentRules: [] }
+      torrentSelection: {version:7,activeGroup:"",rules:[],groups:[]}
     } }, settingsStatus: { metadataSources: { stashBoxes: [], stashBoxesLoaded: true, stashBoxesLoadError: null } } }, fetching: false, error: null }, vi.fn()];
     if (name === "LibraryDeliverySettings") return [{ data: { settings: { delivery: { keepSubtitles: true, downloads: { qbRoot: "/q/downloads", mojiRoot: "/moji/downloads" }, library: { mojiRoot: "/moji/library", stashRoot: "/stash/library" }, transfer: { action: "COPY" } }, qbittorrent: { defaultSavePath: "" } }, settingsStatus: { stashLibraries: [{ path: "/stash/library" }] } }, fetching: false, error: null }, vi.fn()];
     if (name === "SystemSettingsTab") return [{ data: { settings: { system: { taskDeletePolicy: "KEEP_ONLY", imageCache: { enabled: true, maxSizeMb: 1024, retentionDays: 30 } } }, settingsStatus: { imageCache: { usedBytes: 0, entryCount: 0, cacheDirectory: "", lastCleanupAt: null, lastError: null } } }, fetching: false, error: null }, vi.fn()];
@@ -123,16 +123,56 @@ describe("settings tab visual contracts", () => {
     expect((screen.getByLabelText(/resourceTracking.interval/) as HTMLInputElement).value).toBe("18");
   });
 
-  it("offers exactly four clause effects and scopes the resource save", async () => {
+  it("saves reusable rules and group tiers only in the resource section", async () => {
     updateSettings.mockClear();
     render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
-    fireEvent.click(screen.getAllByText("common.add")[0]);
-    const effect = screen.getByRole("combobox", { name: "resourceRules.effect" }) as HTMLSelectElement;
-    expect(Array.from(effect.options, option => option.value)).toEqual(["LOCK", "EXCLUDE", "PREFER", "DEMOTE"]);
-    fireEvent.change(effect, { target: { value: "LOCK" } });
+    fireEvent.click(screen.getByText("resourceSelection.addRule"));
+    fireEvent.change(screen.getByRole("textbox",{name:"resourceSelection.expression"}),{target:{value:"user-label"}});
+    fireEvent.click(screen.getByRole("button",{name:"common.close"}));
+    fireEvent.click(screen.getByText("resourceSelection.addGroup"));
+    fireEvent.click(screen.getByRole("switch",{name:"resourceSelection.allowFallback"}));
     await flush();
-    expect(updateSettings).toHaveBeenCalled();
-    expect(updateSettings.mock.calls[0][0].input).toEqual({tasks:{torrent_selection:{fast_rules:{title_match:{clauses:[{pattern:"",pattern_mode:"PLAIN",effect:"LOCK"}]}}}}});
+    const input=updateSettings.mock.calls.at(-1)?.[0].input;
+    expect(Object.keys(input)).toEqual(["tasks"]);
+    const p=input.tasks.torrent_selection;
+    expect(p.rules[0]).not.toHaveProperty("action");
+    expect(p.groups[0].tiers[0].rules).toEqual([]);
+    expect(p.groups[0].fallback).toBe(true);
+    expect(p.groups[0].tiers).toHaveLength(1);
+    expect(p.groups[0]).not.toHaveProperty("requireMode");
+    expect(p.groups[0].tiers[0]).not.toHaveProperty("mode");
+    expect(p.groups[0].tiers[0]).not.toHaveProperty("matchAll");
+    expect(p).not.toHaveProperty("original");expect(p).not.toHaveProperty("order");
+  });
+
+  it("edits torrent size in GiB while storing exact bytes",async()=>{
+    updateSettings.mockClear();render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
+    fireEvent.click(screen.getByText("resourceSelection.addRule"));
+    fireEvent.change(screen.getByRole("combobox",{name:"resourceSelection.scope"}),{target:{value:"SIZE"}});
+    const size=screen.getByRole("textbox",{name:"resourceSelection.minimumGiB"});
+    fireEvent.change(size,{target:{value:"1."}});expect((size as HTMLInputElement).value).toBe("1.");
+    fireEvent.change(size,{target:{value:"1.5"}});await flush();
+    expect(updateSettings.mock.calls.at(-1)?.[0].input.tasks.torrent_selection.rules[0].conditions[0]).toMatchObject({scope:"SIZE",minimum:"1610612736",maximum:"",value:""});
+  });
+
+  it("omits empty conditions from autosave while keeping rows editable", async () => {
+    render(<SettingsAutosaveProvider><TaskSubscriptionSettingsTab /></SettingsAutosaveProvider>);
+    fireEvent.click(screen.getByText("resourceSelection.addRule"));
+    await flush();
+    expect(updateSettings.mock.calls.at(-1)?.[0].input.tasks.torrent_selection.rules[0].conditions).toEqual([]);
+    fireEvent.change(screen.getByRole("textbox", { name: "resourceSelection.expression" }), { target: { value: "label" } });
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "resourceSelection.addCondition" }));
+    fireEvent.change(screen.getAllByRole("combobox", { name: "resourceSelection.scope" })[1], { target: { value: "SIZE" } });
+    await flush();
+    expect(updateSettings.mock.calls.at(-1)?.[0].input.tasks.torrent_selection.rules[0].conditions).toHaveLength(1);
+    expect(screen.getAllByRole("combobox", { name: "resourceSelection.scope" })).toHaveLength(2);
+    fireEvent.change(screen.getByRole("textbox", { name: "resourceSelection.expression" }), { target: { value: "   " } });
+    await flush();
+    expect(updateSettings.mock.calls.at(-1)?.[0].input.tasks.torrent_selection.rules[0].conditions).toEqual([]);
+    fireEvent.change(screen.getByRole("textbox", { name: "resourceSelection.maximumGiB" }), { target: { value: "2" } });
+    await flush();
+    expect(updateSettings.mock.calls.at(-1)?.[0].input.tasks.torrent_selection.rules[0].conditions).toEqual([{scope:"SIZE",value:"",minimum:"",maximum:"2147483648"}]);
   });
 
   it("loads and saves the resource search interval independently of metadata polling", async () => {

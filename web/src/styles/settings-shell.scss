@@ -171,7 +171,7 @@
   .settings-form { gap: 16px; }
   .settings-field { gap: 7px; min-width: 0; }
   .settings-field > span, .settings-field__label, .settings-field__label > span { font-size: 12px; line-height: 1.5; font-weight: 500; color: var(--text); }
-  .settings-note, .settings-section__hint, .torrent-rule__hint, .torrent-rules__sub, .stashbox-source__sub, .settings-field small {
+  .settings-note, .settings-section__hint, .stashbox-source__sub, .settings-field small {
     margin-block: 0;
     font-size: 12px;
     line-height: 1.65;
@@ -216,18 +216,7 @@
   .settings-order .settings-actions { margin: 0; }
   .settings-section--nested, .task-processing-settings { padding: 0; border: 0; border-radius: 0; background: transparent; }
   .task-processing-settings .settings-field { max-width: none; }
-  .settings-main .torrent-rules { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-  .settings-main .torrent-rule, .stashbox-card { min-width: 0; padding: 14px 16px; border-radius: 8px; background: var(--bg); box-shadow: none; }
-  .settings-main .torrent-rule:hover { box-shadow: none; }
-  .torrent-rule__inline-readonly, .torrent-rule__summary, .torrent-rules__divider { display: none; }
-  .torrent-rules__sub { max-width: none; }
-  .torrent-rules__inspection-row { padding: 18px 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-strong); }
-  .settings-rule-engine { display: grid; gap: 16px; }
-  .settings-rule-engine .torrent-rules__head { margin: 0; }
-  .settings-main .torrent-rules__toolbar { background: transparent; border: 0; padding: 0; }
-  .settings-main .torrent-rule { border-radius: 12px; padding: 18px 22px; background: var(--surface-strong); }
-  .settings-resource-editor { min-width: 0; }
-  .torrent-rule__name { font-size: 13px; }
+  .stashbox-card { min-width: 0; padding: 14px 16px; border-radius: 8px; background: var(--bg); box-shadow: none; }
 
   .settings-section__head { margin-bottom: 4px; }
   .image-cache-switch { width: 100%; }
@@ -250,7 +239,7 @@
     .drawer-card { padding: 18px 16px; }
     .settings-grid, .image-cache-config { grid-template-columns: minmax(0, 1fr); }
     .settings-actions { flex-wrap: wrap; }
-    .stashbox-source__head, .torrent-rules__head { align-items: stretch; flex-direction: column; }
+    .stashbox-source__head { align-items: stretch; flex-direction: column; }
   }
 }
 

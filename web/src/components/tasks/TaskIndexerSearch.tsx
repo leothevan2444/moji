@@ -1,3 +1,4 @@
+import { TaskSelectionRecommendation } from "./TaskSelectionRecommendation";
 import { TorrentSearchProgress } from "./TorrentSearchProgress";
 import { PreparedTorrentDownloadActions } from "./PreparedTorrentDownloadActions";
 import { useId } from "react";
@@ -22,6 +23,7 @@ export function TaskIndexerSearch(props:TaskIndexerSearchOptions){
   {wrongTask?<p className="inline-error">{t("indexerErrors.TORRENT_SEARCH_TASK_SCOPE_INVALID")}</p>:null}
   {snapshot?.errorCode&&snapshot.errorCode!=="INDEXER_SEARCH_INCOMPLETE"?<p className="inline-error sourcing-resolution__note">{t(`indexerErrors.${snapshot.errorCode}`,{defaultValue:t("indexerErrors.INDEXER_SEARCH_INCOMPLETE")})}</p>:null}
   {snapshot?.truncated?<p>{t("torrentSearch.truncated")}</p>:null}
+  {runID&&snapshot&&!running?<TaskSelectionRecommendation key={`recommendation-${runID}`} taskId={task.id} searchId={runID} revision={snapshot.revision} disabled={busy} onSelect={id=>void choose(id)}/>:null}
   {runID?<div className="candidate-filters">
    <label><span>{t("candidateFilters.site")}</span><select value={site} disabled={busy} onChange={event=>location(runID,1,sort,event.target.value)}><option value="">{t("candidateFilters.allSites")}{progress?` (${progress.sites.reduce((sum,item)=>sum+item.candidateCount,0)})`:""}</option>{progress?.sites.map(item=><option value={item.instanceId} key={item.instanceId}>{item.name} ({item.candidateCount})</option>)}</select></label>
    <label className="candidate-filters__query"><span>{t("candidateFilters.keyword")}</span><input type="search" value={keyword} maxLength={512} disabled={busy} placeholder={t("candidateFilters.placeholder")} onChange={event=>location(runID,1,sort,undefined,event.target.value)}/></label>

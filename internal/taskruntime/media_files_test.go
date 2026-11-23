@@ -237,7 +237,7 @@ func TestTorrentSubmissionStopsAtMetadataBeforeFiltering(t *testing.T) {
 	if err := service.store.Create(context.Background(), task); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.submitTaskTorrent(context.Background(), task, "magnet:?xt=urn:btih:submission&dn=OFJE-329", "", "", "", nil); err != nil {
+	if err := service.submitTaskTorrent(context.Background(), task, "magnet:?xt=urn:btih:4DA0C3DE19E7DC9845A87758C2CF6B94A275FF5B&dn=OFJE-329", "", "", "", nil); err != nil {
 		t.Fatal(err)
 	}
 	if q.options.StopCondition == nil || *q.options.StopCondition != "MetadataReceived" {

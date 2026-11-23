@@ -27,7 +27,7 @@ function focusableElements(panel: HTMLElement) {
 }
 
 /** Keep keyboard focus inside the topmost modal and restore its opener on close. */
-export function useModalFocus(ref: RefObject<HTMLElement | null>, onClose: () => void) {
+export function useModalFocus(ref: RefObject<HTMLElement | null>, onClose: () => void, initialFocus: "first" | "panel" = "first") {
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
@@ -43,7 +43,8 @@ export function useModalFocus(ref: RefObject<HTMLElement | null>, onClose: () =>
     if (parent) parent.inert = true;
     modalStack.push(panel);
     const focusFirst = () => (focusableElements(panel)[0] ?? panel).focus();
-    focusFirst();
+    const focusInitial = () => initialFocus === "panel" ? panel.focus() : focusFirst();
+    focusInitial();
     const onKeyDown = (event: KeyboardEvent) => {
       if (modalStack.at(-1) !== panel || event.defaultPrevented) return;
       if (event.key === "Escape") {
@@ -63,7 +64,7 @@ export function useModalFocus(ref: RefObject<HTMLElement | null>, onClose: () =>
       }
     };
     const onFocus = (event: FocusEvent) => {
-      if (modalStack.at(-1) === panel && event.target instanceof Node && !panel.contains(event.target)) focusFirst();
+      if (modalStack.at(-1) === panel && event.target instanceof Node && !panel.contains(event.target)) focusInitial();
     };
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("focusin", onFocus);
@@ -83,5 +84,5 @@ export function useModalFocus(ref: RefObject<HTMLElement | null>, onClose: () =>
         else if (remaining) (focusableElements(remaining)[0] ?? remaining).focus();
       }
     };
-  }, [ref]);
+  }, [ref, initialFocus]);
 }

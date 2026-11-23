@@ -24,26 +24,9 @@ Automatic cleanup has no database configuration fallback or automatic configurat
 
 The example is [docker/config.example.yaml](../docker/config.example.yaml). `config_version: 4` is the current layout, grouped by the business ownership listed above. Unsupported versions, mixed ownership layouts and retired fields are rejected. Settings saves validate and atomically persist the current configuration while preserving unrelated fields; failed saves retain the previous effective settings.
 
-## Indexer order
+## Resource selection and indexer order
 
-Automatic sourcing queries one enabled Jackett site at a time in saved order. Other configured sites are appended in Jackett order; missing or disabled sites are skipped. Request-specific site filters restrict this eligible set. A site only stops the search after a candidate passes identity, hard rules, metadata verification and duplicate checks. Empty or rejected candidates, timeouts, rate limits and site errors continue to the next site. Cancellation stops the operation. Site requests have a 30-second timeout. If every request fails, the task records search failure instead of treating it as an empty successful search.
-
-Manual searches collect results sequentially from eligible sites for user choice. They share request ordering, without stopping at an automatically chosen resource. Candidate preview applies whichever rule stages the user requests; actual manual submission enforces identity and duplicate checks without forcing automatic preferences.
-
-## Resource effects
-
-Title and internal filename clauses support:
-
-| Effect | Meaning |
-| --- | --- |
-| `LOCK` | Lock on any match (OR across title and file clauses); no matches leave normal selection unchanged. |
-| `EXCLUDE` | Any matching exclusion rejects the candidate. |
-| `PREFER` | Each match improves its rank within that rule. |
-| `DEMOTE` | Each match worsens its rank within that rule. |
-
-Exclusions take precedence over locks and preferences. After exclusions, if any candidate matches a lock, selection is restricted to the matching candidates, with the other rules deciding among them. Identity, duplicate and torrent validation remain mandatory. Fast rules compare candidates in configured order; later rules break ties. File inspection reranks the leading candidates within the configured budget. File exclusions reject failed, unavailable or uninspected candidates, including magnets that have no inspectable torrent file. File locks only match successfully inspected paths; inspection failure or no match does not prevent normal fallback. A single-video preference remains a preference and does not forbid multipart movies. Invalid regular expressions are rejected when loading or saving configuration.
-
-Disabling resource rules preserves upstream result order while retaining identity and duplicate checks. Old `AVOID` is normalized to `DEMOTE`. Code, GraphQL and canonical configuration use `LOCK` for lock on match. Indexer preference becomes actual sequential query order, so a later site's better-ranked resource no longer displaces an acceptable resource from an earlier site.
+See [Resource selection](resource-selection.md) for the reusable rule library, rule groups, preview, search budgets and YAML. Automatic sourcing searches sites in saved order, retains candidates across sites, stops on a verified first-tier resource, and otherwise chooses the best acceptable resource at the end of the round. Interactive searches collect site results for manual choice. Rule groups never bypass identity or duplicate checks.
 
 StashBox source priority is configured under Stash. Sources omitted from the priority list are still appended in Stash order; priority is not an enable/disable list.
 

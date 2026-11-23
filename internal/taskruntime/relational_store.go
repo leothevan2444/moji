@@ -21,11 +21,12 @@ var ErrTaskRevisionConflict = errors.New("taskruntime: task changed since it was
 type RelationalTaskStore struct {
 	mu           sync.Mutex
 	core         *storage.Database
+	runtime      *storage.Database
 	observations *storage.ObservationStore
 }
 
-func NewRelationalTaskStore(core *storage.Database, observations *storage.ObservationStore) *RelationalTaskStore {
-	return &RelationalTaskStore{core: core, observations: observations}
+func NewRelationalTaskStore(core, runtime *storage.Database, observations *storage.ObservationStore) *RelationalTaskStore {
+	return &RelationalTaskStore{core: core, runtime: runtime, observations: observations}
 }
 
 func (s *RelationalTaskStore) read(ctx context.Context, db sqlx.ExtContext, where string, args ...any) (*Task, error) {
@@ -37,6 +38,7 @@ func (s *RelationalTaskStore) read(ctx context.Context, db sqlx.ExtContext, wher
 	if err != nil {
 		return nil, err
 	}
+	s.loadSelectionReport(ctx, task)
 	return s.overlay(task), nil
 }
 func (s *RelationalTaskStore) overlay(task *Task) *Task {
@@ -103,6 +105,7 @@ func (s *RelationalTaskStore) List(ctx context.Context) ([]*Task, error) {
 		}
 		out = append(out, s.overlay(task))
 	}
+	s.loadSelectionReports(ctx, out)
 	sortTasks(out)
 	return out, nil
 }
@@ -110,6 +113,7 @@ func sameDurableTask(a, b *Task) bool {
 	left, right := cloneTask(a), cloneTask(b)
 	for _, t := range []*Task{left, right} {
 		t.Revision = 0
+		t.SelectionReportJSON = ""
 		if t.SourcingMode == "" {
 			t.SourcingMode = "AUTO"
 		}
@@ -157,6 +161,7 @@ func (s *RelationalTaskStore) Create(ctx context.Context, task *Task) error {
 	if err != nil {
 		return translateTaskConstraintError(err)
 	}
+	s.saveSelectionReport(ctx, nil, task)
 	s.remember(task)
 	return nil
 }
@@ -190,7 +195,8 @@ func (s *RelationalTaskStore) update(ctx context.Context, task *Task, indexedCho
 	}
 	trackTaskProgress(previous, task)
 	if sameDurableTask(previous, task) {
-		// Observations never reserve the core writer or append a durable audit event.
+		// Observations and reports never reserve the core writer or append audit events.
+		s.saveSelectionReport(ctx, previous, task)
 		s.remember(task)
 		return nil
 	}
@@ -225,6 +231,7 @@ func (s *RelationalTaskStore) update(ctx context.Context, task *Task, indexedCho
 		task.Revision--
 		return translateTaskConstraintError(err)
 	}
+	s.saveSelectionReport(ctx, previous, task)
 	s.remember(task)
 	return nil
 }

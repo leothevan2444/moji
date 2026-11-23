@@ -61,11 +61,6 @@ func settingsSectionInput(input model.UpdateSettingsSectionInput) (SettingsSecti
 			return update, errors.New("metadata priority is required")
 		}
 		update.StashBoxEndpoints = input.MetadataPriority
-	case model.SettingsSectionIndexers:
-		if input.QueryOrder == nil {
-			return update, errors.New("query order is required")
-		}
-		update.TorrentSelection.FastRules = []TorrentSelectionRuleSnapshot{{Type: "INDEXER_PREFERENCE", Enabled: true, IndexerPreference: IndexerPreferenceRuleSnapshot{TrackerIDs: input.QueryOrder}}}
 	default:
 		return update, errors.New("unsupported settings section")
 	}

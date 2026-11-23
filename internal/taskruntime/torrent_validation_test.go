@@ -22,7 +22,7 @@ func torrentResponse(body string, status int) Option {
 	})})
 }
 
-func TestSourcingValidationBlocksBeforeDownloaderSubmission(t *testing.T) {
+func TestSourcingValidationRejectsBeforeDownloaderSubmissionAndWaits(t *testing.T) {
 	for _, tc := range []struct {
 		name, title, torrentName string
 		files                    []string
@@ -54,14 +54,23 @@ func TestSourcingValidationBlocksBeforeDownloaderSubmission(t *testing.T) {
 				t.Fatal(err)
 			}
 			task, err := s.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("OFJE-657"), Code: "OFJE-657"})
-			if err == nil || task == nil || task.Stage != TaskStageSourcing || task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != tc.errorCode {
-				t.Fatalf("expected blocked sourcing with %s, got task=%+v err=%v", tc.errorCode, task, err)
+			if task == nil || task.Stage != TaskStageSourcing {
+				t.Fatalf("unexpected task: %v %v", task, err)
 			}
+			chosen := tc.title == "OFJE-657"
+			if chosen {
+				if err == nil || task.StageStatus != TaskStageStatusBlocked || task.StageErrorCode != tc.errorCode {
+					t.Fatalf("chosen resource validation was bypassed: %v %v", task.StageErrorCode, err)
+				}
+			} else if err != nil || task.SourcingNextCheckAt == nil || !strings.Contains(task.SelectionReportJSON, tc.errorCode) {
+				t.Fatalf("source title mismatch was not rejected: %v", err)
+			}
+
 			if len(qbt.options.URLs) != 0 || len(qbt.options.Torrents) != 0 {
 				t.Fatal("unverified torrent reached qBittorrent")
 			}
 			stored, err := store.Find(context.Background(), task.ID)
-			if err != nil || stored.StageErrorCode != tc.errorCode || stored.SourcingCompletedAt != nil || strings.Contains(stored.StageErrorMessage, "secret") {
+			if err != nil || (!strings.Contains(stored.SelectionReportJSON, tc.errorCode) && stored.StageErrorCode != tc.errorCode) || stored.SourcingCompletedAt != nil || strings.Contains(stored.StageErrorMessage, "secret") {
 				t.Fatalf("incorrect persisted validation state: %+v %v", stored, err)
 			}
 		})
@@ -101,12 +110,14 @@ func TestSourcingUploadsExactVerifiedTorrentBytesAndIdentity(t *testing.T) {
 	}
 }
 
-func TestSourcingFallsBackAfterMetadataMismatch(t *testing.T) {
+func TestChosenResourceFailureDoesNotFetchOtherCandidates(t *testing.T) {
 	qbt := &fakeTorrentAdder{}
+	fetched := []string{}
 	s, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{
 		{Title: "OFJE-657 preferred", Link: "http://indexer.invalid/wrong", Seeders: 10},
 		{Title: "OFJE-657 fallback", Link: "http://indexer.invalid/right", Seeders: 1},
 	}}, qbt, NewMemoryTaskStore(), WithHTTPClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		fetched = append(fetched, req.URL.Path)
 		code := "OFJE-657"
 		if req.URL.Path == "/wrong" {
 			code = "OFJE-667"
@@ -117,7 +128,7 @@ func TestSourcingFallsBackAfterMetadataMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	task, err := s.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("OFJE-657"), Code: "OFJE-657"})
-	if err != nil || task.Candidate.Title != "OFJE-657 fallback" || len(qbt.options.Torrents) != 1 {
+	if err == nil || task.StageErrorCode != TaskStageErrorCandidateUnverified || len(qbt.options.Torrents) != 0 || len(fetched) != 1 || fetched[0] != "/wrong" {
 		t.Fatalf("failed fallback: %+v %v", task, err)
 	}
 }
@@ -173,16 +184,16 @@ func TestMagnetCodeValidation(t *testing.T) {
 	}{
 		{"OFJE-657", "ofje-657", false},
 		{"OFJE-657", "", false},
-		{"release", "OFJE-657", false},
-		{"OFJE-667", "OFJE-657", false},
+		{"release", "OFJE-657", true},
+		{"OFJE-667", "OFJE-657", true},
 		{"OFJE-657", "OFJE-667", false},
 		{"release", "", true},
 	} {
 		t.Run(tc.title+"/"+tc.dn, func(t *testing.T) {
 			qbt := &fakeTorrentAdder{}
-			s, _ := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: tc.title, MagnetURI: "magnet:?xt=urn:btih:123&dn=" + tc.dn}}}, qbt, NewMemoryTaskStore())
+			s, _ := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: tc.title, MagnetURI: "magnet:?xt=urn:btih:40BD001563085FC35165329EA1FF5C5ECBDBBEEF&dn=" + tc.dn}}}, qbt, NewMemoryTaskStore())
 			task, err := s.runSourcingFixture(context.Background(), DownloadRequest{Film: testFilm("OFJE-657"), Code: "OFJE-657"})
-			if (err != nil) != tc.wantError {
+			if err != nil || (task.SourcingNextCheckAt != nil) != tc.wantError {
 				t.Fatalf("unexpected result: %+v %v", task, err)
 			}
 			if tc.wantError && len(qbt.options.URLs) != 0 {
@@ -277,13 +288,13 @@ func TestTorrentUTF8NamesRetainTargetEvidence(t *testing.T) {
 	}
 }
 
-func TestTitleSimilarityRecognizesTheCompleteTarget(t *testing.T) {
+func TestSelectionKeepsTargetOrderWhenPreferencesTie(t *testing.T) {
 	selector := defaultCandidateSelector{}
-	result, err := selector.Select(context.Background(), "OFJE-657", []indexer.SelectionCandidate{
-		{Title: "OFJE-667", MagnetURI: "magnet:?xt=urn:btih:wrong"},
-		{Title: "ofje-657", MagnetURI: "magnet:?xt=urn:btih:right"},
-	}, candidateSelectionConfig(true, 0, []config.CandidateSelectionRule{{Type: config.CandidateSelectionRuleTypeTitleSimilarity, Enabled: true}}))
-	if err != nil || result.Title != "ofje-657" {
+	result, err := selector.Preview(context.Background(), "OFJE-657", []indexer.SelectionCandidate{
+		{Title: "OFJE-667", MagnetURI: "magnet:?xt=urn:btih:A4B48A81CDAB1E1A5DD37907D6C85CA1C61DDC7C"},
+		{Title: "ofje-657", MagnetURI: "magnet:?xt=urn:btih:D27A1F11771200949714B1AF99F048A416F5D6F4"},
+	}, config.DefaultCandidateSelectionConfig())
+	if err != nil || result.Results[0].Title != "ofje-657" {
 		t.Fatalf("alias did not win: %+v %v", result, err)
 	}
 }

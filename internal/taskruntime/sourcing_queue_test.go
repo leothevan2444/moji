@@ -41,7 +41,7 @@ func (f *queuedTracker) Search(code string, options ...tracker.SearchOption) ([]
 	return f.results, nil
 }
 func queuedResult() []indexer.SelectionCandidate {
-	return []indexer.SelectionCandidate{{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:abc123&dn=ABCD-123", Seeders: 10}}
+	return []indexer.SelectionCandidate{{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:6367C48DD193D56EA7B0BAAD25B19455E529F5EE&dn=ABCD-123", Seeders: 10}}
 }
 func waitQueuedTask(t *testing.T, store TaskStore, id string, stage TaskStage) *Task {
 	t.Helper()

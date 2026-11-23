@@ -109,7 +109,7 @@ func TestStashDeletionIntentIsDurableAndCannotRetargetAfterRestart(t *testing.T)
 	if _, err := s.DeleteTaskWithOptions(ctx, task.ID, DeleteTaskOptions{DeleteStashScene: true}, stash); err == nil {
 		t.Fatal("lost response hidden")
 	}
-	reopened := NewRelationalTaskStore(manager.Core, manager.Observations)
+	reopened := NewRelationalTaskStore(manager.Core, manager.Runtime, manager.Observations)
 	s, _ = NewService(fakeTracker{}, &fakeTorrentAdder{}, reopened)
 	stash.identity = "another-account"
 	stash.err = nil

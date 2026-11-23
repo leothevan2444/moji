@@ -63,7 +63,7 @@ func TestResourcesAreTrackedAcrossMonthAndRestartUntilValidRelease(t *testing.T)
 		}
 	}
 	defer store.db.Close()
-	search.results = []indexer.SelectionCandidate{{Title: "abcd-123", MagnetURI: "magnet:?xt=urn:btih:abc123&dn=ABCD-123"}}
+	search.results = []indexer.SelectionCandidate{{Title: "abcd-123", MagnetURI: "magnet:?xt=urn:btih:6367C48DD193D56EA7B0BAAD25B19455E529F5EE&dn=ABCD-123"}}
 	if err := s.processQueuedSourcing(ctx, task.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestResourcesAreTrackedAcrossMonthAndRestartUntilValidRelease(t *testing.T)
 
 func TestTrackingRejectsFuzzyResultsAndManualRetryRunsImmediately(t *testing.T) {
 	ctx := context.Background()
-	search := &queuedTracker{results: []indexer.SelectionCandidate{{Title: "ABCD124", MagnetURI: "magnet:?xt=urn:btih:wrong"}}}
+	search := &queuedTracker{results: []indexer.SelectionCandidate{{Title: "ABCD124", MagnetURI: "magnet:?xt=urn:btih:A4B48A81CDAB1E1A5DD37907D6C85CA1C61DDC7C"}}}
 	qbt := &fakeTorrentAdder{}
 	store := NewMemoryTaskStore()
 	s, _ := NewService(search, qbt, store)

@@ -80,19 +80,6 @@ type DeliveryPatchInput struct {
 	Transfer           *TransferPatchInput      `json:"transfer,omitempty"`
 }
 
-type DirectionRule struct {
-	Direction TorrentSelectionDirection `json:"direction"`
-}
-
-type DirectionRuleInput struct {
-	Direction TorrentSelectionDirection `json:"direction"`
-}
-
-type DirectionRulePatchInput struct {
-	Enabled   *bool                      `json:"enabled,omitempty"`
-	Direction *TorrentSelectionDirection `json:"direction,omitempty"`
-}
-
 type DiscoverSceneConnection struct {
 	Items         []*DiscoveredScene `json:"items"`
 	UsedStashBox  *MatchedStashBox   `json:"usedStashBox,omitempty"`
@@ -236,30 +223,6 @@ type DownloadsIngestSettings struct {
 type DownloadsIngestSettingsInput struct {
 	QbRoot   string `json:"qbRoot"`
 	MojiRoot string `json:"mojiRoot"`
-}
-
-type FastRulesPatchInput struct {
-	TitleMatch      *TitleRulePatchInput     `json:"title_match,omitempty"`
-	PublishDate     *DirectionRulePatchInput `json:"publish_date,omitempty"`
-	TitleSimilarity *ToggleRulePatchInput    `json:"title_similarity,omitempty"`
-	Seeders         *DirectionRulePatchInput `json:"seeders,omitempty"`
-	Size            *DirectionRulePatchInput `json:"size,omitempty"`
-}
-
-type FileClausePatchInput struct {
-	Pattern     string                 `json:"pattern"`
-	PatternMode TitleMatchPatternMode  `json:"pattern_mode"`
-	Effect      TorrentFileMatchEffect `json:"effect"`
-}
-
-type FileNameRulePatchInput struct {
-	Enabled *bool                   `json:"enabled,omitempty"`
-	Clauses []*FileClausePatchInput `json:"clauses,omitempty"`
-}
-
-type FileRulesPatchInput struct {
-	TorrentSingleVideo   *ToggleRulePatchInput   `json:"torrent_single_video,omitempty"`
-	TorrentFileNameMatch *FileNameRulePatchInput `json:"torrent_file_name_match,omitempty"`
 }
 
 // Basic service health
@@ -671,14 +634,6 @@ type IndexerObservation struct {
 	RetryAt       *string `json:"retryAt,omitempty"`
 }
 
-type IndexerPreferenceRule struct {
-	TrackerIds []string `json:"trackerIds"`
-}
-
-type IndexerPreferenceRuleInput struct {
-	TrackerIds []string `json:"trackerIds"`
-}
-
 type IndexerRecentExecutions struct {
 	Count        int  `json:"count"`
 	Failures     int  `json:"failures"`
@@ -946,13 +901,16 @@ type PreparedTorrentDownload struct {
 }
 
 type PreviewTorrentSelectionInput struct {
-	SearchID       string             `json:"searchId"`
-	CandidateIds   []string           `json:"candidateIds,omitempty"`
-	ApplyFastRules bool               `json:"applyFastRules"`
-	ApplyFileRules bool               `json:"applyFileRules"`
-	Offset         *int               `json:"offset,omitempty"`
-	Limit          *int               `json:"limit,omitempty"`
-	SortBy         *TorrentSearchSort `json:"sortBy,omitempty"`
+	GroupID            *string            `json:"groupID,omitempty"`
+	SearchID           string             `json:"searchId"`
+	CandidateIds       []string           `json:"candidateIds,omitempty"`
+	TaskID             *string            `json:"taskId,omitempty"`
+	Endpoint           *string            `json:"endpoint,omitempty"`
+	SceneID            *string            `json:"sceneId,omitempty"`
+	ConfirmationDigest *string            `json:"confirmationDigest,omitempty"`
+	Offset             *int               `json:"offset,omitempty"`
+	Limit              *int               `json:"limit,omitempty"`
+	SortBy             *TorrentSearchSort `json:"sortBy,omitempty"`
 }
 
 type ProcessReleaseReviewsInput struct {
@@ -1138,12 +1096,94 @@ type ResolveTaskSourcingCandidateInput struct {
 	Paused           *bool  `json:"paused,omitempty"`
 }
 
+type ResourceCondition struct {
+	Scope   string `json:"scope"`
+	Value   string `json:"value"`
+	Minimum string `json:"minimum"`
+	Maximum string `json:"maximum"`
+}
+
+type ResourceConditionInput struct {
+	Scope   string `json:"scope"`
+	Value   string `json:"value"`
+	Minimum string `json:"minimum"`
+	Maximum string `json:"maximum"`
+}
+
+type ResourceEvaluation struct {
+	EvidenceOmitted int                 `json:"evidenceOmitted"`
+	GroupName       string              `json:"groupName"`
+	TierName        string              `json:"tierName"`
+	CandidateID     *string             `json:"candidateId,omitempty"`
+	Title           string              `json:"title"`
+	Status          string              `json:"status"`
+	Preferred       bool                `json:"preferred"`
+	Reasons         []string            `json:"reasons"`
+	UnknownRules    []string            `json:"unknownRules"`
+	Evidence        []*ResourceEvidence `json:"evidence"`
+}
+
+type ResourceEvidence struct {
+	Attribute string `json:"attribute"`
+	Value     string `json:"value"`
+	Source    string `json:"source"`
+	Text      string `json:"text"`
+}
+
+type ResourceRule struct {
+	ID         string               `json:"id"`
+	Name       string               `json:"name"`
+	Conditions []*ResourceCondition `json:"conditions"`
+}
+
+type ResourceRuleGroup struct {
+	ID       string              `json:"id"`
+	Name     string              `json:"name"`
+	Fallback bool                `json:"fallback"`
+	Require  []string            `json:"require"`
+	Exclude  []string            `json:"exclude"`
+	Tiers    []*ResourceRuleTier `json:"tiers"`
+}
+
+type ResourceRuleGroupInput struct {
+	ID       string                   `json:"id"`
+	Name     string                   `json:"name"`
+	Fallback bool                     `json:"fallback"`
+	Require  []string                 `json:"require"`
+	Exclude  []string                 `json:"exclude"`
+	Tiers    []*ResourceRuleTierInput `json:"tiers"`
+}
+
+type ResourceRuleInput struct {
+	ID         string                    `json:"id"`
+	Name       string                    `json:"name"`
+	Conditions []*ResourceConditionInput `json:"conditions"`
+}
+
+type ResourceRuleTier struct {
+	ID    string   `json:"id"`
+	Name  string   `json:"name"`
+	Rules []string `json:"rules"`
+}
+
+type ResourceRuleTierInput struct {
+	ID    string   `json:"id"`
+	Name  string   `json:"name"`
+	Rules []string `json:"rules"`
+}
+
 type ResourceRulesPatchInput struct {
-	Enabled                  *bool                      `json:"enabled,omitempty"`
-	InspectionCandidateLimit *int                       `json:"inspection_candidate_limit,omitempty"`
-	FastRuleOrder            []TorrentSelectionRuleType `json:"fast_rule_order,omitempty"`
-	FastRules                *FastRulesPatchInput       `json:"fast_rules,omitempty"`
-	TorrentRules             *FileRulesPatchInput       `json:"torrent_rules,omitempty"`
+	Version     *int                      `json:"version,omitempty"`
+	ActiveGroup *string                   `json:"active_group,omitempty"`
+	Rules       []*ResourceRuleInput      `json:"rules,omitempty"`
+	Groups      []*ResourceRuleGroupInput `json:"groups,omitempty"`
+}
+
+type ResourceSelectionReport struct {
+	End         string                `json:"end"`
+	Partial     bool                  `json:"partial"`
+	Selected    string                `json:"selected"`
+	Evaluations []*ResourceEvaluation `json:"evaluations"`
 }
 
 type ServiceConnectionTestResult struct {
@@ -1563,30 +1603,31 @@ type SystemSettings struct {
 }
 
 type Task struct {
-	Film              *TaskFilm          `json:"film"`
-	SourcingMode      string             `json:"sourcingMode"`
-	Version           string             `json:"version"`
-	Revision          int64              `json:"revision"`
-	ID                string             `json:"id"`
-	Files             []*TaskFile        `json:"files"`
-	Source            TaskSource         `json:"source"`
-	Code              string             `json:"code"`
-	Stage             TaskStage          `json:"stage"`
-	StageStatus       TaskStageStatus    `json:"stageStatus"`
-	StageLabel        string             `json:"stageLabel"`
-	StageStatusLabel  string             `json:"stageStatusLabel"`
-	StageErrorCode    *string            `json:"stageErrorCode,omitempty"`
-	StageErrorMessage *string            `json:"stageErrorMessage,omitempty"`
-	Candidate         *DownloadCandidate `json:"candidate"`
-	TorrentURL        string             `json:"torrentUrl"`
-	SavePath          *string            `json:"savePath,omitempty"`
-	Category          *string            `json:"category,omitempty"`
-	Tags              *string            `json:"tags,omitempty"`
-	TorrentHash       *string            `json:"torrentHash,omitempty"`
-	TorrentName       *string            `json:"torrentName,omitempty"`
-	Progress          float64            `json:"progress"`
-	QbittorrentState  *string            `json:"qbittorrentState,omitempty"`
-	ContentPath       *string            `json:"contentPath,omitempty"`
+	SelectionReport   *ResourceSelectionReport `json:"selectionReport,omitempty"`
+	Film              *TaskFilm                `json:"film"`
+	SourcingMode      string                   `json:"sourcingMode"`
+	Version           string                   `json:"version"`
+	Revision          int64                    `json:"revision"`
+	ID                string                   `json:"id"`
+	Files             []*TaskFile              `json:"files"`
+	Source            TaskSource               `json:"source"`
+	Code              string                   `json:"code"`
+	Stage             TaskStage                `json:"stage"`
+	StageStatus       TaskStageStatus          `json:"stageStatus"`
+	StageLabel        string                   `json:"stageLabel"`
+	StageStatusLabel  string                   `json:"stageStatusLabel"`
+	StageErrorCode    *string                  `json:"stageErrorCode,omitempty"`
+	StageErrorMessage *string                  `json:"stageErrorMessage,omitempty"`
+	Candidate         *DownloadCandidate       `json:"candidate"`
+	TorrentURL        string                   `json:"torrentUrl"`
+	SavePath          *string                  `json:"savePath,omitempty"`
+	Category          *string                  `json:"category,omitempty"`
+	Tags              *string                  `json:"tags,omitempty"`
+	TorrentHash       *string                  `json:"torrentHash,omitempty"`
+	TorrentName       *string                  `json:"torrentName,omitempty"`
+	Progress          float64                  `json:"progress"`
+	QbittorrentState  *string                  `json:"qbittorrentState,omitempty"`
+	ContentPath       *string                  `json:"contentPath,omitempty"`
 	// Time when a selected torrent was successfully submitted to the downloader; null when not recorded.
 	SourcingCompletedAt *string `json:"sourcingCompletedAt,omitempty"`
 	// Last automatic resource search; persists across restarts.
@@ -1794,61 +1835,6 @@ type TestServiceConnectionInput struct {
 	Password *string                   `json:"password,omitempty"`
 }
 
-type TitleClausePatchInput struct {
-	Pattern     string                `json:"pattern"`
-	PatternMode TitleMatchPatternMode `json:"pattern_mode"`
-	Effect      TitleMatchEffect      `json:"effect"`
-}
-
-type TitleMatchClause struct {
-	Pattern     string                `json:"pattern"`
-	PatternMode TitleMatchPatternMode `json:"patternMode"`
-	Effect      TitleMatchEffect      `json:"effect"`
-}
-
-type TitleMatchClauseInput struct {
-	Pattern     string                `json:"pattern"`
-	PatternMode TitleMatchPatternMode `json:"patternMode"`
-	Effect      TitleMatchEffect      `json:"effect"`
-}
-
-type TitleMatchRule struct {
-	Clauses []*TitleMatchClause `json:"clauses"`
-}
-
-type TitleMatchRuleInput struct {
-	Clauses []*TitleMatchClauseInput `json:"clauses"`
-}
-
-type TitleRulePatchInput struct {
-	Enabled *bool                    `json:"enabled,omitempty"`
-	Clauses []*TitleClausePatchInput `json:"clauses,omitempty"`
-}
-
-type ToggleRulePatchInput struct {
-	Enabled *bool `json:"enabled,omitempty"`
-}
-
-type TorrentFileNameMatchClause struct {
-	Pattern     string                 `json:"pattern"`
-	PatternMode TitleMatchPatternMode  `json:"patternMode"`
-	Effect      TorrentFileMatchEffect `json:"effect"`
-}
-
-type TorrentFileNameMatchClauseInput struct {
-	Pattern     string                 `json:"pattern"`
-	PatternMode TitleMatchPatternMode  `json:"patternMode"`
-	Effect      TorrentFileMatchEffect `json:"effect"`
-}
-
-type TorrentFileNameMatchRule struct {
-	Clauses []*TorrentFileNameMatchClause `json:"clauses"`
-}
-
-type TorrentFileNameMatchRuleInput struct {
-	Clauses []*TorrentFileNameMatchClauseInput `json:"clauses"`
-}
-
 type TorrentPieceBucket struct {
 	Start       int `json:"start"`
 	Count       int `json:"count"`
@@ -1936,57 +1922,28 @@ type TorrentSearchSite struct {
 }
 
 type TorrentSelectionPreview struct {
-	SearchID       string                       `json:"searchId"`
-	SearchRevision int64                        `json:"searchRevision"`
-	Total          int                          `json:"total"`
-	Offset         int                          `json:"offset"`
-	Limit          int                          `json:"limit"`
-	Candidates     []*TorrentSearchCandidate    `json:"candidates"`
-	Meta           *TorrentSelectionPreviewMeta `json:"meta"`
-}
-
-type TorrentSelectionPreviewMeta struct {
-	AppliedFastRules         bool `json:"appliedFastRules"`
-	AppliedFileRules         bool `json:"appliedFileRules"`
-	InspectedCount           int  `json:"inspectedCount"`
-	InspectableCount         int  `json:"inspectableCount"`
-	InspectionCandidateLimit int  `json:"inspectionCandidateLimit"`
-}
-
-type TorrentSelectionRule struct {
-	Type                 TorrentSelectionRuleType  `json:"type"`
-	Enabled              bool                      `json:"enabled"`
-	IndexerPreference    *IndexerPreferenceRule    `json:"indexerPreference"`
-	TitleMatch           *TitleMatchRule           `json:"titleMatch"`
-	PublishDate          *DirectionRule            `json:"publishDate"`
-	Seeders              *DirectionRule            `json:"seeders"`
-	Size                 *DirectionRule            `json:"size"`
-	TorrentFileNameMatch *TorrentFileNameMatchRule `json:"torrentFileNameMatch"`
-}
-
-type TorrentSelectionRuleInput struct {
-	Type                 TorrentSelectionRuleType       `json:"type"`
-	Enabled              bool                           `json:"enabled"`
-	IndexerPreference    *IndexerPreferenceRuleInput    `json:"indexerPreference,omitempty"`
-	TitleMatch           *TitleMatchRuleInput           `json:"titleMatch,omitempty"`
-	PublishDate          *DirectionRuleInput            `json:"publishDate,omitempty"`
-	Seeders              *DirectionRuleInput            `json:"seeders,omitempty"`
-	Size                 *DirectionRuleInput            `json:"size,omitempty"`
-	TorrentFileNameMatch *TorrentFileNameMatchRuleInput `json:"torrentFileNameMatch,omitempty"`
+	SearchID       string                    `json:"searchId"`
+	SearchRevision int64                     `json:"searchRevision"`
+	Partial        bool                      `json:"partial"`
+	Evaluations    []*ResourceEvaluation     `json:"evaluations"`
+	Total          int                       `json:"total"`
+	Offset         int                       `json:"offset"`
+	Limit          int                       `json:"limit"`
+	Candidates     []*TorrentSearchCandidate `json:"candidates"`
 }
 
 type TorrentSelectionSettings struct {
-	Enabled                  bool                    `json:"enabled"`
-	InspectionCandidateLimit int                     `json:"inspectionCandidateLimit"`
-	FastRules                []*TorrentSelectionRule `json:"fastRules"`
-	TorrentRules             []*TorrentSelectionRule `json:"torrentRules"`
+	Version     int                  `json:"version"`
+	ActiveGroup string               `json:"activeGroup"`
+	Rules       []*ResourceRule      `json:"rules"`
+	Groups      []*ResourceRuleGroup `json:"groups"`
 }
 
 type TorrentSelectionSettingsInput struct {
-	Enabled                  bool                         `json:"enabled"`
-	InspectionCandidateLimit int                          `json:"inspectionCandidateLimit"`
-	FastRules                []*TorrentSelectionRuleInput `json:"fastRules,omitempty"`
-	TorrentRules             []*TorrentSelectionRuleInput `json:"torrentRules,omitempty"`
+	Version     int                       `json:"version"`
+	ActiveGroup string                    `json:"activeGroup"`
+	Rules       []*ResourceRuleInput      `json:"rules"`
+	Groups      []*ResourceRuleGroupInput `json:"groups"`
 }
 
 type TransferIngestSettings struct {
@@ -4697,122 +4654,6 @@ func (e TaskStageStatus) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type TitleMatchEffect string
-
-const (
-	TitleMatchEffectLock    TitleMatchEffect = "LOCK"
-	TitleMatchEffectExclude TitleMatchEffect = "EXCLUDE"
-	TitleMatchEffectDemote  TitleMatchEffect = "DEMOTE"
-	TitleMatchEffectPrefer  TitleMatchEffect = "PREFER"
-	TitleMatchEffectAvoid   TitleMatchEffect = "AVOID"
-)
-
-var AllTitleMatchEffect = []TitleMatchEffect{
-	TitleMatchEffectLock,
-	TitleMatchEffectExclude,
-	TitleMatchEffectDemote,
-	TitleMatchEffectPrefer,
-	TitleMatchEffectAvoid,
-}
-
-func (e TitleMatchEffect) IsValid() bool {
-	switch e {
-	case TitleMatchEffectLock, TitleMatchEffectExclude, TitleMatchEffectDemote, TitleMatchEffectPrefer, TitleMatchEffectAvoid:
-		return true
-	}
-	return false
-}
-
-func (e TitleMatchEffect) String() string {
-	return string(e)
-}
-
-func (e *TitleMatchEffect) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = TitleMatchEffect(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid TitleMatchEffect", str)
-	}
-	return nil
-}
-
-func (e TitleMatchEffect) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *TitleMatchEffect) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e TitleMatchEffect) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
-}
-
-type TitleMatchPatternMode string
-
-const (
-	TitleMatchPatternModePlain TitleMatchPatternMode = "PLAIN"
-	TitleMatchPatternModeRegex TitleMatchPatternMode = "REGEX"
-)
-
-var AllTitleMatchPatternMode = []TitleMatchPatternMode{
-	TitleMatchPatternModePlain,
-	TitleMatchPatternModeRegex,
-}
-
-func (e TitleMatchPatternMode) IsValid() bool {
-	switch e {
-	case TitleMatchPatternModePlain, TitleMatchPatternModeRegex:
-		return true
-	}
-	return false
-}
-
-func (e TitleMatchPatternMode) String() string {
-	return string(e)
-}
-
-func (e *TitleMatchPatternMode) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = TitleMatchPatternMode(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid TitleMatchPatternMode", str)
-	}
-	return nil
-}
-
-func (e TitleMatchPatternMode) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *TitleMatchPatternMode) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e TitleMatchPatternMode) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
-}
-
 type TorrentAction string
 
 const (
@@ -4871,67 +4712,6 @@ func (e *TorrentAction) UnmarshalJSON(b []byte) error {
 }
 
 func (e TorrentAction) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
-}
-
-type TorrentFileMatchEffect string
-
-const (
-	TorrentFileMatchEffectLock    TorrentFileMatchEffect = "LOCK"
-	TorrentFileMatchEffectExclude TorrentFileMatchEffect = "EXCLUDE"
-	TorrentFileMatchEffectDemote  TorrentFileMatchEffect = "DEMOTE"
-	TorrentFileMatchEffectPrefer  TorrentFileMatchEffect = "PREFER"
-	TorrentFileMatchEffectAvoid   TorrentFileMatchEffect = "AVOID"
-)
-
-var AllTorrentFileMatchEffect = []TorrentFileMatchEffect{
-	TorrentFileMatchEffectLock,
-	TorrentFileMatchEffectExclude,
-	TorrentFileMatchEffectDemote,
-	TorrentFileMatchEffectPrefer,
-	TorrentFileMatchEffectAvoid,
-}
-
-func (e TorrentFileMatchEffect) IsValid() bool {
-	switch e {
-	case TorrentFileMatchEffectLock, TorrentFileMatchEffectExclude, TorrentFileMatchEffectDemote, TorrentFileMatchEffectPrefer, TorrentFileMatchEffectAvoid:
-		return true
-	}
-	return false
-}
-
-func (e TorrentFileMatchEffect) String() string {
-	return string(e)
-}
-
-func (e *TorrentFileMatchEffect) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = TorrentFileMatchEffect(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid TorrentFileMatchEffect", str)
-	}
-	return nil
-}
-
-func (e TorrentFileMatchEffect) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *TorrentFileMatchEffect) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e TorrentFileMatchEffect) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
@@ -5121,128 +4901,6 @@ func (e *TorrentSearchState) UnmarshalJSON(b []byte) error {
 }
 
 func (e TorrentSearchState) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
-}
-
-type TorrentSelectionDirection string
-
-const (
-	TorrentSelectionDirectionAsc  TorrentSelectionDirection = "ASC"
-	TorrentSelectionDirectionDesc TorrentSelectionDirection = "DESC"
-)
-
-var AllTorrentSelectionDirection = []TorrentSelectionDirection{
-	TorrentSelectionDirectionAsc,
-	TorrentSelectionDirectionDesc,
-}
-
-func (e TorrentSelectionDirection) IsValid() bool {
-	switch e {
-	case TorrentSelectionDirectionAsc, TorrentSelectionDirectionDesc:
-		return true
-	}
-	return false
-}
-
-func (e TorrentSelectionDirection) String() string {
-	return string(e)
-}
-
-func (e *TorrentSelectionDirection) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = TorrentSelectionDirection(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid TorrentSelectionDirection", str)
-	}
-	return nil
-}
-
-func (e TorrentSelectionDirection) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *TorrentSelectionDirection) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e TorrentSelectionDirection) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	e.MarshalGQL(&buf)
-	return buf.Bytes(), nil
-}
-
-type TorrentSelectionRuleType string
-
-const (
-	TorrentSelectionRuleTypeIndexerPreference    TorrentSelectionRuleType = "INDEXER_PREFERENCE"
-	TorrentSelectionRuleTypeTitleMatch           TorrentSelectionRuleType = "TITLE_MATCH"
-	TorrentSelectionRuleTypePublishDate          TorrentSelectionRuleType = "PUBLISH_DATE"
-	TorrentSelectionRuleTypeTitleSimilarity      TorrentSelectionRuleType = "TITLE_SIMILARITY"
-	TorrentSelectionRuleTypeSeeders              TorrentSelectionRuleType = "SEEDERS"
-	TorrentSelectionRuleTypeSize                 TorrentSelectionRuleType = "SIZE"
-	TorrentSelectionRuleTypeTorrentSingleVideo   TorrentSelectionRuleType = "TORRENT_SINGLE_VIDEO"
-	TorrentSelectionRuleTypeTorrentFileNameMatch TorrentSelectionRuleType = "TORRENT_FILE_NAME_MATCH"
-)
-
-var AllTorrentSelectionRuleType = []TorrentSelectionRuleType{
-	TorrentSelectionRuleTypeIndexerPreference,
-	TorrentSelectionRuleTypeTitleMatch,
-	TorrentSelectionRuleTypePublishDate,
-	TorrentSelectionRuleTypeTitleSimilarity,
-	TorrentSelectionRuleTypeSeeders,
-	TorrentSelectionRuleTypeSize,
-	TorrentSelectionRuleTypeTorrentSingleVideo,
-	TorrentSelectionRuleTypeTorrentFileNameMatch,
-}
-
-func (e TorrentSelectionRuleType) IsValid() bool {
-	switch e {
-	case TorrentSelectionRuleTypeIndexerPreference, TorrentSelectionRuleTypeTitleMatch, TorrentSelectionRuleTypePublishDate, TorrentSelectionRuleTypeTitleSimilarity, TorrentSelectionRuleTypeSeeders, TorrentSelectionRuleTypeSize, TorrentSelectionRuleTypeTorrentSingleVideo, TorrentSelectionRuleTypeTorrentFileNameMatch:
-		return true
-	}
-	return false
-}
-
-func (e TorrentSelectionRuleType) String() string {
-	return string(e)
-}
-
-func (e *TorrentSelectionRuleType) UnmarshalGQL(v any) error {
-	str, ok := v.(string)
-	if !ok {
-		return fmt.Errorf("enums must be strings")
-	}
-
-	*e = TorrentSelectionRuleType(str)
-	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid TorrentSelectionRuleType", str)
-	}
-	return nil
-}
-
-func (e TorrentSelectionRuleType) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
-}
-
-func (e *TorrentSelectionRuleType) UnmarshalJSON(b []byte) error {
-	s, err := strconv.Unquote(string(b))
-	if err != nil {
-		return err
-	}
-	return e.UnmarshalGQL(s)
-}
-
-func (e TorrentSelectionRuleType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

@@ -37,7 +37,7 @@ func TestRetryTasksReturnsPerTaskResults(t *testing.T) {
 	if err := store.Create(context.Background(), completed); err != nil {
 		t.Fatal(err)
 	}
-	service, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:batch"}}}, &fakeTorrentAdder{}, store)
+	service, err := NewService(fakeTracker{results: []indexer.SelectionCandidate{{Title: "ABCD-123", MagnetURI: "magnet:?xt=urn:btih:1111111111111111111111111111111111111111"}}}, &fakeTorrentAdder{}, store)
 	if err != nil {
 		t.Fatal(err)
 	}

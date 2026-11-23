@@ -17,8 +17,16 @@ func TestRelationalIngestResumesThroughBackupRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	store := NewRelationalTaskStore(m.Core, m.Observations)
+	store := NewRelationalTaskStore(m.Core, m.Runtime, m.Observations)
 	createIngestTask(t, store)
+	accepted, err := store.Find(ctx, "ingest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	accepted.SelectionReportJSON = diagnosticReport
+	if err := store.Update(ctx, accepted); err != nil {
+		t.Fatal(err)
+	}
 	files := &fakeFileOperator{}
 	scanner := readyIngestScanner()
 	service, err := NewService(fakeTracker{}, &fakeTorrentAdder{}, store, WithFileOperator(files))
@@ -51,7 +59,11 @@ func TestRelationalIngestResumesThroughBackupRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer restored.Close()
-	store = NewRelationalTaskStore(restored.Core, restored.Observations)
+	store = NewRelationalTaskStore(restored.Core, restored.Runtime, restored.Observations)
+	recovered, err := store.Find(ctx, "ingest")
+	if err != nil || recovered.SelectionReportJSON != "" {
+		t.Fatal("core restore depends on runtime report", err)
+	}
 	completedAt := time.Now().UTC()
 	service, err = NewService(fakeTracker{}, &fakeTorrentAdder{}, store, WithFileOperator(files), WithClock(func() time.Time { return completedAt }))
 	if err != nil {
@@ -83,8 +95,16 @@ func TestResolvedDownloadPathSurvivesRuntimeLossBeforeIngest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	store := NewRelationalTaskStore(m.Core, m.Observations)
+	store := NewRelationalTaskStore(m.Core, m.Runtime, m.Observations)
 	createIngestTask(t, store)
+	accepted, err := store.Find(ctx, "ingest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	accepted.SelectionReportJSON = diagnosticReport
+	if err := store.Update(ctx, accepted); err != nil {
+		t.Fatal(err)
+	}
 	if err := m.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -99,9 +119,9 @@ func TestResolvedDownloadPathSurvivesRuntimeLossBeforeIngest(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	store = NewRelationalTaskStore(m.Core, m.Observations)
+	store = NewRelationalTaskStore(m.Core, m.Runtime, m.Observations)
 	task, err := store.Find(ctx, "ingest")
-	if err != nil || task.ContentPath != "/downloads/ABCD-123.mp4" {
+	if err != nil || task.ContentPath != "/downloads/ABCD-123.mp4" || task.SelectionReportJSON != "" {
 		t.Fatal("durable ingest input lost", task, err)
 	}
 	service, err := NewService(fakeTracker{}, &fakeTorrentAdder{}, store, WithFileOperator(&fakeFileOperator{}))

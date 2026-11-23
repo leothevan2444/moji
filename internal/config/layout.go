@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -15,6 +16,37 @@ import (
 func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 	for _, section := range []string{"tasks", "automation"} {
 		if group := existingMapValue(node, section); group != nil {
+			if selection := existingMapValue(group, "torrent_selection"); selection != nil {
+				if selection.Kind != yaml.MappingNode {
+					return fmt.Errorf("%s.torrent_selection must be a versioned resource policy", section)
+				}
+				for i := 0; i < len(selection.Content); i += 2 {
+					key := selection.Content[i].Value
+					switch key {
+					case "version", "active_group", "groups", "rules", "enabled", "inspection_candidate_limit", "fast_rule_order", "fast_rules", "torrent_rules":
+					default:
+						return fmt.Errorf("unknown %s.torrent_selection field %s", section, key)
+					}
+				}
+
+				for _, key := range []string{"enabled", "inspection_candidate_limit", "fast_rule_order", "fast_rules", "torrent_rules"} {
+					if existingMapValue(selection, key) != nil {
+						return fmt.Errorf("%s.torrent_selection.%s is retired; back up and manually replace resource selection with version: 7 positive-only rules and groups; existing filters must not be silently discarded", section, key)
+					}
+				}
+				raw, err := yaml.Marshal(selection)
+				if err != nil {
+					return err
+				}
+				decoder := yaml.NewDecoder(bytes.NewReader(raw))
+				decoder.KnownFields(true)
+				var policy TorrentSelectionConfig
+				if err := decoder.Decode(&policy); err != nil {
+					return fmt.Errorf("invalid %s.torrent_selection: %w", section, err)
+				}
+
+			}
+
 			for _, retired := range []string{"subscription_poll_interval_hours", "subscription_check_enabled", "task_progress_sync_interval_seconds"} {
 				if existingMapValue(group, retired) != nil {
 					return fmt.Errorf("%s.%s is no longer supported; remove subscription switches and use task_processing_frequency (HIGH, MEDIUM or LOW)", section, retired)
@@ -53,9 +85,6 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 			return err
 		}
 		c.Indexers.Jackett.Enabled = c.Connection.Jackett.URL != ""
-		for _, id := range c.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs {
-			c.Indexers.QueryOrder = append(c.Indexers.QueryOrder, "jackett/"+id)
-		}
 		return validateSystemCalendar(c.System)
 	}
 	if version.Version != 2 && version.Version != 3 && version.Version != 4 {
@@ -107,9 +136,6 @@ func (c *Config) UnmarshalYAML(node *yaml.Node) error {
 	if version.Version < 3 {
 		c.Indexers.Jackett.Enabled = c.Connection.Jackett.URL != ""
 	}
-	for i, id := range c.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs {
-		c.Automation.TorrentSelection.FastRules.IndexerPreference.TrackerIDs[i] = strings.TrimPrefix(id, "jackett/")
-	}
 	if version.Version < 3 {
 		for i, id := range c.Indexers.QueryOrder {
 			if !strings.HasPrefix(id, "jackett/") {
@@ -150,21 +176,6 @@ func canonicalizeConfigNode(top *yaml.Node) error {
 	system := ensureMapValue(mapValue(top, "system"))
 	moveConfigNode(system, "task_delete_policy", automation, "task_delete_policy")
 	moveConfigNode(system, "stash_box_data_cache", stash, "data_cache")
-	selection := ensureMapValue(mapValue(automation, "torrent_selection"))
-	rules := ensureMapValue(mapValue(selection, "fast_rules"))
-	if preference := existingMapValue(rules, "indexer_preference"); preference != nil {
-		moveConfigNode(preference, "tracker_ids", indexers, "query_order")
-		deleteMapKey(rules, "indexer_preference")
-	}
-	if order := existingMapValue(selection, "fast_rule_order"); order != nil {
-		kept := order.Content[:0]
-		for _, item := range order.Content {
-			if item.Value != "INDEXER_PREFERENCE" {
-				kept = append(kept, item)
-			}
-		}
-		order.Content = kept
-	}
 	moveConfigNode(top, "automation", top, "tasks")
 	if len(conn.Content) > 0 {
 		*mapValue(top, "legacy_connection") = *conn

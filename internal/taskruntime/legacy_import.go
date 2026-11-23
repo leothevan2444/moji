@@ -62,6 +62,7 @@ func (s *RelationalTaskStore) ImportLegacyTasks(ctx context.Context, tasks []*Ta
 			return err
 		}
 		for _, source := range tasks[offset:end] {
+			s.saveSelectionReport(ctx, nil, source)
 			s.remember(source)
 		}
 	}

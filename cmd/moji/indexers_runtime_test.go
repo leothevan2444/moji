@@ -257,7 +257,7 @@ func TestIndexerRuntimeInstallsRulesAndUsesUnifiedAcquisitionInManagedTask(t *te
 	if result := awaitRuntimeRuleJob(t, ctx, runtime.definitions, job.ID); result.State != indexerdefs.Completed {
 		t.Fatalf("install failed: %s", result.ErrorCode)
 	}
-	coreStore := taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations)
+	coreStore := taskruntime.NewRelationalTaskStore(manager.Core, manager.Runtime, manager.Observations)
 	downloader := &runtimeIndexedDownloader{store: coreStore, t: t, data: data}
 	service := configureTaskRuntimeWithIndexers(store.Config(), store, nil, runtime.service, downloader, nil, taskruntime.NewTaskEventBus(8), manager)
 	task, err := service.QueueDownloadContext(ctx, taskruntime.DownloadRequest{Film: &film.Snapshot{Endpoint: "https://metadata.example/graphql", SceneID: "film-one", Code: "ABCD-123"}, Code: "ABCD-123", Trackers: []string{"one"}})
@@ -394,7 +394,7 @@ func testPickedCandidatePipeline(t *testing.T, existing, prepareDownload bool) {
 	if err = runtime.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
-	core := taskruntime.NewRelationalTaskStore(manager.Core, manager.Observations)
+	core := taskruntime.NewRelationalTaskStore(manager.Core, manager.Runtime, manager.Observations)
 	downloader := &runtimeIndexedDownloader{store: core, t: t, data: data}
 	events := taskruntime.NewTaskEventBus(8)
 	subscription := events.Subscribe(ctx)

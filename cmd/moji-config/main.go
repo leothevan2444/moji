@@ -37,14 +37,7 @@ func effective(cfg *config.Config) []byte {
 	copy.Automation.TaskProcessingFrequency = copy.Automation.EffectiveTaskProcessingFrequency()
 	copy.Automation.SourcingRetryIntervalHours = copy.Automation.EffectiveSourcingRetryIntervalHours()
 	// Site order is independent of the old candidate-ranking enable switch.
-	copy.Automation.TorrentSelection.FastRules.IndexerPreference.Enabled = true
-	order := []config.TorrentSelectionRuleType{}
-	for _, rule := range copy.Automation.TorrentSelection.FastRuleOrder {
-		if rule != config.TorrentSelectionRuleTypeIndexerPreference {
-			order = append(order, rule)
-		}
-	}
-	copy.Automation.TorrentSelection.FastRuleOrder = order
+
 	data, _ := json.Marshal(copy)
 	return data
 }
