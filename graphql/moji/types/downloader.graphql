@@ -1,4 +1,5 @@
 extend type Query {
+  torrentPieces(hash: String!): TorrentPieceMap!
   downloaderTransferPreferences: DownloaderTransferPreferences
   downloader(offset: Int = 0, limit: Int = 50, search: String, taskId: ID, attentionOnly: Boolean = false): DownloaderOverview!
 }
@@ -54,6 +55,10 @@ type ManagedTorrent {
   eta: Long!
   seeds: Long!
   peers: Long!
+  seedsTotal: Long
+  peersTotal: Long
+  activeSeconds: Long
+  lastSeenCompleteAt: String
   availability: Float!
   savePath: String!
   category: String!
@@ -112,3 +117,6 @@ type DownloaderCleanupStatus {
  name: String!
  updatedAt: String!
 }
+
+type TorrentPieceMap { hash: String!, total: Int!, observedAt: String!, buckets: [TorrentPieceBucket!]! }
+type TorrentPieceBucket { start: Int!, count: Int!, missing: Int!, downloading: Int!, downloaded: Int! }

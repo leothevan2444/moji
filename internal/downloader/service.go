@@ -65,34 +65,38 @@ type Policy struct {
 	CapacityOrder   string
 }
 type Torrent struct {
-	Hash           string
-	Name           string
-	State          string
-	Present        bool
-	TaskIDs        []string
-	TaskCodes      []string
-	AllCompleted   bool
-	CanDeleteFiles bool
-	Progress       float64
-	DownloadSpeed  int64
-	UploadSpeed    int64
-	Size           int64
-	CompletedBytes int64
-	Downloaded     int64
-	Uploaded       int64
-	Ratio          float64
-	SeedingSeconds int64
-	ETA            int64
-	Seeds          int64
-	Peers          int64
-	Availability   float64
-	SavePath       string
-	Category       string
-	Tags           string
-	LastSeenAt     string
-	RemovedAt      string
-	RemovalReason  string
-	CleanupError   bool
+	Hash               string
+	Name               string
+	State              string
+	Present            bool
+	TaskIDs            []string
+	TaskCodes          []string
+	AllCompleted       bool
+	CanDeleteFiles     bool
+	Progress           float64
+	DownloadSpeed      int64
+	UploadSpeed        int64
+	Size               int64
+	CompletedBytes     int64
+	Downloaded         int64
+	Uploaded           int64
+	Ratio              float64
+	SeedingSeconds     int64
+	ETA                int64
+	Seeds              int64
+	Peers              int64
+	SeedsTotal         *int64
+	PeersTotal         *int64
+	ActiveSeconds      *int64
+	LastSeenCompleteAt string
+	Availability       float64
+	SavePath           string
+	Category           string
+	Tags               string
+	LastSeenAt         string
+	RemovedAt          string
+	RemovalReason      string
+	CleanupError       bool
 }
 type Snapshot struct {
 	CheckedAt        string
@@ -115,6 +119,7 @@ type Service struct {
 	manager      *storage.Manager
 	mu           sync.Mutex
 	stateMu      sync.RWMutex
+	pieceSlots   chan struct{}
 	snapshot     Snapshot
 	observations chan []qbittorrent.Torrent
 	groupsFailed bool
@@ -237,6 +242,18 @@ func (s *Service) Snapshot(ctx context.Context) (Snapshot, error) {
 func cloneSnapshot(v Snapshot) Snapshot {
 	v.Torrents = append([]Torrent{}, v.Torrents...)
 	for i := range v.Torrents {
+		if v.Torrents[i].SeedsTotal != nil {
+			value := *v.Torrents[i].SeedsTotal
+			v.Torrents[i].SeedsTotal = &value
+		}
+		if v.Torrents[i].PeersTotal != nil {
+			value := *v.Torrents[i].PeersTotal
+			v.Torrents[i].PeersTotal = &value
+		}
+		if v.Torrents[i].ActiveSeconds != nil {
+			value := *v.Torrents[i].ActiveSeconds
+			v.Torrents[i].ActiveSeconds = &value
+		}
 		v.Torrents[i].TaskIDs = append([]string{}, v.Torrents[i].TaskIDs...)
 		v.Torrents[i].TaskCodes = append([]string{}, v.Torrents[i].TaskCodes...)
 	}
@@ -369,7 +386,7 @@ func (s *Service) refresh(ctx context.Context, cleanup bool) error {
 	for _, raw := range torrents {
 		hash := strings.ToLower(raw.Hash)
 		seen[hash] = true
-		t := Torrent{Hash: hash, Name: raw.Name, State: string(raw.State), Present: true, Progress: raw.Progress, DownloadSpeed: raw.DLSpeed, UploadSpeed: raw.UPSpeed, Size: raw.Size, CompletedBytes: raw.Completed, Downloaded: raw.Downloaded, Uploaded: raw.Uploaded, Ratio: raw.Ratio, SeedingSeconds: raw.SeedingTime, ETA: raw.ETA, Seeds: raw.NumSeeds, Peers: raw.NumLeechs, Availability: raw.Availability, SavePath: raw.SavePath, Category: raw.Category, Tags: raw.Tags, LastSeenAt: now}
+		t := Torrent{Hash: hash, Name: raw.Name, State: string(raw.State), Present: true, Progress: raw.Progress, DownloadSpeed: raw.DLSpeed, UploadSpeed: raw.UPSpeed, Size: raw.Size, CompletedBytes: raw.Completed, Downloaded: raw.Downloaded, Uploaded: raw.Uploaded, Ratio: raw.Ratio, SeedingSeconds: raw.SeedingTime, ETA: raw.ETA, Seeds: raw.NumSeeds, Peers: raw.NumLeechs, SeedsTotal: knownCount(raw.NumComplete), PeersTotal: knownCount(raw.NumIncomplete), ActiveSeconds: knownCount(raw.TimeActive), LastSeenCompleteAt: completeTime(raw.SeenComplete), Availability: raw.Availability, SavePath: raw.SavePath, Category: raw.Category, Tags: raw.Tags, LastSeenAt: now}
 		if prev, exists := old[hash]; exists && (prev.RemovalReason == "MANUAL_PENDING" || prev.RemovalReason == "POLICY_PENDING") {
 			t.RemovalReason = prev.RemovalReason
 		}

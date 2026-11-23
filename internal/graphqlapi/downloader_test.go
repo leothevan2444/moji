@@ -225,3 +225,45 @@ func newDownloaderSettings(t *testing.T) *config.Store {
 	}
 	return store
 }
+
+func (c *apiDownloadClient) GetTorrentPiecesStates(context.Context, string) ([]int, error) {
+	return []int{0, 1, 2, 2}, nil
+}
+func TestTorrentPiecesGraphQLUsesRealStatesAndFreshPresence(t *testing.T) {
+	ctx := context.Background()
+	hash := strings.Repeat("a", 40)
+	client := &apiDownloadClient{torrents: []qbittorrent.Torrent{{Hash: hash, NumComplete: 17, NumIncomplete: -1, TimeActive: 3600, SeenComplete: 1700000000}}}
+	tasks := &fakeTaskRuntime{}
+	service, err := downloader.New(client, tasks, filepath.Join(t.TempDir(), "test.db"), newDownloaderSettings(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close()
+	if err := service.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	resolver := NewResolver(nil, tasks, nil, "test")
+	resolver.Downloader = service
+	var response struct {
+		Data struct {
+			TorrentPieces model.TorrentPieceMap
+			Downloader    model.DownloaderOverview
+		}
+		Errors []struct{ Message string }
+	}
+	executeGraphQLInto(t, resolver, `{torrentPieces(hash:"`+hash+`"){hash total observedAt buckets{start count missing downloading downloaded}} downloader{torrents{seedsTotal peersTotal activeSeconds lastSeenCompleteAt}}}`, &response)
+	if len(response.Errors) > 0 || response.Data.TorrentPieces.Total != 4 || len(response.Data.TorrentPieces.Buckets) != 4 {
+		t.Fatalf("piece query failed: %+v", response)
+	}
+	tor := response.Data.Downloader.Torrents[0]
+	if tor.SeedsTotal == nil || *tor.SeedsTotal != 17 || tor.PeersTotal != nil || tor.ActiveSeconds == nil || *tor.ActiveSeconds != 3600 || tor.LastSeenCompleteAt == nil {
+		t.Fatalf("upstream fields lost: %+v", tor)
+	}
+	executeGraphQLInto(t, resolver, `{torrentPieces(hash:"`+strings.Repeat("b", 40)+`"){total}}`, &response)
+	if len(response.Errors) == 0 {
+		t.Fatal("unobserved hash accepted")
+	}
+	if classifyError(downloader.ErrPiecesUnavailable) != "TORRENT_PIECES_UNAVAILABLE" {
+		t.Fatal("unstable public error")
+	}
+}

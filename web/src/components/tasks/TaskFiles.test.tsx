@@ -26,6 +26,9 @@ describe("TaskFiles", () => {
   expect(screen.getByText("Save directory")).toBeTruthy();
   expect(screen.queryByText("Content location")).toBeNull();
   expect(screen.queryByText("Tags")).toBeNull();
+  const details=screen.getByText("More information").closest("details")!;
+  expect(details.open).toBe(false);
+  await userEvent.setup().click(details.querySelector("summary")!);
   await userEvent.setup().click(screen.getByRole("button", { name: "Copy Save directory" }));
   expect(onCopy).toHaveBeenCalledWith("/downloads/library", "Save directory copied");
  });
@@ -80,6 +83,12 @@ describe("TaskFiles", () => {
   await user.click(confirm);
   expect(resolve).toHaveBeenCalledWith({ id: task.id, videoIndices: [12, 7] });
  });
+ it("distinguishes selected files from all files and updates the selected size",async()=>{
+  render(<TaskFiles task={task}/>);
+  expect(screen.getByText("Files: 1 selected / 4 total · 10 B")).toBeTruthy();
+  await userEvent.setup().click(screen.getByRole("checkbox",{name:"unknown-a.mkv"}));
+  expect(screen.getByText("Files: 2 selected / 4 total · 110 B")).toBeTruthy();
+ });
  it("keeps selections available after a failed save and allows retry", async () => {
   const user = userEvent.setup();
   resolve.mockRejectedValueOnce(new Error("Connection interrupted"));
@@ -106,8 +115,26 @@ describe("TaskFiles", () => {
   expect(within(information).queryByRole("list")).toBeNull();
   await user.click(within(information).getByRole("button", { name: "Copy Torrent name" }));
   expect(onCopy).toHaveBeenCalledWith(torrentName, "Torrent name copied");
+  await user.click(information.querySelector(".torrent-information summary")!);
   await user.click(within(information).getByRole("button", { name: "Copy Magnet link" }));
   expect(onCopy).toHaveBeenCalledWith(torrentUrl, "Magnet link copied");
+ });
+ it("does not expose internal indexer handles as download links",async()=>{
+  const handle="indexer-resource:opaque-server-reference";
+  const {rerender}=render(<TaskFiles task={{...task,torrentName:"Observed torrent",torrentUrl:handle}}/>);
+  expect(screen.queryByText(handle)).toBeNull();
+  expect(screen.queryByText("Torrent URL")).toBeNull();
+  expect(screen.queryByRole("button",{name:"Copy Torrent URL"})).toBeNull();
+  rerender(<TaskFiles task={{...task,files:[],torrentUrl:handle}}/>);
+  expect(screen.queryByRole("article",{name:"Torrent information"})).toBeNull();
+ });
+ it("keeps a real HTTP torrent source visible and copyable",async()=>{
+  const copy=vi.fn();const url="https://indexer.test/download/fixture";
+  render(<TaskFiles task={{...task,files:[],torrentUrl:url}} onCopy={copy}/>);
+  await userEvent.setup().click(screen.getByText("More information"));
+  expect(screen.getByText(url)).toBeTruthy();
+  await userEvent.setup().click(screen.getByRole("button",{name:"Copy Torrent URL"}));
+  expect(copy).toHaveBeenCalledWith(url,"Torrent URL copied");
  });
  it("does not show an empty torrent panel before a resource is chosen", () => {
   render(<TaskFiles task={{ ...task, files: [] }} />);

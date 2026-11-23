@@ -11,8 +11,8 @@ import { useMutation } from "urql";
 import { useTranslation } from "react-i18next";
 import { ResolveTaskFilesDocumentDocument } from "../../graphql/generated/graphql";
 import { describeQueryError } from "../../services/queryError";
-import { TaskValue } from "./TaskValue";
-import { formatBytes, isMagnetLink, needsTaskFileSelection, type DashboardTask } from "../../utils";
+import { TorrentIdentity, TorrentInformation, usableTorrentURL } from "../downloader/TorrentInformation";
+import { formatBytes, needsTaskFileSelection, type DashboardTask } from "../../utils";
 
 type TaskFile = NonNullable<DashboardTask["files"]>[number];
 const isVideo = (file: TaskFile) => ["MAIN", "UNKNOWN_VIDEO"].includes(file.kind);
@@ -50,12 +50,13 @@ export function TaskFiles({ task, onCopy, initialSelection, onSelectionChange, o
   }, [selected]);
   const editable = needsTaskFileSelection(task);
   const downloadLocation = task.contentPath?.trim() || task.savePath?.trim();
-  if (!downloadLocation && !task.tags?.trim() && !files.length && !task.torrentName?.trim() && !task.torrentHash?.trim() && !task.torrentUrl?.trim()) return null;
+  if (!downloadLocation && !task.tags?.trim() && !files.length && !task.torrentName?.trim() && !task.torrentHash?.trim() && !usableTorrentURL(task.torrentUrl)) return null;
   const selectedVideoFiles = selected.map(index => files.find(file => file.index === index)).filter((file): file is TaskFile => Boolean(file));
   const candidates = [...selectedVideoFiles, ...files.filter(file => isVideo(file) && !selected.includes(file.index))];
   const included = files.filter(file => file.selected).sort((a, b) => (a.kind === "MAIN" ? 0 : 1) - (b.kind === "MAIN" ? 0 : 1) || a.part - b.part);
   const subtitles = files.filter(file => file.selected && file.kind === "SUBTITLE");
   const movieCount = files.filter(file => file.selected && file.kind === "MAIN").length;
+  const selectedFiles = files.filter(file=>editable && isVideo(file)?selected.includes(file.index):file.selected);
   const skipped = files.filter(file => !file.selected && !(editable && isVideo(file)));
   const groups = editable
     ? [{ key: "choose", label: t("fileList.choose"), files: candidates }, { key: "included", label: t("fileList.subtitles"), files: subtitles }, { key: "skipped", label: t("mediaFiles.skipped"), files: skipped }]
@@ -87,20 +88,14 @@ export function TaskFiles({ task, onCopy, initialSelection, onSelectionChange, o
     }
   };
 
-  return <article key={task.id} className="drawer-card task-files" aria-labelledby={headingId}>
-    <div className="task-files__heading">
-      <h3 id={headingId}>{t("fileList.title")}</h3>
-      {files.length > 0 ? <span className="task-files__count">{t("fileList.fileCount", { count: files.length })} · {formatBytes(files.reduce((sum, file) => sum + fileSize(file), 0))}</span> : null}
-    </div>
-    <dl className="torrent-info">
-      {task.torrentName?.trim() ? <TaskValue className="torrent-info__name" label={t("taskDetail.torrentName")} value={task.torrentName.trim()} onCopy={onCopy} /> : null}
-      {task.torrentHash?.trim() ? <TaskValue label={t("taskDetail.torrentHash")} value={task.torrentHash.trim()} onCopy={onCopy} /> : null}
-      {task.torrentUrl?.trim() ? <TaskValue label={t(isMagnetLink(task.torrentUrl) ? "taskDetail.magnet" : "taskExperience.torrentUrl")} value={task.torrentUrl.trim()} onCopy={onCopy} /> : null}
-      {downloadLocation ? <TaskValue label={t(task.contentPath?.trim() ? "taskInfo.contentLocation" : "taskInfo.saveDirectory")} value={downloadLocation} onCopy={onCopy} /> : null}
-      {task.tags?.trim() ? <TaskValue label={t("taskDetail.tags")} value={task.tags.trim()} onCopy={onCopy} /> : null}
-    </dl>
-    {torrentControls}
+  return <article key={task.id} className="drawer-card task-files" aria-label={t("fileList.title")}>
+    {!torrentControls ? <>
+      <div className="task-files__heading"><h3 id={headingId}>{t("fileList.title")}</h3></div>
+      <TorrentIdentity task={task} onCopy={onCopy} />
+      <TorrentInformation task={task} onCopy={onCopy} />
+    </> : torrentControls}
     {files.length > 0 ? <div className="task-files__groups">
+      <p className="task-files__count">{t("torrentCard.selectedFiles",{selected:selectedFiles.length,total:files.length,size:formatBytes(selectedFiles.reduce((sum,file)=>sum+fileSize(file),0))})}</p>
       {groups.filter(group => group.files.length > 0).map(group => {
         const Body = group.key === "skipped" ? "details" : Fragment;
         const Heading = group.key === "skipped" ? "summary" : "div";

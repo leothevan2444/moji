@@ -71,6 +71,22 @@ func (r *mutationResolver) SetDownloaderSpeedLimit(ctx context.Context, upload b
 	return err == nil, err
 }
 
+// TorrentPieces is the resolver for the torrentPieces field.
+func (r *queryResolver) TorrentPieces(ctx context.Context, hash string) (*model.TorrentPieceMap, error) {
+	if r.Resolver.Downloader == nil {
+		return nil, downloader.ErrPiecesUnavailable
+	}
+	pieces, err := r.Resolver.Downloader.Pieces(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	out := &model.TorrentPieceMap{Hash: pieces.Hash, Total: pieces.Total, ObservedAt: pieces.ObservedAt, Buckets: []*model.TorrentPieceBucket{}}
+	for _, b := range pieces.Buckets {
+		out.Buckets = append(out.Buckets, &model.TorrentPieceBucket{Start: b.Start, Count: b.Count, Missing: b.Missing, Downloading: b.Downloading, Downloaded: b.Downloaded})
+	}
+	return out, nil
+}
+
 // DownloaderTransferPreferences is the resolver for the downloaderTransferPreferences field.
 func (r *queryResolver) DownloaderTransferPreferences(ctx context.Context) (*model.DownloaderTransferPreferences, error) {
 	if r.Resolver.Downloader == nil {

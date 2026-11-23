@@ -1,27 +1,26 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import { Provider, useMutation, useQuery } from "urql";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
 import { settingsClient } from "../../graphql/client";
 import { ControlTorrentDocumentDocument, DownloaderDocumentDocument, RefreshDownloaderDocumentDocument, TorrentAction, type DownloaderDocumentQuery } from "../../graphql/generated/graphql";
-import { formatBytesRate, formatDurationSeconds } from "../../utils/formatters";
 import { qbittorrentStateLabel } from "../../utils/qbittorrentState";
 import { describeQueryError } from "../../services/queryError";
 import { TorrentTable } from "./TorrentTable";
-import { TorrentDetails, TorrentNotice } from "./TorrentDetails";
+import { TaskTorrentCard } from "./TaskTorrentCard";
+import { TorrentIdentity, TorrentInformation, type CopyTorrentValue } from "./TorrentInformation";
+import type { DashboardTask } from "../../utils";
 import "../../styles/downloader.scss";
 
 type Overview = DownloaderDocumentQuery["downloader"];
-type Torrent = Overview["torrents"][number];
 
-interface DownloadManagerProps { embedded?: boolean; taskId?: string; onCountChange?: (count: number) => void }
-export function DownloadManager({ taskId, onCountChange, embedded }: DownloadManagerProps) {
-  return <Provider value={settingsClient}><Manager taskId={taskId} onCountChange={onCountChange} embedded={embedded} /></Provider>;
+interface DownloadManagerProps { embedded?: boolean; taskId?: string; task?:DashboardTask;onCopy?:CopyTorrentValue; onCountChange?: (count: number) => void }
+export function DownloadManager(props: DownloadManagerProps) {
+  return <Provider value={settingsClient}><Manager key={props.taskId??"global"} {...props} /></Provider>;
 }
 
-function Manager({ taskId, onCountChange, embedded }: DownloadManagerProps) {
+function Manager({ taskId, onCountChange, embedded, task, onCopy }: DownloadManagerProps) {
   const { t } = useTranslation();
   const [offset, setOffset] = useState(0);
   const [search, setSearch] = useState("");
@@ -37,11 +36,14 @@ function Manager({ taskId, onCountChange, embedded }: DownloadManagerProps) {
     document.addEventListener("visibilitychange", onVisible);
     return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
   }, [requery]);
-  const snapshot = data?.downloader;
+  const [confirmed,setConfirmed]=useState<Overview|null>(null);
+  useEffect(()=>{if(data?.downloader && !error && !fetching) setConfirmed(data.downloader);},[data,error,fetching]);
+  const snapshot = (error ? confirmed : data?.downloader) ?? confirmed;
   const torrents = snapshot?.torrents.filter(torrent => taskId || torrent.present) ?? [];
   useEffect(() => { if (!fetching && snapshot && offset > 0 && offset >= snapshot.total) setOffset(Math.max(0, Math.floor((snapshot.total - 1) / 30) * 30)); }, [fetching, snapshot, offset]);
   useEffect(() => { if (!taskId && snapshot) onCountChange?.(snapshot.total); }, [onCountChange, snapshot?.total, taskId]);
-  const disabled = Boolean(pending) || !snapshot || snapshot.stale;
+  const observationAvailable=Boolean(snapshot && snapshot.connected && !snapshot.stale && !error);
+  const disabled = Boolean(pending) || !observationAvailable;
   const refresh = async () => {
     setPending("refresh"); setFeedback(null);
     try {
@@ -59,18 +61,19 @@ function Manager({ taskId, onCountChange, embedded }: DownloadManagerProps) {
     } finally { setPending(null); }
   };
   const refreshButton = <button type="button" className="icon-button" title={t("downloader.refresh")} aria-label={t("downloader.refresh")} aria-busy={pending === "refresh"} disabled={Boolean(pending) || fetching} onClick={() => void refresh()}><FontAwesomeIcon icon={faRotate} aria-hidden="true" /></button>;
+  const savedInformation=embedded?<><TorrentIdentity task={task} onCopy={onCopy}/><TorrentInformation task={task} onCopy={onCopy}/></>:null;
   return <section className={`download-manager${embedded ? " download-manager--embedded" : ""}`} aria-label={t(taskId ? "downloader.taskTitle" : "downloader.title")}>
-    {taskId ? <div className="download-manager__toolbar"><h4>{t("downloader.taskTitle")}</h4>{refreshButton}</div> : <div className="download-manager__toolbar download-manager__filters">
+    {taskId ? <div className="download-manager__toolbar task-torrent-heading">{embedded?<h3>{t("fileList.title")}</h3>:<h4>{t("downloader.taskTitle")}</h4>}{embedded && torrents.length===1?<span className={`status-chip ${torrents[0].needsAttention?"tone-danger":"tone-neutral"}`}>{qbittorrentStateLabel(torrents[0].state,t)}</span>:null}{refreshButton}</div> : <div className="download-manager__toolbar download-manager__filters">
       <input type="search" aria-label={t("downloader.search")} placeholder={t("downloader.search")} value={search} onChange={event => { setSearch(event.target.value); setOffset(0); }} />
       <label><input type="checkbox" checked={attentionOnly} onChange={event => { setAttentionOnly(event.target.checked); setOffset(0); }} />{t("downloader.attention", { count: snapshot?.attentionCount ?? 0 })}</label>
       {refreshButton}
     </div>}
     {error ? <p role="alert" className="tone-danger">{describeQueryError(error)}</p> : null}
     {feedback ? <p role="alert" className="tone-danger">{feedback}</p> : null}
-    {snapshot?.stale ? <p className="tone-danger" role="status">{t("downloader.stale")}</p> : null}
-    {!snapshot ? <p role="status">{t("common.loading")}</p> : <>
+    {snapshot && (snapshot.stale || error) ? <p className="tone-danger" role="status">{t("downloader.stale")}</p> : null}
+    {!snapshot ? <>{!error?<p role="status">{t("common.loading")}</p>:null}{savedInformation}</> : <>
       <div className="download-manager__list">
-        {torrents.length ? taskId ? torrents.map(torrent => <TorrentCard key={torrent.hash} torrent={torrent} embedded={embedded} disabled={disabled} pending={pending === torrent.hash} onAction={action} />) : <TorrentTable torrents={torrents} disabled={disabled} pending={pending} onAction={action} /> : <p>{t("downloader.empty")}</p>}
+        {torrents.length ? taskId ? torrents.map(torrent => <TaskTorrentCard observationAvailable={observationAvailable} key={torrent.hash} torrent={torrent} embedded={embedded} task={task} onCopy={onCopy} showState={!embedded || torrents.length!==1} disabled={disabled} pending={pending === torrent.hash} onAction={action} />) : <TorrentTable torrents={torrents} disabled={disabled} pending={pending} onAction={action} /> : <><p>{t("downloader.empty")}</p>{savedInformation}</>}
       </div>
       {snapshot.total > 30 ? <div className="download-manager__toolbar">
         <button type="button" disabled={fetching || offset === 0} onClick={() => setOffset(Math.max(0, offset - 30))}>{t("downloader.previous")}</button>
@@ -78,38 +81,4 @@ function Manager({ taskId, onCountChange, embedded }: DownloadManagerProps) {
       </div> : null}
     </>}
   </section>;
-}
-function Metric({ label, value }: { label: string; value: string }) { return <div><span className="muted">{label}</span><strong>{value}</strong></div>; }
-function TorrentCard({ torrent: torrent, disabled, pending, onAction, embedded }: { embedded?: boolean; torrent: Torrent; disabled: boolean; pending: boolean; onAction: (hash: string, action: TorrentAction) => Promise<void> }) {
-  const { t } = useTranslation();
-  const [confirm, setConfirm] = useState<TorrentAction | null>(null);
-  const [details, setDetails] = useState(false);
-  const paused = /^(paused|stopped)/u.test(torrent.state);
-  const problem = torrent.needsAttention;
-  const run = (next: TorrentAction) => { setConfirm(null); void onAction(torrent.hash, next); };
-  return <article className={`${embedded ? "download-torrent--embedded" : "drawer-card"} download-torrent ${problem ? "download-torrent--attention" : ""}`}>
-    <div className="drawer-card__head download-manager__toolbar"><h4>{torrent.name || torrent.hash}</h4><span className={`status-chip ${problem ? "tone-danger" : "tone-neutral"}`}>{qbittorrentStateLabel(torrent.state, t)}</span></div>
-    {!embedded ? <p>{torrent.taskIds.length ? torrent.taskIds.map((id, index) => <Link key={id} to={`/tasks/${encodeURIComponent(id)}`}>{torrent.taskCodes[index] || id} </Link>) : t("downloader.unmanaged")}</p> : null}
-    <TorrentNotice torrent={torrent} />
-    <div className="home-progress" role="progressbar" aria-label={t("downloader.progress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(torrent.progress * 100)}><span style={{ width: `${torrent.progress * 100}%` }} /></div>
-    <div className="download-metrics">
-      <Metric label={t("downloader.progress")} value={`${(torrent.progress * 100).toFixed(1)}%`} />
-      <Metric label={t("downloader.download")} value={formatBytesRate(torrent.downloadSpeed)} />
-      <Metric label={t("downloader.upload")} value={formatBytesRate(torrent.uploadSpeed)} />
-      <Metric label={t("downloader.ratio")} value={torrent.ratio.toFixed(2)} />
-      <Metric label={t("downloader.seedTime")} value={t("downloader.hours", { value: (torrent.seedingSeconds / 3600).toFixed(1) })} />
-      <Metric label={t("downloader.eta")} value={torrent.eta > 0 && torrent.eta < 8640000 ? formatDurationSeconds(torrent.eta) : t("downloader.unknown")} />
-    </div>
-    <div className="download-manager__toolbar">
-      <button type="button" className="ghost-button" disabled={disabled || !torrent.present} onClick={() => run(paused ? TorrentAction.Resume : TorrentAction.Pause)}>{t(paused ? "downloader.resume" : "downloader.pause")}</button>
-      <button type="button" className="ghost-button" disabled={disabled || !torrent.present} onClick={() => run(TorrentAction.Reannounce)}>{t("downloader.reannounce")}</button>
-      <button type="button" className="ghost-button" disabled={disabled || !torrent.present} onClick={() => setConfirm(TorrentAction.Recheck)}>{t("downloader.recheck")}</button>
-      <button type="button" className="ghost-button" disabled={disabled || !torrent.present || (torrent.taskIds.length > 0 && !torrent.allCompleted)} onClick={() => setConfirm(TorrentAction.Remove)}>{t("downloader.remove")}</button>
-      <button type="button" className="ghost-button" disabled={disabled || !torrent.present || !torrent.canDeleteFiles} onClick={() => setConfirm(TorrentAction.RemoveFiles)}>{t("downloader.removeFiles")}</button>
-      <button type="button" className="ghost-button" aria-expanded={details} onClick={() => setDetails(!details)}>{t("downloader.details")}</button>
-      {pending ? <span role="status">{t("common.loading")}</span> : null}
-    </div>
-    {confirm ? <div className="image-cache-confirm" role="group" aria-label={t("downloader.confirmTitle")}><p>{t(confirm === TorrentAction.Recheck ? "downloader.confirmRecheck" : confirm === TorrentAction.RemoveFiles ? "downloader.confirmRemoveFiles" : "downloader.confirmRemove")}</p><button type="button" className="ghost-button" disabled={disabled} onClick={() => run(confirm)}>{t("downloader.confirm")}</button><button type="button" onClick={() => setConfirm(null)}>{t("downloader.cancel")}</button></div> : null}
-    {details ? <TorrentDetails torrent={torrent} showNotice={false} /> : null}
-  </article>;
 }

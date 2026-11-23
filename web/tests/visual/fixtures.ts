@@ -38,13 +38,13 @@ export const downloaderSnapshot = {
         taskIds: ["MOJI-301"], taskCodes: ["MOJI-301"], allCompleted: true, canDeleteFiles: true,
         progress: 1, downloadSpeed: 0, uploadSpeed: 2400000, size: 12000000000, completedBytes: 12000000000,
         downloaded: 12000000000, uploaded: 32000000000, ratio: 2.67, seedingSeconds: 90000, eta: 0, seeds: 8, peers: 12,
-        availability: 3.4, savePath: "/downloads/MOJI-301", category: "moji", tags: "subscription",
+        seedsTotal:40,peersTotal:100,activeSeconds:123456,lastSeenCompleteAt:"2026-01-15T11:30:00Z",availability: 3.4, savePath: "/downloads/MOJI-301", category: "moji", tags: "subscription",
         lastSeenAt: now, removedAt: "", removalReason: "", cleanupError: false, needsAttention: false },
       { hash: "b".repeat(40), name: "An independently added qB torrent", state: "downloading", present: true,
         taskIds: [], taskCodes: [], allCompleted: false, canDeleteFiles: false,
         progress: .62, downloadSpeed: 12500000, uploadSpeed: 0, size: 12000000000, completedBytes: 7440000000,
         downloaded: 7440000000, uploaded: 2000000000, ratio: .27, seedingSeconds: 0, eta: 0, seeds: 0, peers: 0,
-        availability: 0, savePath: "/downloads/MOJI-201", category: "moji", tags: "subscription",
+        seedsTotal:20,peersTotal:35,activeSeconds:7200,lastSeenCompleteAt:null,availability: 0, savePath: "/downloads/MOJI-201", category: "moji", tags: "subscription",
         lastSeenAt: now, removedAt: "", removalReason: "", cleanupError: false, needsAttention: false }
     ]
   };
@@ -111,6 +111,7 @@ const rootValue = {
   tasks: [],
   task: ({ id }: { id: string }) => [...homeOverview.attentionTasks, ...homeOverview.activeTasks, ...homeOverview.recentTasks].find(task => task.id === id),
   taskStashScenes: [],
+  torrentPieces: ({hash}:{hash:string})=>({hash,total:32,observedAt:now,buckets:Array.from({length:32},(_,i)=>({start:i,count:1,missing:hash.startsWith("b")&&i>=24?1:0,downloading:hash.startsWith("b")&&i>=20&&i<24?1:0,downloaded:hash.startsWith("b")?(i<20?1:0):1}))}),
   discoverScenes: { items: [], usedStashBox: null, fallbackCount: 0, searchedQuery: "" },
   dashboardStats: { total: 0, active: 0, completed: 0, downloading: 0, pendingScans: 0, failed: 0 },
   releaseReviews: ({ input }: { input: { status?: string; page?: number } }) => ({

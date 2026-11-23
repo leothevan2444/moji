@@ -31,7 +31,7 @@ export function TaskDetail({ task, pendingRetry, pendingDelete,
   const filesRef = useRef<HTMLDivElement>(null);
   const files = <div ref={filesRef} tabIndex={-1} className="task-detail-files">
     <TaskFiles key={task.id} task={task} onCopy={onCopy}
-      torrentControls={task.torrentHash?.trim() ? <DownloadManager key={task.id} taskId={task.id} embedded /> : undefined} />
+      torrentControls={task.torrentHash?.trim() ? <DownloadManager key={task.id} taskId={task.id} task={task} onCopy={onCopy} embedded /> : undefined} />
   </div>;
 
   return <>

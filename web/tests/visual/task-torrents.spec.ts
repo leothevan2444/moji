@@ -45,6 +45,9 @@ for (const locale of ["en", "zh-CN"] as const) {
       await expect(info.locator(".download-torrent")).toHaveCount(1);
       expect(await info.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
       await expect(info).toHaveScreenshot(`${locale}-${theme}-torrent-information.png`);
+      await expect(info.locator(".download-torrent [role=progressbar]")).toHaveCount(0);
+      await expect(info.locator(".torrent-information")).not.toHaveAttribute("open");
+      await expect(info.getByRole("button",{name:locale==="en"?"More actions":"更多操作",exact:true})).toHaveCount(0);
       await info.getByRole("button", { name: locale === "en" ? "Remove torrent and download files" : "移除种子和下载文件", exact: true }).click();
       await expect(info.locator(".image-cache-confirm")).toBeVisible();
       expect(errors).toEqual([]);

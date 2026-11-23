@@ -388,6 +388,8 @@ const (
 	PieceStateDownloaded     PieceState = 2 // Already downloaded
 )
 
+const maxPieceStateResponseBytes = 8 << 20
+
 func (c *Client) GetTorrentPiecesStates(ctx context.Context, hash string) ([]int, error) {
 	baseURL, httpClient := c.resolve()
 	params := url.Values{}
@@ -410,7 +412,7 @@ func (c *Client) GetTorrentPiecesStates(ctx context.Context, hash string) ([]int
 	defer resp.Body.Close()
 
 	var pieceStates []int
-	if err := json.NewDecoder(resp.Body).Decode(&pieceStates); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxPieceStateResponseBytes)).Decode(&pieceStates); err != nil {
 		return nil, err
 	}
 

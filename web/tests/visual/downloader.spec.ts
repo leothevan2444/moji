@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }, info) => { await page.addInitScript(locale => l
 
 test("home keeps torrents hidden and opens the shared modal with keyboard focus restoration", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".home-system .home-downloader")).toBeVisible();
+  await expect(page.locator(".home-downloader")).toBeVisible();
   await expect(page.locator(".home-downloader .home-diagnostics")).toHaveCount(0);
   await expect(page.locator(".home-downloader-info")).toHaveCount(2);
   await expect(page.locator(".home-downloader-info").first()).toHaveAttribute("title", /Free space refers to the default download disk/);

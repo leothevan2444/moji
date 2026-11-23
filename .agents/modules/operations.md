@@ -20,6 +20,8 @@ testServiceConnection 用当前输入和短生命周期客户端，十秒截止�
 
 启停、校验、汇报、限速与移除以之后的真实观测确认。缺失/error/missingFiles 只阻塞相关活动下载，不回退已入库任务；已完成任务源丢失为中性信息。添加拒绝只按已验证精确 info hash 核对，不按标题猜测关联。
 
+详情分片由 [pieces](../../internal/downloader/pieces.go) 按需读取真实 `pieceStates`，读取限时 3 秒、并发 2，响应体上限 8 MiB，最多处理 200 万片并返回 512 段；不加入全量下载器轮询。Tracker 总数来自 `num_complete/num_incomplete`，活动时间来自 `time_active`，最后完整可见来自 `seen_complete`；旧观测缺失这些字段时保持未知，不与 Moji `LastSeenAt` 混用。
+
 全项目 qB 状态复用[qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)及[官方 fixture](../../web/src/utils/__fixtures__/qbittorrent-statuses.json)，保留 `[F]`、大小写和空格；Moji missing/removed 不冒充 qB 官方状态。free_space_on_disk 是默认下载盘可用量，字节和不证明准确磁盘占用，缺失显示未知。
 
 ## 自动清理与 qB 原生传输设置

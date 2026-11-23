@@ -3,7 +3,7 @@ query DownloaderDocument($offset: Int = 0, $limit: Int = 50, $search: String, $t
     checkedAt connected stale storageAvailable cleanup {enabled phase reason} freeSpace downloadSpeed uploadSpeed downloadLimit uploadLimit connectionStatus dhtNodes completedBytes remainingBytes total attentionCount
     policy { enabled deleteFiles afterIngest capacityEnabled minFreeGb capacityOrder }
     torrents {
-      hash name state present taskIds taskCodes allCompleted canDeleteFiles progress downloadSpeed uploadSpeed size completedBytes downloaded uploaded ratio seedingSeconds eta seeds peers availability savePath category tags lastSeenAt removedAt removalReason cleanupError needsAttention
+      hash name state present taskIds taskCodes allCompleted canDeleteFiles progress downloadSpeed uploadSpeed size completedBytes downloaded uploaded ratio seedingSeconds eta seeds peers seedsTotal peersTotal activeSeconds lastSeenCompleteAt availability savePath category tags lastSeenAt removedAt removalReason cleanupError needsAttention
     }
   }
 }
@@ -30,3 +30,7 @@ queueingEnabled maxActiveDownloads maxActiveUploads maxActiveTorrents dontCountS
 mutation UpdateDownloaderTransferPreferencesDocument($input: DownloaderTransferPreferencesInput!) { updateDownloaderTransferPreferences(input: $input) {
 queueingEnabled maxActiveDownloads maxActiveUploads maxActiveTorrents dontCountSlowTorrents slowTorrentDlRateThreshold slowTorrentUlRateThreshold slowTorrentInactiveTimer maxRatioEnabled maxRatio maxRatioAction maxSeedingTimeEnabled maxSeedingTime maxInactiveSeedingTimeEnabled maxInactiveSeedingTime shareLimitMode
 } }
+
+query TorrentPiecesDocument($hash:String!) {
+ torrentPieces(hash:$hash) {hash total observedAt buckets {start count missing downloading downloaded}}
+}

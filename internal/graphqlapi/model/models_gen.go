@@ -806,35 +806,39 @@ type LogEvent struct {
 }
 
 type ManagedTorrent struct {
-	Hash           string   `json:"hash"`
-	Name           string   `json:"name"`
-	State          string   `json:"state"`
-	Present        bool     `json:"present"`
-	TaskIds        []string `json:"taskIds"`
-	TaskCodes      []string `json:"taskCodes"`
-	AllCompleted   bool     `json:"allCompleted"`
-	CanDeleteFiles bool     `json:"canDeleteFiles"`
-	Progress       float64  `json:"progress"`
-	DownloadSpeed  int64    `json:"downloadSpeed"`
-	UploadSpeed    int64    `json:"uploadSpeed"`
-	Size           int64    `json:"size"`
-	CompletedBytes int64    `json:"completedBytes"`
-	Downloaded     int64    `json:"downloaded"`
-	Uploaded       int64    `json:"uploaded"`
-	Ratio          float64  `json:"ratio"`
-	SeedingSeconds int64    `json:"seedingSeconds"`
-	Eta            int64    `json:"eta"`
-	Seeds          int64    `json:"seeds"`
-	Peers          int64    `json:"peers"`
-	Availability   float64  `json:"availability"`
-	SavePath       string   `json:"savePath"`
-	Category       string   `json:"category"`
-	Tags           string   `json:"tags"`
-	LastSeenAt     string   `json:"lastSeenAt"`
-	RemovedAt      string   `json:"removedAt"`
-	RemovalReason  string   `json:"removalReason"`
-	CleanupError   bool     `json:"cleanupError"`
-	NeedsAttention bool     `json:"needsAttention"`
+	Hash               string   `json:"hash"`
+	Name               string   `json:"name"`
+	State              string   `json:"state"`
+	Present            bool     `json:"present"`
+	TaskIds            []string `json:"taskIds"`
+	TaskCodes          []string `json:"taskCodes"`
+	AllCompleted       bool     `json:"allCompleted"`
+	CanDeleteFiles     bool     `json:"canDeleteFiles"`
+	Progress           float64  `json:"progress"`
+	DownloadSpeed      int64    `json:"downloadSpeed"`
+	UploadSpeed        int64    `json:"uploadSpeed"`
+	Size               int64    `json:"size"`
+	CompletedBytes     int64    `json:"completedBytes"`
+	Downloaded         int64    `json:"downloaded"`
+	Uploaded           int64    `json:"uploaded"`
+	Ratio              float64  `json:"ratio"`
+	SeedingSeconds     int64    `json:"seedingSeconds"`
+	Eta                int64    `json:"eta"`
+	Seeds              int64    `json:"seeds"`
+	Peers              int64    `json:"peers"`
+	SeedsTotal         *int64   `json:"seedsTotal,omitempty"`
+	PeersTotal         *int64   `json:"peersTotal,omitempty"`
+	ActiveSeconds      *int64   `json:"activeSeconds,omitempty"`
+	LastSeenCompleteAt *string  `json:"lastSeenCompleteAt,omitempty"`
+	Availability       float64  `json:"availability"`
+	SavePath           string   `json:"savePath"`
+	Category           string   `json:"category"`
+	Tags               string   `json:"tags"`
+	LastSeenAt         string   `json:"lastSeenAt"`
+	RemovedAt          string   `json:"removedAt"`
+	RemovalReason      string   `json:"removalReason"`
+	CleanupError       bool     `json:"cleanupError"`
+	NeedsAttention     bool     `json:"needsAttention"`
 }
 
 type MatchedStashBox struct {
@@ -1843,6 +1847,21 @@ type TorrentFileNameMatchRule struct {
 
 type TorrentFileNameMatchRuleInput struct {
 	Clauses []*TorrentFileNameMatchClauseInput `json:"clauses"`
+}
+
+type TorrentPieceBucket struct {
+	Start       int `json:"start"`
+	Count       int `json:"count"`
+	Missing     int `json:"missing"`
+	Downloading int `json:"downloading"`
+	Downloaded  int `json:"downloaded"`
+}
+
+type TorrentPieceMap struct {
+	Hash       string                `json:"hash"`
+	Total      int                   `json:"total"`
+	ObservedAt string                `json:"observedAt"`
+	Buckets    []*TorrentPieceBucket `json:"buckets"`
 }
 
 // A persisted, bounded search snapshot. Events invalidate this snapshot.

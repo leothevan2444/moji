@@ -748,7 +748,9 @@
     "availability": "Available copies",
     "category": "Category",
     "tags": "Tags",
-    "lastSeen": "Last seen",
+    "activeTime": "Active time",
+    "seenComplete": "Last seen complete",
+    "lastSeen": "Last observed",
     "policy": "Automatic cleanup",
     "policyHint": "Only torrents whose linked Moji tasks have all completed are eligible. Unlinked torrents are never cleaned automatically.",
     "enablePolicy": "Enable automatic cleanup",
@@ -2331,5 +2333,32 @@
     "settings": "Settings · Moji",
     "stats": "Statistics · Moji",
     "home": "Moji"
+  },
+  "torrentPieces": {
+    "title": "Piece progress",
+    "missing": "Not downloaded",
+    "downloading": "Downloading",
+    "downloaded": "Downloaded",
+    "summary": "{{total}} pieces: {{missing}} missing, {{downloading}} downloading, {{downloaded}} downloaded",
+    "range": "Pieces {{start}}–{{end}}: {{missing}} missing, {{downloading}} downloading, {{downloaded}} downloaded",
+    "loading": "Loading piece states…",
+    "failed": "Piece states are temporarily unavailable",
+    "stale": "Unable to update pieces; showing the last observation",
+    "unavailable": "Piece states are unavailable",
+    "empty": "No piece information yet"
+  },
+  "torrentCard": {
+    "seeders": "Seeders",
+    "peers": "Peers",
+    "seedersHint": "Connected seeders (total seeders reported by trackers).",
+    "peersHint": "Connected leechers (total leechers reported by trackers).",
+    "availabilityHint": "Distributed copies among connected peers, not a seeder count. Below 1 means the pieces cannot currently form a complete copy.",
+    "lastObservedHint": "The last time Moji observed this torrent in the qBittorrent list.",
+    "actionUnavailable": "The current state is unconfirmed or an action is in progress.",
+    "actionAbsent": "This torrent is no longer present in qBittorrent.",
+    "actionIngestActive": "Linked tasks have not all finished ingest. Torrent removal is unavailable.",
+    "actionFilesUnsafe": "Safe file deletion is unconfirmed: independent library copies or shared-file checks have not passed.",
+    "completedSize": "Completed / size",
+    "selectedFiles": "Files: {{selected}} selected / {{total}} total · {{size}}"
   }
 }
