@@ -413,10 +413,15 @@
 
 .band-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   justify-content: space-between;
   gap: 18px;
   margin-bottom: $space-4;
+
+  > * { min-width: 0; max-width: 100%; }
+  > div:first-child { flex: 1 1 auto; }
+  > button, > a { flex: 0 0 auto; }
 
   h2 {
     margin: 0;
@@ -508,14 +513,20 @@
   @extend %action-row;
   justify-content: space-between;
   margin-top: 14px;
+  min-width: 0;
+  > * { max-width: 100%; }
 }
+.candidate-card__foot > .inline-actions { margin-inline-start: auto; }
 
 .preview-panel {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
   padding: 18px;
+  > div { flex: 1 1 16rem; min-width: 0; }
+  > button { flex: 0 0 auto; max-width: 100%; margin-inline-start: auto; }
 }
 
 .toolbar-inline {

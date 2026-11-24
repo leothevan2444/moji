@@ -82,9 +82,11 @@ export function HomePage(props: HomePageProps) {
         <button type="button" className="ghost-button" disabled={props.fetching} onClick={props.onRefresh}>{t("common.retry")}</button>
       </aside> : null}
       <form className="home-search" onSubmit={submit} role="search" aria-label={t("workbench.searchLabel")}>
-        <label className="home-search-mode"><span className="sr-only">{t("discoverUi.searchMode")}</span><select value={source} onChange={event => { setSource(event.target.value as typeof source); writeSession("moji:home-source", event.target.value); }}><option value="stashbox">{t("workbench.findMovie")}</option><option value="indexers">{t("workbench.findResource")}</option></select></label>
-        <FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" />
-        <input ref={input} value={query} onChange={event => { setQuery(event.target.value); writeSession("moji:home-search", event.target.value); }} aria-label={t("workbench.searchLabel")} placeholder={t("workbench.searchPlaceholder")} />
+        <div className="home-search__query">
+          <label className="home-search-mode"><span className="sr-only">{t("discoverUi.searchMode")}</span><select value={source} onChange={event => { setSource(event.target.value as typeof source); writeSession("moji:home-source", event.target.value); }}><option value="stashbox">{t("workbench.findMovie")}</option><option value="indexers">{t("workbench.findResource")}</option></select></label>
+          <FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" />
+          <input ref={input} value={query} onChange={event => { setQuery(event.target.value); writeSession("moji:home-search", event.target.value); }} aria-label={t("workbench.searchLabel")} placeholder={t("workbench.searchPlaceholder")} />
+        </div>
         <button type="submit" disabled={!query.trim()}>{t("workbench.search")}<FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></button>
       </form>
       <div className="home-metrics" aria-label={t("workbench.overview")}>

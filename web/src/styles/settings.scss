@@ -435,6 +435,9 @@
     gap: $space-3;
     flex-wrap: wrap;
 
+    > div:first-child { flex: 1 1 16rem; min-width: 0; }
+    > .stashbox-source__stats { flex: 0 0 auto; margin-inline-start: auto; }
+
     h4 {
       margin: 0 0 $space-1;
       font-size: 14px;

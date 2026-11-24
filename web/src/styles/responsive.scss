@@ -29,14 +29,6 @@
 }
 
 @media (max-width: 860px) {
-  .band-head,
-  .surface,
-  .preview-panel,
-  .task-group-section__head {
-    align-items: start;
-    flex-direction: column;
-  }
-
   .lede {
     max-width: none;
   }
@@ -45,22 +37,6 @@
   .toolbar-inline--subscription,
   .help__layout {
     grid-template-columns: 1fr;
-  }
-
-  .toolbar-inline--performer-list {
-    display: flex;
-
-    input {
-      flex-basis: 100%;
-    }
-
-    select {
-      flex: 1 1 120px;
-    }
-
-    button:not(.task-icon-button) {
-      flex: 1 1 auto;
-    }
   }
 
   .task-selection-bar,
@@ -103,17 +79,6 @@
   .settings-grid,
   .stat-strip {
     grid-template-columns: 1fr;
-  }
-
-  .candidate-card__foot,
-  .inline-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .candidate-card__foot .inline-actions,
-  .preview-panel button {
-    width: 100%;
   }
 
   .preview-panel,

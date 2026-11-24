@@ -68,14 +68,12 @@
 .indexer-cache-actions { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .indexer-cache-actions > .settings-field { flex: 1; min-width: min(180px,100%); max-width: 340px; }
 .indexer-cache-actions .settings-field > label { font-size: 12px; color: var(--muted); font-weight: 700; }
-.indexer-cache-actions .indexer-actions { align-items: center; flex-wrap: nowrap; }
+.indexer-cache-actions .indexer-actions { align-items: center; flex-wrap: nowrap; margin-inline-start: auto; }
 .indexer-cache-actions .indexer-icon-button { min-inline-size: 32px; inline-size: 32px; block-size: 32px; padding: 0; }
 .indexer-cache-fields { grid-template-columns: repeat(auto-fit,minmax(min(100%,180px),1fr)); align-items: end; }
 .indexer-timeout-fields { grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); align-items: end; }
 @media (max-width: 560px) {
  .indexer-cache-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
- .indexer-cache-actions > .settings-field { flex-basis: 100%; max-width: none; }
- .indexer-cache-actions .indexer-actions { margin-inline-start: auto; }
 }
 
 #indexer-proxy-url, #indexer-solver-url { direction: ltr; text-align: left; }

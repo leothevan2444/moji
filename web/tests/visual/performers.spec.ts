@@ -241,12 +241,18 @@ for (const workspace of ["scenes", "performers"] as const) {
       const toggle = document.querySelector<HTMLButtonElement>(".performer-toolbar__toggle")!;
       const panel = document.querySelector<HTMLElement>(".performer-toolbar__collapse")!;
       const initial = panel.getBoundingClientRect().height;
+      let expanding = false;
+      const started = (event: TransitionEvent) => {
+        if (event.target === panel && event.propertyName === "grid-template-rows") expanding = true;
+      };
+      panel.addEventListener("transitionrun", started);
       toggle.click();
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
       const animations = panel.getAnimations();
-      const expanding = animations.some(animation => (animation as CSSTransition).transitionProperty === "grid-template-rows");
+      expanding ||= animations.some(animation => (animation as CSSTransition).transitionProperty === "grid-template-rows");
       await Promise.all(animations.map(animation => animation.finished));
+      panel.removeEventListener("transitionrun", started);
       return { initial, expanding, expanded: panel.getBoundingClientRect().height };
     });
     expect(motion.initial).toBe(0);
