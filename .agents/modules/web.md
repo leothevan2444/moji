@@ -29,9 +29,9 @@
 | 图片与候选链接 | SceneArtwork、[TorrentCandidateLinks/CandidateSeeders](../../web/src/components/tasks/TorrentCandidateLinks.tsx)、PreparedTorrentDownloadActions |
 | 日期/容量/qB 状态/用户错误 | [formatters](../../web/src/utils/formatters.ts)、[qbittorrentStateLabel](../../web/src/utils/qbittorrentState.ts)、[queryError](../../web/src/services/queryError.ts)；时间戳/仅时分秒分别使用 formatDateTime/formatTime，遵循应用语言及 system.timezone；时间消费者以 useAppTimezone 订阅变更，不依靠重挂载页面；发行日仍保留日历语义，不能从浏览器日期推断发行资格 |
 
-顶栏保留品牌、主导航与常驻工具。小于 1000px 展开两列导航，600px 以下隐藏可见页名并保留可访问名；aria-current、外部关闭、Escape 与路由关闭保持。ThemeMenu 使用 menuitemradio，方向键/Home/End、Tab 离开、选择/Escape 返回焦点；不套用已废弃的通用 listbox Menu。
+顶栏保留品牌、四个常显主导航与常驻工具，不折叠菜单。ResizeObserver 根据品牌、完整导航、工具和间距的实际宽度判断空间是否足够；所有宽度统一使用布局 CSS 像素，保留 2px 整数测量余量，避免缩放后的元素矩形与未缩放容器宽度混用；不足时主导航仅显示图标，保留可访问名称、原生 title 与 aria-current，变宽后恢复文字。隐藏的非交互测量区不占布局、不进入焦点与无障碍树，语言、字体和工具变化会重新测量，不使用固定屏幕宽度阈值。优先保持单行文字，其次切换单行图标；单行图标仍放不下时，工具进入下一行。换行后按品牌与导航所在行的可用宽度重新判断文字，放得下则恢复文字，继续缩窄才再次隐藏文字。使用显式 Grid 行布局，将是否换行与是否显示文字独立决定，避免反复切换。ThemeMenu 使用 menuitemradio，方向键/Home/End、Tab 离开、选择/Escape 返回焦点；不套用已废弃的通用 listbox Menu。
 
-顶栏最右侧的 NSFW 图片打码开关使用固定的 `NSFW` 文字按钮，开启时以强调色与浅色背景表示选中，悬停提示提供开启/关闭动作，默认关闭；开启后以 12px 半径模糊影片封面、发现详情图片与演员照片，验证码不受影响；头像图片向外扩展三倍模糊半径（36px） 后由容器裁切，避免模糊透明边缘透出占位底色。偏好仅存浏览器 `moji:nsfw-mask`，刷新恢复、同源标签页同步，不提交后端；存储不可用时仍可在当前页面切换。图片通过 `data-nsfw` 显式标记，根元素属性统一覆盖抽屉 Portal，刷新恢复在绘制前应用。380px 以下工具换至第二行以保留所有入口。
+顶栏最右侧的 NSFW 图片打码开关使用固定的 `NSFW` 文字按钮，开启时以强调色与浅色背景表示选中，悬停提示提供开启/关闭动作，默认关闭；开启后以 12px 半径模糊影片封面、发现详情图片与演员照片，验证码不受影响；头像图片向外扩展三倍模糊半径（36px） 后由容器裁切，避免模糊透明边缘透出占位底色。偏好仅存浏览器 `moji:nsfw-mask`，刷新恢复、同源标签页同步，不提交后端；存储不可用时仍可在当前页面切换。图片通过 `data-nsfw` 显式标记，根元素属性统一覆盖抽屉 Portal，刷新恢复在绘制前应用。工具栏在空间不足时自然换行，保留所有入口。
 
 ## 设置、草稿与连接测试
 

@@ -176,9 +176,10 @@
 .masthead {
   position: relative;
   z-index: 20;
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 24px;
+  gap: 8px 16px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
   color: var(--text);
@@ -194,13 +195,21 @@
   }
 
   &__brand {
-    flex: 0 0 auto;
     color: var(--text);
     font-size: 24px;
     font-weight: 600;
     text-decoration: none;
   }
-  &__navigation { display: flex; flex: 1; min-width: 0; flex-wrap: wrap; gap: 4px; }
+  &__navigation { display: flex; min-width: max-content; gap: 4px; }
+  // A non-interactive intrinsic-width probe keeps the decision independent of
+  // whether the visible navigation currently hides its labels.
+  &__measurement { position: absolute; width: 0; height: 0; overflow: hidden; visibility: hidden; pointer-events: none; }
+  &__measure { display: flex; gap: 4px; width: max-content; }
+  &--wrapped { grid-template-columns: max-content minmax(0, 1fr); }
+  &--wrapped &__tools { grid-column: 1 / -1; justify-self: end; }
+  &__measure--icons .masthead__link,
+  &--icons &__navigation .masthead__link { justify-content: center; min-width: 40px; }
+  &--icons &__navigation .masthead__link span { display: none; }
   &__link {
     display: flex;
     align-items: center;
@@ -211,7 +220,8 @@
     font-size: 14px;
     font-weight: 400;
     text-decoration: none;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    flex-shrink: 0;
     &:hover { color: var(--text); }
     &.is-active { color: var(--accent); }
     svg { flex-shrink: 0; }
@@ -229,7 +239,6 @@
     &:hover { color: var(--text); }
     &[aria-current="page"], &[aria-expanded="true"], &[aria-pressed="true"] { color: var(--accent); }
   }
-  &__toggle { display: none; }
   &__tools .nsfw-mask-toggle {
     font-size: 10px;
     font-weight: 700;
@@ -241,54 +250,6 @@
   }
   :is(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .theme-menu__panel button:focus-visible { outline-color: var(--accent); }
-}
-
-@media (max-width: 999px) {
-  .masthead {
-    gap: 12px;
-    &__toggle {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      min-width: 0;
-      min-height: 44px;
-      flex: 1;
-      padding: 8px;
-      border: 0;
-      border-radius: 8px;
-      color: var(--text);
-      background: transparent;
-      font: inherit;
-      font-size: 14px;
-      cursor: pointer;
-      span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-      svg { flex-shrink: 0; }
-    }
-    &__navigation {
-      display: none;
-      position: absolute;
-      inset-block-start: 100%;
-      inset-inline: 0;
-      padding: 8px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: var(--surface-strong);
-      box-shadow: var(--shadow);
-      &.is-open { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    &__link { min-height: 48px; }
-    &__tools { flex: 0 0 auto; }
-  }
-}
-
-@media (max-width: 600px) {
-  .masthead {
-    gap: 8px;
-    &__brand { font-size: 20px; }
-    &__toggle { flex: 0 0 32px; justify-content: center; padding: 4px; span { display: none; } }
-    &__tools .utility-icon-button { width: 36px; height: 40px; padding: 0; }
-  }
 }
 
 .title-row {
@@ -728,14 +689,6 @@
 
 @keyframes discovery-shell-spin {
   to { transform: rotate(360deg); }
-}
-
-// Keep utility actions reachable at narrow widths, including developer mode.
-@media (max-width: 380px) {
-  .masthead {
-    flex-wrap: wrap;
-    &__tools { flex: 1 0 100%; justify-content: flex-end; }
-  }
 }
 
 // Explicit media markers leave functional images (e.g. login challenges) readable.

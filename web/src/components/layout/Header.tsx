@@ -1,12 +1,11 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGaugeHigh, faChartColumn, faCircleQuestion, faGear, faBars, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faGaugeHigh, faChartColumn, faCircleQuestion, faGear } from "@fortawesome/free-solid-svg-icons";
 import { NAV_ITEMS } from "../../constants/navigation";
-import { Link, NavLink, useLocation } from "react-router";
+import { Link, NavLink } from "react-router";
 import { ThemeMenu } from "./ThemeMenu";
 import type { ThemePreference } from "../../hooks/useTheme";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
-import { useClickOutside } from "../../hooks/useClickOutside";
 
 import { useNsfwMask } from "../../hooks/useNsfwMask";
 
@@ -27,58 +26,71 @@ interface HeaderProps {
 
 export function Header({ onOpenHelp, theme, developerMode = false, onOpenPerformance }: HeaderProps) {
   const { t } = useTranslation();
-  const location = useLocation();
   const { masked, toggle: toggleNsfwMask } = useNsfwMask();
-  const [panel, setPanel] = useState<"navigation" | null>(null);
+  const [layout, setLayout] = useState<"labels" | "icons" | "wrapped-labels" | "wrapped-icons">("icons");
+  const iconsOnly = layout === "icons" || layout === "wrapped-icons";
+  const wrapped = layout.startsWith("wrapped-");
   const headerRef = useRef<HTMLElement>(null);
-  const navigationButton = useRef<HTMLButtonElement>(null);
-  useClickOutside([headerRef], () => setPanel(null), panel === "navigation");
-  useEffect(() => { setPanel(null); }, [location]);
-  useEffect(() => { if (theme.open) setPanel(null); }, [theme.open]);
-  const toggle = (next: "navigation") => {
-    theme.setOpen(false);
-    setPanel(current => current === next ? null : next);
-  };
-  // At the desktop breakpoint the disclosure becomes a permanent navigation bar.
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1000px)");
-    const close = () => {
-      if (media.matches) {
-        if (document.activeElement === navigationButton.current) headerRef.current?.querySelector<HTMLAnchorElement>(".masthead__navigation a")?.focus();
-        setPanel(null);
+  const brandRef = useRef<HTMLAnchorElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
+  const iconsMeasureRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const header = headerRef.current!;
+    const brand = brandRef.current!;
+    const measure = measureRef.current!;
+    const tools = toolsRef.current!;
+    const iconsMeasure = iconsMeasureRef.current!;
+    const update = () => {
+      const style = getComputedStyle(header);
+      const available = header.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      // clientWidth, offsetWidth and scrollWidth all use layout CSS pixels.
+      // Mixing them with scaled client rectangles underestimates demand when
+      // the page is zoomed out. Reserve 2px for integer measurement rounding.
+      const gap = parseFloat(style.columnGap);
+      const singleRowSpace = available - brand.offsetWidth - tools.offsetWidth - 2 * gap - 2;
+      if (measure.scrollWidth <= singleRowSpace) {
+        setLayout("labels");
+      } else if (iconsMeasure.scrollWidth <= singleRowSpace) {
+        setLayout("icons");
+      } else {
+        const wrappedRowSpace = available - brand.offsetWidth - gap - 2;
+        setLayout(measure.scrollWidth <= wrappedRowSpace ? "wrapped-labels" : "wrapped-icons");
       }
     };
-    media.addEventListener("change", close);
-    return () => media.removeEventListener("change", close);
-  }, []);
-  const currentLabel = location.pathname.startsWith("/settings") ? t("navigation.settings")
-    : location.pathname === "/stats" ? t("navigation.stats")
-    : t((NAV_ITEMS.find(item => item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)) ?? NAV_ITEMS[0]).labelKey);
+    update();
+    const observer = new ResizeObserver(update);
+    for (const element of [header, brand, measure, iconsMeasure, tools]) observer.observe(element);
+    return () => observer.disconnect();
+  }, [t]);
 
   return (
-    <header ref={headerRef} className="masthead" onBlur={event => {
-      if (!event.currentTarget.contains(event.relatedTarget)) setPanel(current => current === "navigation" ? null : current);
-    }} onKeyDown={event => {
-      if (event.key === "Escape" && panel) {
-        event.preventDefault();
-        navigationButton.current?.focus();
-        setPanel(null);
-      }
-    }}>
-      <Link className="masthead__brand" to="/" aria-label={`Moji · ${t("navigation.home")}`}>Moji</Link>
-      <button ref={navigationButton} type="button" className="masthead__toggle" aria-label={`${t("navigation.label")}: ${currentLabel}`}
-        aria-expanded={panel === "navigation"} aria-controls="primary-navigation" onClick={() => toggle("navigation")}>
-        <span>{currentLabel}</span><FontAwesomeIcon icon={panel === "navigation" ? faXmark : faBars} aria-hidden="true" />
-      </button>
-      <nav id="primary-navigation" className={`masthead__navigation${panel === "navigation" ? " is-open" : ""}`} aria-label={t("navigation.label")}>
+    <header ref={headerRef} className={`masthead${iconsOnly ? " masthead--icons" : ""}${wrapped ? " masthead--wrapped" : ""}`}>
+      <Link ref={brandRef} className="masthead__brand" to="/" aria-label={`Moji · ${t("navigation.home")}`}>Moji</Link>
+      <div className="masthead__measurement" aria-hidden="true" inert>
+        <div ref={measureRef} className="masthead__measure">
+          {NAV_ITEMS.map(item => (
+            <span key={item.to} className="masthead__link">
+              <FontAwesomeIcon icon={item.icon} /><span>{t(item.labelKey)}</span>
+            </span>
+          ))}
+        </div>
+        <div ref={iconsMeasureRef} className="masthead__measure masthead__measure--icons">
+          {NAV_ITEMS.map(item => (
+            <span key={item.to} className="masthead__link"><FontAwesomeIcon icon={item.icon} /></span>
+          ))}
+        </div>
+      </div>
+      <nav id="primary-navigation" className="masthead__navigation" aria-label={t("navigation.label")}>
         {NAV_ITEMS.map(item => (
           <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => `masthead__link${isActive ? " is-active" : ""}`}
-            onClick={() => { if (panel === "navigation") navigationButton.current?.focus(); setPanel(null); }}>
+            aria-label={t(item.labelKey)} title={iconsOnly ? t(item.labelKey) : undefined}>
             <FontAwesomeIcon icon={item.icon} aria-hidden="true" /><span>{t(item.labelKey)}</span>
           </NavLink>
         ))}
       </nav>
-      <div className="masthead__tools">
+      <div ref={toolsRef} className="masthead__tools">
         {developerMode ? (
           <button type="button" className="utility-button utility-icon-button" onClick={onOpenPerformance}
             aria-label={t("performance.title")} title={t("performance.title")}>
