@@ -364,7 +364,7 @@ func (s *Service) advanceCleanup(ctx context.Context, v *Snapshot, p Policy, exe
 			if r := s.recheckFileRemoval(ctx, raw, p.AfterIngest); r != contentIsolated {
 				t.CanDeleteFiles = false
 				reason = string(r)
-				if r == contentUnknown {
+				if r != contentShared {
 					break
 				}
 				continue

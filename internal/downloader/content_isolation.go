@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -14,7 +15,8 @@ const (
 	contentIsolated     isolationResult = ""
 	contentUnknown      isolationResult = "CONTENT_PATH_UNKNOWN"
 	contentShared       isolationResult = "SHARED_SOURCE_FILES"
-	metadataCheckLimit                  = 16
+	contentCheckTimeout isolationResult = "CONTENT_CHECK_TIMEOUT"
+	contentCheckFailed  isolationResult = "CONTENT_CHECK_FAILED"
 	metadataCheckBudget                 = 2 * time.Second
 )
 
@@ -28,13 +30,12 @@ type contentIsolation struct {
 	ctx      context.Context
 	client   Client
 	torrents []qbittorrent.Torrent
-	checked  map[string]bool
-	requests int
+	checked  map[string]isolationResult
 	deadline time.Time
 }
 
 func newContentIsolation(ctx context.Context, client Client, torrents []qbittorrent.Torrent) *contentIsolation {
-	return &contentIsolation{ctx: ctx, client: client, torrents: torrents, checked: make(map[string]bool)}
+	return &contentIsolation{ctx: ctx, client: client, torrents: torrents, checked: make(map[string]isolationResult)}
 }
 func canVerifyEmptyFiles(t qbittorrent.Torrent) bool {
 	switch t.State {
@@ -45,31 +46,50 @@ func canVerifyEmptyFiles(t qbittorrent.Torrent) bool {
 		return false
 	}
 }
-func (c *contentIsolation) emptyFiles(t qbittorrent.Torrent) bool {
+func (c *contentIsolation) emptyFiles(t qbittorrent.Torrent) isolationResult {
 	hash := strings.ToLower(t.Hash)
-	if empty, ok := c.checked[hash]; ok {
-		return empty
+	if result, ok := c.checked[hash]; ok {
+		return result
 	}
-	c.checked[hash] = false
+	result := c.verifyEmptyFiles(t)
+	c.checked[hash] = result
+	return result
+}
+
+func (c *contentIsolation) verifyEmptyFiles(t qbittorrent.Torrent) isolationResult {
 	reader, ok := c.client.(torrentFileReader)
-	if !ok || c.requests >= metadataCheckLimit {
-		return false
+	if !ok {
+		return contentCheckFailed
 	}
 	if c.deadline.IsZero() {
 		c.deadline = time.Now().Add(metadataCheckBudget)
 	}
-	if c.ctx.Err() != nil || !time.Now().Before(c.deadline) {
-		return false
-	}
-	c.requests++
 	ctx, cancel := context.WithDeadline(c.ctx, c.deadline)
 	defer cancel()
+	if err := ctx.Err(); err != nil {
+		return contentCheckError(err)
+	}
 	files, err := reader.GetTorrentContents(ctx, t.Hash, nil)
+	if ctx.Err() != nil {
+		return contentCheckError(ctx.Err())
+	}
+	if err != nil {
+		return contentCheckError(err)
+	}
 	// JSON null is not a confirmed empty list. Require the explicit [] response.
-	empty := err == nil && ctx.Err() == nil && files != nil && len(files) == 0
-	c.checked[hash] = empty
-	return empty
+	if files == nil || len(files) != 0 {
+		return contentUnknown
+	}
+	return contentIsolated
 }
+
+func contentCheckError(err error) isolationResult {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return contentCheckTimeout
+	}
+	return contentCheckFailed
+}
+
 func (c *contentIsolation) check(target qbittorrent.Torrent) isolationResult {
 	if target.ContentPath == "" {
 		return contentUnknown
@@ -97,8 +117,8 @@ func (c *contentIsolation) check(target qbittorrent.Torrent) isolationResult {
 		if strings.EqualFold(other.Hash, target.Hash) || other.ContentPath != "" {
 			continue
 		}
-		if !c.emptyFiles(other) {
-			return contentUnknown
+		if result := c.emptyFiles(other); result != contentIsolated {
+			return result
 		}
 	}
 	return contentIsolated
@@ -109,7 +129,7 @@ func (c *contentIsolation) check(target qbittorrent.Torrent) isolationResult {
 func (s *Service) recheckFileRemoval(ctx context.Context, expected qbittorrent.Torrent, afterIngest bool) isolationResult {
 	all, err := s.client.GetTorrentList(ctx, nil)
 	if err != nil {
-		return contentUnknown
+		return contentCheckError(err)
 	}
 	for _, current := range all {
 		if !strings.EqualFold(current.Hash, expected.Hash) {

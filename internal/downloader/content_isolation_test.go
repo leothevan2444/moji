@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/leothevan2444/moji/pkg/qbittorrent"
 )
@@ -51,8 +52,8 @@ func metadataFixture(t *testing.T, n int) (*Service, *metadataClient, []string) 
 func TestEmptyDownloadsDoNotBlockSafeCapacityCleanup(t *testing.T) {
 	for _, state := range []qbittorrent.TorrentState{qbittorrent.TorrentStateMetaDL, qbittorrent.TorrentStateForcedMetaDL, qbittorrent.TorrentState("stoppedDL"), qbittorrent.TorrentStatePausedDL} {
 		t.Run(string(state), func(t *testing.T) {
-			s, q, hashes := metadataFixture(t, 9)
-			for i := len(q.torrents) - 9; i < len(q.torrents); i++ {
+			s, q, hashes := metadataFixture(t, 27)
+			for i := len(q.torrents) - 27; i < len(q.torrents); i++ {
 				q.torrents[i].State = state
 			}
 			if err := s.Cycle(context.Background()); err != nil {
@@ -78,9 +79,11 @@ func TestUnknownOrNonemptyTorrentContentStillBlocksDeletion(t *testing.T) {
 					s, q, hashes := metadataFixture(t, 1)
 					last := len(q.torrents) - 1
 					q.torrents[last].State = state
+					wantReason := contentUnknown
 					switch mode {
 					case "files unavailable":
 						q.fileErr = errors.New("offline")
+						wantReason = contentCheckFailed
 					case "null file list":
 						q.files[hashes[0]] = nil
 					case "files already known":
@@ -100,7 +103,7 @@ func TestUnknownOrNonemptyTorrentContentStillBlocksDeletion(t *testing.T) {
 						t.Fatal(err)
 					}
 					snap, _ := s.Snapshot(context.Background())
-					if q.deleted != 0 || snap.Cleanup.Reason != string(contentUnknown) {
+					if q.deleted != 0 || snap.Cleanup.Reason != string(wantReason) {
 						t.Fatal("unknown content accepted or misreported", q.deleted, snap.Cleanup.Reason)
 					}
 				})
@@ -154,7 +157,7 @@ func TestMetadataFileAPIFailureAtDeletionRecheckIsSafe(t *testing.T) {
 				t.Fatal(err)
 			}
 			snap, _ := s.Snapshot(context.Background())
-			if q.deleted != 0 || snap.Cleanup.Reason != string(contentUnknown) {
+			if q.deleted != 0 || snap.Cleanup.Reason != string(contentCheckFailed) {
 				t.Fatal(q.deleted, snap.Cleanup.Reason)
 			}
 		})
@@ -175,20 +178,74 @@ func TestMetadataProofIsNotReusedAcrossCycles(t *testing.T) {
 		t.Fatal("stale file proof reused", q.deleted, snap.Cleanup.Reason)
 	}
 }
-func TestMetadataVerificationHasBoundedRequests(t *testing.T) {
-	s, q, _ := metadataFixture(t, metadataCheckLimit+1)
-	if err := s.Cycle(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	count := 0
-	for _, calls := range q.calls {
-		count += calls
-	}
-	snap, _ := s.Snapshot(context.Background())
-	if q.deleted != 0 || count != metadataCheckLimit || snap.Cleanup.Reason != string(contentUnknown) {
-		t.Fatal(count, q.deleted, snap.Cleanup.Reason)
+func TestMetadataVerificationBudgetAndCancellation(t *testing.T) {
+	for _, mode := range []string{"budget expired", "request deadline", "parent canceled"} {
+		t.Run(mode, func(t *testing.T) {
+			_, q, hashes := metadataFixture(t, 27)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			isolation := newContentIsolation(ctx, q, q.torrents)
+			want := contentCheckTimeout
+			switch mode {
+			case "budget expired":
+				isolation.deadline = time.Now().Add(-time.Second)
+			case "request deadline":
+				q.fileErr = context.DeadlineExceeded
+			case "parent canceled":
+				cancel()
+				want = contentCheckFailed
+			}
+			if got := isolation.check(q.torrents[0]); got != want {
+				t.Fatalf("got %q, want %q", got, want)
+			}
+			if mode != "request deadline" && len(q.calls) != 0 {
+				t.Fatal("queried files after cancellation or budget expiry", q.calls)
+			}
+			// No later unknown torrent can be accepted after an incomplete check.
+			if _, checked := isolation.checked[hashes[1]]; checked {
+				t.Fatal("continued checking after verification failed")
+			}
+		})
 	}
 }
+
+func TestMetadataVerificationTimeoutBlocksCleanup(t *testing.T) {
+	for _, recheck := range []bool{false, true} {
+		t.Run(fmt.Sprintf("deletion recheck=%v", recheck), func(t *testing.T) {
+			s, q, _ := metadataFixture(t, 27)
+			q.onFile = func(_ string, n int) {
+				if !recheck || n == 2 {
+					q.fileErr = context.DeadlineExceeded
+				}
+			}
+			if err := s.Cycle(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			snap, _ := s.Snapshot(context.Background())
+			if q.deleted != 0 || snap.Cleanup.Reason != string(contentCheckTimeout) {
+				t.Fatal("timeout did not block cleanup", q.deleted, snap.Cleanup.Reason)
+			}
+		})
+	}
+}
+
+func TestMetadataVerificationSharesDeadlineAcrossRequests(t *testing.T) {
+	_, q, hashes := metadataFixture(t, 27)
+	isolation := newContentIsolation(context.Background(), q, q.torrents)
+	q.onFile = func(hash string, _ int) {
+		if hash == hashes[0] {
+			// Expire the shared budget while handling the first file response.
+			isolation.deadline = time.Now().Add(-time.Second)
+		}
+	}
+	if got := isolation.check(q.torrents[0]); got != contentCheckTimeout {
+		t.Fatal("did not enforce shared deadline", got)
+	}
+	if len(q.calls) != 1 || q.calls[hashes[0]] != 1 {
+		t.Fatal("continued requesting files after shared deadline", q.calls)
+	}
+}
+
 func TestManualFileRemovalUsesTheSameMetadataSafetyCheck(t *testing.T) {
 	for _, state := range []qbittorrent.TorrentState{qbittorrent.TorrentStateMetaDL, qbittorrent.TorrentState("stoppedDL"), qbittorrent.TorrentStatePausedDL} {
 		t.Run(string(state), func(t *testing.T) {
