@@ -89,7 +89,8 @@ enum TaskSource {
   SUBSCRIPTION
 }
 
-type ResourceSelectionReport { end: String! partial: Boolean! selected: String! evaluations: [ResourceEvaluation!]! }
+type ResourceSelectionCandidate { selected: Boolean! title: String! size: Long seeders: Int status: String! tierName: String! reasons: [String!]! excludedRules: [String!]! }
+type ResourceSelectionReport { groupName: String end: String! partial: Boolean! evaluations: [ResourceSelectionCandidate!]! }
 type Task {
  selectionReport: ResourceSelectionReport
   film: TaskFilm!

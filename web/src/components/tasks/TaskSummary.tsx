@@ -7,6 +7,7 @@ import { TaskStashScenesDocumentDocument, type TaskStashScenesDocumentQuery } fr
 import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { SceneArtwork } from "../common/SceneArtwork";
 import { TaskTimeline } from "./TaskTimeline";
+import { TaskSelectionReport } from "./TaskSelectionReport";
 import { TaskValue } from "./TaskValue";
 import { formatDateTime, taskPresentation, taskSourceLabel, type DashboardTask } from "../../utils";
 
@@ -76,7 +77,7 @@ export function TaskSummary({task,onCopy,action}:{task:DashboardTask;action?:Rea
       {linked && result.error ? <div className="task-detail-summary__feedback" role="status"><span>{t("taskStash.failed")}</span><button type="button" className="ghost-button" disabled={result.fetching} onClick={() => reload({requestPolicy:"network-only"})}>{t("taskStash.retry")}</button></div> : null}
       {linked && !refreshing && !result.error && missing > 0 ? <p className="task-detail-summary__notice">{t(scenes.length ? "taskStash.missing" : "taskStash.notFound", {count:missing})}</p> : null}
       {!linked && task.stage === "COMPLETED" ? <p className="task-detail-summary__notice">{t("taskStash.empty")}</p> : null}
-      <TaskTimeline key={task.id} steps={presentation.lifecycle} status={presentation} action={action} schedule={{last:task.sourcingLastCheckedAt,next:task.sourcingNextCheckAt}} animateIngest={task.stageStatus === "RUNNING"} transfer={{ action: task.transferAction, target: task.mojiTransferPath }} onCopy={onCopy}
+      <TaskTimeline key={task.id} steps={presentation.lifecycle} sourcingDetails={task.selectionReport ? <TaskSelectionReport report={task.selectionReport} taskCode={task.code} /> : undefined} status={presentation} action={action} schedule={{last:task.sourcingLastCheckedAt,next:task.sourcingNextCheckAt}} animateIngest={task.stageStatus === "RUNNING"} transfer={{ action: task.transferAction, target: task.mojiTransferPath }} onCopy={onCopy}
         downloadProgress={presentation.showDownloadProgress ? { percent: presentation.progressPercent, label: presentation.progressLabel, active: presentation.animateDownloadProgress } : undefined} />
       <details key={`metadata:${task.id}`} className="task-detail-extra">
         <summary>{t("taskDetail.moreInformation")}</summary>

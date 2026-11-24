@@ -14,22 +14,6 @@ import (
 	"github.com/leothevan2444/moji/internal/resourceselection"
 )
 
-type selectionReport struct {
-	ID                string                         `json:"id"`
-	StartedAt         time.Time                      `json:"startedAt"`
-	FinishedAt        time.Time                      `json:"finishedAt"`
-	OmittedCandidates int                            `json:"omittedCandidates"`
-	OmittedSites      int                            `json:"omittedSites"`
-	Version           int                            `json:"version"`
-	ParserVersion     int                            `json:"parserVersion"`
-	Policy            resourceselection.Policy       `json:"policy"`
-	Sites             []indexer.SiteReport           `json:"sites"`
-	Partial           bool                           `json:"partial"`
-	End               string                         `json:"end"`
-	Selected          string                         `json:"selected,omitempty"`
-	Candidates        []resourceselection.Evaluation `json:"candidates"`
-	Counts            map[string]int                 `json:"counts"`
-}
 type selectionItem struct {
 	result     indexer.SelectionCandidate
 	evaluation resourceselection.Evaluation
@@ -52,7 +36,7 @@ func newSelectionRound(now func() time.Time, code string, p resourceselection.Po
 	if err == nil {
 		p = resourceselection.Prepare(p)
 	}
-	return &selectionRound{validationErr: err, now: now, code: code, policy: p, seen: map[string]bool{}, report: selectionReport{ID: uuid.NewString(), StartedAt: now().UTC(), Version: 2, ParserVersion: resourceselection.ParserVersion, Policy: p, Candidates: []resourceselection.Evaluation{}, Sites: []indexer.SiteReport{}, Counts: map[string]int{}}}
+	return &selectionRound{validationErr: err, now: now, code: code, policy: p, seen: map[string]bool{}, report: selectionReport{ID: uuid.NewString(), StartedAt: now().UTC(), Version: SelectionReportVersion, ParserVersion: resourceselection.ParserVersion, PolicyVersion: p.Version, Group: selectionGroup(p), Candidates: []resourceselection.Evaluation{}, Sites: []indexer.SiteReport{}, Counts: map[string]int{}}}
 }
 func (r *selectionRound) add(ctx context.Context, rows []indexer.SelectionCandidate) (bool, error) {
 	if r.validationErr != nil {
@@ -73,7 +57,7 @@ func (r *selectionRound) add(ctx context.Context, rows []indexer.SelectionCandid
 		r.seen[dedupKey] = true
 		f := candidateFacts(row, len(r.items))
 		f.Site = site
-		e := resourceselection.Evaluate(r.policy, f)
+		e := resourceselection.EvaluateSummary(r.policy, f)
 		if _, err := validateCodeEvidence(r.code, row.Title); err != nil {
 			e.Status = "REJECTED"
 			e.Preferred = false
@@ -149,18 +133,13 @@ func (r *selectionRound) json() string {
 			e.ID = ""
 			e.Facts.ID = "" // opaque upstream locators and credentials must never enter reports
 			e.Facts.Title = reportText(e.Facts.Title)
-			if len(e.Facts.Evidence) > 16 {
-				e.EvidenceOmitted += len(e.Facts.Evidence) - 16
-				e.Facts.Evidence = e.Facts.Evidence[:16]
-			}
-			e.Facts.Evidence = append([]resourceselection.Evidence(nil), e.Facts.Evidence...)
-			for i := range e.Facts.Evidence {
-				e.Facts.Evidence[i].Text = reportText(e.Facts.Evidence[i].Text)
-			}
 			r.report.Candidates = append(r.report.Candidates, e)
 		}
 	}
 
+	if keepIndex >= 0 {
+		r.report.SelectedIndex = &keepIndex
+	}
 	r.report.OmittedCandidates = len(r.items) - len(r.report.Candidates)
 	for {
 		data, err := json.Marshal(r.report)
@@ -200,14 +179,8 @@ func (r *selectionRound) json() string {
 // choice creates a new report, so expired history is never reinterpreted.
 func (s *Service) manualSelectionReport(task *Task) string {
 	p := s.ResourceSelectionPolicy()
-	if task.SelectionReportJSON != "" {
-		var old selectionReport
-		if json.Unmarshal([]byte(task.SelectionReportJSON), &old) == nil && (old.Version == 1 || old.Version == 2) && old.End == "USER_SELECTED" {
-			if old.Policy.Version != resourceselection.Version {
-				return task.SelectionReportJSON
-			}
-			p = old.Policy
-		}
+	if old, err := DecodeSelectionReport(task.SelectionReportJSON); err == nil && old.End == "USER_SELECTED" {
+		return task.SelectionReportJSON
 	}
 	round := newSelectionRound(s.now, task.Code, p)
 	title := task.Candidate.Title
@@ -215,7 +188,7 @@ func (s *Service) manualSelectionReport(task *Task) string {
 		title = ""
 	}
 	f := resourceselection.Facts{Title: title, Seeders: task.Candidate.Seeders, Size: task.Candidate.Size}
-	e := resourceselection.Evaluate(p, f)
+	e := resourceselection.EvaluateSummary(p, f)
 	round.items = []*selectionItem{{evaluation: e}}
 	round.selected = round.items[0]
 	round.report.End = "USER_SELECTED"
@@ -229,4 +202,13 @@ func reportText(v string) string {
 		return string(r[:240]) + "…"
 	}
 	return v
+}
+
+func selectionGroup(p resourceselection.Policy) *SelectionReportGroup {
+	for _, g := range p.Groups {
+		if p.ActiveGroup != "" && g.ID == p.ActiveGroup {
+			return &SelectionReportGroup{ID: g.ID, Name: g.Name}
+		}
+	}
+	return nil
 }

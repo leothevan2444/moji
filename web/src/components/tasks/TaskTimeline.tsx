@@ -56,11 +56,12 @@ function IngestProgress({ steps, transfer, onCopy, status, animateIngest = true 
 interface TaskTimelineProps extends StageInformation {
   steps: TaskLifecycleStep[];
   action?: ReactNode;
+  sourcingDetails?: ReactNode;
   schedule?: {last?:string|null;next?:string|null};
   downloadProgress?: { percent: number; label: string; active?: boolean };
 }
 
-export function TaskTimeline({ steps, downloadProgress, transfer, onCopy, status, schedule, action, animateIngest }: TaskTimelineProps) {
+export function TaskTimeline({ steps, downloadProgress, transfer, onCopy, status, schedule, action, sourcingDetails, animateIngest }: TaskTimelineProps) {
   useAppTimezone();
   const { t } = useTranslation();
   const ingestSteps = steps.filter(step => !["sourcing", "downloading", "completed"].includes(step.key));
@@ -102,7 +103,10 @@ export function TaskTimeline({ steps, downloadProgress, transfer, onCopy, status
           <div><dt>{t("resourceTracking.lastChecked")}</dt><dd>{formatDateTime(schedule.last)}</dd></div>
           <div><dt>{t("resourceTracking.nextChecked")}</dt><dd>{formatDateTime(schedule.next)}</dd></div>
         </dl> : null}
-        {isActive(step) && action ? <div className="task-timeline__actions">{action}</div> : null}
+        {(isActive(step) && action) || (step.key === "sourcing" && sourcingDetails) ? <div className="task-timeline__actions">
+          {step.key === "sourcing" ? sourcingDetails : null}
+          {isActive(step) ? action : null}
+        </div> : null}
       </div>
     </li>)}
   </ol>;

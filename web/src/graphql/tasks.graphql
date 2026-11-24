@@ -18,7 +18,7 @@ query TaskDetailDocument($id: ID!) {
     candidate { title tracker infoHash link magnetUri size seeders peers }
     torrentUrl
     torrentName
-    selectionReport { end partial selected evaluations { evidenceOmitted groupName tierName title status preferred reasons unknownRules evidence { attribute value source text } } }
+    selectionReport { groupName end partial evaluations { selected tierName title size seeders status reasons excludedRules } }
     progress
     qbittorrentState
     contentPath

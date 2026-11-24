@@ -1,5 +1,5 @@
 import { ResourceEvaluationDetails } from "../tasks/ResourceEvaluationDetails";
-import type { ResourceEvaluation } from "../../graphql/generated/graphql";
+import type { PreviewTorrentSelectionMutation } from "../../graphql/generated/graphql";
 import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { PreparedTorrentDownloadActions } from "../tasks/PreparedTorrentDownloadActions";
 import { useTranslation } from "react-i18next";
@@ -8,7 +8,7 @@ import { formatBytes, formatPublishDate } from "../../utils";
 import type { TorrentSearchFieldsFragment } from "../../graphql/generated/graphql";
 
 type Candidate = TorrentSearchFieldsFragment["candidates"][number];
-export function TorrentSearchResults({ searchId, candidates, keywords, pending, onQueue, evaluations }: { searchId: string; candidates: Candidate[]; keywords: string; pending: boolean; evaluations?: ResourceEvaluation[]; onQueue: (id: string, code: string) => Promise<boolean> }) {
+export function TorrentSearchResults({ searchId, candidates, keywords, pending, onQueue, evaluations }: { searchId: string; candidates: Candidate[]; keywords: string; pending: boolean; evaluations?: PreviewTorrentSelectionMutation["previewTorrentSelection"]["evaluations"]; onQueue: (id: string, code: string) => Promise<boolean> }) {
   useAppTimezone();
   const { t } = useTranslation();
   return <div className="discovery-results">{candidates.map(candidate => <article key={candidate.id} className="candidate-card candidate-card--indexer"><div className="candidate-card__content">

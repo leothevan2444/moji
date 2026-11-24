@@ -1,4 +1,3 @@
-import { ResourceEvaluationDetails } from "./ResourceEvaluationDetails";
 import { DownloadManager } from "../downloader/DownloadManager";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons/faCopy";
@@ -42,11 +41,6 @@ export function TaskDetail({ task, pendingRetry, pendingDelete,
             (filesRef.current?.querySelector<HTMLInputElement>('input[type="checkbox"]:not(:disabled)') ?? filesRef.current)?.focus();
           }} /> : undefined} />
 
-    {task.selectionReport?<details className="drawer-card"><summary>{t("resourceSelection.report")} · {t(`resourceSelection.ends.${task.selectionReport.end}`)}</summary>
-     {task.selectionReport.partial?<p>{t("resourceSelection.partial")}</p>:null}
-     <p>{task.selectionReport.selected}</p>
-     {task.selectionReport.evaluations.map((evaluation,index)=><div key={index}><strong>{evaluation.title}</strong><ResourceEvaluationDetails evaluation={evaluation}/></div>)}
-    </details>:null}
     {files}
     <article className="drawer-card task-detail-operations">
       <div className="drawer-card__head"><h3>{t("taskDetail.actions")}</h3></div>

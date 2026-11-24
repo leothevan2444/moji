@@ -282,3 +282,112 @@ describe("task experience", () => {
     ]);
   });
 });
+
+const selectionReport: NonNullable<DashboardTask["selectionReport"]> = {
+  groupName: "Daily", end: "PREFERRED", partial: false,
+  evaluations: [{ selected: true, title: "DEMO-001 preferred resource", status: "ACCEPTABLE",
+    size: 1024, seeders: 0, tierName: "First choice", reasons: ["TIER_MATCHED"], excludedRules: [] }]
+};
+
+describe("selection explanation in the sourcing stage", () => {
+  it.each([TaskStage.Sourcing, TaskStage.Downloading, TaskStage.Completed])("opens a report dialog from sourcing when the task is %s", async stage => {
+    const user = userEvent.setup();
+    const { rerender } = render(<TaskDetail task={{ ...task, stage, selectionReport }} {...props()} />);
+    const overview = screen.getByRole("article", { name: "Task overview" });
+    const sourcing = overview.querySelector(".task-timeline > li")! as HTMLElement;
+    const entry = within(sourcing).getByRole("button", { name: "View selection report" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(entry.querySelector("svg")).toBeNull();
+    expect(sourcing.querySelector(".task-timeline__actions button")).toBe(entry);
+    expect(sourcing.querySelector(".task-selection-report")).toBeNull();
+    await user.click(entry);
+    const report = screen.getByRole("dialog", { name: "Selection report · DEMO-001" });
+    expect(report.contains(document.activeElement)).toBe(true);
+    expect(within(report).getByText("First-priority resource found")).toBeTruthy();
+    const candidate = report.querySelector<HTMLElement>(".task-selection-report__candidate")!;
+    expect(candidate.querySelector("details")).toBeNull();
+    expect(within(candidate).getByText("Priority tier matched: First choice")).toBeTruthy();
+    expect(within(candidate).queryByText("Match reasons")).toBeNull();
+    expect(within(candidate).queryByText("Match evidence")).toBeNull();
+    expect(within(candidate).queryByText("Priority tier matched")).toBeNull();
+    expect(within(report).getAllByText("Daily")).toHaveLength(1);
+    expect(within(candidate).queryByText("Daily")).toBeNull();
+    expect(within(report).getByRole("img", {name:"Meets selection conditions"})).toBeTruthy();
+    expect(within(report).getAllByText("DEMO-001 preferred resource")).toHaveLength(1);
+    expect(within(candidate).getByText("0", {exact:true})).toBeTruthy();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(entry);
+    await user.click(entry);
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(document.activeElement).toBe(entry);
+    await user.click(entry);
+    rerender(<TaskDetail task={{ ...task, id: "another-task", stage, selectionReport }} {...props()} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("omits the entry when the runtime report is absent", () => {
+    render(<TaskDetail task={{ ...task, selectionReport: null }} {...props()} />);
+    expect(screen.queryByRole("button", { name: "View selection report" })).toBeNull();
+  });
+
+  it("shows an incomplete empty result without an empty selected-resource field", async () => {
+    render(<TaskDetail task={{ ...task, selectionReport: { groupName: "Daily", end: "NO_ACCEPTABLE_RESOURCE", partial: true, evaluations: [] } }} {...props()} />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "View selection report" }));
+    const report = screen.getByRole("dialog", { name: "Selection report · DEMO-001" });
+    expect(within(report).getByText("No acceptable resource found")).toBeTruthy();
+    expect(within(report).queryByText("Selected resource")).toBeNull();
+    expect(report.querySelector("ol")).toBeNull();
+  });
+});
+
+
+describe("selection report eligibility and historical context",()=>{
+ it("keeps user selection distinct from automatic eligibility",async()=>{
+  const report={...selectionReport,end:"USER_SELECTED",evaluations:selectionReport.evaluations.map(e=>({...e,status:"REJECTED",tierName:"",reasons:["EXCLUDED_RULE_MATCHED"],excludedRules:["Unwanted labels"]}))};
+  render(<TaskDetail task={{...task,selectionReport:report}} {...props()} />);
+  await userEvent.setup().click(screen.getByRole("button",{name:"View selection report"}));
+  const dialog=screen.getByRole("dialog");
+  expect(within(dialog).getByText("User-selected resource")).toBeTruthy();
+  expect(within(dialog).queryByText("Selected resource",{exact:true})).toBeNull();
+  expect(dialog.querySelector(".task-selection-report__candidate.is-selected")).toBeTruthy();
+  expect(within(dialog).getByRole("img",{name:"Does not meet selection conditions"})).toBeTruthy();
+  const candidate=dialog.querySelector(".task-selection-report__candidate")! as HTMLElement;
+  expect(within(candidate).queryByText("Priority tier",{exact:true})).toBeNull();
+  expect(within(candidate).getByText("Excluded by: Unwanted labels")).toBeTruthy();
+ });
+ it("shows explicitly unused groups without relying on candidate presence",async()=>{
+  render(<TaskDetail task={{...task,selectionReport:{...selectionReport,groupName:"",evaluations:[]}}} {...props()} />);
+  await userEvent.setup().click(screen.getByRole("button",{name:"View selection report"}));
+  expect(within(screen.getByRole("dialog")).getByText("No rule group used")).toBeTruthy();
+  expect(within(screen.getByRole("dialog")).queryByText("First-priority resource found")).toBeNull();
+ });
+});
+
+
+describe("concise selection report reasons",()=>{
+ it.each([
+  ["FALLBACK_ALLOWED",[],"Fallback"],
+  ["EXCLUDED_RULE_MATCHED",[],"Excluded by: Rule name not recorded"]
+ ] as const)("shows %s without per-rule results",async(reason,excludedRules,label)=>{
+  render(<TaskDetail task={{...task,selectionReport:{...selectionReport,evaluations:selectionReport.evaluations.map(e=>({...e,tierName:"",reasons:[reason],excludedRules:[...excludedRules]}))}}} {...props()}/>);
+  await userEvent.setup().click(screen.getByRole("button",{name:"View selection report"}));
+  const dialog=screen.getByRole("dialog");expect(within(dialog).getByText(label)).toBeTruthy();
+  expect(dialog.querySelector("details")).toBeNull();expect(within(dialog).queryByText("Match evidence")).toBeNull();
+ });
+});
+
+
+describe("selection report candidate emphasis",()=>{
+ it("highlights only the server-selected item even when titles repeat, keeping eligibility independent",async()=>{
+  const original=selectionReport.evaluations[0];
+  render(<TaskDetail task={{...task,selectionReport:{...selectionReport,evaluations:[{...original,selected:false},{...original,selected:true,status:"REJECTED",tierName:"",reasons:["EXCLUDED_RULE_MATCHED"],excludedRules:["Label"]}]}}} {...props()}/>);
+  await userEvent.setup().click(screen.getByRole("button",{name:"View selection report"}));
+  const dialog=screen.getByRole("dialog"),candidates=dialog.querySelectorAll(".task-selection-report__candidate");
+  expect(candidates[0].classList.contains("is-selected")).toBe(false);expect(candidates[1].classList.contains("is-selected")).toBe(true);
+  expect(within(dialog).queryByText("Selected resource")).toBeNull();
+  expect(candidates[1].querySelector(".task-selection-report__watermark")?.getAttribute("aria-hidden")).toBe("true");
+  expect(within(candidates[0] as HTMLElement).getByRole("img",{name:"Meets selection conditions"}).textContent).toBe("");
+  expect(within(candidates[1] as HTMLElement).getByRole("img",{name:"Does not meet selection conditions"}).textContent).toBe("");
+ });
+});

@@ -38,7 +38,7 @@ func (s *RelationalTaskStore) saveSelectionReport(ctx context.Context, previous,
 	var header struct {
 		Version int `json:"version"`
 	}
-	if len(task.SelectionReportJSON) > 256<<10 || json.Unmarshal([]byte(task.SelectionReportJSON), &header) != nil || (header.Version != 1 && header.Version != 2) {
+	if len(task.SelectionReportJSON) > 256<<10 || json.Unmarshal([]byte(task.SelectionReportJSON), &header) != nil || header.Version != SelectionReportVersion {
 		return
 	}
 	data, err := json.Marshal(storedSelectionReport{Revision: task.Revision, Generation: task.Generation, Source: selectionReportSource(task), Report: json.RawMessage(task.SelectionReportJSON)})
@@ -76,7 +76,7 @@ func applySelectionReport(task *Task, raw string) {
 	var header struct {
 		Version int `json:"version"`
 	}
-	if json.Unmarshal(stored.Report, &header) == nil && (header.Version == 1 || header.Version == 2) {
+	if json.Unmarshal(stored.Report, &header) == nil && header.Version == SelectionReportVersion {
 		task.SelectionReportJSON = string(stored.Report)
 	}
 }

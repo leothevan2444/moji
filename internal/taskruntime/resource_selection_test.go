@@ -79,7 +79,7 @@ func TestSelectionReportPersistsWithCASAndKeepsPrivateLocatorsOut(t *testing.T) 
 	if err != nil || saved.SelectionReportJSON != task.SelectionReportJSON {
 		t.Fatal("report not persisted", err)
 	}
-	saved.SelectionReportJSON = `{"version":1,"end":"INCOMPLETE"}`
+	saved.SelectionReportJSON = `{"version":3,"end":"INCOMPLETE"}`
 	saved.StageErrorMessage = "new sourcing result"
 	if err = store.Update(context.Background(), saved); err != nil {
 		t.Fatal(err)
@@ -90,9 +90,6 @@ func TestSelectionReportPersistsWithCASAndKeepsPrivateLocatorsOut(t *testing.T) 
 }
 func TestReportTrimsRepresentativesWithoutLosingSelectedDecision(t *testing.T) {
 	r := newSelectionRound(selectionService(t).now, "ABCD-123", config.DefaultCandidateSelectionConfig())
-	for i := 0; i < 32; i++ {
-		r.report.Policy.Rules = append(r.report.Policy.Rules, resourceselection.Rule{ID: "test", Name: strings.Repeat("x", 160), Conditions: []resourceselection.Condition{{Scope: "TITLE", Value: strings.Repeat("x", 512)}}})
-	}
 	for i := 0; i < 25; i++ {
 		title := strings.Repeat("長", 3000)
 		e := resourceselection.Evaluation{Facts: resourceselection.Facts{Title: title}, Status: "REJECTED"}
@@ -153,20 +150,10 @@ func TestAutomaticAndManualPreparationRejectMalformedMagnets(t *testing.T) {
 	}
 }
 
-func TestLegacyManualReportIsNotReinterpretedUnderNewRules(t *testing.T) {
+func TestSavedManualReportIsNotReinterpretedUnderChangedRules(t *testing.T) {
 	s := selectionService(t)
-	for _, raw := range []string{
-		`{"version":2,"end":"USER_SELECTED","policy":{"version":6,"activeGroup":"main","groups":[{"id":"main","tiers":[{"id":"empty"}]}]},"selected":"ABCD-123"}`,
-		`{"version":2,"end":"USER_SELECTED","policy":{"version":6,"activeGroup":"main","groups":[{"id":"main","tiers":[{"id":"first","rules":[{"ruleID":"label","negate":true}]}]}]},"selected":"ABCD-123"}`,
-		`{"version":2,"end":"USER_SELECTED","policy":{"version":5,"perSite":5,"maxFetches":30},"selected":"ABCD-123"}`,
-		`{"version":1,"end":"USER_SELECTED","policy":{"version":4,"groups":[{"id":"old","requireMode":"ALL","excludeMode":"ANY","tiers":[{"id":"fallback","mode":"ALL","matchAll":true,"rules":[]}]}]},"selected":"ABCD-123"}`,
-		`{"version":1,"end":"USER_SELECTED","policy":{"version":1,"original":true},"selected":"ABCD-123"}`,
-		`{"version":1,"end":"USER_SELECTED","policy":{"version":3,"rules":[{"id":"old","scope":"TITLE","value":"historic"}]},"selected":"ABCD-123"}`,
-		`{"version":1,"end":"USER_SELECTED","policy":{"version":2,"rules":[{"id":"old","mode":"ANY","conditions":[{"scope":"TITLE","operator":"CONTAINS","value":"historic"}]}]},"selected":"ABCD-123"}`,
-	} {
-		task := &Task{Code: "ABCD-123", SelectionReportJSON: raw}
-		if got := s.manualSelectionReport(task); got != raw {
-			t.Fatal("historical manual decision was reinterpreted", got)
-		}
+	raw := `{"version":3,"end":"USER_SELECTED","policyVersion":7,"selectedTitle":"ABCD-123"}`
+	if got := s.manualSelectionReport(&Task{Code: "ABCD-123", SelectionReportJSON: raw}); got != raw {
+		t.Fatal("saved manual report was reinterpreted")
 	}
 }

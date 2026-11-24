@@ -11,7 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const diagnosticReport = `{"version":2,"parserVersion":7,"policy":{"version":7},"end":"USER_SELECTED","selected":"TEST-123","candidates":[],"sites":[],"counts":{}}`
+const diagnosticReport = `{"version":3,"parserVersion":7,"policyVersion":7,"end":"USER_SELECTED","selectedTitle":"TEST-123","candidates":[],"sites":[],"counts":{}}`
 
 func TestSelectionReportLivesOnlyInRuntimeAfterCoreCommit(t *testing.T) {
 	s, m := relationalStore(t)

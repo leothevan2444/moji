@@ -1035,11 +1035,22 @@ type ComplexityRoot struct {
 		Rules func(childComplexity int) int
 	}
 
+	ResourceSelectionCandidate struct {
+		ExcludedRules func(childComplexity int) int
+		Reasons       func(childComplexity int) int
+		Seeders       func(childComplexity int) int
+		Selected      func(childComplexity int) int
+		Size          func(childComplexity int) int
+		Status        func(childComplexity int) int
+		TierName      func(childComplexity int) int
+		Title         func(childComplexity int) int
+	}
+
 	ResourceSelectionReport struct {
 		End         func(childComplexity int) int
 		Evaluations func(childComplexity int) int
+		GroupName   func(childComplexity int) int
 		Partial     func(childComplexity int) int
-		Selected    func(childComplexity int) int
 	}
 
 	ServiceConnectionTestResult struct {
@@ -7240,6 +7251,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ResourceRuleTier.Rules(childComplexity), true
 
+	case "ResourceSelectionCandidate.excludedRules":
+		if e.complexity.ResourceSelectionCandidate.ExcludedRules == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionCandidate.ExcludedRules(childComplexity), true
+
+	case "ResourceSelectionCandidate.reasons":
+		if e.complexity.ResourceSelectionCandidate.Reasons == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionCandidate.Reasons(childComplexity), true
+
+	case "ResourceSelectionCandidate.seeders":
+		if e.complexity.ResourceSelectionCandidate.Seeders == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionCandidate.Seeders(childComplexity), true
+
+	case "ResourceSelectionCandidate.selected":
+		if e.complexity.ResourceSelectionCandidate.Selected == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionCandidate.Selected(childComplexity), true
+
+	case "ResourceSelectionCandidate.size":
+		if e.complexity.ResourceSelectionCandidate.Size == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionCandidate.Size(childComplexity), true
+
+	case "ResourceSelectionCandidate.status":
+		if e.complexity.ResourceSelectionCandidate.Status == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionCandidate.Status(childComplexity), true
+
+	case "ResourceSelectionCandidate.tierName":
+		if e.complexity.ResourceSelectionCandidate.TierName == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionCandidate.TierName(childComplexity), true
+
+	case "ResourceSelectionCandidate.title":
+		if e.complexity.ResourceSelectionCandidate.Title == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionCandidate.Title(childComplexity), true
+
 	case "ResourceSelectionReport.end":
 		if e.complexity.ResourceSelectionReport.End == nil {
 			break
@@ -7254,19 +7321,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ResourceSelectionReport.Evaluations(childComplexity), true
 
+	case "ResourceSelectionReport.groupName":
+		if e.complexity.ResourceSelectionReport.GroupName == nil {
+			break
+		}
+
+		return e.complexity.ResourceSelectionReport.GroupName(childComplexity), true
+
 	case "ResourceSelectionReport.partial":
 		if e.complexity.ResourceSelectionReport.Partial == nil {
 			break
 		}
 
 		return e.complexity.ResourceSelectionReport.Partial(childComplexity), true
-
-	case "ResourceSelectionReport.selected":
-		if e.complexity.ResourceSelectionReport.Selected == nil {
-			break
-		}
-
-		return e.complexity.ResourceSelectionReport.Selected(childComplexity), true
 
 	case "ServiceConnectionTestResult.code":
 		if e.complexity.ServiceConnectionTestResult.Code == nil {
@@ -12768,7 +12835,8 @@ enum TaskSource {
   SUBSCRIPTION
 }
 
-type ResourceSelectionReport { end: String! partial: Boolean! selected: String! evaluations: [ResourceEvaluation!]! }
+type ResourceSelectionCandidate { selected: Boolean! title: String! size: Long seeders: Int status: String! tierName: String! reasons: [String!]! excludedRules: [String!]! }
+type ResourceSelectionReport { groupName: String end: String! partial: Boolean! evaluations: [ResourceSelectionCandidate!]! }
 type Task {
  selectionReport: ResourceSelectionReport
   film: TaskFilm!
@@ -53462,6 +53530,393 @@ func (ec *executionContext) fieldContext_ResourceRuleTier_rules(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _ResourceSelectionCandidate_selected(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionCandidate_selected(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Selected, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionCandidate_selected(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSelectionCandidate_title(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionCandidate_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionCandidate_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSelectionCandidate_size(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionCandidate_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOLong2ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionCandidate_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Long does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSelectionCandidate_seeders(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionCandidate_seeders(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Seeders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionCandidate_seeders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSelectionCandidate_status(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionCandidate_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionCandidate_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSelectionCandidate_tierName(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionCandidate_tierName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TierName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionCandidate_tierName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSelectionCandidate_reasons(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionCandidate_reasons(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Reasons, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionCandidate_reasons(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSelectionCandidate_excludedRules(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionCandidate) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionCandidate_excludedRules(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExcludedRules, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionCandidate_excludedRules(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionCandidate",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSelectionReport_groupName(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionReport) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSelectionReport_groupName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GroupName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSelectionReport_groupName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSelectionReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ResourceSelectionReport_end(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionReport) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ResourceSelectionReport_end(ctx, field)
 	if err != nil {
@@ -53550,50 +54005,6 @@ func (ec *executionContext) fieldContext_ResourceSelectionReport_partial(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _ResourceSelectionReport_selected(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionReport) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ResourceSelectionReport_selected(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Selected, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ResourceSelectionReport_selected(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ResourceSelectionReport",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _ResourceSelectionReport_evaluations(ctx context.Context, field graphql.CollectedField, obj *model.ResourceSelectionReport) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ResourceSelectionReport_evaluations(ctx, field)
 	if err != nil {
@@ -53620,9 +54031,9 @@ func (ec *executionContext) _ResourceSelectionReport_evaluations(ctx context.Con
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.ResourceEvaluation)
+	res := resTmp.([]*model.ResourceSelectionCandidate)
 	fc.Result = res
-	return ec.marshalNResourceEvaluation2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResourceEvaluationᚄ(ctx, field.Selections, res)
+	return ec.marshalNResourceSelectionCandidate2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResourceSelectionCandidateᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_ResourceSelectionReport_evaluations(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -53633,28 +54044,24 @@ func (ec *executionContext) fieldContext_ResourceSelectionReport_evaluations(_ c
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "evidenceOmitted":
-				return ec.fieldContext_ResourceEvaluation_evidenceOmitted(ctx, field)
-			case "groupName":
-				return ec.fieldContext_ResourceEvaluation_groupName(ctx, field)
-			case "tierName":
-				return ec.fieldContext_ResourceEvaluation_tierName(ctx, field)
-			case "candidateId":
-				return ec.fieldContext_ResourceEvaluation_candidateId(ctx, field)
+			case "selected":
+				return ec.fieldContext_ResourceSelectionCandidate_selected(ctx, field)
 			case "title":
-				return ec.fieldContext_ResourceEvaluation_title(ctx, field)
+				return ec.fieldContext_ResourceSelectionCandidate_title(ctx, field)
+			case "size":
+				return ec.fieldContext_ResourceSelectionCandidate_size(ctx, field)
+			case "seeders":
+				return ec.fieldContext_ResourceSelectionCandidate_seeders(ctx, field)
 			case "status":
-				return ec.fieldContext_ResourceEvaluation_status(ctx, field)
-			case "preferred":
-				return ec.fieldContext_ResourceEvaluation_preferred(ctx, field)
+				return ec.fieldContext_ResourceSelectionCandidate_status(ctx, field)
+			case "tierName":
+				return ec.fieldContext_ResourceSelectionCandidate_tierName(ctx, field)
 			case "reasons":
-				return ec.fieldContext_ResourceEvaluation_reasons(ctx, field)
-			case "unknownRules":
-				return ec.fieldContext_ResourceEvaluation_unknownRules(ctx, field)
-			case "evidence":
-				return ec.fieldContext_ResourceEvaluation_evidence(ctx, field)
+				return ec.fieldContext_ResourceSelectionCandidate_reasons(ctx, field)
+			case "excludedRules":
+				return ec.fieldContext_ResourceSelectionCandidate_excludedRules(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type ResourceEvaluation", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ResourceSelectionCandidate", field.Name)
 		},
 	}
 	return fc, nil
@@ -64806,12 +65213,12 @@ func (ec *executionContext) fieldContext_Task_selectionReport(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "groupName":
+				return ec.fieldContext_ResourceSelectionReport_groupName(ctx, field)
 			case "end":
 				return ec.fieldContext_ResourceSelectionReport_end(ctx, field)
 			case "partial":
 				return ec.fieldContext_ResourceSelectionReport_partial(ctx, field)
-			case "selected":
-				return ec.fieldContext_ResourceSelectionReport_selected(ctx, field)
 			case "evaluations":
 				return ec.fieldContext_ResourceSelectionReport_evaluations(ctx, field)
 			}
@@ -88262,6 +88669,74 @@ func (ec *executionContext) _ResourceRuleTier(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var resourceSelectionCandidateImplementors = []string{"ResourceSelectionCandidate"}
+
+func (ec *executionContext) _ResourceSelectionCandidate(ctx context.Context, sel ast.SelectionSet, obj *model.ResourceSelectionCandidate) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resourceSelectionCandidateImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResourceSelectionCandidate")
+		case "selected":
+			out.Values[i] = ec._ResourceSelectionCandidate_selected(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._ResourceSelectionCandidate_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "size":
+			out.Values[i] = ec._ResourceSelectionCandidate_size(ctx, field, obj)
+		case "seeders":
+			out.Values[i] = ec._ResourceSelectionCandidate_seeders(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._ResourceSelectionCandidate_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tierName":
+			out.Values[i] = ec._ResourceSelectionCandidate_tierName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reasons":
+			out.Values[i] = ec._ResourceSelectionCandidate_reasons(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "excludedRules":
+			out.Values[i] = ec._ResourceSelectionCandidate_excludedRules(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var resourceSelectionReportImplementors = []string{"ResourceSelectionReport"}
 
 func (ec *executionContext) _ResourceSelectionReport(ctx context.Context, sel ast.SelectionSet, obj *model.ResourceSelectionReport) graphql.Marshaler {
@@ -88273,6 +88748,8 @@ func (ec *executionContext) _ResourceSelectionReport(ctx context.Context, sel as
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ResourceSelectionReport")
+		case "groupName":
+			out.Values[i] = ec._ResourceSelectionReport_groupName(ctx, field, obj)
 		case "end":
 			out.Values[i] = ec._ResourceSelectionReport_end(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -88280,11 +88757,6 @@ func (ec *executionContext) _ResourceSelectionReport(ctx context.Context, sel as
 			}
 		case "partial":
 			out.Values[i] = ec._ResourceSelectionReport_partial(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "selected":
-			out.Values[i] = ec._ResourceSelectionReport_selected(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -95347,6 +95819,60 @@ func (ec *executionContext) unmarshalNResourceRuleTierInput2ᚕᚖgithubᚗcom�
 func (ec *executionContext) unmarshalNResourceRuleTierInput2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResourceRuleTierInput(ctx context.Context, v any) (*model.ResourceRuleTierInput, error) {
 	res, err := ec.unmarshalInputResourceRuleTierInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNResourceSelectionCandidate2ᚕᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResourceSelectionCandidateᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ResourceSelectionCandidate) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNResourceSelectionCandidate2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResourceSelectionCandidate(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNResourceSelectionCandidate2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐResourceSelectionCandidate(ctx context.Context, sel ast.SelectionSet, v *model.ResourceSelectionCandidate) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ResourceSelectionCandidate(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSceneSource2githubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneSource(ctx context.Context, v any) (model.SceneSource, error) {

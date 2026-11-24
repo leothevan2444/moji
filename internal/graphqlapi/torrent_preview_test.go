@@ -2,6 +2,7 @@ package graphqlapi
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/resourceselection"
@@ -82,5 +83,53 @@ func TestPreviewSelectsOneGroupWithoutChangingDefault(t *testing.T) {
 	executeDefinitionGraphQLInto(t, resolver, `mutation{previewTorrentSelection(input:{searchId:"run",taskId:"task",groupID:"missing"}){partial}}`, &response)
 	if len(response.Errors) != 1 || runtime.calls != 1 {
 		t.Fatal("invalid group evaluated resources")
+	}
+}
+
+func TestSelectionReportProjectsFrozenGroupAndSingleCandidateFacts(t *testing.T) {
+	raw := `{"version":3,"policyVersion":7,"group":{"id":"old","name":"Frozen group"},"selectedIndex":0,"candidates":[{"tierName":"First","status":"ACCEPTABLE","reasons":["TIER_MATCHED"],"facts":{"title":"original title","size":-1,"seeders":0}}]}`
+	out := selectionReportModel(raw)
+	if out == nil || out.GroupName == nil || *out.GroupName != "Frozen group" || !out.Evaluations[0].Selected {
+		t.Fatal("report-level context lost")
+	}
+	e := out.Evaluations[0]
+	if e.Size != nil || e.Seeders == nil || *e.Seeders != 0 {
+		t.Fatal("candidate facts duplicated or unknown became zero")
+	}
+	empty := selectionReportModel(`{"version":3,"policyVersion":7,"group":{"id":"old","name":"Frozen group"},"candidates":[]}`)
+	if empty == nil || empty.GroupName == nil || *empty.GroupName != "Frozen group" {
+		t.Fatal("group context depends on candidate presence")
+	}
+	unknown := selectionReportModel(`{"version":3,"policyVersion":7,"group":{"id":"missing","name":""}}`)
+	if unknown == nil || unknown.GroupName != nil {
+		t.Fatal("unrecorded group was presented as no group filtering")
+	}
+}
+
+func TestExcludedRuleReportProjection(t *testing.T) {
+	p := resourceselection.Policy{Version: 7, ActiveGroup: "g", Rules: []resourceselection.Rule{{ID: "r", Name: "Frozen exclusion", Conditions: []resourceselection.Condition{{Scope: "TITLE", Value: "yes"}}}}, Groups: []resourceselection.Group{{ID: "g", Exclude: []string{"r"}, Fallback: true}}}
+	e := resourceselection.Evaluate(p, resourceselection.Facts{Title: "yes", Size: 0, Seeders: 0})
+	raw, err := json.Marshal(taskruntime.SelectionReport{PolicyVersion: 7, Candidates: []resourceselection.Evaluation{e}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	report := selectionReportModel(string(raw))
+	if report == nil {
+		t.Fatal("report lost")
+	}
+	if report.Evaluations[0].ExcludedRules[0] != "Frozen exclusion" || report.Evaluations[0].Status != "REJECTED" {
+		t.Fatal("exclusion name lost")
+	}
+}
+
+func TestReportSelectionUsesCandidateIndexInsteadOfTitle(t *testing.T) {
+	index := 1
+	raw, err := json.Marshal(taskruntime.SelectionReport{SelectedIndex: &index, Candidates: []resourceselection.Evaluation{{Status: "ACCEPTABLE", Facts: resourceselection.Facts{Title: "same"}}, {Status: "REJECTED", Facts: resourceselection.Facts{Title: "same"}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	report := selectionReportModel(string(raw))
+	if report == nil || report.Evaluations[0].Selected || !report.Evaluations[1].Selected {
+		t.Fatal("selection inferred from identical titles or eligibility")
 	}
 }

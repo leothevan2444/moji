@@ -1,5 +1,18 @@
 {
   "resourceSelection": {
+    "selectedWatermark": "已选中",
+    "tierReason": "命中优先级：{{name}}",
+    "fallbackReason": "兜底",
+    "excludedReason": "命中排除条件：{{rules}}",
+    "exclusionUnrecorded": "具体规则未记录",
+    "candidateSize": "种子大小",
+    "noGroupUsed": "未使用规则组",
+    "unrecordedGroup": "未记录规则组",
+    "unnamedResource": "未记录资源名称",
+    "viewReport": "查看选种报告",
+    "evaluatedResources": "候选资源（{{count}}）",
+    "groupLabel": "规则组",
+    "fallbackLabel": "兜底选择",
     "recommend": "按规则推荐资源",
     "chooseRecommended": "选用推荐资源",
     "moveUp": "上移{{name}}",
@@ -21,10 +34,10 @@
       "ACCEPTABLE": "符合选择条件",
       "NEEDS_INSPECTION": "历史结果：条件尚待确认",
       "REJECTED": "未通过选择条件",
-      "INSUFFICIENT_DATA": "索引器信息不足"
+      "INSUFFICIENT_DATA": "信息不足，无法确认"
     },
     "unknown": "尚未确认：{{rules}}",
-    "report": "资源选择说明",
+    "report": "选种报告",
     "partial": "部分站点搜索未完成，结果可能不完整。",
     "noReport": "暂无选择说明",
     "ends": {
@@ -54,7 +67,7 @@
       "HARD_SUBTITLE_MARKER": "旧规则：发现硬字幕标记",
       "NO_HARD_SUBTITLE_MARKER": "旧规则：未发现硬字幕标记",
       "CHINESE_MARKER": "旧规则：发现中文声明",
-      "FALLBACK_ALLOWED": "按兜底策略选择"
+      "FALLBACK_ALLOWED": "未命中优先层级，规则组允许兜底"
     },
     "noGroups": "未配置规则组，不附加过滤",
     "ruleLibrary": "规则库",
@@ -85,7 +98,7 @@
       "NO": "不满足",
       "UNKNOWN": "未知"
     },
-    "evidenceOmitted": "另有 {{count}} 条条件证据未展开。",
+    "evidenceOmitted": "另有 {{count}} 条条件依据未记录。",
     "editRule": "编辑规则",
     "editGroup": "编辑规则组",
     "noRules": "暂无规则",
@@ -115,12 +128,6 @@
     "fallbackGroup": "规则组：{{group}} · 兜底选择",
     "fallbackOn": "兜底已开启",
     "fallbackOff": "兜底已关闭",
-    "historicalSources": {
-      "TORRENT_NAME": "种子名称",
-      "TARGET_PATHS": "目标视频路径",
-      "SUBTITLE_PATHS": "目标字幕路径",
-      "PATHS": "全部附件路径"
-    },
     "previewing": "正在匹配…",
     "previewFailed": "规则预览失败，请重试。",
     "inactiveLabel": "未使用",

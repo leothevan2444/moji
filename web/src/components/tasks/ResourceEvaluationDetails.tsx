@@ -8,7 +8,7 @@ export function ResourceEvaluationDetails({evaluation}:{evaluation:Evaluation}){
  {evaluation.groupName?<p>{evaluation.reasons.includes("FALLBACK_ALLOWED")?t("resourceSelection.fallbackGroup",{group:evaluation.groupName}):t("resourceSelection.matchedTier",{group:evaluation.groupName,tier:evaluation.tierName||"—"})}</p>:null}
  {evaluation.unknownRules.length?<p>{t("resourceSelection.unknown",{rules:evaluation.unknownRules.join("、")})}</p>:null}
  <ul>{evaluation.reasons.map((v,i)=><li key={i}>{reason(v)}</li>)}</ul>
- {evaluation.evidence.length?<ul>{evaluation.evidence.map((v,i)=><li key={i}>{t("resourceSelection.conditionResult",{condition:v.attribute,result:t(`resourceSelection.truth.${v.value}`,{defaultValue:v.value})})} · {t(`${["TITLE","SIZE","SEEDERS"].includes(v.source)?"resourceSelection.scopes":"resourceSelection.historicalSources"}.${v.source}`,{defaultValue:v.source})}: {v.text}</li>)}</ul>:null}
+ {evaluation.evidence.length?<ul>{evaluation.evidence.map((v,i)=><li key={i}>{t("resourceSelection.conditionResult",{condition:v.attribute,result:t(`resourceSelection.truth.${v.value}`,{defaultValue:v.value})})} · {t(`resourceSelection.scopes.${v.source}`,{defaultValue:v.source})}: {v.text}</li>)}</ul>:null}
  {evaluation.evidenceOmitted>0?<p>{t("resourceSelection.evidenceOmitted",{count:evaluation.evidenceOmitted})}</p>:null}
  </details>;
 }

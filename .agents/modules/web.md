@@ -92,3 +92,9 @@ TaskDetail 通过 TaskSummary 将影片封面、简要资料、任务状态和�
 数据/交互选择最小有效 hook、组件、路由或 graphcache 测试；覆盖迟到结果、缺口、跨页及部分成功。可见布局/焦点改动按[开发流程](../workflows/development.md)运行相关 Playwright 并人工看图。本次设置/共享时区及验证范围见[设置复核](../reviews/2026-11-20-settings.md)；前次视觉收敛、历史基线校准及验证范围见[Stage2 复核](../reviews/2026-11-19-ui-consistency.md)。
 
 资源规则设置采用 v7 正向 ID 索引器匹配，仅标题、大小、做种，无检查范围、文件字段、后台检查开关和作业轮询。预览/任务推荐同步返回、本地暂存，刷新后重新匹配；组前置 ANY、层级 ALL 和独立兜底开关沿用。当前证据见[仅索引器选源复核](../reviews/2026-11-23-indexer-only-selection.md)。
+
+
+任务详情的“选种报告”归选种节点，报告存在才显示“查看选种报告”纯文字按钮，排列在选种阶段动作区最左侧，选种结束后仍可读；点击经 Portal 打开独立共享 Drawer（task-selection-report），不内联展开或独占 drawer-card。标题使用无图标的纯文字“选种报告 · 番号”，先显示结果、选中资源与覆盖提示，候选标题/状态逐条折叠，组/层级、原因及证据分区展示。沿用 useModalFocus 圈定焦点、父窗口 inert、Escape 只关最上层和返回入口，不增加请求/改变页面路由。组件为 TaskSelectionReport，TaskSummary 将其传给 TaskTimeline 的 sourcingDetails，不改变其他阶段操作或预览的 ResourceEvaluationDetails。当前复核见[选种说明布局](../reviews/2026-11-24-task-selection-report-ui.md)。
+
+
+选种阶段“查看选种报告”复用既有 task-primary-action 与 --secondary，与“手动选种”保持中性样式，“立即检查资源”保留主要操作配色；按钮尺寸、字重和悬停均由已有规则管理，桌面 38px、移动/粗指针 44px，不新增独立按钮样式或更改共享规则。

@@ -32,6 +32,7 @@ type Facts struct {
 	Evidence []Evidence `json:"evidence"`
 }
 type Evaluation struct {
+	ExcludedRules   []string `json:"excludedRules,omitempty"`
 	EvidenceOmitted int      `json:"evidenceOmitted"`
 	GroupName       string   `json:"groupName"`
 	TierName        string   `json:"tierName"`
@@ -104,7 +105,12 @@ func truth(v bool) Truth {
 	}
 	return No
 }
-func Evaluate(p Policy, f Facts) Evaluation {
+func Evaluate(p Policy, f Facts) Evaluation { return evaluate(p, f, true) }
+
+// EvaluateSummary uses identical selection semantics without collecting preview traces.
+func EvaluateSummary(p Policy, f Facts) Evaluation { return evaluate(p, f, false) }
+
+func evaluate(p Policy, f Facts, explain bool) Evaluation {
 	p = Prepare(p)
 	e := Evaluation{ID: f.ID, Status: "ACCEPTABLE", Preferred: true, Ranks: []int{0}, Reasons: []string{}, UnknownRules: []string{}, Facts: f}
 	e.Facts.Evidence = []Evidence{}
@@ -142,14 +148,16 @@ func Evaluate(p Policy, f Facts) Evaluation {
 			unknown := false
 			for _, condition := range rule.Conditions {
 				result, text := matches(condition, f, p.matchers)
-				expression := condition.Value
-				if condition.Numeric() {
-					expression = condition.Minimum + "…" + condition.Maximum
-				}
-				if len(e.Facts.Evidence) < 32 {
-					e.Facts.Evidence = append(e.Facts.Evidence, Evidence{Attribute: rule.Name + ": " + expression, Value: string(result), Source: condition.Scope, Text: truncate(text, 240)})
-				} else {
-					e.EvidenceOmitted++
+				if explain {
+					expression := condition.Value
+					if condition.Numeric() {
+						expression = condition.Minimum + "…" + condition.Maximum
+					}
+					if len(e.Facts.Evidence) < 32 {
+						e.Facts.Evidence = append(e.Facts.Evidence, Evidence{Attribute: rule.Name + ": " + expression, Value: string(result), Source: condition.Scope, Text: truncate(text, 240)})
+					} else {
+						e.EvidenceOmitted++
+					}
 				}
 				if result == Yes {
 					v = Yes
@@ -207,6 +215,12 @@ func Evaluate(p Policy, f Facts) Evaluation {
 	case Yes:
 		e.Status = "REJECTED"
 		e.Reasons = append(e.Reasons, "EXCLUDED_RULE_MATCHED")
+		for _, id := range group.Exclude {
+			if cache[id] == Yes {
+				e.ExcludedRules = append(e.ExcludedRules, rules[id].Name)
+				break
+			}
+		}
 	case Unknown:
 		blockedUnknown = true
 	}

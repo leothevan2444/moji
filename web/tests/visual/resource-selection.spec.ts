@@ -291,7 +291,7 @@ test.describe("rule library and groups",()=>{
 });
 
 const film={endpoint:"https://metadata.example/graphql",sceneId:"film-one",code:"MOJI-102",title:"Synthetic target film",date:"2026-01-01",studio:"Synthetic studio",performers:[],imageUrl:"",url:"",durationSeconds:7200,confirmationDigest:"confirmed-digest"};
-const evaluation={groupName:"Daily",tierName:"First choice",evidenceOmitted:0,candidateId:searchCandidate.id,title:searchCandidate.title,status:"ACCEPTABLE",preferred:true,reasons:["TIER_MATCHED"],unknownRules:[],evidence:[]};
+const evaluation={size:12000000000,seeders:42,groupName:"Daily",tierName:"First choice",evidenceOmitted:0,candidateId:searchCandidate.id,title:searchCandidate.title,status:"ACCEPTABLE",preferred:true,reasons:["TIER_MATCHED"],unknownRules:[],evidence:[]};
 const completed={searchId:"search-one",searchRevision:1,partial:false,total:1,offset:0,limit:24,candidates:[searchCandidate],evaluations:[evaluation]};
 test.describe("indexer-only preview",()=>{
  test.use({graphqlOverrides:{settings:()=>ruleSettings,taskFilmCandidates:()=>[film],taskFilm:()=>film,previewTorrentSelection:()=>completed}});
@@ -317,13 +317,84 @@ test.describe("task selection",()=>{
  });
 });
 test.describe("selection report",()=>{
- test.use({graphqlOverrides:{task:()=>({...task,selectionReport:{end:"PREFERRED",partial:false,selected:searchCandidate.title,evaluations:[evaluation]}})}});
+ test.use({graphqlOverrides:{task:()=>({...task,selectionReport:{groupName:"Daily",end:"PREFERRED",partial:false,selected:searchCandidate.title,evaluations:[{...evaluation,selected:true,excludedRules:[]}]}})}});
  test("task detail explains the persisted decision",async({page})=>{
   await page.addInitScript(()=>localStorage.setItem("moji:locale","en"));await page.goto("/tasks/selection-task");
-  const report=page.locator("details.drawer-card").filter({hasText:"Resource selection details"});await report.locator("summary").first().click();
-  await expect(report).toContainText("First-priority resource found");await expect(report).toContainText("Priority tier matched");
-  await report.scrollIntoViewIfNeeded();await expect(report).toHaveScreenshot("task-selection-report.png");
+  const sourcing=page.locator(".task-timeline > li").first();
+  await sourcing.getByRole("button",{name:"View selection report",exact:true}).click();
+  const report=page.getByRole("dialog",{name:"Selection report · MOJI-102",exact:true});
+  await expect(report).toContainText("First-priority resource found");await expect(report).toContainText("First choice");
+  await expect(report).toHaveScreenshot("task-selection-report.png");
  });
+});
+
+const detailedReport = {
+ groupName:"Daily",end:"BEST_AVAILABLE",partial:true,selected:searchCandidate.title,
+ evaluations:[{selected:true,title:searchCandidate.title,size:12000000000,seeders:42,tierName:"First choice",status:"ACCEPTABLE",reasons:["TIER_MATCHED"],excludedRules:[]},{selected:false,title:"MOJI-102 a very long alternative resource name with user-defined labels and additional release information",status:"INSUFFICIENT_DATA",size:null,seeders:null,tierName:"",reasons:[],excludedRules:[]},{selected:false,title:"MOJI-102 excluded resource with unwanted-label",status:"REJECTED",size:0,seeders:0,tierName:"",reasons:["EXCLUDED_RULE_MATCHED","REQUIRED_RULE_FAILED"],excludedRules:["Excluded labels"]}]
+};
+test.describe("selection report hierarchy",()=>{
+ test.use({graphqlOverrides:{task:()=>({...task,selectionReport:detailedReport})}});
+ for(const locale of ["zh-CN","en"] as const) for(const theme of ["light","dark"] as const) {
+  test(`${locale} ${theme} sourcing explanation shows compact candidate summaries`,async({page})=>{
+   await page.addInitScript(({locale,theme})=>{localStorage.setItem("moji:locale",locale);localStorage.setItem("moji:theme",theme);},{locale,theme});
+   await page.goto("/tasks/selection-task");await page.evaluate(()=>document.fonts.ready);
+   const sourcing=page.locator(".task-timeline > li").first(),entry=sourcing.locator(".task-selection-report-entry");
+   await expect(page.locator(".task-selection-report-dialog")).toHaveCount(0);
+   await expect(sourcing.locator(".task-timeline__actions button").first()).toHaveText(locale==="en"?"View selection report":"查看选种报告");
+   await expect(sourcing).toHaveScreenshot(`${locale}-${theme}-selection-report-entry.png`);
+   await entry.focus();await page.keyboard.press("Enter");
+   const report=page.getByRole("dialog",{name:locale==="en"?"Selection report · MOJI-102":"选种报告 · MOJI-102",exact:true});
+   await expect(report).toBeVisible();
+   await expect(report.getByText("Daily",{exact:true})).toHaveCount(1);
+   await expect(report.getByRole("img",{name:locale==="en"?"Meets selection conditions":"符合选择条件",exact:true})).toBeVisible();
+   await expect(page.locator(".drawer--task")).toHaveJSProperty("inert",true);
+   await page.keyboard.press("Tab");await expect(report.getByRole("button",{name:locale==="en"?"Close":"关闭",exact:true})).toBeFocused();
+   await expect(report.getByRole("img",{name:locale==="en"?"Insufficient information to confirm":"信息不足，无法确认",exact:true})).toBeVisible();
+   await expect(report.getByRole("img",{name:locale==="en"?"Does not meet selection conditions":"未通过选择条件",exact:true})).toBeVisible();
+   const rejected=report.locator(".task-selection-report__candidate").nth(2);
+   await expect(rejected).toContainText(locale==="en"?"Excluded by: Excluded labels":"命中排除条件：Excluded labels");
+   await expect(report.locator("details, .task-selection-report__evidence")).toHaveCount(0);
+   await expect(report.locator(".task-selection-report__candidate").first()).toContainText(locale==="en"?"Priority tier matched: First choice":"命中优先级：First choice");
+   const chosen=report.locator(".task-selection-report__candidate.is-selected");await expect(chosen).toHaveCount(1);
+   const watermark=chosen.locator(".task-selection-report__watermark");await expect(watermark).toBeVisible();
+   const selectedBox=(await chosen.boundingBox())!,markBox=(await watermark.boundingBox())!;
+   expect(Math.abs(selectedBox.x+selectedBox.width/2-markBox.x-markBox.width/2)).toBeLessThan(2);
+   expect(Math.abs(selectedBox.y+selectedBox.height/2-markBox.y-markBox.height/2)).toBeLessThan(2);
+   const reasons=rejected.locator(".task-selection-report__reasons li");await expect(reasons).toHaveCount(2);
+   expect(await reasons.last().evaluate(el=>getComputedStyle(el,"::before").content)).toContain("·");
+   expect(await reasons.last().evaluate(el=>getComputedStyle(el).display)).toBe("inline");
+   await expect(report.getByText(locale==="en"?"Selected resource":"选中资源",{exact:true})).toHaveCount(0);
+   const icon=chosen.locator(".task-selection-report__status-icon"),title=chosen.locator(".task-selection-report__candidate-title");
+   expect((await icon.boundingBox())!.x).toBeLessThan((await title.boundingBox())!.x);
+   await expect(icon).toHaveText("");
+   const meta=chosen.locator(".task-selection-report__candidate-meta"),facts=meta.locator("dl"),reason=meta.locator("ul");
+   const factsBox=(await facts.boundingBox())!,reasonBox=(await reason.boundingBox())!;
+   expect(reasonBox.x).toBeGreaterThan(factsBox.x);expect(Math.abs(reasonBox.y-factsBox.y)).toBeLessThan(8);
+   await expect(report).toHaveScreenshot(`${locale}-${theme}-selection-report-hierarchy.png`);
+   expect(await report.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
+   const box=(await report.boundingBox())!;expect(box.x+box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+   await page.keyboard.press("Escape");await expect(report).toHaveCount(0);await expect(entry).toBeFocused();
+   await expect(page.locator(".drawer--task")).toHaveJSProperty("inert",false);
+  });
+ }
+});
+
+test.describe("selection report actions",()=>{
+ test.use({graphqlOverrides:{task:()=>({...task,stage:"SOURCING",stageStatus:"PENDING",stageErrorCode:"",sourcingNextCheckAt:"2026-01-15T18:00:00Z",selectionReport:detailedReport})}});
+ for(const locale of ["zh-CN","en"] as const) for(const theme of ["light","dark"] as const) {
+  test(`${locale} ${theme} sourcing actions share dimensions and interaction with distinct priority`,async({page})=>{
+   await page.addInitScript(({locale,theme})=>{localStorage.setItem("moji:locale",locale);localStorage.setItem("moji:theme",theme);},{locale,theme});
+   await page.goto("/tasks/selection-task");await page.evaluate(()=>document.fonts.ready);
+   const sourcing=page.locator(".task-timeline > li").first(),actions=sourcing.locator(".task-timeline__actions"),buttons=actions.getByRole("button");
+   await expect(buttons).toHaveCount(3);await expect(buttons.first()).toHaveText(locale==="en"?"View selection report":"查看选种报告");
+   const styles=await buttons.evaluateAll(elements=>elements.map(element=>{const s=getComputedStyle(element);return {height:element.getBoundingClientRect().height,fontSize:s.fontSize,fontWeight:s.fontWeight,borderRadius:s.borderRadius,padding:s.padding,transform:s.transform,color:s.color,borderColor:s.borderColor,background:s.backgroundColor};}));
+   for(const style of styles)for(const key of ["height","fontSize","fontWeight","borderRadius","padding","transform"] as const)expect(style[key]).toBe(styles[0][key]);
+   const touchSizing=await page.evaluate(()=>matchMedia("(max-width: 640px), (pointer: coarse)").matches);
+   expect(styles[0].height).toBe(touchSizing?44:38);expect(styles[0].color).toBe(styles[1].color);expect(styles[0].color).not.toBe(styles[2].color);
+   for(let i=0;i<3;i++){await buttons.nth(i).hover();await expect(buttons.nth(i)).toHaveCSS("transform","none");}
+   await page.mouse.move(0,0);await actions.scrollIntoViewIfNeeded();await expect(actions).toHaveScreenshot(`${locale}-${theme}-sourcing-action-styles.png`);
+  });
+ }
 });
 
 let tagSettings: typeof ruleSettings;

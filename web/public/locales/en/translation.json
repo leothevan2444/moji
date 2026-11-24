@@ -1,5 +1,18 @@
 {
   "resourceSelection": {
+    "selectedWatermark": "Selected",
+    "tierReason": "Priority tier matched: {{name}}",
+    "fallbackReason": "Fallback",
+    "excludedReason": "Excluded by: {{rules}}",
+    "exclusionUnrecorded": "Rule name not recorded",
+    "candidateSize": "Torrent size",
+    "noGroupUsed": "No rule group used",
+    "unrecordedGroup": "Rule group not recorded",
+    "unnamedResource": "Resource name not recorded",
+    "viewReport": "View selection report",
+    "evaluatedResources": "Candidate resources ({{count}})",
+    "groupLabel": "Rule group",
+    "fallbackLabel": "Fallback selection",
     "recommend": "Recommend a resource",
     "chooseRecommended": "Select recommended resource",
     "moveUp": "Move {{name}} up",
@@ -21,10 +34,10 @@
       "ACCEPTABLE": "Meets selection conditions",
       "NEEDS_INSPECTION": "Historical result: conditions unconfirmed",
       "REJECTED": "Does not meet selection conditions",
-      "INSUFFICIENT_DATA": "Insufficient indexer data"
+      "INSUFFICIENT_DATA": "Insufficient information to confirm"
     },
     "unknown": "Not yet verified: {{rules}}",
-    "report": "Resource selection details",
+    "report": "Selection report",
     "partial": "Some sites or candidates were not fully checked.",
     "noReport": "No selection details available",
     "ends": {
@@ -54,7 +67,7 @@
       "HARD_SUBTITLE_MARKER": "Previous rule: hard subtitle label found",
       "NO_HARD_SUBTITLE_MARKER": "Previous rule: no hard subtitle label found",
       "CHINESE_MARKER": "Previous rule: Chinese label found",
-      "FALLBACK_ALLOWED": "Fallback selection"
+      "FALLBACK_ALLOWED": "No priority tier matched; the group allows fallback"
     },
     "noGroups": "No rule groups configured; no additional filtering",
     "ruleLibrary": "Rule library",
@@ -85,7 +98,7 @@
       "NO": "Does not match",
       "UNKNOWN": "Unknown"
     },
-    "evidenceOmitted": "{{count}} additional condition evidence entries are omitted.",
+    "evidenceOmitted": "{{count}} additional condition evidence entries were not recorded.",
     "editRule": "Edit rule",
     "editGroup": "Edit rule group",
     "noRules": "No rules yet",
@@ -115,12 +128,6 @@
     "fallbackGroup": "Group: {{group}} · Fallback selection",
     "fallbackOn": "Fallback on",
     "fallbackOff": "Fallback off",
-    "historicalSources": {
-      "TORRENT_NAME": "Torrent name",
-      "TARGET_PATHS": "Target video paths",
-      "SUBTITLE_PATHS": "Target subtitle paths",
-      "PATHS": "All attachment paths"
-    },
     "previewing": "Matching…",
     "previewFailed": "Rule preview failed. Try again.",
     "inactiveLabel": "Not in use",

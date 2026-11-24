@@ -1179,11 +1179,22 @@ type ResourceRulesPatchInput struct {
 	Groups      []*ResourceRuleGroupInput `json:"groups,omitempty"`
 }
 
+type ResourceSelectionCandidate struct {
+	Selected      bool     `json:"selected"`
+	Title         string   `json:"title"`
+	Size          *int64   `json:"size,omitempty"`
+	Seeders       *int     `json:"seeders,omitempty"`
+	Status        string   `json:"status"`
+	TierName      string   `json:"tierName"`
+	Reasons       []string `json:"reasons"`
+	ExcludedRules []string `json:"excludedRules"`
+}
+
 type ResourceSelectionReport struct {
-	End         string                `json:"end"`
-	Partial     bool                  `json:"partial"`
-	Selected    string                `json:"selected"`
-	Evaluations []*ResourceEvaluation `json:"evaluations"`
+	GroupName   *string                       `json:"groupName,omitempty"`
+	End         string                        `json:"end"`
+	Partial     bool                          `json:"partial"`
+	Evaluations []*ResourceSelectionCandidate `json:"evaluations"`
 }
 
 type ServiceConnectionTestResult struct {

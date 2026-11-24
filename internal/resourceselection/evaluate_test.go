@@ -360,3 +360,32 @@ func TestCurrentPolicyRejectsObjectReferencesAndHistoricalPolicyStaysVersioned(t
 		t.Fatal("duplicate positive tier reference accepted")
 	}
 }
+
+func TestEvaluationRecordsActualExclusionRuleName(t *testing.T) {
+	p := Policy{Version: Version, ActiveGroup: "g", Rules: []Rule{{ID: "first", Name: "No match", Conditions: []Condition{{Scope: "TITLE", Value: "missing"}}}, {ID: "second", Name: "Excluded label", Conditions: []Condition{{Scope: "TITLE", Value: "hit"}}}}, Groups: []Group{{ID: "g", Exclude: []string{"first", "second"}, Fallback: true}}}
+	e := Evaluate(p, Facts{Title: "hit"})
+	if e.Status != "REJECTED" || len(e.ExcludedRules) != 1 || e.ExcludedRules[0] != "Excluded label" {
+		t.Fatalf("wrong exclusion reason: %#v", e)
+	}
+	e = Evaluate(p, Facts{Title: "neither"})
+	if e.Status != "ACCEPTABLE" || len(e.ExcludedRules) != 0 {
+		t.Fatal("unmatched exclusion was reported")
+	}
+}
+
+func TestSummaryEvaluationPreservesSelectionWithoutPreviewEvidence(t *testing.T) {
+	p := testPolicy()
+	for _, f := range []Facts{{Title: "preferred", Size: 1000, Seeders: 2}, {Title: "other", Size: -1, Seeders: -1}, {Title: "", Size: 0, Seeders: 0}} {
+		detailed, summary := Evaluate(p, f), EvaluateSummary(p, f)
+		if len(summary.Facts.Evidence) != 0 || summary.EvidenceOmitted != 0 {
+			t.Fatal("summary collected unused preview evidence")
+		}
+		detailed.Facts.Evidence = summary.Facts.Evidence
+		detailed.EvidenceOmitted = 0
+		a, _ := json.Marshal(detailed)
+		b, _ := json.Marshal(summary)
+		if string(a) != string(b) {
+			t.Fatalf("summary changed selection: %s vs %s", a, b)
+		}
+	}
+}

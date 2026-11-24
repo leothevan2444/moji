@@ -35,7 +35,7 @@ OS 锁保证单实例/维护所有权。新目录完成初始化、验证、fsyn
 | 规则包与选定来源 | core v4–v6；manifest、active/previous、持久 pin 和获取前私密来源，同任务接收原子提交 |
 | 清理执行 | downloader_cleanup_state 与 external_commands；core v9 已删除 download_policies，策略只在 YAML |
 | 交互搜索 | runtime v5；取消落盘保留结果，重启标记中断；具体预算归[索引器](indexers.md) |
-| 资源选择报告 | 完全属于 runtime diagnostics，component=resource-selection-report，按 task_id 关联最新记录，运行记录内保存任务 revision/generation 和来源摘要，避免显示未来状态或旧来源报告。核心不保存独立选择摘要或报告引用；已有资源身份、来源、附件和恢复状态仍在原核心表。报告在核心操作成功后尽力写入，失败/过期/repair 不阻断任务。core v10 的历史列 selection_report_json 清空且停止读写，DDL/迁移校验和保留；runtime v8/v9 历史迁移保留，当前无元数据预览表 |
+| 资源选择报告 | 完全属于 runtime diagnostics，component=resource-selection-report，按 task_id 关联最新记录，运行记录内保存任务 revision/generation 和来源摘要，避免显示未来状态或旧来源报告。核心不保存独立选择摘要或报告引用；已有资源身份、来源、附件和恢复状态仍在原核心表。报告 v3 在顶层保存冻结组与版本，候选只存标题/大小/做种、状态、层级、原因及已确认的排除规则名称，选中项用索引关联；逐规则/逐条件结果已移除，本地数据经备份显式精简；只读摘要 v3，v1/v2 解码已移除，不在启动时自动转换。详见[紧凑报告复核](../reviews/2026-11-24-compact-selection-report.md)。报告在核心操作成功后尽力写入，失败/过期/repair 不阻断任务。core v10 的历史列 selection_report_json 清空且停止读写，DDL/迁移校验和保留；runtime v8/v9 历史迁移保留，当前无元数据预览表 |
 | 网络冷却 | runtime v6；私有 origin/出口摘要，不保存 URL/凭据；容量不驱逐有效冷却 |
 | 索引执行 | runtime v7；indexer_executions JSON 为真值，索引/统计列派生；无旧 diagnostics 自动转换 |
 

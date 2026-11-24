@@ -2,7 +2,6 @@ package graphqlapi
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/leothevan2444/moji/internal/config"
 	"github.com/leothevan2444/moji/internal/film"
@@ -146,19 +145,34 @@ func selectionReportModel(raw string) *model.ResourceSelectionReport {
 	if raw == "" {
 		return nil
 	}
-	var report struct {
-		Version    int
-		End        string
-		Partial    bool
-		Selected   string
-		Candidates []resourceselection.Evaluation
-	}
-	if json.Unmarshal([]byte(raw), &report) != nil || (report.Version != 1 && report.Version != 2) {
+	report, err := taskruntime.DecodeSelectionReport(raw)
+	if err != nil {
 		return nil
 	}
-	out := &model.ResourceSelectionReport{End: report.End, Partial: report.Partial, Selected: report.Selected, Evaluations: []*model.ResourceEvaluation{}}
-	for _, e := range report.Candidates {
-		out.Evaluations = append(out.Evaluations, evaluationModel(e))
+	out := &model.ResourceSelectionReport{End: report.End, Partial: report.Partial, Evaluations: []*model.ResourceSelectionCandidate{}}
+	if report.Group != nil {
+		if report.Group.Name != "" {
+			name := report.Group.Name
+			out.GroupName = &name
+		}
+	} else if report.PolicyVersion > 0 {
+		name := ""
+		out.GroupName = &name
+	}
+	for index, e := range report.Candidates {
+		candidate := &model.ResourceSelectionCandidate{Selected: report.SelectedIndex != nil && *report.SelectedIndex == index, Title: e.Facts.Title, Status: e.Status, TierName: e.TierName, Reasons: e.Reasons, ExcludedRules: e.ExcludedRules}
+		if candidate.ExcludedRules == nil {
+			candidate.ExcludedRules = []string{}
+		}
+		if e.Facts.Size >= 0 {
+			size := e.Facts.Size
+			candidate.Size = &size
+		}
+		if e.Facts.Seeders >= 0 {
+			seeders := e.Facts.Seeders
+			candidate.Seeders = &seeders
+		}
+		out.Evaluations = append(out.Evaluations, candidate)
 	}
 	return out
 }
