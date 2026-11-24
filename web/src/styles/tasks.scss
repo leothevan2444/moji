@@ -1389,10 +1389,14 @@ button.profile-icon {
     padding-bottom: 14px;
     border-bottom: 1px solid var(--line);
 
+    > div { flex: 1; min-width: 0; }
+    > button { flex: 0 0 auto; white-space: nowrap; }
+
     h2 {
       margin: 0;
       font-family: inherit;
       font-size: 28px;
+      overflow-wrap: anywhere;
     }
   }
 }
@@ -2172,7 +2176,6 @@ summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .task-card__head { flex-wrap: wrap; }
   .task-card__head .profile-card__icons { width: 100%; justify-content: flex-start; }
   .drawer--task .drawer__head { flex-direction: row; align-items: flex-start; }
-  .drawer--task .drawer__head h2 { font-size: 20px; overflow-wrap: anywhere; }
   .drawer--task .drawer-card__head { flex-wrap: wrap; }
 }
 

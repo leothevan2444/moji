@@ -255,6 +255,9 @@ test.describe("rule library and groups",()=>{
    const opener=library.getByRole("button",{name,exact:true});await opener.click();const editor=page.locator(".resource-selection-dialog");
    await expect(editor).toBeFocused();const title=editor.locator(".drawer__head").getByRole("textbox",{name:label,exact:true});await expect(title).not.toBeFocused();
    const box=(await title.boundingBox())!,parent=(await editor.locator(".drawer__head > div").boundingBox())!;expect(box.width/parent.width).toBeGreaterThan(.38);expect(box.width/parent.width).toBeLessThan(.42);
+   const close=(await editor.locator(".drawer__head > button").boundingBox())!;
+   expect(close.x).toBeGreaterThanOrEqual(parent.x+parent.width);
+   expect(Math.abs(close.y-parent.y)).toBeLessThan(2);
    await page.keyboard.press("Tab");await expect(title).toBeFocused();
    if(name==="User label"){
     const add=editor.getByRole("button",{name:"Add condition",exact:true});expect(await add.locator("svg").count()).toBe(1);await add.click();await expect(editor.locator(".resource-condition-row")).toHaveCount(2);
