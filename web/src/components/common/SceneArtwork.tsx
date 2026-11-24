@@ -12,7 +12,7 @@ interface SceneArtworkProps {
 export function SceneArtwork({ src, alt, loading = "lazy" }: SceneArtworkProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   return src && src !== failedSrc ? (
-    <img src={src} alt={alt} loading={loading} className="performer-scene-card__image" onError={() => setFailedSrc(src)} />
+    <img data-nsfw src={src} alt={alt} loading={loading} className="performer-scene-card__image" onError={() => setFailedSrc(src)} />
   ) : (
     <div className="performer-scene-card__image-placeholder" aria-hidden="true">
       <FontAwesomeIcon icon={faFilm} />

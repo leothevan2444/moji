@@ -76,6 +76,8 @@ test("visible tools and theme support keyboard focus", async ({ page }) => {
   await expect(theme).toBeFocused();
   await page.keyboard.press("Enter");
   await page.keyboard.press("Tab");
+  await expect(header.getByRole("button", {name:"NSFW image masking",exact:true})).toBeFocused();
+  await page.keyboard.press("Tab");
   expect(await page.locator("main").evaluate(node => node.contains(document.activeElement))).toBe(true);
   await expect(page.getByRole("menu")).toHaveCount(0);
 });
@@ -86,9 +88,9 @@ test.describe("developer tools", () => {
     await page.goto("/");
     const header = page.locator(".masthead");
     await expect(header.getByRole("button", {name:"Performance monitoring"})).toBeVisible();
-    await expect(header.locator(".masthead__tools > a, .masthead__tools > button")).toHaveCount(4);
+    await expect(header.locator(".masthead__tools > a, .masthead__tools > button")).toHaveCount(5);
     expect(await header.locator(".masthead__tools > a, .masthead__tools > button").evaluateAll(items => items.map(item => item.getAttribute("aria-label"))))
-      .toEqual(["Performance monitoring", "Statistics", "Settings", "Help"]);
+      .toEqual(["Performance monitoring", "Statistics", "Settings", "Help", "NSFW image masking"]);
     const help = header.getByRole("button", {name:"Help",exact:true});
     await help.click();
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -99,7 +101,7 @@ test.describe("developer tools", () => {
     await page.setViewportSize({width:320,height:740});
     await page.goto("/?__locale=en");
     const header = page.locator(".masthead");
-    for (const name of ["Performance monitoring", "Statistics", "Settings", "Help"]) {
+    for (const name of ["Performance monitoring", "Statistics", "Settings", "Help", "NSFW image masking"]) {
       const tool = header.getByRole(name === "Statistics" || name === "Settings" ? "link" : "button", {name,exact:true});
       await expect(tool).toBeVisible();
       const bounds = await tool.boundingBox();

@@ -41,7 +41,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page, acti
       }}>
         <div className="avatar avatar--frame">
           <span className="avatar__fallback" aria-hidden="true">{performerInitials(performer.name)}</span>
-          {imageURL ? <img className="avatar__image" src={imageURL} alt="" loading="lazy" decoding="async" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}
+          {imageURL ? <img data-nsfw className="avatar__image" src={imageURL} alt="" loading="lazy" decoding="async" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}
         </div>
         <div className="profile-card__body">
           <div className="profile-card__head">

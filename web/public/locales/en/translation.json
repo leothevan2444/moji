@@ -1652,6 +1652,11 @@
       "INTERNAL_ERROR": "The server encountered an error while processing the request."
     }
   },
+  "nsfwMask": {
+    "label": "NSFW image masking",
+    "enable": "Mask images",
+    "disable": "Show images"
+  },
   "theme": {
     "label": "Theme: {{theme}}",
     "choose": "Choose theme",

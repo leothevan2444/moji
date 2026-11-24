@@ -47,7 +47,7 @@ export function PerformerOverview({ performerDetail, performerSummary, performer
   return (
     <article className="performer-detail-card">
       <div className="performer-detail-hero">
-        <div className="avatar avatar--frame performer-detail-hero__avatar"><span className="avatar__fallback" aria-hidden="true">{performerInitials(performerDetail.performer.name)}</span>{performerImageURL(performerDetail.performer.imagePath, stashBaseURL) ? <img className="avatar__image" src={performerImageURL(performerDetail.performer.imagePath, stashBaseURL)!} alt="" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}</div>
+        <div className="avatar avatar--frame performer-detail-hero__avatar"><span className="avatar__fallback" aria-hidden="true">{performerInitials(performerDetail.performer.name)}</span>{performerImageURL(performerDetail.performer.imagePath, stashBaseURL) ? <img data-nsfw className="avatar__image" src={performerImageURL(performerDetail.performer.imagePath, stashBaseURL)!} alt="" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}</div>
 
         <div className="performer-detail-hero__copy">
           <div className="performer-detail-hero__topline">

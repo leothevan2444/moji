@@ -8,6 +8,8 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { useClickOutside } from "../../hooks/useClickOutside";
 
+import { useNsfwMask } from "../../hooks/useNsfwMask";
+
 interface HeaderProps {
   developerMode?: boolean;
   onOpenPerformance?: () => void;
@@ -26,6 +28,7 @@ interface HeaderProps {
 export function Header({ onOpenHelp, theme, developerMode = false, onOpenPerformance }: HeaderProps) {
   const { t } = useTranslation();
   const location = useLocation();
+  const { masked, toggle: toggleNsfwMask } = useNsfwMask();
   const [panel, setPanel] = useState<"navigation" | null>(null);
   const headerRef = useRef<HTMLElement>(null);
   const navigationButton = useRef<HTMLButtonElement>(null);
@@ -93,6 +96,11 @@ export function Header({ onOpenHelp, theme, developerMode = false, onOpenPerform
           <FontAwesomeIcon icon={faCircleQuestion} aria-hidden="true" />
         </button>
         <ThemeMenu {...theme} />
+        <button type="button" className="utility-button utility-icon-button nsfw-mask-toggle" onClick={toggleNsfwMask}
+          aria-label={t("nsfwMask.label")} aria-pressed={masked}
+          title={t(masked ? "nsfwMask.disable" : "nsfwMask.enable")}>
+          NSFW
+        </button>
       </div>
     </header>
   );

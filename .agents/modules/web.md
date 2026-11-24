@@ -31,6 +31,8 @@
 
 顶栏保留品牌、主导航与常驻工具。小于 1000px 展开两列导航，600px 以下隐藏可见页名并保留可访问名；aria-current、外部关闭、Escape 与路由关闭保持。ThemeMenu 使用 menuitemradio，方向键/Home/End、Tab 离开、选择/Escape 返回焦点；不套用已废弃的通用 listbox Menu。
 
+顶栏最右侧的 NSFW 图片打码开关使用固定的 `NSFW` 文字按钮，开启时以强调色与浅色背景表示选中，悬停提示提供开启/关闭动作，默认关闭；开启后以 12px 半径模糊影片封面、发现详情图片与演员照片，验证码不受影响；头像图片向外扩展三倍模糊半径（36px） 后由容器裁切，避免模糊透明边缘透出占位底色。偏好仅存浏览器 `moji:nsfw-mask`，刷新恢复、同源标签页同步，不提交后端；存储不可用时仍可在当前页面切换。图片通过 `data-nsfw` 显式标记，根元素属性统一覆盖抽屉 Portal，刷新恢复在绘制前应用。380px 以下工具换至第二行以保留所有入口。
+
 ## 设置、草稿与连接测试
 
 设置桌面 218px 侧栏，右侧全宽滚动、内容最大 960px；700px 以下横向导航。`?panel=` 支持深链/前进后退，tablist/tab/tabpanel 有方向键、Home/End 和 RTL。SettingsSubpanel 用 hidden 保持当前分区表单挂载，跨业务分区队列由 SettingsAutosaveProvider 持有。

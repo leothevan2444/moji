@@ -20,7 +20,7 @@ export function DiscoveryDrawer({query,searching,error,pendingAddId,discoverItem
             <article key={result.key} className="candidate-card candidate-card--stashbox">
               {result.imageUrl ? (
                 <div className="candidate-card__poster candidate-card__poster--discovery">
-                  <img src={result.imageUrl} alt={result.title} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                  <img data-nsfw src={result.imageUrl} alt={result.title} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />
                 </div>
               ) : null}
               <div className="candidate-card__content">

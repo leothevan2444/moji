@@ -1647,6 +1647,11 @@
       "INTERNAL_ERROR": "服务器处理请求时发生错误。"
     }
   },
+  "nsfwMask": {
+    "label": "NSFW 图片打码",
+    "enable": "开启图片打码",
+    "disable": "关闭图片打码"
+  },
   "theme": {
     "label": "主题：{{theme}}",
     "choose": "选择主题",
