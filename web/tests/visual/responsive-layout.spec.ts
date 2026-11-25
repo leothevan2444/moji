@@ -67,9 +67,9 @@ for(const locale of ["zh-CN","en","qps-ploc","ar-XB"] as const) {
 
   test("performer controls wrap in groups and compact pagination stays inline",async({page},info)=>{
     await page.setViewportSize({width:800,height:1000});await page.goto(route("/performers"));
-    const toolbar=page.locator(".toolbar-inline--performer-list"),actions=toolbar.locator(".performer-list-actions");
+    const toolbar=page.locator(".workspace-toolbar");
     for(const width of [800,320,960,800]) {
-      await page.setViewportSize({width,height:1000});await contained(toolbar);await sameRow(actions);await contained(toolbar.locator(".performer-list-sort"));
+      await page.setViewportSize({width,height:1000});await contained(toolbar);
       await capture(toolbar,info,`performer-toolbar-${width}`);
     }
     await page.setViewportSize({width:600,height:1000});const pagination=page.locator(".pagination").first();

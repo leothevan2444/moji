@@ -207,7 +207,7 @@ test("scene multi-select is optional and clears when exited", async ({ page }) =
   await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
   await page.goto("/performers/actor-0");
   await expect(page.locator(".performer-scene-card")).toHaveCount(24);
-  await expect(page.locator(".performer-scene-selection")).toBeHidden();
+  await expect(page.locator(".workspace-toolbar__panel[role=region]")).toBeHidden();
   await expect(page.locator(".performer-scene-card__selector")).toHaveCount(0);
   await page.locator(".performer-scene-card").nth(3).click();
   await expect(page.locator(".performer-scene-card.is-selected")).toHaveCount(0);
@@ -222,7 +222,7 @@ test("scene multi-select is optional and clears when exited", async ({ page }) =
   await expect(page).toHaveScreenshot("en-performer-scene-selection.png");
 
   await page.getByRole("button", { name: "Exit selection", exact: true }).click();
-  await expect(page.locator(".performer-scene-selection")).toBeHidden();
+  await expect(page.locator(".workspace-toolbar__panel[role=region]")).toBeHidden();
   await expect(page.locator(".performer-scene-card__selector")).toHaveCount(0);
   await page.getByRole("button", { name: "Select scenes", exact: true }).click();
   await expect(page.locator(".performer-scene-card.is-selected")).toHaveCount(0);
@@ -231,36 +231,31 @@ test("scene multi-select is optional and clears when exited", async ({ page }) =
 
 
 for (const workspace of ["scenes", "performers"] as const) {
-  test(`${workspace} selection expands and collapses smoothly`, async ({ page }) => {
+  test(`${workspace} selection replaces the original toolbar and restores it`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.addInitScript(() => localStorage.setItem("moji:locale", "en"));
     await page.goto(workspace === "scenes" ? "/performers/actor-0" : "/performers");
     const toggle = page.getByRole("button", { name: workspace === "scenes" ? "Select scenes" : "Select multiple performers", exact: true });
     await expect(toggle).toBeVisible();
-    const motion = await page.evaluate(async () => {
-      const toggle = document.querySelector<HTMLButtonElement>(".performer-toolbar__toggle")!;
-      const panel = document.querySelector<HTMLElement>(".performer-toolbar__collapse")!;
-      const initial = panel.getBoundingClientRect().height;
-      let expanding = false;
-      const started = (event: TransitionEvent) => {
-        if (event.target === panel && event.propertyName === "grid-template-rows") expanding = true;
-      };
-      panel.addEventListener("transitionrun", started);
-      toggle.click();
+    const toolbar=page.locator(".workspace-toolbar");
+    const normal=toolbar.locator(".workspace-toolbar__panel").first();
+    await expect(normal).toHaveAttribute("aria-hidden","false");
+    const animated = await toolbar.evaluate(async root => {
+      (root.querySelector(".workspace-toolbar__toggle") as HTMLButtonElement).click();
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
-      const animations = panel.getAnimations();
-      expanding ||= animations.some(animation => (animation as CSSTransition).transitionProperty === "grid-template-rows");
-      await Promise.all(animations.map(animation => animation.finished));
-      panel.removeEventListener("transitionrun", started);
-      return { initial, expanding, expanded: panel.getBoundingClientRect().height };
+      const panel = root.querySelector(".workspace-toolbar__panel.is-active")!;
+      return panel.getAnimations().some(animation => (animation as CSSTransition).transitionProperty === "opacity");
     });
-    expect(motion.initial).toBe(0);
-    expect(motion.expanding).toBe(true);
-    expect(motion.expanded).toBeGreaterThan(0);
+    expect(animated).toBe(true);
+    await expect(toolbar.locator(".workspace-toolbar__toggle svg")).toHaveAttribute("data-icon","xmark");
+    await expect(normal).toHaveAttribute("inert","");
+    await expect(toolbar.locator(".workspace-toolbar__panel.is-active")).toHaveAttribute("role","region");
+    await expect(toolbar.locator(".workspace-toolbar__panel.is-active")).toHaveCSS("opacity","1");
     await page.getByRole("button", { name: workspace === "scenes" ? "Exit selection" : "Exit performer selection", exact: true }).click();
-    await expect(page.locator(".performer-subtoolbar")).toBeHidden();
-    await expect.poll(() => page.locator(".performer-toolbar__collapse").evaluate(el => el.getBoundingClientRect().height)).toBe(0);
+    await expect(normal).toHaveAttribute("aria-hidden","false");
+    await expect(toolbar.locator(".workspace-toolbar__toggle svg")).toHaveAttribute("data-icon","list-check");
+    await expect(toolbar.locator(".workspace-toolbar__panel").last()).toHaveAttribute("inert","");
   });
 
 }
@@ -400,12 +395,15 @@ test.describe("cast filter", () => {
         await page.getByRole("button", { name: locale === "en" ? "Select scenes" : "多选作品", exact: true }).click();
         const selected = page.locator(".performer-scene-card").filter({ has: page.getByText("ABC-105", { exact: true }) });
         await selected.click();
+        await expect(selected.locator(".performer-scene-card__selector")).toHaveAttribute("aria-pressed", "true");
+        await expect(cast).toBeHidden();
+        await page.getByRole("button", { name: locale === "en" ? "Exit selection" : "退出多选", exact: true }).click();
+        await expect(cast).toHaveValue("GROUP");
         await cast.selectOption("SOLO");
         await expect(page.locator(".performer-scene-card")).toHaveCount(10);
         await cast.selectOption("GROUP");
-        await expect(selected.locator(".performer-scene-card__selector")).toHaveAttribute("aria-pressed", "true");
         await page.evaluate(() => document.fonts.ready);
-        await expect(page.locator(".performer-scene-filters")).toHaveScreenshot(`${locale}-${theme}-cast-filter.png`);
+        await expect(page.locator(".workspace-toolbar")).toHaveScreenshot(`${locale}-${theme}-cast-filter.png`);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
         await page.reload();
         await expect(cast).toHaveValue("GROUP");
@@ -429,7 +427,7 @@ for (const view of ["list", "scenes"] as const) {
         await page.getByRole("dialog",{name:"More pagination options"}).getByRole("combobox",{name:"Page size"}).selectOption(value);
       }
     }
-    await expect(page.locator(".performer-toolbar").getByRole("combobox",{name:"Page size",exact:true})).toHaveCount(0);
+    await expect(page.locator(".workspace-toolbar").getByRole("combobox",{name:"Page size",exact:true})).toHaveCount(0);
     await changeSize("bottom","48");
     const sizeKey=view==="list"?"pageSize":"scenePageSize",pageKey=view==="list"?"page":"scenePage";
     await expect.poll(()=>new URL(page.url()).searchParams.get(sizeKey)).toBe("48");

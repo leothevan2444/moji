@@ -1,4 +1,7 @@
 {
+  "workspaceToolbar": {
+    "more": "More actions and filters"
+  },
   "pagination": {
     "navigation": "{{label}} pagination ({{position}})",
     "top": "top",

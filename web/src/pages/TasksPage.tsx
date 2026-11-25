@@ -1,3 +1,5 @@
+import { workspaceToolbarIcons } from "../components/common/workspace-toolbar/icons";
+import { WorkspaceToolbar } from "../components/common/workspace-toolbar/WorkspaceToolbar";
 import { Pagination } from "../components/common/pagination/Pagination";
 import { ResponsivePageHeading } from "../components/layout/ResponsivePageHeading";
 import { faBarsProgress, faHourglassHalf, faCheckDouble, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
@@ -16,13 +18,6 @@ import { useDeferredValue, useMemo, useState } from "react";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
 import { useTranslation } from "react-i18next";
 import { qbittorrentStateLabel } from "../utils/qbittorrentState";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowsRotate } from "@fortawesome/free-solid-svg-icons/faArrowsRotate";
-import { faRotate } from "@fortawesome/free-solid-svg-icons/faRotate";
-import { faTrashCan } from "@fortawesome/free-solid-svg-icons/faTrashCan";
-import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
-import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
-import { faClipboardCheck } from "@fortawesome/free-solid-svg-icons/faClipboardCheck";
 
 interface TasksPageProps {
   serverPage?: { page: number; pageSize: number; totalPages: number; totalCount: number; stats: { total: number; active: number; completed: number; attention: number; waiting: number } };
@@ -169,54 +164,26 @@ export function TasksPage({
       ]} />
 
       {completedWithin24Hours ? <p className="home-muted">{t("workbench.recentFilter")} · <button type="button" className="ghost-button" onClick={onClearCompletedWindow}>{t("workbench.clearRecentFilter")}</button></p> : null}
-      <div className="toolbar-inline toolbar-inline--tasks">
-        <input
-          aria-label={t("tasks.searchPlaceholder")}
-          value={taskSearch}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder={t("tasks.searchPlaceholder")}
-        />
-        <select aria-label={t("tasks.statusLabel")} value={taskStatus} onChange={(event) => onStatusChange(event.target.value as TaskStatusFilter)}>
-          {(["all", "failed", "waiting", "running", "completed"] as const).map((value) => <option key={value} value={value}>{t(`tasks.filters.${value}`)}</option>)}
-        </select>
-        <select aria-label={t("tasks.sortLabel")} value={taskSort} onChange={(event) => onSortChange(event.target.value as TaskSortKey)}>
-          {(["createdAt", "updatedAt", "progress"] as const).map((value) => <option key={value} value={value}>{t(`tasks.sorts.${value}`)}</option>)}
-        </select>
-        <div className="task-toolbar-actions">
-          <button
-            type="button"
-            className={`ghost-button task-icon-button task-icon-button--bordered${selectionMode ? " is-active" : ""}`}
-            onClick={() => {
-              if (selectionMode) onClearTaskSelection();
-              setSelectionMode((current) => !current);
-            }}
-            aria-pressed={selectionMode}
-            aria-label={selectionMode ? t("taskBatch.exitMultiSelect") : t("taskBatch.multiSelect")}
-            title={selectionMode ? t("taskBatch.exitMultiSelect") : t("taskBatch.multiSelect")}
-          >
-            <FontAwesomeIcon icon={faListCheck} />
-          </button>
-          <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" onClick={onRefresh} disabled={refreshing} aria-label={t("common.refresh")} title={t("common.refresh")}>
-            <FontAwesomeIcon icon={faRotate} className={refreshing ? "is-spinning" : undefined} />
-          </button>
-        </div>
-
-        <button type="button" className="ghost-button task-queue-entry" onClick={onOpenQueue}
-          disabled={metrics.failed === 0} title={t("taskProcessingQueue.entryHelp")} aria-label={t("taskProcessingQueue.open", { count: metrics.failed })}>
-          <FontAwesomeIcon icon={faClipboardCheck} aria-hidden="true" />
-          {t("taskProcessingQueue.title")} <span>{metrics.failed}</span>
-        </button>
-
-      </div>
-
-      {selectionMode ? <div className="task-selection-bar" role="region" aria-label={t("taskBatch.selectionActions")}>
-        <strong>{t("taskBatch.selected", { count: selectedTaskIds.length })}</strong>
-        {hiddenSelectedCount ? <span>{t(serverPage ? "taskList.hiddenSelection" : "taskBatch.hidden", { count: hiddenSelectedCount })}</span> : null}
-        <button type="button" className="ghost-button" disabled={batchPending || visibleTasks.length === 0} onClick={() => onSelectVisibleTasks(visibleTasks.map((task) => task.id))}>{t(serverPage ? "taskList.selectPage" : "taskBatch.selectVisible", { count: visibleTasks.length })}</button>
-        <button type="button" className="ghost-button" disabled={batchPending || selectionLoading || retryableIds.length === 0} onClick={() => onBatchRetry(retryableIds)}><FontAwesomeIcon icon={faArrowsRotate} /> {t("taskBatch.retry", { count: retryableIds.length })}</button>
-        <button type="button" className="ghost-button task-ops__button--danger" disabled={batchPending || selectedTaskIds.length === 0} onClick={() => onBatchDelete(selectedTaskIds)}><FontAwesomeIcon icon={faTrashCan} /> {t("taskBatch.delete", { count: selectedTaskIds.length })}</button>
-        <button type="button" className="ghost-button" disabled={batchPending || selectedTaskIds.length === 0} onClick={onClearTaskSelection} aria-label={t("taskBatch.clear")}><FontAwesomeIcon icon={faXmark} /> {t("taskBatch.clear")}</button>
-      </div> : null}
+      <WorkspaceToolbar selecting={selectionMode} toggleLabel={t(selectionMode ? "taskBatch.exitMultiSelect" : "taskBatch.multiSelect")}
+        toggleDisabled={batchPending} onToggleSelection={() => { if (selectionMode) onClearTaskSelection(); setSelectionMode(current => !current); }}
+        selectionLabel={t("taskBatch.selectionActions")}
+        normal={{
+          search: { label: t("tasks.searchPlaceholder"), value: taskSearch, onChange: onSearchChange }, filters: [
+            { id: "status", label: t("tasks.statusLabel"), value: taskStatus, onChange: value => onStatusChange(value as TaskStatusFilter), options: (["all", "failed", "waiting", "running", "completed"] as const).map(value => ({ value, label: t(`tasks.filters.${value}`) })) },
+            { id: "sort", label: t("tasks.sortLabel"), value: taskSort, onChange: value => onSortChange(value as TaskSortKey), options: (["createdAt", "updatedAt", "progress"] as const).map(value => ({ value, label: t(`tasks.sorts.${value}`) })) },
+          ], actions: [
+            { id: "refresh", label: t("common.refresh"), icon: workspaceToolbarIcons.refresh, onClick: onRefresh, disabled: refreshing, busy: refreshing, spinning: refreshing },
+            { id: "queue", label: t("taskProcessingQueue.open", { count: metrics.failed }), title: t("taskProcessingQueue.entryHelp"), icon: workspaceToolbarIcons.queue, onClick: onOpenQueue, disabled: metrics.failed === 0, showLabel: true },
+          ]
+        }}
+        selection={{
+          summary: t("taskBatch.selected", { count: selectedTaskIds.length }) + (hiddenSelectedCount ? ` · ${t(serverPage ? "taskList.hiddenSelection" : "taskBatch.hidden", { count: hiddenSelectedCount })}` : ""), actions: [
+            { id: "select-page", label: t(serverPage ? "taskList.selectPage" : "taskBatch.selectVisible", { count: visibleTasks.length }), icon: workspaceToolbarIcons.selectPage, showLabel: true, disabled: batchPending || !visibleTasks.length, onClick: () => onSelectVisibleTasks(visibleTasks.map(task => task.id)) },
+            { id: "retry", label: t("taskBatch.retry", { count: retryableIds.length }), icon: workspaceToolbarIcons.retry, showLabel: true, disabled: batchPending || selectionLoading || !retryableIds.length, onClick: () => onBatchRetry(retryableIds) },
+            { id: "delete", label: t("taskBatch.delete", { count: selectedTaskIds.length }), icon: workspaceToolbarIcons.delete, showLabel: true, danger: true, disabled: batchPending || !selectedTaskIds.length, onClick: () => onBatchDelete(selectedTaskIds) },
+            { id: "clear", label: t("taskBatch.clear"), icon: workspaceToolbarIcons.clearSelection, showLabel: true, disabled: batchPending || !selectedTaskIds.length, onClick: onClearTaskSelection },
+          ]
+        }} />
 
       {serverPage ? <Pagination label={t("tasks.title")} position="top" page={serverPage.page} pageSize={serverPage.pageSize}
         totalPages={serverPage.totalPages} totalCount={serverPage.totalCount} loading={refreshing}

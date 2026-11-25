@@ -1,27 +1,22 @@
-import { faBinoculars, faClipboardQuestion, faListCheck, faRotate, faXmark } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { ReactNode } from "react";
-import { PerformerToolbar } from "./PerformerToolbar";
+import { workspaceToolbarIcons } from "../common/workspace-toolbar/icons";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { WorkspaceToolbar } from "../common/workspace-toolbar/WorkspaceToolbar";
+import type { ToolbarContent } from "../common/workspace-toolbar/types";
 import type { PerformersPageProps } from "./types";
 
-export function PerformerListFilters({ page, children }: { page: PerformersPageProps; children: ReactNode; }) {
+export function PerformerListFilters({ page, selection }: { page: PerformersPageProps; selection: ToolbarContent }) {
   const { t } = useTranslation();
-  const { reviewPendingCount = 0, subscriptionSearch, listSort = "default", performerSelectionMode, refreshingList, refreshingSubscriptionNow, subscribedPerformers, onSearchChange, onListSortChange, onTogglePerformerSelectionMode, onReload, onRefreshAll } = page;
-  const checkingAll = Boolean(refreshingSubscriptionNow || page.checkActivity?.allRunId || page.checkStarting);
-  return <div className="performer-list-controls">
-    <PerformerToolbar expanded={performerSelectionMode} renderControls={panelId => <>
-      <div className="toolbar-inline toolbar-inline--performer-list">
-        <input type="search" aria-label={t("performerUi.search")} placeholder={t("performerUi.search")} value={subscriptionSearch} onChange={e => onSearchChange(e.target.value)} />
-        <label className="performer-list-sort">{t("performerWorkspace.sort")}<select value={listSort} onChange={e => onListSortChange?.(e.target.value as typeof listSort)}>{(["default", "name", "scene_count", "last_checked"] as const).map(value => <option key={value} value={value}>{t(`performerWorkspace.sorts.${value}`)}</option>)}</select></label>
-        <div className="performer-list-actions">
-          <button type="button" className="ghost-button task-icon-button task-icon-button--bordered performer-toolbar__toggle" onClick={onTogglePerformerSelectionMode} disabled={page.performerBatchPending} aria-pressed={performerSelectionMode} aria-expanded={performerSelectionMode} aria-controls={panelId} aria-label={t(performerSelectionMode ? "performerBatch.exitMultiSelect" : "performerBatch.multiSelect")} title={t(performerSelectionMode ? "performerBatch.exitMultiSelect" : "performerBatch.multiSelect")}><FontAwesomeIcon icon={performerSelectionMode ? faXmark : faListCheck} /></button>
-          <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" onClick={onReload} disabled={refreshingList} aria-label={t("performerUi.reloadFromStash")} title={t("performerUi.reloadFromStash")}><FontAwesomeIcon icon={faRotate} className={refreshingList ? "is-spinning" : undefined} /></button>
-          <button type="button" className="ghost-button task-icon-button task-icon-button--bordered" onClick={onRefreshAll} disabled={refreshingSubscriptionNow || subscribedPerformers.length === 0 || Boolean(page.checkActivity?.activeCount || page.checkStarting || page.checksLoading || page.checksError)} aria-label={t(checkingAll ? "performerUi.checking" : "performerUi.checkAllSubscribed")} aria-busy={checkingAll} title={t(checkingAll ? "performerUi.checking" : "performerUi.checkAllHelp")}><FontAwesomeIcon icon={faBinoculars} /></button>
-        </div>
-        <Link className="ghost-button release-review-link" to="/performers/review"><FontAwesomeIcon icon={faClipboardQuestion} /> {t("releaseReview.entry", { count: reviewPendingCount })}</Link>
-      </div>
-    </>}>{children}</PerformerToolbar>
-  </div>;
+  const checkingAll = Boolean(page.refreshingSubscriptionNow || page.checkActivity?.allRunId || page.checkStarting);
+  return <WorkspaceToolbar selecting={page.performerSelectionMode} toggleDisabled={page.performerBatchPending}
+    toggleLabel={t(page.performerSelectionMode ? "performerBatch.exitMultiSelect" : "performerBatch.multiSelect")}
+    onToggleSelection={page.onTogglePerformerSelectionMode} selectionLabel={t("performerBatch.selectionActions")} selection={selection}
+    normal={{
+      search: { label: t("performerUi.search"), value: page.subscriptionSearch, onChange: page.onSearchChange }, filters: [
+        { id: "sort", label: t("performerWorkspace.sort"), value: page.listSort ?? "default", onChange: value => page.onListSortChange?.(value as NonNullable<PerformersPageProps["listSort"]>), options: (["default", "name", "scene_count", "last_checked"] as const).map(value => ({ value, label: t(`performerWorkspace.sorts.${value}`) })) }
+      ], actions: [
+        { id: "reload", label: t("performerUi.reloadFromStash"), icon: workspaceToolbarIcons.refresh, onClick: page.onReload, disabled: page.refreshingList, busy: page.refreshingList, spinning: page.refreshingList },
+        { id: "check", label: t(checkingAll ? "performerUi.checking" : "performerUi.checkAllSubscribed"), title: t(checkingAll ? "performerUi.checking" : "performerUi.checkAllHelp"), icon: workspaceToolbarIcons.check, onClick: page.onRefreshAll, disabled: page.refreshingSubscriptionNow || !page.subscribedPerformers.length || Boolean(page.checkActivity?.activeCount || page.checkStarting || page.checksLoading || page.checksError), busy: checkingAll },
+        { id: "review", label: t("releaseReview.entry", { count: page.reviewPendingCount ?? 0 }), icon: workspaceToolbarIcons.review, href: "/performers/review", showLabel: true },
+      ]
+    }} />;
 }

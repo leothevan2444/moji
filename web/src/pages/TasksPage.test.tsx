@@ -81,7 +81,7 @@ describe("TasksPage task controls", () => {
     renderPage();
     expect(screen.queryByText("Check tasks automatically every 60 seconds")).toBeNull();
     expect(screen.queryByText(/processing is paused/)).toBeNull();
-    expect(screen.getByRole("button", { name: "Refresh" }).classList.contains("task-icon-button--bordered")).toBe(true);
+    expect(screen.getByRole("button", { name: "Refresh" }).classList.contains("workspace-toolbar__action")).toBe(true);
     expect(screen.queryByRole("button", { name: "Sync now" })).toBeNull();
     expect(screen.queryByRole("button", { name: "More task actions" })).toBeNull();
     expect(screen.queryByRole("button", { name: /Process.*ingest/ })).toBeNull();

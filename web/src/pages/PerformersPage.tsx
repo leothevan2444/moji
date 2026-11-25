@@ -1,18 +1,16 @@
+import { workspaceToolbarIcons } from "../components/common/workspace-toolbar/icons";
 import { ResponsivePageHeading } from "../components/layout/ResponsivePageHeading";
 import { Pagination } from "../components/common/pagination/Pagination";
 import { faUsers, faHeart, faClipboardQuestion, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useAppTimezone } from "../hooks/useAppTimezone";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons/faArrowLeft";
-import { faBinoculars } from "@fortawesome/free-solid-svg-icons/faBinoculars";
-import { faListCheck } from "@fortawesome/free-solid-svg-icons/faListCheck";
 import { faBookmark } from "@fortawesome/free-solid-svg-icons/faBookmark";
-import { faXmark } from "@fortawesome/free-solid-svg-icons/faXmark";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PerformerCard } from "../components/performers/PerformerCard";
 import { PerformerError, PerformerLoading } from "../components/performers/PerformerFeedback";
-import { PerformerToolbar } from "../components/performers/PerformerToolbar";
+import { WorkspaceToolbar } from "../components/common/workspace-toolbar/WorkspaceToolbar";
 import { PerformerListFilters } from "../components/performers/PerformerListFilters";
 import { performerCheckRun } from "../hooks/useSubscriptionChecks";
 import { PerformerOverview } from "../components/performers/PerformerOverview";
@@ -82,7 +80,7 @@ export function PerformersPage(props: PerformersPageProps) {
     return new Map(subscribedPerformers.map((item) => [item.performer.id, item]));
   }, [subscribedPerformers]);
 
-  const activityByID = useMemo(() => new Map((props.performerActivities ?? []).map(activity => [activity.id,activity])), [props.performerActivities]);
+  const activityByID = useMemo(() => new Map((props.performerActivities ?? []).map(activity => [activity.id, activity])), [props.performerActivities]);
   const performerSubscription = performerDetail ? (subscribedByID.get(performerDetail.performer.id) ?? null) : null;
   const { subscribedIDs: selectedSubscribedIds, unsubscribedIDs: selectedUnsubscribedIds } = performerBatchEligibility(selectedPerformerIds, subscribedPerformers.map((item) => item.performer.id));
   const hiddenSelectedPerformerCount = selectedPerformerIds.filter((id) => !stashPerformers.some((performer) => performer.id === id)).length;
@@ -112,67 +110,23 @@ export function PerformersPage(props: PerformersPageProps) {
 
         {props.performerSummaryError ? <PerformerError error={props.performerSummaryError} onRetry={props.onRetrySummary} /> : null}
         {props.fetchingPerformerSummary && !props.performerSummary ? <p className="settings-meta" role="status">{t("performerWorkspace.summaryLoading")}</p> : null}
-        <PerformerToolbar expanded={sceneSelectionMode} renderControls={panelId => (
-          <div className="toolbar-inline toolbar-inline--subscription performer-scene-filters">
-            <input
-              aria-label={t("performerUi.sceneSearch")}
-              placeholder={t("performerUi.sceneSearch")}
-              value={performerSceneSearch}
-              onChange={(event) => onPerformerSceneSearchChange(event.target.value)}
-            />
-            <select aria-label={t("performerWorkspace.sourceFilter")} value={performerSceneSourceFilter} onChange={(event) => onPerformerSceneSourceChange(event.target.value as SceneSourceFilter)}>
-              <option value={SceneSourceFilter.All}>{t("performerUi.allSources")}</option>
-              <option value={SceneSourceFilter.Stash}>Stash</option>
-              <option value={SceneSourceFilter.Stashbox}>StashBox</option>
-            </select>
-            <select aria-label={t("performerWorkspace.castFilter")} value={performerSceneCastFilter} onChange={event => onPerformerSceneCastChange(event.target.value as SceneCastFilter)}>
-              <option value={SceneCastFilter.All}>{t("performerWorkspace.castAll")}</option>
-              <option value={SceneCastFilter.Solo}>{t("performerWorkspace.castSolo")}</option>
-              <option value={SceneCastFilter.Group}>{t("performerWorkspace.castGroup")}</option>
-            </select>
-            <select aria-label={t("performerWorkspace.libraryFilter")} value={performerSceneLibraryFilter} onChange={(event) => onPerformerSceneLibraryChange(event.target.value as LibraryFilter)}>
-              <option value={LibraryFilter.All}>{t("performerUi.allStates")}</option>
-              <option value={LibraryFilter.InLibrary}>{t("performerUi.inLibrary")}</option>
-              <option value={LibraryFilter.NotInLibrary}>{t("performerUi.notInLibrary")}</option>
-            </select>
-            <button type="button" className="ghost-button task-icon-button task-icon-button--bordered performer-toolbar__toggle" aria-pressed={sceneSelectionMode} aria-expanded={sceneSelectionMode} aria-controls={panelId} aria-label={t(sceneSelectionMode ? "performerUi.exitSceneSelection" : "performerUi.selectScenes")} title={t(sceneSelectionMode ? "performerUi.exitSceneSelection" : "performerUi.selectScenes")} onClick={onToggleSceneSelectionMode} disabled={queueingPerformerScenes}>
-              <FontAwesomeIcon icon={sceneSelectionMode ? faXmark : faListCheck} />
-            </button>
-          </div>
-        )}>
-          <div className="performer-scene-selection">
-            <button
-              type="button"
-              className="ghost-button"
-              disabled={currentPageKeys.length === 0 || fetchingPerformerScenes}
-              onClick={() => onSelectCurrentScenePage(currentPageKeys)}
-            >
-              {t("performerUi.selectPage", { count: currentPageKeys.length })}
-            </button>
-            <button
-              type="button"
-              className="ghost-button"
-              disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes}
-              onClick={onClearSceneSelection}
-            >
-              {t("performerUi.clearSelection")}
-            </button>
-            <button
-              type="button"
-              className="primary-button"
-              disabled={selectedSceneKeys.length === 0 || queueingPerformerScenes || fetchingPerformerScenes}
-              onClick={onQueueSelectedScenes}
-            >
-              {queueingPerformerScenes
-                ? t("performerUi.creatingMany", { count: selectedSceneKeys.length })
-                : selectedSceneKeys.length > 0
-                  ? t("performerUi.createMany", { count: selectedSceneKeys.length })
-                  : t("performerUi.createDownload")}
-            </button>
-          </div>
-
-          {selectedSceneKeys.length ? <p className="performer-selection-summary" role="status">{t("performerWorkspace.selectedScenes", { count: selectedSceneKeys.length })}{selectedSceneKeys.some(key => !performerScenes.some(scene => scene.key === key)) ? ` · ${t("performerWorkspace.hiddenScenes", { count: selectedSceneKeys.filter(key => !performerScenes.some(scene => scene.key === key)).length })}` : ""}</p> : null}
-        </PerformerToolbar>
+        <WorkspaceToolbar selecting={sceneSelectionMode} toggleDisabled={queueingPerformerScenes}
+          toggleLabel={t(sceneSelectionMode ? "performerUi.exitSceneSelection" : "performerUi.selectScenes")} onToggleSelection={onToggleSceneSelectionMode}
+          selectionLabel={t("performerUi.selectScenes")}
+          normal={{
+            search: { label: t("performerUi.sceneSearch"), value: performerSceneSearch, onChange: onPerformerSceneSearchChange }, filters: [
+              { id: "source", label: t("performerWorkspace.sourceFilter"), value: performerSceneSourceFilter, onChange: value => onPerformerSceneSourceChange(value as SceneSourceFilter), options: [{ value: SceneSourceFilter.All, label: t("performerUi.allSources") }, { value: SceneSourceFilter.Stash, label: "Stash" }, { value: SceneSourceFilter.Stashbox, label: "StashBox" }] },
+              { id: "cast", label: t("performerWorkspace.castFilter"), value: performerSceneCastFilter, onChange: value => onPerformerSceneCastChange(value as SceneCastFilter), options: [{ value: SceneCastFilter.All, label: t("performerWorkspace.castAll") }, { value: SceneCastFilter.Solo, label: t("performerWorkspace.castSolo") }, { value: SceneCastFilter.Group, label: t("performerWorkspace.castGroup") }] },
+              { id: "library", label: t("performerWorkspace.libraryFilter"), value: performerSceneLibraryFilter, onChange: value => onPerformerSceneLibraryChange(value as LibraryFilter), options: [{ value: LibraryFilter.All, label: t("performerUi.allStates") }, { value: LibraryFilter.InLibrary, label: t("performerUi.inLibrary") }, { value: LibraryFilter.NotInLibrary, label: t("performerUi.notInLibrary") }] },
+            ], actions: []
+          }}
+          selection={{
+            summary: t("performerWorkspace.selectedScenes", { count: selectedSceneKeys.length }) + (selectedSceneKeys.some(key => !performerScenes.some(scene => scene.key === key)) ? ` · ${t("performerWorkspace.hiddenScenes", { count: selectedSceneKeys.filter(key => !performerScenes.some(scene => scene.key === key)).length })}` : ""), actions: [
+              { id: "select-page", label: t("performerUi.selectPage", { count: currentPageKeys.length }), icon: workspaceToolbarIcons.selectPage, showLabel: true, disabled: !currentPageKeys.length || fetchingPerformerScenes, onClick: () => onSelectCurrentScenePage(currentPageKeys) },
+              { id: "clear", label: t("performerUi.clearSelection"), icon: workspaceToolbarIcons.clearSelection, showLabel: true, disabled: !selectedSceneKeys.length || queueingPerformerScenes, onClick: onClearSceneSelection },
+              { id: "create", label: t(queueingPerformerScenes ? "performerUi.creatingMany" : selectedSceneKeys.length ? "performerUi.createMany" : "performerUi.createDownload", { count: selectedSceneKeys.length }), icon: workspaceToolbarIcons.createDownload, primary: true, showLabel: true, disabled: !selectedSceneKeys.length || queueingPerformerScenes || fetchingPerformerScenes, onClick: onQueueSelectedScenes },
+            ]
+          }} />
         <Pagination label={t("performerUi.works")} position="top" page={performerScenePage?.page ?? 1} pageSize={performerScenePageSize}
           totalPages={performerScenePage?.totalCountExact ? performerScenePage.totalPages ?? null : null} totalCount={performerScenePage?.totalCount ?? null}
           hasNextPage={performerScenePage?.hasNextPage} loading={fetchingPerformerScenes}
@@ -217,18 +171,16 @@ export function PerformersPage(props: PerformersPageProps) {
         }))} />
 
       {checkStatusError}
-      <PerformerListFilters page={props}>
-        <div role="region" aria-label={t("performerBatch.selectionActions")}>
-          <div className="performer-list-selection">
-            <button type="button" className="ghost-button" disabled={performerBatchPending || fetchingStashPerformers || stashPerformers.length === 0} onClick={() => onSelectVisiblePerformers(stashPerformers.map((performer) => performer.id))}>{t("performerBatch.selectVisible", { count: stashPerformers.length })}</button>
-            <button type="button" className="ghost-button" disabled={performerBatchPending || selectedUnsubscribedIds.length === 0} onClick={() => onBatchSubscribePerformers(selectedUnsubscribedIds)}><FontAwesomeIcon icon={faBookmark} /> {t("performerBatch.subscribe", { count: selectedUnsubscribedIds.length })}</button>
-            <button type="button" className="ghost-button" disabled={performerBatchPending || selectedPerformerIds.length === 0 || Boolean(props.checkActivity?.allRunId || props.checkStarting || props.checksLoading || props.checksError || selectedPerformerIds.some(id => performerCheckRun(props.checkActivity, id)))} onClick={() => onBatchRefreshPerformers(selectedPerformerIds)} title={t("performerBatch.refreshHelp")}><FontAwesomeIcon icon={faBinoculars} /> {t("performerBatch.refresh", { count: selectedPerformerIds.length })}</button>
-            <button type="button" className="ghost-button task-ops__button--danger" disabled={performerBatchPending || selectedSubscribedIds.length === 0} onClick={() => onBatchUnsubscribePerformers(selectedSubscribedIds)}><FontAwesomeIcon icon={faBookmark} /> {t("performerBatch.unsubscribe", { count: selectedSubscribedIds.length })}</button>
-            <button type="button" className="ghost-button" disabled={performerBatchPending || selectedPerformerIds.length === 0} onClick={onClearPerformerSelection}><FontAwesomeIcon icon={faXmark} /> {t("performerBatch.clear")}</button>
-          </div>
-          <p className="performer-selection-summary" role="status"><strong>{t("performerBatch.selected", { count: selectedPerformerIds.length })}</strong>{hiddenSelectedPerformerCount ? ` · ${t("performerBatch.hidden", { count: hiddenSelectedPerformerCount })}` : ""}</p>
-        </div>
-      </PerformerListFilters>
+      <PerformerListFilters page={props} selection={{
+        summary: t("performerBatch.selected", { count: selectedPerformerIds.length }) + (hiddenSelectedPerformerCount ? ` · ${t("performerBatch.hidden", { count: hiddenSelectedPerformerCount })}` : ""),
+        actions: [
+          { id: "select-page", label: t("performerBatch.selectVisible", { count: stashPerformers.length }), icon: workspaceToolbarIcons.selectPage, showLabel: true, disabled: performerBatchPending || fetchingStashPerformers || !stashPerformers.length, onClick: () => onSelectVisiblePerformers(stashPerformers.map(performer => performer.id)) },
+          { id: "subscribe", label: t("performerBatch.subscribe", { count: selectedUnsubscribedIds.length }), icon: workspaceToolbarIcons.subscribe, showLabel: true, disabled: performerBatchPending || !selectedUnsubscribedIds.length, onClick: () => onBatchSubscribePerformers(selectedUnsubscribedIds) },
+          { id: "check", label: t("performerBatch.refresh", { count: selectedPerformerIds.length }), title: t("performerBatch.refreshHelp"), icon: workspaceToolbarIcons.check, showLabel: true, disabled: performerBatchPending || !selectedPerformerIds.length || Boolean(props.checkActivity?.allRunId || props.checkStarting || props.checksLoading || props.checksError || selectedPerformerIds.some(id => performerCheckRun(props.checkActivity, id))), onClick: () => onBatchRefreshPerformers(selectedPerformerIds) },
+          { id: "unsubscribe", label: t("performerBatch.unsubscribe", { count: selectedSubscribedIds.length }), icon: workspaceToolbarIcons.unsubscribe, showLabel: true, danger: true, disabled: performerBatchPending || !selectedSubscribedIds.length, onClick: () => onBatchUnsubscribePerformers(selectedSubscribedIds) },
+          { id: "clear", label: t("performerBatch.clear"), icon: workspaceToolbarIcons.clearSelection, showLabel: true, disabled: performerBatchPending || !selectedPerformerIds.length, onClick: onClearPerformerSelection },
+        ],
+      }} />
 
       {lastRefreshedAt ? <p className="task-sync-meta">{t("performerUi.updatedAt", { time: formatDateTime(lastRefreshedAt) })}</p> : null}
 

@@ -131,7 +131,7 @@ describe("PerformersPage list selection", () => {
     expect(checkAll.querySelector("svg")?.getAttribute("data-icon")).toBe("binoculars");
     expect(checkAll.title).toBe("Check all subscribed performers for scene updates and apply subscription rules");
     expect(checkAll.disabled).toBe(true);
-    expect(checkAll.closest(".toolbar-inline")).toBe(reload.closest(".toolbar-inline"));
+    expect(checkAll.closest(".workspace-toolbar__row")).toBe(reload.closest(".workspace-toolbar__row"));
     expect(screen.queryByRole("button", { name: "More actions" })).toBeNull();
 
     view.rerender(<PerformersPage {...pageProps} subscribedPerformers={[{ performer: pageProps.stashPerformers[0], recentReleases: [], lastCheckedAt: null, pendingReleaseCount: 0, reviewReleaseCount: 0, processedReleaseCount: 0 }]} />);

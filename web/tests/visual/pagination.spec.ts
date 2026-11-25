@@ -32,7 +32,7 @@ for(const view of views) {
     await expect(pagers).toHaveCount(2);
     for(const pager of [top,bottom]) await expect(pager.getByRole("textbox",{name:"Page number"})).toHaveValue("3");
     await expect(top.getByRole("status")).toContainText("Page 3 / 9, 211 items");
-    const toolbar=page.locator(view.name==="tasks"?".toolbar-inline--tasks":".performer-toolbar").first();
+    const toolbar=page.locator(".workspace-toolbar").first();
     expect((await top.boundingBox())!.y).toBeGreaterThanOrEqual((await toolbar.boundingBox())!.y+(await toolbar.boundingBox())!.height);
     const lastItem=page.locator(view.name==="tasks"?".task-card":view.name==="performers"?".profile-card":".performer-scene-card").last();
     expect((await bottom.boundingBox())!.y).toBeGreaterThanOrEqual((await lastItem.boundingBox())!.y+(await lastItem.boundingBox())!.height);

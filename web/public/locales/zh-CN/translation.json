@@ -1,4 +1,7 @@
 {
+  "workspaceToolbar": {
+    "more": "更多操作与筛选"
+  },
   "pagination": {
     "navigation": "{{label}}分页（{{position}}）",
     "top": "顶部",
