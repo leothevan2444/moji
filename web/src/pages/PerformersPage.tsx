@@ -1,3 +1,6 @@
+import { ResponsivePageHeading } from "../components/layout/ResponsivePageHeading";
+import { PerformerPageSize } from "../components/performers/PerformerPageSize";
+import { faUsers, faHeart, faClipboardQuestion, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useAppTimezone } from "../hooks/useAppTimezone";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons/faArrowLeft";
 import { faBinoculars } from "@fortawesome/free-solid-svg-icons/faBinoculars";
@@ -16,7 +19,6 @@ import { PerformerOverview } from "../components/performers/PerformerOverview";
 import { PerformerPagination } from "../components/performers/PerformerPagination";
 import { PerformerSceneCard } from "../components/performers/PerformerSceneCard";
 import type { PerformersPageProps } from "../components/performers/types";
-import { SUBSCRIPTION_PAGE_SIZE_OPTIONS } from "../constants";
 import {
   LibraryFilter,
   SceneSourceFilter, SceneCastFilter
@@ -135,13 +137,6 @@ export function PerformersPage(props: PerformersPageProps) {
               <option value={LibraryFilter.InLibrary}>{t("performerUi.inLibrary")}</option>
               <option value={LibraryFilter.NotInLibrary}>{t("performerUi.notInLibrary")}</option>
             </select>
-            <select aria-label={t("performerWorkspace.pageSize")} value={performerScenePageSize} onChange={(event) => onPerformerScenePageSizeChange(Number(event.target.value))}>
-              {SUBSCRIPTION_PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {t("performerUi.pageSize", { size })}
-                </option>
-              ))}
-            </select>
             <button type="button" className="ghost-button task-icon-button task-icon-button--bordered performer-toolbar__toggle" aria-pressed={sceneSelectionMode} aria-expanded={sceneSelectionMode} aria-controls={panelId} aria-label={t(sceneSelectionMode ? "performerUi.exitSceneSelection" : "performerUi.selectScenes")} title={t(sceneSelectionMode ? "performerUi.exitSceneSelection" : "performerUi.selectScenes")} onClick={onToggleSceneSelectionMode} disabled={queueingPerformerScenes}>
               <FontAwesomeIcon icon={sceneSelectionMode ? faXmark : faListCheck} />
             </button>
@@ -202,19 +197,14 @@ export function PerformersPage(props: PerformersPageProps) {
           ) : null}
         </div>
 
-        {performerScenePage && (performerScenePage.hasPrevPage || performerScenePage.hasNextPage) ? (
-          <div className="pagination-bar">
-            <button type="button" className="ghost-button" disabled={!performerScenePage.hasPrevPage || fetchingPerformerScenes} onClick={onPrevPerformerScenePage}>
-              {t("performerUi.previous")}
-            </button>
-            <span className="status-chip tone-neutral">
-              {performerScenePage.totalPages != null ? t("performerUi.page", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.pageUnknownTotal", { page: performerScenePage.page })}
-            </span>
-            <button type="button" className="ghost-button" disabled={!performerScenePage.hasNextPage || fetchingPerformerScenes} onClick={onNextPerformerScenePage}>
-              {t("performerUi.next")}
-            </button>
-          </div>
-        ) : null}
+        <div className="pagination-bar pagination-bar--scenes">
+          {performerScenePage && (performerScenePage.hasPrevPage || performerScenePage.hasNextPage) ? <div className="pagination-bar__navigation">
+            <button type="button" className="ghost-button" disabled={!performerScenePage.hasPrevPage || fetchingPerformerScenes} onClick={onPrevPerformerScenePage}>{t("performerUi.previous")}</button>
+            <span className="status-chip tone-neutral">{performerScenePage.totalPages != null ? t("performerUi.page", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.pageUnknownTotal", { page: performerScenePage.page })}</span>
+            <button type="button" className="ghost-button" disabled={!performerScenePage.hasNextPage || fetchingPerformerScenes} onClick={onNextPerformerScenePage}>{t("performerUi.next")}</button>
+          </div> : null}
+          <PerformerPageSize value={performerScenePageSize} onChange={onPerformerScenePageSizeChange} scenes />
+        </div>
 
       </section>
     );
@@ -224,14 +214,11 @@ export function PerformersPage(props: PerformersPageProps) {
 
   return (
     <section className="section-band performer-workspace">
-      <div className="band-head">
-        <div>
-          <h2>{t("performerUi.list")}</h2>
-        </div>
-        <div className="performer-filter-group" role="group" aria-label={t("performerWorkspace.filter")}>
-          {(["all", "subscribed", "favorite", "review", "error"] as const).map(value => <button type="button" className={`ghost-button${(props.listFilter ?? "all") === value ? " is-active" : ""}`} aria-pressed={(props.listFilter ?? "all") === value} key={value} onClick={() => props.onListFilterChange?.(value)}>{t(`performerWorkspace.filters.${value}`)}</button>)}
-        </div>
-      </div>
+      <ResponsivePageHeading title={t("performerUi.list")} variant="filters" itemsLabel={t("performerWorkspace.filter")} itemsClassName="performer-filter-group"
+        items={([["all", faUsers], ["subscribed", faBookmark], ["favorite", faHeart], ["review", faClipboardQuestion], ["error", faTriangleExclamation]] as const).map(([value, icon]) => ({
+          id: value, label: t(`performerWorkspace.filters.${value}`), icon,
+          selected: (props.listFilter ?? "all") === value, onSelect: () => props.onListFilterChange?.(value),
+        }))} />
 
       {checkStatusError}
       <PerformerListFilters page={props}>

@@ -27,7 +27,7 @@ const graphqlOverrides = {
     return { activities: items.slice((page - 1) * pageSize, page * pageSize).map(actor=>{const rank=actor.id==="actor-0"?4:actor.id==="actor-2"?1:actor.id==="actor-3"?5:null;return {id:actor.id,value:rank===4?3.25:rank===1?0:rank===5?9:null,rank,lowerBound:false,evaluationStatus:rank?"READY":"NOT_CHECKED",observedAt:rank?"2026-01-15T12:00:00Z":null};}), performers: { items: items.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: items.length, totalPages: Math.ceil(items.length / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < items.length }, subscribedPerformers: states };
   },
   stashPerformerDetail: { latestRelease: {code:"NEW-001",title:"Latest source release, independent of check history",date:"2026-01-14"}, performer: actors[0], disambiguation: "Profile information remains readable on small screens.", birthdate: "2000-01-01", ethnicity: null, country: "JP", eyeColor: null, heightCm: 165, rating100: null, urls: [], matchedStashBox: { name: "Example StashBox", endpoint: "https://example.com/graphql", performerId: "remote-0", performerName: actors[0].name }, totalSceneCount: 30, stashSceneCount: 10, stashBoxSceneCount: 30, dedupedSceneCount: 30, activeTaskCount: 2, sceneStatsComplete: true, sceneStatsStale: false },
-  stashPerformerScenes: ({ input }: { input: { page?: number; }; }) => { const page = input.page ?? 1; return { items: scenes.slice((page - 1) * 24, page * 24), page, pageSize: 24, totalCount: 30, totalPages: 2, hasPrevPage: page > 1, hasNextPage: page < 2, stashSceneCount: 10, stashBoxCount: 30, dedupedCount: 30, totalCountExact: true, stashBoxRemoteCount: 30, stashBoxLoadedCount: 30, cacheComplete: true, cacheUpdatedAt: "2026-01-15T11:30:00Z", cacheStale: false }; },
+  stashPerformerScenes: ({ input }: { input: { page?: number; pageSize?: number; }; }) => { const page = input.page ?? 1, pageSize = input.pageSize ?? 24; return { items: scenes.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: 30, totalPages: Math.ceil(30 / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < 30, stashSceneCount: 10, stashBoxCount: 30, dedupedCount: 30, totalCountExact: true, stashBoxRemoteCount: 30, stashBoxLoadedCount: 30, cacheComplete: true, cacheUpdatedAt: "2026-01-15T11:30:00Z", cacheStale: false }; },
 };
 test.use({ graphqlOverrides: { ...graphqlOverrides, stashPerformerProfile: graphqlOverrides.stashPerformerDetail } });
 
@@ -414,3 +414,29 @@ test.describe("cast filter", () => {
     }
   }
 });
+
+for (const view of ["list", "scenes"] as const) {
+  test(`${view} page size belongs to pagination and stays usable on one page`, async ({page}) => {
+    await page.goto(view === "list" ? "/performers?page=2" : "/performers/actor-0?scenePage=2");
+    const pager = page.locator(view === "list" ? ".pagination-bar--performers" : ".pagination-bar--scenes");
+    const sizes = pager.getByRole("combobox", {name:"Page size", exact:true});
+    await expect(sizes).toHaveCount(view === "list" ? 2 : 1);
+    await expect(page.locator(".performer-toolbar").getByRole("combobox", {name:"Page size", exact:true})).toHaveCount(0);
+    await sizes.last().selectOption("48");
+    const sizeKey = view === "list" ? "pageSize" : "scenePageSize";
+    const pageKey = view === "list" ? "page" : "scenePage";
+    await expect.poll(() => new URL(page.url()).searchParams.get(sizeKey)).toBe("48");
+    expect(new URL(page.url()).searchParams.has(pageKey)).toBe(false);
+    await expect(page.locator(view === "list" ? ".profile-card" : ".performer-scene-card")).toHaveCount(view === "list" ? 25 : 30);
+    for (const size of await sizes.all()) await expect(size).toHaveValue("48");
+    await expect(pager.locator(".pagination-bar__navigation")).toHaveCount(0);
+    await page.reload();
+    await expect(sizes.first()).toHaveValue("48");
+    await sizes.first().selectOption("12");
+    await expect(page.locator(view === "list" ? ".profile-card" : ".performer-scene-card")).toHaveCount(12);
+    for (const size of await sizes.all()) await expect(size).toHaveValue("12");
+    await expect(pager.first().getByRole("button", {name:"Next", exact:true})).toBeEnabled();
+    await pager.first().getByRole("button", {name:"Next", exact:true}).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get(pageKey)).toBe("2");
+  });
+}

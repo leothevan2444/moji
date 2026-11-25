@@ -69,8 +69,7 @@ for(const locale of ["zh-CN","en","qps-ploc","ar-XB"] as const) {
     await page.setViewportSize({width:800,height:1000});await page.goto(route("/performers"));
     const toolbar=page.locator(".toolbar-inline--performer-list"),actions=toolbar.locator(".performer-list-actions");
     for(const width of [800,320,960,800]) {
-      await page.setViewportSize({width,height:1000});await contained(toolbar);await sameRow(actions);await contained(toolbar.locator(".performer-list-options"));
-      if(width>=800) await sameRow(toolbar.locator(".performer-list-options"));
+      await page.setViewportSize({width,height:1000});await contained(toolbar);await sameRow(actions);await contained(toolbar.locator(".performer-list-sort"));
       await capture(toolbar,info,`performer-toolbar-${width}`);
     }
     await page.setViewportSize({width:600,height:1000});const pagination=page.locator(".pagination-bar--performers").first();
@@ -79,7 +78,7 @@ for(const locale of ["zh-CN","en","qps-ploc","ar-XB"] as const) {
     await page.setViewportSize({width:800,height:1000});await page.goto(route("/performers/responsive-actor"));
     const band=page.locator(".band-head").first(),identity=page.locator(".performer-detail-hero__topline");
     await sameRow(band);await sameRow(identity);await capture(identity,info,"identity-800");
-    await page.setViewportSize({width:320,height:1000});await contained(identity);await contained(band);
+    await page.setViewportSize({width:320,height:1000});await contained(identity);await contained(band);await contained(page.locator(".pagination-bar--scenes"));
   });
 
   test("settings source and cache actions stay inline when they fit",async({page},info)=>{
@@ -109,6 +108,76 @@ for(const locale of ["zh-CN","en","qps-ploc","ar-XB"] as const) {
       const head=page.locator(".task-card__head").first();await sameRow(head);await contained(head);await capture(head,info,"touch-task-1440");
       await page.setViewportSize({width:320,height:1000});await contained(head);await capture(head,info,"touch-task-320");
     });
+  });
+ });
+}
+
+// Exercise every stage with large text as well as the normal translated headings.
+// Widths come from rendered content so this guards the order, not fixed breakpoints.
+for (const variant of ["metrics", "filters"] as const) {
+ test.describe(`responsive ${variant}`, () => {
+  test.use({graphqlOverrides:{...catalog,settings:{...settingsSnapshot,system:{...settingsSnapshot.system,language:"zh-CN"}}}});
+  test("icons precede wrapping and wrapped labels return when they fit",async({page},info)=>{
+    await page.setViewportSize({width:2000,height:1000});
+    await page.goto(variant==="metrics"?"/tasks":"/performers");
+    const heading=page.locator(`.responsive-heading--${variant}`);
+    await expect(heading).toBeVisible();
+    const largeText=await page.addStyleTag({content:".responsive-heading h2 {font-size:128px}"});
+    const widths=await heading.evaluate(node=>{
+      const probes=node.querySelector(".responsive-heading__measurement")!;
+      const title=probes.querySelector("h2")!.scrollWidth;
+      const [full,icons]=[...probes.querySelectorAll(".responsive-heading__items")].map(item=>item.scrollWidth);
+      const gap=parseFloat(getComputedStyle(node).columnGap);
+      return {full,icons,title,gap};
+    });
+    const labels=Math.ceil(widths.title+widths.gap+widths.full+2);
+    const icons=Math.ceil(widths.title+widths.gap+widths.icons+2);
+    const wrapped=Math.ceil(widths.full+2);
+    expect(icons).toBeGreaterThan(wrapped+4);
+    const stages=[
+      {width:labels+2,compact:false,wrap:false},
+      {width:labels-3,compact:true,wrap:false},
+      {width:icons+2,compact:true,wrap:false},
+      {width:icons-3,compact:false,wrap:true},
+      {width:wrapped+2,compact:false,wrap:true},
+      {width:wrapped-3,compact:true,wrap:true},
+    ];
+    const group=heading.locator(":scope > .responsive-heading__items");
+    const names=await group.locator(":scope > *").evaluateAll(items=>items.map(item=>item.getAttribute("aria-label")));
+    if(variant==="filters") await group.getByRole("button").first().focus();
+    for(const [index,stage] of [...stages,...stages.slice().reverse()].entries()) {
+      await heading.evaluate((node,width)=>{(node as HTMLElement).style.width=`${width}px`;},stage.width);
+      await expect.poll(()=>heading.evaluate(node=>({compact:node.classList.contains("is-compact"),wrap:node.classList.contains("is-wrapped")}))).toEqual({compact:stage.compact,wrap:stage.wrap});
+      await contained(heading);
+      await expect(group.locator("svg")).toHaveCount(stage.compact?(variant==="metrics"?4:5):0);
+      expect(await group.locator(":scope > *").evaluateAll(items=>items.map(item=>item.getAttribute("aria-label")))).toEqual(names);
+      if(variant==="metrics") {
+        await expect(group.locator(".responsive-heading__count")).toHaveCount(4);
+        await expect(group.getByRole("img")).toHaveCount(4);
+      }
+      else {
+        await expect(group.getByRole("button").first()).toBeFocused();
+        // Native tooltips must identify all filters when their text is hidden.
+        for (const [index, name] of names.entries()) {
+          await expect(group.getByRole("button").nth(index)).toHaveAttribute("title", name!);
+        }
+      }
+      if(index<stages.length) await capture(heading,info,`${variant}-stage-${index}`);
+    }
+    await largeText.evaluate(node=>{node.parentNode?.removeChild(node);});
+    await heading.evaluate(node=>{(node as HTMLElement).style.removeProperty("width");});
+    for(const zoom of [0.8,1,1.25]) {
+      await page.evaluate(value=>{document.documentElement.style.zoom=String(value);},zoom);
+      for(const width of [1200,800,600,400,320,800,1200]) {
+        if(width/zoom<320) continue;
+        await page.setViewportSize({width,height:1000});
+        await contained(heading);
+      }
+    }
+    if(variant==="filters") {
+      await group.getByRole("button",{name:"Stash 收藏",exact:true}).click();
+      await expect(group.getByRole("button",{name:"Stash 收藏",exact:true})).toHaveAttribute("aria-pressed","true");
+    }
   });
  });
 }

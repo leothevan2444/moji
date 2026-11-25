@@ -103,5 +103,5 @@ test("a reconnect recovers the current page without fetching history",async({pag
  await expect(page).toHaveURL(/page=3/);
  expect(reads.filter(q=>q.query.includes("query TasksWorkspace")).every(q=>q.variables.input.page===3)).toBe(true);
  expect(reads.some(q=>q.query.includes("query TasksOverviewDocument"))).toBe(false);
- await expect(page.locator(".band-note")).toContainText("275");
+ await expect(page.locator(".responsive-heading--metrics > .responsive-heading__items")).toContainText("275");
 });

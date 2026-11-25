@@ -1,3 +1,5 @@
+import { ResponsivePageHeading } from "../components/layout/ResponsivePageHeading";
+import { faBarsProgress, faHourglassHalf, faCheckDouble, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useAppTimezone } from "../hooks/useAppTimezone";
 import { TaskGroupSection } from "../components/tasks";
 import {
@@ -158,14 +160,12 @@ export function TasksPage({
 
   return (
     <section className="section-band section-band--tasks">
-      <div className="band-head">
-        <div>
-          <h2>{t("tasks.title")}</h2>
-        </div>
-        <p className="band-note">
-          {t("tasks.metrics", metrics)}
-        </p>
-      </div>
+      <ResponsivePageHeading title={t("tasks.title")} variant="metrics" items={[
+        { id: "active", label: t("tasks.filters.running"), icon: faBarsProgress, count: metrics.active },
+        { id: "waiting", label: t("tasks.filters.waiting"), icon: faHourglassHalf, count: metrics.waiting },
+        { id: "completed", label: t("tasks.filters.completed"), icon: faCheckDouble, count: metrics.completed },
+        { id: "attention", label: t("tasks.filters.failed"), icon: faTriangleExclamation, count: metrics.failed },
+      ]} />
 
       {completedWithin24Hours ? <p className="home-muted">{t("workbench.recentFilter")} · <button type="button" className="ghost-button" onClick={onClearCompletedWindow}>{t("workbench.clearRecentFilter")}</button></p> : null}
       <div className="toolbar-inline toolbar-inline--tasks">
