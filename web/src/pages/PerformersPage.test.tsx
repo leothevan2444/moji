@@ -64,8 +64,6 @@ function props(overrides: Partial<ComponentProps<typeof PerformersPage>> = {}): 
     onBatchRefreshPerformers: noop,
     onToggle: noop,
     onRefreshOne: noop,
-    onPrevPage: noop,
-    onNextPage: noop,
     onPageChange: noop,
     onOpenPerformer: noop,
     onOpenTask: noop,
@@ -75,8 +73,7 @@ function props(overrides: Partial<ComponentProps<typeof PerformersPage>> = {}): 
     onPerformerSceneCastChange: noop,
     onPerformerSceneLibraryChange: noop,
     onPerformerScenePageSizeChange: noop,
-    onPrevPerformerScenePage: noop,
-    onNextPerformerScenePage: noop,
+    onPerformerScenePageChange: noop,
     onToggleSceneSelection: noop,
     onSelectCurrentScenePage: noop,
     onClearSceneSelection: noop,
@@ -157,33 +154,30 @@ describe("PerformersPage list selection", () => {
       stashPerformerPage: { ...props().stashPerformerPage!, page: 3, totalPages: 10, hasPrevPage: true, hasNextPage: true }
     });
     const view = render(<PerformersPage {...pageProps} />);
-    const pagination = within(view.container.querySelector(".pagination-bar--performers")! as HTMLElement);
+    const pagination = within(view.container.querySelector(".pagination")! as HTMLElement);
     fireEvent.click(pagination.getByRole("button", { name: "First page" }));
     expect(onPageChange).toHaveBeenLastCalledWith(1);
     fireEvent.click(pagination.getByRole("button", { name: "Last page" }));
     expect(onPageChange).toHaveBeenLastCalledWith(10);
 
-    const input = pagination.getByRole("spinbutton", { name: "Page number" });
-    const submit = pagination.getByRole("button", { name: "Go" }) as HTMLButtonElement;
+    const input = pagination.getByRole("textbox", { name: "Page number" });
     for (const value of ["", "0", "11", "2.5", "3"]) {
       fireEvent.change(input, { target: { value } });
-      expect(submit.disabled).toBe(true);
       fireEvent.submit(input.closest("form")!);
     }
     expect(onPageChange).toHaveBeenCalledTimes(2);
     fireEvent.change(input, { target: { value: "7" } });
-    expect(submit.disabled).toBe(false);
     fireEvent.submit(input.closest("form")!);
     expect(onPageChange).toHaveBeenLastCalledWith(7);
 
     view.rerender(<PerformersPage {...pageProps} fetchingStashPerformers />);
-    for (const name of ["First page", "Previous", "Next", "Last page", "Go"]) {
+    for (const name of ["First page", "Previous", "Next", "Last page"]) {
       expect((pagination.getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true);
     }
 
     view.rerender(<PerformersPage {...pageProps} stashPerformerPage={{ ...pageProps.stashPerformerPage!, page: 1, hasPrevPage: false }} />);
     expect((pagination.getByRole("button", { name: "First page" }) as HTMLButtonElement).disabled).toBe(true);
-    expect((input as HTMLInputElement).value).toBe("");
+    expect((input as HTMLInputElement).value).toBe("1");
     view.rerender(<PerformersPage {...pageProps} stashPerformerPage={{ ...pageProps.stashPerformerPage!, page: 10, hasNextPage: false }} />);
     expect((pagination.getByRole("button", { name: "Last page" }) as HTMLButtonElement).disabled).toBe(true);
   });

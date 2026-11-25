@@ -270,7 +270,7 @@ describe("PerformersRoute mutation integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Select this page (2)" }));
     expect(screen.getByRole("button", { name: "Create download tasks (2)" })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Next" })[0]);
     await waitFor(() => expect(screen.getByRole("button", { name: "Select this page (2)" })).toBeTruthy());
     fireEvent.click(screen.getByRole("button", { name: "Select this page (2)" }));
     fireEvent.click(screen.getByRole("button", { name: "Create download tasks (4)" }));

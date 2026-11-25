@@ -2,7 +2,6 @@ export { NAV_ITEMS, SETTINGS_TABS } from "./navigation";
 export {
   DEFAULT_RESOURCE_SELECTION,
   EMPTY_POLICY_SETTINGS_FORM,
-  SUBSCRIPTION_PAGE_SIZE_OPTIONS,
   LOG_LEVEL_OPTIONS
 } from "./forms";
 export { TOAST_LIFETIME_MS, TOAST_EXIT_MS } from "./toast";
@@ -15,3 +14,4 @@ export {
   DISCOVERY_RESULT_LIMIT,
   type DiscoveryMode
 } from "./discovery";
+export { PAGE_SIZE_OPTIONS } from "./pagination";

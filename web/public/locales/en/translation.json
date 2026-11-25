@@ -1,4 +1,24 @@
 {
+  "pagination": {
+    "navigation": "{{label}} pagination ({{position}})",
+    "top": "top",
+    "bottom": "bottom",
+    "pageSize": "Page size",
+    "sizeOption": "{{size}}/page",
+    "items": "{{total}} items",
+    "itemsCompact": "{{total}} items",
+    "loadedItems": "{{total}} loaded",
+    "unknownItems": "— items",
+    "first": "First page",
+    "previous": "Previous",
+    "next": "Next",
+    "last": "Last page",
+    "pageNumber": "Page number",
+    "jumpHint": "Enter a page number and press Enter",
+    "invalidPage": "Enter a whole page number from 1 to {{max}}",
+    "options": "More pagination options",
+    "status": "Page {{page}} / {{pages}}, {{total}}"
+  },
   "resourceSelection": {
     "selectedWatermark": "Selected",
     "tierReason": "Priority tier matched: {{name}}",

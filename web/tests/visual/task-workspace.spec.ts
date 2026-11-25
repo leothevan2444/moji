@@ -26,7 +26,7 @@ test("bounds cards, preserves cross-page selection and keeps detail navigation o
   await page.getByRole("button",{name:"Enter multi-select mode",exact:true}).click();
   await page.getByRole("button",{name:"Select this page (24)",exact:true}).click();
   await expect(page.locator(".task-selection-bar")).toContainText("24");
-  await page.getByRole("button",{name:"Next",exact:true}).click();
+  await page.locator(".pagination").first().getByRole("button",{name:"Next",exact:true}).click();
   await expect(page).toHaveURL(/page=2/);
   await expect(page.locator(".task-card")).toHaveCount(24);
   await expect(page.locator(".task-selection-bar")).toContainText("24");

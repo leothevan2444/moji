@@ -1,3 +1,4 @@
+import { Pagination } from "../components/common/pagination/Pagination";
 import { ResponsivePageHeading } from "../components/layout/ResponsivePageHeading";
 import { faBarsProgress, faHourglassHalf, faCheckDouble, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useAppTimezone } from "../hooks/useAppTimezone";
@@ -217,13 +218,10 @@ export function TasksPage({
         <button type="button" className="ghost-button" disabled={batchPending || selectedTaskIds.length === 0} onClick={onClearTaskSelection} aria-label={t("taskBatch.clear")}><FontAwesomeIcon icon={faXmark} /> {t("taskBatch.clear")}</button>
       </div> : null}
 
-      {serverPage ? <div className="pagination-bar">
-        <label>{t("taskList.pageSize")} <select aria-label={t("taskList.pageSize")} value={serverPage.pageSize} onChange={event => onPageSizeChange?.(Number(event.target.value))}>{[12,24,48].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
-        <button type="button" className="ghost-button" disabled={refreshing || serverPage.page <= 1} onClick={() => onPageChange?.(serverPage.page - 1)}>{t("performerUi.previous")}</button>
-        <span role="status">{t("taskList.page", { page: serverPage.page, pages: serverPage.totalPages, count: serverPage.totalCount })}</span>
-        <button type="button" className="ghost-button" disabled={refreshing || serverPage.page >= serverPage.totalPages} onClick={() => onPageChange?.(serverPage.page + 1)}>{t("performerUi.next")}</button>
-        {updatesPending ? <button type="button" className="ghost-button" disabled={refreshing} onClick={onRefresh}>{t("taskList.updates")}</button> : null}
-      </div> : null}
+      {serverPage ? <Pagination label={t("tasks.title")} position="top" page={serverPage.page} pageSize={serverPage.pageSize}
+        totalPages={serverPage.totalPages} totalCount={serverPage.totalCount} loading={refreshing}
+        onPageChange={page => onPageChange?.(page)} onPageSizeChange={size => onPageSizeChange?.(size)} /> : null}
+      {updatesPending ? <p className="task-sync-meta"><button type="button" className="ghost-button" disabled={refreshing} onClick={onRefresh}>{t("taskList.updates")}</button></p> : null}
       {lastRefreshedAt ? <p className="task-sync-meta">
         {lastRefreshedAt ? t("taskBatch.updatedAt", { time: formatTime(lastRefreshedAt) }) : ""}
       </p> : null}
@@ -259,6 +257,10 @@ export function TasksPage({
             onToggleTaskSelection={onToggleTaskSelection}
           />
         ))}
+
+      {serverPage ? <Pagination label={t("tasks.title")} position="bottom" page={serverPage.page} pageSize={serverPage.pageSize}
+        totalPages={serverPage.totalPages} totalCount={serverPage.totalCount} loading={refreshing}
+        onPageChange={page => onPageChange?.(page)} onPageSizeChange={size => onPageSizeChange?.(size)} /> : null}
 
     </section>
   );

@@ -106,8 +106,6 @@
   .performer-list-sort select { width: auto; max-width: 100%; }
   .performer-list-actions { display: flex; align-items: center; flex: 0 0 auto; gap: 10px; }
   .release-review-link { margin-inline-start: auto; }
-  .pagination-bar--performers { flex-wrap: wrap; overflow: visible; gap: 8px; }
-  .pagination-bar__jump { flex-wrap: nowrap; }
   .performer-query-error { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
   .performer-query-error p { flex: 1 1 240px; margin: 0; overflow-wrap: anywhere; }
   .performer-loading { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 16px 0; }
@@ -158,7 +156,6 @@
     .performer-detail-hero__description, .performer-summary-groups { grid-column: 1 / -1; }
     .performer-detail-hero__description { grid-template-columns: 1fr; gap: 8px; }
     .release-review-link { margin-inline-start: 0; }
-    .pagination-bar--performers .pagination-bar__edge { display: none; }
     .performer-loading { grid-template-columns: 1fr; }
     .performer-scene-card__selector { min-width: 34px; min-height: 34px; }
   }
@@ -188,9 +185,3 @@
 .performer-activity-retry { flex: 0 0 14px; width: 14px; }
 
 .performer-activity-icons.is-unknown::after { content: ""; position: absolute; inset-inline: 0; top: 50%; border-top: 1px solid currentColor; pointer-events: none; }
-
-.pagination-bar__navigation { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; max-width: 100%; }
-.pagination-bar__navigation > button { flex-shrink: 0; }
-.pagination-bar__page-size { width: auto; max-width: 100%; min-width: 0; }
-
-.pagination-bar--scenes .pagination-bar__navigation { flex-wrap: wrap; }

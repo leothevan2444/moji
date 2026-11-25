@@ -15,6 +15,15 @@ describe("task search params", () => {
     expect(serializeTaskSearchParams(state).get("status")).toBe("waiting");
   });
 
+  it("supports every shared page size on task and performer routes", () => {
+    for (const pageSize of [12, 24, 48, 96]) {
+      const query = new URLSearchParams({pageSize: String(pageSize), scenePageSize: String(pageSize)});
+      expect(parseTaskSearchParams(query).pageSize).toBe(pageSize);
+      expect(parsePerformerSearchParams(query).pageSize).toBe(pageSize);
+      expect(parsePerformerSearchParams(query).scenePageSize).toBe(pageSize);
+    }
+  });
+
   it("round trips public URL values", () => {
     const state = parseTaskSearchParams(new URLSearchParams("q=abc&status=failed&sort=updated"));
     expect(serializeTaskSearchParams(state).toString()).toBe("q=abc&status=failed&sort=updated");

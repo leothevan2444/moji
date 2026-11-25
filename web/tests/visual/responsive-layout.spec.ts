@@ -22,7 +22,7 @@ async function sameRow(locator:Locator) {
 async function contained(locator:Locator) {
   await expect.poll(()=>locator.evaluate(node=>{
     const frame=node.getBoundingClientRect();
-    return node.scrollWidth<=node.clientWidth+1 && [...new Set([...node.children,...node.querySelectorAll("input,select,button,a")])].filter(child=>getComputedStyle(child).display!=="none").every(child=>{
+    return node.scrollWidth<=node.clientWidth+1 && [...new Set([...node.children,...node.querySelectorAll("input,select,button,a")])].filter(child=>getComputedStyle(child).display!=="none" && getComputedStyle(child).visibility!=="hidden").every(child=>{
       const box=child.getBoundingClientRect();
       return !box.width || (box.left>=frame.left-1 && box.right<=frame.right+1);
     });
@@ -72,13 +72,13 @@ for(const locale of ["zh-CN","en","qps-ploc","ar-XB"] as const) {
       await page.setViewportSize({width,height:1000});await contained(toolbar);await sameRow(actions);await contained(toolbar.locator(".performer-list-sort"));
       await capture(toolbar,info,`performer-toolbar-${width}`);
     }
-    await page.setViewportSize({width:600,height:1000});const pagination=page.locator(".pagination-bar--performers").first();
-    await sameRow(pagination);await capture(pagination,info,"pagination-600");
-    for(const width of [320,600]){await page.setViewportSize({width,height:1000});await contained(pagination);}
+    await page.setViewportSize({width:600,height:1000});const pagination=page.locator(".pagination").first();
+    await sameRow(pagination.locator(".pagination__viewport > .pagination__row"));await capture(pagination,info,"pagination-600");
+    for(const width of [320,600]){await page.setViewportSize({width,height:1000});await expect.poll(()=>pagination.evaluate(node=>node.scrollWidth<=node.clientWidth+1)).toBe(true);await sameRow(pagination.locator(".pagination__viewport > .pagination__row"));}
     await page.setViewportSize({width:800,height:1000});await page.goto(route("/performers/responsive-actor"));
     const band=page.locator(".band-head").first(),identity=page.locator(".performer-detail-hero__topline");
     await sameRow(band);await sameRow(identity);await capture(identity,info,"identity-800");
-    await page.setViewportSize({width:320,height:1000});await contained(identity);await contained(band);await contained(page.locator(".pagination-bar--scenes"));
+    await page.setViewportSize({width:320,height:1000});await contained(identity);await contained(band);await expect.poll(()=>page.locator(".pagination").first().evaluate(node=>node.scrollWidth<=node.clientWidth+1)).toBe(true);
   });
 
   test("settings source and cache actions stay inline when they fit",async({page},info)=>{

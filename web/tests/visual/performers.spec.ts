@@ -68,9 +68,9 @@ for (const locale of ["zh-CN", "en"] as const) {
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    const pagination = page.locator(".pagination-bar--performers").first();
+    const pagination = page.locator(".pagination").first();
     expect(await pagination.evaluate(e => e.scrollWidth <= e.clientWidth)).toBe(true);
-    await expect(pagination.locator('button[type="submit"]')).toBeInViewport();
+    await expect(pagination.getByRole("textbox", {name:locale === "en" ? "Page number" : "页码"})).toBeInViewport();
   });
 
   test(`${locale} performer detail keeps identity and metrics readable`, async ({ page }) => {
@@ -110,7 +110,7 @@ for (const locale of ["zh-CN", "en"] as const) {
     await expect(page).toHaveScreenshot(`${locale}-performer-detail.png`);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(page.getByRole("combobox", { name: locale === "en" ? "Scene source" : "影片来源" })).toBeVisible();
-    await expect(page.locator(".performer-results-meta")).toContainText(locale === "en" ? "30 results" : "共 30 条");
+    await expect(page.locator(".pagination").first().getByRole("status")).toContainText(locale === "en" ? "30 items" : "共 30 项");
     await expect(page.locator(".performer-results-meta")).toContainText(locale === "en" ? "24 on this page" : "本页 24 条");
   });
 }
@@ -120,7 +120,7 @@ test("performer selection survives pagination and filters", async ({ page }) => 
   await page.goto("/performers");
   await page.getByRole("button", { name: "Select multiple performers" }).click();
   await page.locator(".profile-card input[type=checkbox]").first().check();
-  await page.locator(".pagination-bar--performers").first().getByRole("button", { name: "Next", exact: true }).click();
+  await page.locator(".pagination").first().getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.locator(".profile-card")).toHaveCount(1);
   await page.locator(".profile-card input[type=checkbox]").check();
   await expect(page.getByRole("region", { name: "Selected performer actions" })).toContainText("2 performers selected");
@@ -215,7 +215,7 @@ test("scene multi-select is optional and clears when exited", async ({ page }) =
   await page.getByRole("button", { name: "Select scenes", exact: true }).click();
   await expect(page.locator(".performer-scene-card__selector")).toHaveCount(21);
   await page.getByRole("button", { name: "Select this page (21)", exact: true }).click();
-  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.locator(".pagination").first().getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.locator(".performer-scene-card")).toHaveCount(6);
   await page.getByRole("button", { name: "Select this page (6)", exact: true }).click();
   await expect(page.getByRole("button", { name: "Create download tasks (27)" })).toBeVisible();
@@ -418,25 +418,31 @@ test.describe("cast filter", () => {
 for (const view of ["list", "scenes"] as const) {
   test(`${view} page size belongs to pagination and stays usable on one page`, async ({page}) => {
     await page.goto(view === "list" ? "/performers?page=2" : "/performers/actor-0?scenePage=2");
-    const pager = page.locator(view === "list" ? ".pagination-bar--performers" : ".pagination-bar--scenes");
-    const sizes = pager.getByRole("combobox", {name:"Page size", exact:true});
-    await expect(sizes).toHaveCount(view === "list" ? 2 : 1);
-    await expect(page.locator(".performer-toolbar").getByRole("combobox", {name:"Page size", exact:true})).toHaveCount(0);
-    await sizes.last().selectOption("48");
-    const sizeKey = view === "list" ? "pageSize" : "scenePageSize";
-    const pageKey = view === "list" ? "page" : "scenePage";
-    await expect.poll(() => new URL(page.url()).searchParams.get(sizeKey)).toBe("48");
+    const pagers = page.locator(".pagination");
+    await expect(pagers).toHaveCount(2);
+    async function changeSize(position: "top" | "bottom", value: string) {
+      const pager=position==="top"?pagers.first():pagers.last();
+      const size=pager.getByRole("combobox",{name:"Page size",exact:true});
+      if(await size.isVisible()) await size.selectOption(value);
+      else {
+        await pager.getByRole("button",{name:"More pagination options"}).click();
+        await page.getByRole("dialog",{name:"More pagination options"}).getByRole("combobox",{name:"Page size"}).selectOption(value);
+      }
+    }
+    await expect(page.locator(".performer-toolbar").getByRole("combobox",{name:"Page size",exact:true})).toHaveCount(0);
+    await changeSize("bottom","48");
+    const sizeKey=view==="list"?"pageSize":"scenePageSize",pageKey=view==="list"?"page":"scenePage";
+    await expect.poll(()=>new URL(page.url()).searchParams.get(sizeKey)).toBe("48");
     expect(new URL(page.url()).searchParams.has(pageKey)).toBe(false);
-    await expect(page.locator(view === "list" ? ".profile-card" : ".performer-scene-card")).toHaveCount(view === "list" ? 25 : 30);
-    for (const size of await sizes.all()) await expect(size).toHaveValue("48");
-    await expect(pager.locator(".pagination-bar__navigation")).toHaveCount(0);
+    await expect(page.locator(view==="list"?".profile-card":".performer-scene-card")).toHaveCount(view==="list"?25:30);
+    for(const pager of await pagers.all()) await expect(pager.locator(".pagination__viewport .pagination__size")).toHaveValue("48");
+    await expect(pagers.first().getByRole("button",{name:"Next",exact:true})).toBeDisabled();
     await page.reload();
-    await expect(sizes.first()).toHaveValue("48");
-    await sizes.first().selectOption("12");
-    await expect(page.locator(view === "list" ? ".profile-card" : ".performer-scene-card")).toHaveCount(12);
-    for (const size of await sizes.all()) await expect(size).toHaveValue("12");
-    await expect(pager.first().getByRole("button", {name:"Next", exact:true})).toBeEnabled();
-    await pager.first().getByRole("button", {name:"Next", exact:true}).click();
-    await expect.poll(() => new URL(page.url()).searchParams.get(pageKey)).toBe("2");
+    await expect(pagers.first().locator(".pagination__viewport .pagination__size")).toHaveValue("48");
+    await changeSize("top","12");
+    await expect(page.locator(view==="list"?".profile-card":".performer-scene-card")).toHaveCount(12);
+    for(const pager of await pagers.all()) await expect(pager.locator(".pagination__viewport .pagination__size")).toHaveValue("12");
+    await pagers.first().getByRole("button",{name:"Next",exact:true}).click();
+    await expect.poll(()=>new URL(page.url()).searchParams.get(pageKey)).toBe("2");
   });
 }

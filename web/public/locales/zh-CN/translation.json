@@ -1,4 +1,24 @@
 {
+  "pagination": {
+    "navigation": "{{label}}分页（{{position}}）",
+    "top": "顶部",
+    "bottom": "底部",
+    "pageSize": "每页条数",
+    "sizeOption": "{{size}}/页",
+    "items": "共 {{total}} 项",
+    "itemsCompact": "{{total}} 项",
+    "loadedItems": "已加载 {{total}} 项",
+    "unknownItems": "— 项",
+    "first": "第一页",
+    "previous": "上一页",
+    "next": "下一页",
+    "last": "最后一页",
+    "pageNumber": "页码",
+    "jumpHint": "输入页码后按回车跳转",
+    "invalidPage": "请输入 1–{{max}} 的整数页码",
+    "options": "更多分页选项",
+    "status": "第 {{page}} / {{pages}} 页，{{total}}"
+  },
   "resourceSelection": {
     "selectedWatermark": "已选中",
     "tierReason": "命中优先级：{{name}}",

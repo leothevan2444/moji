@@ -1,5 +1,5 @@
 import { ResponsivePageHeading } from "../components/layout/ResponsivePageHeading";
-import { PerformerPageSize } from "../components/performers/PerformerPageSize";
+import { Pagination } from "../components/common/pagination/Pagination";
 import { faUsers, faHeart, faClipboardQuestion, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useAppTimezone } from "../hooks/useAppTimezone";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons/faArrowLeft";
@@ -16,7 +16,6 @@ import { PerformerToolbar } from "../components/performers/PerformerToolbar";
 import { PerformerListFilters } from "../components/performers/PerformerListFilters";
 import { performerCheckRun } from "../hooks/useSubscriptionChecks";
 import { PerformerOverview } from "../components/performers/PerformerOverview";
-import { PerformerPagination } from "../components/performers/PerformerPagination";
 import { PerformerSceneCard } from "../components/performers/PerformerSceneCard";
 import type { PerformersPageProps } from "../components/performers/types";
 import {
@@ -70,8 +69,7 @@ export function PerformersPage(props: PerformersPageProps) {
     onPerformerSceneSourceChange, onPerformerSceneCastChange,
     onPerformerSceneLibraryChange,
     onPerformerScenePageSizeChange,
-    onPrevPerformerScenePage,
-    onNextPerformerScenePage,
+    onPerformerScenePageChange,
     onSelectCurrentScenePage,
     onClearSceneSelection,
     onQueueSelectedScenes,
@@ -175,10 +173,12 @@ export function PerformersPage(props: PerformersPageProps) {
 
           {selectedSceneKeys.length ? <p className="performer-selection-summary" role="status">{t("performerWorkspace.selectedScenes", { count: selectedSceneKeys.length })}{selectedSceneKeys.some(key => !performerScenes.some(scene => scene.key === key)) ? ` · ${t("performerWorkspace.hiddenScenes", { count: selectedSceneKeys.filter(key => !performerScenes.some(scene => scene.key === key)).length })}` : ""}</p> : null}
         </PerformerToolbar>
+        <Pagination label={t("performerUi.works")} position="top" page={performerScenePage?.page ?? 1} pageSize={performerScenePageSize}
+          totalPages={performerScenePage?.totalCountExact ? performerScenePage.totalPages ?? null : null} totalCount={performerScenePage?.totalCount ?? null}
+          hasNextPage={performerScenePage?.hasNextPage} loading={fetchingPerformerScenes}
+          onPageChange={onPerformerScenePageChange} onPageSizeChange={onPerformerScenePageSizeChange} />
         <div className="settings-meta performer-results-meta" aria-live="polite">
-          <span>{t(performerScenePage?.totalCountExact ? "performerWorkspace.total" : "performerCacheUi.loadedItems", { count: performerScenePage?.totalCount ?? 0 })}</span>
           <span>{t("performerWorkspace.visible", { count: performerScenes.length })}</span>
-          <span>{performerScenePage?.totalPages != null ? t("performerUi.pagination", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.loadingMorePages", { page: performerScenePage?.page ?? 1 })}</span>
           <span>{t("performerUi.state", { state: t(fetchingPerformerDetail || fetchingPerformerScenes ? "performerUi.loading" : "performerUi.ready") })}</span>
         </div>
 
@@ -197,14 +197,10 @@ export function PerformersPage(props: PerformersPageProps) {
           ) : null}
         </div>
 
-        <div className="pagination-bar pagination-bar--scenes">
-          {performerScenePage && (performerScenePage.hasPrevPage || performerScenePage.hasNextPage) ? <div className="pagination-bar__navigation">
-            <button type="button" className="ghost-button" disabled={!performerScenePage.hasPrevPage || fetchingPerformerScenes} onClick={onPrevPerformerScenePage}>{t("performerUi.previous")}</button>
-            <span className="status-chip tone-neutral">{performerScenePage.totalPages != null ? t("performerUi.page", { page: performerScenePage.page, pages: performerScenePage.totalPages }) : t("performerCacheUi.pageUnknownTotal", { page: performerScenePage.page })}</span>
-            <button type="button" className="ghost-button" disabled={!performerScenePage.hasNextPage || fetchingPerformerScenes} onClick={onNextPerformerScenePage}>{t("performerUi.next")}</button>
-          </div> : null}
-          <PerformerPageSize value={performerScenePageSize} onChange={onPerformerScenePageSizeChange} scenes />
-        </div>
+        <Pagination label={t("performerUi.works")} position="bottom" page={performerScenePage?.page ?? 1} pageSize={performerScenePageSize}
+          totalPages={performerScenePage?.totalCountExact ? performerScenePage.totalPages ?? null : null} totalCount={performerScenePage?.totalCount ?? null}
+          hasNextPage={performerScenePage?.hasNextPage} loading={fetchingPerformerScenes}
+          onPageChange={onPerformerScenePageChange} onPageSizeChange={onPerformerScenePageSizeChange} />
 
       </section>
     );
@@ -236,7 +232,9 @@ export function PerformersPage(props: PerformersPageProps) {
 
       {lastRefreshedAt ? <p className="task-sync-meta">{t("performerUi.updatedAt", { time: formatDateTime(lastRefreshedAt) })}</p> : null}
 
-      <PerformerPagination page={props} />
+      <Pagination label={t("performerUi.list")} position="top" page={props.stashPerformerPage?.page ?? 1} pageSize={props.subscriptionPageSize}
+        totalPages={props.stashPerformerPage?.totalPages ?? null} totalCount={props.stashPerformerPage?.totalCount ?? null} loading={fetchingStashPerformers}
+        onPageChange={props.onPageChange} onPageSizeChange={props.onPageSizeChange} />
 
 
       {subscriptionError || stashPerformersError ? <PerformerError error={(subscriptionError || stashPerformersError)!} onRetry={onReload} /> : null}
@@ -253,7 +251,9 @@ export function PerformersPage(props: PerformersPageProps) {
         {stashPerformers.map((performer) => <PerformerCard key={performer.id} performer={performer} activity={activityByID.get(performer.id)} subscription={subscribedByID.get(performer.id) ?? null} reviewCount={reviewCounts[performer.id] ?? subscribedByID.get(performer.id)?.reviewReleaseCount ?? 0} page={props} />)}
       </div>
 
-      <PerformerPagination page={props} />
+      <Pagination label={t("performerUi.list")} position="bottom" page={props.stashPerformerPage?.page ?? 1} pageSize={props.subscriptionPageSize}
+        totalPages={props.stashPerformerPage?.totalPages ?? null} totalCount={props.stashPerformerPage?.totalCount ?? null} loading={fetchingStashPerformers}
+        onPageChange={props.onPageChange} onPageSizeChange={props.onPageSizeChange} />
     </section>
   );
 }

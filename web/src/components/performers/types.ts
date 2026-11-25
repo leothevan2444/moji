@@ -81,8 +81,6 @@ export interface PerformersPageProps {
   onBatchRefreshPerformers: (performerIds: string[]) => void;
   onToggle: (performer: StashPerformerEntry) => void;
   onRefreshOne: (performer: StashPerformerEntry) => void;
-  onPrevPage: () => void;
-  onNextPage: () => void;
   onPageChange: (page: number) => void;
   onOpenPerformer: (performerId: string) => void;
   onOpenTask: (taskId: string) => void;
@@ -92,8 +90,7 @@ export interface PerformersPageProps {
   onPerformerSceneSourceChange: (value: SceneSourceFilter) => void;
   onPerformerSceneLibraryChange: (value: LibraryFilter) => void;
   onPerformerScenePageSizeChange: (value: number) => void;
-  onPrevPerformerScenePage: () => void;
-  onNextPerformerScenePage: () => void;
+  onPerformerScenePageChange: (page: number) => void;
   onToggleSceneSelection: (key: string) => void;
   onSelectCurrentScenePage: (keys: string[]) => void;
   onClearSceneSelection: () => void;

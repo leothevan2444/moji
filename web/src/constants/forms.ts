@@ -27,5 +27,4 @@ export const EMPTY_POLICY_SETTINGS_FORM = {
   torrentSelection: structuredClone(DEFAULT_RESOURCE_SELECTION)
 };
 
-export const SUBSCRIPTION_PAGE_SIZE_OPTIONS = [12, 24, 48, 96] as const;
 export const LOG_LEVEL_OPTIONS: LogLevel[] = [LogLevel.Debug, LogLevel.Info, LogLevel.Warning, LogLevel.Error];

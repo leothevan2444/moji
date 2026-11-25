@@ -1,3 +1,4 @@
+import { PAGE_SIZE_OPTIONS } from "../constants/pagination";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
 
 export type TaskStatusParam = "all" | "active" | "completed" | "failed" | "waiting";
@@ -30,7 +31,7 @@ export function parseTaskSearchParams(params: URLSearchParams): TaskSearchState 
   const sort = params.get("sort") as TaskSortParam | null;
   return {
     page: positiveInt(params.get("page"), 1),
-    pageSize: [12,24,48].includes(positiveInt(params.get("pageSize"),24)) ? positiveInt(params.get("pageSize"),24) : 24,
+    pageSize: PAGE_SIZE_OPTIONS.some(size => size === positiveInt(params.get("pageSize"),24)) ? positiveInt(params.get("pageSize"),24) : 24,
     q: params.get("q")?.trim() ?? "",
     status: status === "pending-scan" ? "running" : status && taskStatusFromParam[status] ? taskStatusFromParam[status] : "all",
     sort: sort && taskSortFromParam[sort] ? taskSortFromParam[sort] : "createdAt"
@@ -61,7 +62,6 @@ export interface PerformerSearchState {
   scenePageSize: number;
 }
 
-const PAGE_SIZES = [12, 24, 48, 96] as const;
 function positiveInt(value: string | null, fallback: number) {
   const parsed = Number.parseInt(value ?? "", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -79,13 +79,13 @@ export function parsePerformerSearchParams(params: URLSearchParams): PerformerSe
     sort: sort === "name" || sort === "scene_count" || sort === "last_checked" ? sort : "default",
     q: params.get("q")?.trim() ?? "",
     page: positiveInt(params.get("page"), 1),
-    pageSize: PAGE_SIZES.includes(pageSize as (typeof PAGE_SIZES)[number]) ? pageSize : 24,
+    pageSize: PAGE_SIZE_OPTIONS.some(size => size === pageSize) ? pageSize : 24,
     sceneQ: params.get("sceneQ")?.trim() ?? "",
     cast: params.get("cast") === "solo" ? "solo" : params.get("cast") === "group" ? "group" : "all",
     source: source === "stash" || source === "stashbox" ? source : "all",
     library: library === "in-library" || library === "not-in-library" ? library : "all",
     scenePage: positiveInt(params.get("scenePage"), 1),
-    scenePageSize: PAGE_SIZES.includes(scenePageSize as (typeof PAGE_SIZES)[number]) ? scenePageSize : 24
+    scenePageSize: PAGE_SIZE_OPTIONS.some(size => size === scenePageSize) ? scenePageSize : 24
   };
 }
 
