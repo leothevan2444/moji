@@ -315,11 +315,15 @@ describe("persistent subscription check state", () => {
 describe("persisted upcoming scene state", () => {
  beforeEach(async () => i18n.changeLanguage("en"));
  afterEach(() => document.body.replaceChildren());
- it.each([["WAITING", "Upcoming"], ["UNCONFIRMED", "Unconfirmed"], ["HANDOFF_PENDING", "Processing release"]])("shows %s without creation or selection controls", (upcomingState, label) => {
+ it.each([["WAITING", "Upcoming"], ["UNCONFIRMED", "Unconfirmed"], ["HANDOFF_PENDING", "Processing release"]])("shows %s with a disabled selection control and no creation action", (upcomingState, label) => {
   const scene: StashPerformerSceneEntry = {key:"future",primarySource:SceneSource.Stashbox,sourceSceneId:"future",title:"Future film",code:"ABC-123",date:"2026-11-12",studioName:"Studio",performerCount:1,tagCount:0,performers:[],tags:[],imageUrl:null,url:null,inLibrary:false,matchedStashSceneId:null,hasStashSource:false,hasStashBoxSource:true,stashBoxSceneId:"future",stashBoxEndpoint:"https://example.org/graphql",sourceLabels:["StashBox"],stashIds:[],mojiTask:null,upcomingState};
   const page = props({sceneSelectionMode:true,selectedSceneKeys:["future"]});
   render(<PerformerSceneCard scene={scene} page={page}/>);
   expect(screen.getByText(label)).toBeTruthy();
+  const checkbox = screen.getByRole("checkbox", { name: "Select ABC-123" }) as HTMLInputElement;
+  expect(checkbox.disabled).toBe(true);
+  expect(checkbox.checked).toBe(false);
+  expect(checkbox.getAttribute("aria-description")).toBe(label);
   expect(screen.queryByRole("button",{name:/Create|Select|Deselect/})).toBeNull();
   fireEvent.click(screen.getByText("ABC-123"));
   expect(page.onQueueScene).not.toHaveBeenCalled();

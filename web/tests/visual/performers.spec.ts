@@ -213,7 +213,7 @@ test("scene multi-select is optional and clears when exited", async ({ page }) =
   await expect(page.locator(".performer-scene-card.is-selected")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Select scenes", exact: true }).click();
-  await expect(page.locator(".performer-scene-card__selector")).toHaveCount(21);
+  await expect(page.locator(".performer-scene-card__selector:not(:disabled)")).toHaveCount(21);
   await page.getByRole("button", { name: "Select this page (21)", exact: true }).click();
   await page.locator(".pagination").first().getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.locator(".performer-scene-card")).toHaveCount(6);
@@ -319,7 +319,7 @@ for (const locale of ["zh-CN", "en"] as const) {
     }
     await page.getByRole("button",{name:locale==="en"?"Select scenes":"多选作品",exact:true}).click();
     await expect(page.getByRole("button",{name:locale==="en"?"Select this page (18)":"全选本页（18）",exact:true})).toBeVisible();
-    await expect(cards.nth(3).locator(".performer-scene-card__selector")).toHaveCount(0);
+    await expect(cards.nth(3).getByRole("checkbox")).toBeDisabled();
     await cards.nth(3).click();await expect(cards.nth(3)).not.toHaveClass(/is-selected/);
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth)).toBe(true);
     await cards.nth(3).screenshot({path:info.outputPath(`${locale}-${theme}-performer-upcoming.png`)});
@@ -395,7 +395,7 @@ test.describe("cast filter", () => {
         await page.getByRole("button", { name: locale === "en" ? "Select scenes" : "多选作品", exact: true }).click();
         const selected = page.locator(".performer-scene-card").filter({ has: page.getByText("ABC-105", { exact: true }) });
         await selected.click();
-        await expect(selected.locator(".performer-scene-card__selector")).toHaveAttribute("aria-pressed", "true");
+        await expect(selected.getByRole("checkbox")).toBeChecked();
         await expect(cast).toBeHidden();
         await page.getByRole("button", { name: locale === "en" ? "Exit selection" : "退出多选", exact: true }).click();
         await expect(cast).toHaveValue("GROUP");

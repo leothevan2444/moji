@@ -1,3 +1,4 @@
+import { CardSelectionControl } from "../common/CardSelectionControl";
 import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { memo, useSyncExternalStore } from "react";
 import {
@@ -70,18 +71,19 @@ export const TaskCard = memo(function TaskCard({ task, compact = false, pendingR
   const selectionLabel = t(selected ? "taskBatch.deselectTask" : "taskBatch.selectTask", { task: taskSummary(task) });
 
   return <article
-    className={`task-card ${presentation.tone} ${compact ? "task-card--compact" : ""} ${selectionMode ? "is-selection-mode" : ""} ${selected ? "is-selected" : ""}`}
+    className={`task-card selection-card ${presentation.tone} ${compact ? "task-card--compact" : ""} ${selectionMode ? "is-selection-mode" : ""} ${selected ? "is-selected" : ""}`}
     onClick={event => {
       if (!selectionMode) event.currentTarget.querySelector<HTMLButtonElement>(".task-card__open")?.focus();
       activateCard();
     }}
   >
+    {selectionMode ? <CardSelectionControl checked={selected} label={selectionLabel} inputClassName="task-card__checkbox"
+      onChange={() => onToggleSelection?.(task.id)} /> : null}
     <div className="task-card__head">
-      {selectionMode ? <label className="task-card__selection" onClick={event => event.stopPropagation()}><input className="task-card__checkbox" type="checkbox" checked={selected}
-        aria-label={selectionLabel} onClick={event => event.stopPropagation()} onChange={() => onToggleSelection?.(task.id)} /></label> : null}
       <div className="task-card__identity">
         <h3><button type="button" className="task-card__open"
           data-task-id={task.id}
+          tabIndex={selectionMode ? -1 : 0}
           aria-label={selectionMode ? selectionLabel : t("taskUi.card.aria", { task: taskSummary(task), status: presentation.label })}
           aria-pressed={selectionMode ? selected : undefined}
         >{taskSummary(task)}</button></h3>
@@ -110,7 +112,7 @@ export const TaskCard = memo(function TaskCard({ task, compact = false, pendingR
     </p> : null}
     <div className="task-card__actions">
       <TaskCardTime value={cardTime} label={timeLabel} />
-      {!selectionMode ? <div className="task-card__right" onClick={event => event.stopPropagation()}>
+      <div className="task-card__right" aria-hidden={selectionMode} inert={selectionMode} style={{ visibility: selectionMode ? "hidden" : undefined }} onClick={event => event.stopPropagation()}>
         <TaskPrimaryAction task={task} compact pendingRetry={pendingRetryId === task.id}
           onResolve={onResolve} onFiles={onOpen} onRetry={onRetry} />
         {onDelete ? <button type="button" className="ghost-button task-card__delete"
@@ -120,7 +122,7 @@ export const TaskCard = memo(function TaskCard({ task, compact = false, pendingR
           onClick={event => { event.stopPropagation(); onDelete(task.id); }}>
           <FontAwesomeIcon icon={faTrashCan} /><span>{t(pendingDeleteId === task.id ? "taskCardActions.deleting" : "taskCardActions.delete")}</span>
         </button> : null}
-      </div> : null}
+      </div>
     </div>
   </article>;
 });

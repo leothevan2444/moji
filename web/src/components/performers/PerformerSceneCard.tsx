@@ -1,5 +1,5 @@
+import { CardSelectionControl } from "../common/CardSelectionControl";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons/faArrowUpRightFromSquare";
-import { faCheck } from "@fortawesome/free-solid-svg-icons/faCheck";
 import { SceneArtwork } from "../common/SceneArtwork";
 import { faPlus } from "@fortawesome/free-solid-svg-icons/faPlus";
 import { faTags } from "@fortawesome/free-solid-svg-icons/faTags";
@@ -36,16 +36,22 @@ export function PerformerSceneCard({ scene, page }: { scene: StashPerformerScene
   const selected = sceneSelectionMode && !scene.upcomingState && selectedSceneKeys.includes(scene.key);
   const pendingSingleQueue = pendingSceneKeys.includes(scene.key);
   const selectable = sceneSelectionMode && !scene.inLibrary && !scene.mojiTask && !scene.upcomingState && !pendingSingleQueue;
+  const upcomingLabel = t(scene.upcomingState === "UNCONFIRMED" ? "upcoming.unconfirmed" : scene.upcomingState === "HANDOFF_PENDING" ? "performerUi.releaseProcessing" : "performerUi.upcoming");
+  const unavailableReason = scene.inLibrary ? t("performerUi.inLibrary") : scene.mojiTask ? performerSceneTaskLabel(scene.mojiTask)
+    : scene.upcomingState ? upcomingLabel : pendingSingleQueue ? t("performerUi.creating") : undefined;
   return (
     <article
       key={scene.key}
-      className={`candidate-card performer-scene-card has-media ${selected ? "is-selected" : ""} ${selectable ? "" : "is-unselectable"}`}
+      className={`candidate-card performer-scene-card selection-card has-media ${sceneSelectionMode ? "is-selection-mode" : ""} ${selected ? "is-selected" : ""} ${selectable ? "" : "is-unselectable"}`}
       onClick={() => {
         if (selectable) onToggleSceneSelection(scene.key);
       }}
     >
       <div className="performer-scene-card__media">
         <SceneArtwork src={scene.imageUrl} alt={scene.title || scene.code || "scene"} />
+        {sceneSelectionMode ? <CardSelectionControl checked={selected} disabled={!selectable} description={unavailableReason}
+          label={t(selected ? "performerUi.deselectName" : "performerUi.selectName", { name: scene.code || scene.title || scene.sourceSceneId })}
+          inputClassName="performer-scene-card__selector" onChange={() => onToggleSceneSelection(scene.key)} /> : null}
         <span
           className="performer-scene-card__source-badge"
           title={t("performerUi.source", { sources: scene.sourceLabels.join(" + ") })}
@@ -53,21 +59,6 @@ export function PerformerSceneCard({ scene, page }: { scene: StashPerformerScene
           {performerSceneSourceLabel(scene)}
         </span>
       </div>
-      {selectable ? (
-        <button
-          type="button"
-          className="performer-scene-card__selector"
-          aria-pressed={selected}
-          aria-label={t(selected ? "performerUi.deselectName" : "performerUi.selectName", { name: scene.code || scene.title || scene.sourceSceneId })}
-          title={t(selected ? "performerUi.deselect" : "performerUi.selectScene")}
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleSceneSelection(scene.key);
-          }}
-        >
-          {selected ? <FontAwesomeIcon icon={faCheck} /> : null}
-        </button>
-      ) : null}
       <div className="performer-scene-card__content">
         <div className="performer-scene-card__status-row">
           <h3 title={scene.code || scene.title || scene.sourceSceneId}>{scene.code || scene.title || scene.sourceSceneId}</h3>
@@ -114,11 +105,14 @@ export function PerformerSceneCard({ scene, page }: { scene: StashPerformerScene
             </button>
           ) : scene.upcomingState ? (
             <span className={`status-chip performer-scene-card__business-state performer-scene-card__upcoming ${scene.upcomingState === "UNCONFIRMED" ? "tone-warn" : "tone-info"}`}>
-              {t(scene.upcomingState === "UNCONFIRMED" ? "upcoming.unconfirmed" : scene.upcomingState === "HANDOFF_PENDING" ? "performerUi.releaseProcessing" : "performerUi.upcoming")}
+              {upcomingLabel}
             </span>
           ) : (
             <button
               type="button"
+              aria-hidden={sceneSelectionMode}
+              inert={sceneSelectionMode}
+              style={{ visibility: sceneSelectionMode ? "hidden" : undefined }}
               className="status-chip performer-scene-card__business-state performer-scene-card__create-task tone-warn"
               title={t("performerUi.createScene")}
               disabled={pendingSingleQueue}

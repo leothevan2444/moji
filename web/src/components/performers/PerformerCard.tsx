@@ -1,3 +1,4 @@
+import { CardSelectionControl } from "../common/CardSelectionControl";
 import { useAppTimezone } from "../../hooks/useAppTimezone";
 import { ActivityLevelIcons } from "./ActivityLevelIcons";
 import { activityDisplayStatus, activityRankForDisplay } from "./performerActivityStatus";
@@ -20,7 +21,7 @@ export function PerformerCard({ performer, subscription, reviewCount, page, acti
   const { t } = useTranslation();
   const [showCheckError, setShowCheckError] = useState(false);
   const { stashBaseURL, performerSelectionMode, selectedPerformerIds, performerBatchPending, pendingSubscriptionID, onTogglePerformerSelection, onOpenPerformer, onToggle, onRefreshOne } = page;
-  const selected = selectedPerformerIds.includes(performer.id);
+  const selected = performerSelectionMode && selectedPerformerIds.includes(performer.id);
   const pending = pendingSubscriptionID === performer.id;
   const checkRun = performerCheckRun(page.checkActivity, performer.id);
   const checkItem = checkRun;
@@ -34,11 +35,14 @@ export function PerformerCard({ performer, subscription, reviewCount, page, acti
   const aliases = performer.aliasList.join(" / ");
   return (
     <>
-      <article className={`profile-card${performerSelectionMode ? " profile-card--selectable" : ""}${selected ? " is-selected" : ""}`} onClick={event => {
+      <article className={`profile-card selection-card${performerSelectionMode ? " is-selection-mode" : ""}${selected ? " is-selected" : ""}`} onClick={event => {
         if ((event.target as Element).closest("a, button, input, label, details")) return;
         if (performerSelectionMode) { if (!performerBatchPending) onTogglePerformerSelection(performer.id); }
         else onOpenPerformer(performer.id);
       }}>
+        {performerSelectionMode ? <CardSelectionControl checked={selected} disabled={performerBatchPending}
+          label={t(selected ? "performerUi.deselectName" : "performerUi.selectName", { name: performer.name })}
+          inputClassName="performer-card-selector" onChange={() => onTogglePerformerSelection(performer.id)} /> : null}
         <div className="avatar avatar--frame">
           <span className="avatar__fallback" aria-hidden="true">{performerInitials(performer.name)}</span>
           {imageURL ? <img data-nsfw className="avatar__image" src={imageURL} alt="" loading="lazy" decoding="async" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}
@@ -72,7 +76,6 @@ export function PerformerCard({ performer, subscription, reviewCount, page, acti
                   onClick={() => onToggle(performer)}
                 ><FontAwesomeIcon icon={faBookmark} /></button>
               )}
-              {performerSelectionMode ? <input type="checkbox" className="performer-card-selector" checked={selected} disabled={performerBatchPending} onChange={() => onTogglePerformerSelection(performer.id)} aria-label={t(selected ? "performerUi.deselectName" : "performerUi.selectName", { name: performer.name })} /> : null}
             </div>
             <div className="performer-card-check-row">
               {checkRun ? <Link className="profile-check-meta" to={`/?check=${encodeURIComponent(checkRun.runId)}`} title={t("subscriptionChecks.followRun")} aria-live="polite">{t(`subscriptionChecks.itemStates.${checkItem?.status ?? "PENDING"}`)}</Link> : null}

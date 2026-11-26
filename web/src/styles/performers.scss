@@ -10,7 +10,8 @@
     overflow: hidden;
     cursor: pointer;
 
-    > .avatar { width: var(--performer-card-image-width); height: 100%; min-width: 0; min-height: 0; max-width: none; max-height: none; align-self: stretch; }
+    > .card-selection-control { inset-block-start: 3px; inset-inline-start: 3px; }
+    > .avatar { position: relative; width: var(--performer-card-image-width); height: 100%; min-width: 0; min-height: 0; max-width: none; max-height: none; align-self: stretch; }
     &__body { display: grid; grid-template-rows: minmax(0, 1fr) 30px; gap: 6px; min-height: 0; overflow: hidden; }
     &__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start; align-items: start; gap: 4px 8px; min-width: 0; overflow: hidden; }
     .performer-card-identity { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
@@ -34,10 +35,8 @@
     outline: 2px solid var(--accent);
     outline-offset: 3px;
   }
-  .performer-card-selector { flex: 0 0 auto; width: 22px; height: 22px; min-width: 22px; min-height: 22px; margin: 0; padding: 0; accent-color: var(--accent); cursor: pointer; }
   .performer-card-flags { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; }
   .performer-card-flags .profile-icon { width: 28px; height: 28px; flex: 0 0 28px; }
-  .performer-card-flags .performer-card-selector { margin-inline-start: 4px; }
 
   .performer-detail-card { height: auto; min-height: 0; overflow: visible; }
   .performer-detail-hero { height: auto; align-items: stretch; }
@@ -127,7 +126,6 @@
     .performer-detail-hero__description, .performer-summary-groups { grid-column: 1 / -1; }
     .performer-detail-hero__description { grid-template-columns: 1fr; gap: 8px; }
     .performer-loading { grid-template-columns: 1fr; }
-    .performer-scene-card__selector { min-width: 34px; min-height: 34px; }
   }
 }
 @media (prefers-reduced-motion: reduce) {

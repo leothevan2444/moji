@@ -283,8 +283,8 @@ describe("PerformersRoute mutation integration", () => {
       }
     });
     await waitFor(() => expect(screen.getByRole("button", { name: "Create download tasks (2)" })).toBeTruthy());
-    expect(screen.getByRole("button", { name: "Deselect THREE" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "Select FOUR" }).getAttribute("aria-pressed")).toBe("false");
+    expect((screen.getByRole("checkbox", { name: "Deselect THREE" }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("checkbox", { name: "Select FOUR" }) as HTMLInputElement).checked).toBe(false);
   });
 
   it("keeps selection controls behind an explicit mode and resets them on exit and performer change", async () => {
@@ -294,20 +294,20 @@ describe("PerformersRoute mutation integration", () => {
     render(<RouterProvider router={router} />);
 
     expect(screen.queryByRole("button", { name: "Select this page (2)" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Select ONE" })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: "Select ONE" })).toBeNull();
     fireEvent.click(screen.getByText("ONE").closest("article")!);
     expect(screen.queryByText("1 scenes selected (kept across pages)")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Select scenes" }));
-    fireEvent.click(screen.getByRole("button", { name: "Select ONE" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select ONE" }));
     expect(screen.getByRole("button", { name: "Create download tasks (1)" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Exit selection" }));
     expect(screen.queryByRole("button", { name: "Create download tasks (1)" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Select ONE" })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: "Select ONE" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Select scenes" }));
-    expect(screen.getByRole("button", { name: "Select ONE" }).getAttribute("aria-pressed")).toBe("false");
-    fireEvent.click(screen.getByRole("button", { name: "Select ONE" }));
+    expect((screen.getByRole("checkbox", { name: "Select ONE" }) as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select ONE" }));
     await act(async () => { await router.navigate("/performers/performer-2"); });
     expect(screen.getByRole("button", { name: "Select scenes" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Select this page (2)" })).toBeNull();

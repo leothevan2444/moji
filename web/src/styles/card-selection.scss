@@ -1,0 +1,67 @@
+@use "tokens" as *;
+
+.card-selection-control {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 3;
+  display: grid;
+  grid-template: 24px / 24px;
+  place-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  animation: card-selection-appear 160ms ease;
+
+  &__input[type="checkbox"] {
+    grid-area: 1 / 1;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--muted-2);
+    border-radius: $radius-sm;
+    background: var(--surface-strong);
+    cursor: inherit;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 14%, transparent);
+    transition: border-color 160ms ease, background-color 160ms ease;
+
+    &:checked { border-color: var(--accent); background: var(--accent); }
+    &:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    &:disabled { opacity: 0.45; }
+    &:checked + .card-selection-control__mark { opacity: 1; }
+    &:checked:disabled + .card-selection-control__mark { opacity: 0.45; }
+  }
+  &__mark {
+    grid-area: 1 / 1;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 14px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+  &.is-disabled { cursor: not-allowed; }
+}
+
+.selection-card {
+  &.is-selection-mode { user-select: none; }
+  &:hover { transform: none; }
+  &.is-selected, &.is-selected:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+    box-shadow: var(--shadow-sm);
+  }
+}
+@keyframes card-selection-appear { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .selection-card, .card-selection-control, .card-selection-control__input, .card-selection-control__mark { animation: none; transition: none; }
+}
+@media (forced-colors: active) {
+  .card-selection-control__input[type="checkbox"] { appearance: auto; }
+  .card-selection-control__mark { display: none; }
+}
