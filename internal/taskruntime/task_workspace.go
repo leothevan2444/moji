@@ -19,11 +19,20 @@ type TaskPageInput struct {
 	CompletedWithin24Hours bool
 	IDs                    []string
 }
+type TaskFilterCounts struct {
+	Total     int `db:"total"`
+	Active    int `db:"active"`
+	Waiting   int `db:"waiting"`
+	Completed int `db:"completed"`
+	Attention int `db:"attention"`
+}
+
 type TaskPage struct {
 	Items                                  []*Task
 	TotalCount, Page, PageSize, TotalPages int
 	Sequence                               int
 	StreamID                               string
+	FilterCounts                           TaskFilterCounts
 	Stats                                  TaskStats
 }
 type HomeTaskSnapshot struct {
@@ -196,16 +205,6 @@ func (s *RelationalTaskStore) TaskPage(ctx context.Context, input TaskPageInput)
 	where := ` WHERE 1=1`
 	args := []any{}
 	waiting := `t.stage='SOURCING' AND t.stage_status='PENDING' AND k.sourcing_next_check_at IS NOT NULL`
-	switch in.Status {
-	case "ATTENTION":
-		where += ` AND t.stage<>'COMPLETED' AND t.stage_status='BLOCKED'`
-	case "WAITING":
-		where += ` AND (` + waiting + `)`
-	case "ACTIVE":
-		where += ` AND t.stage<>'COMPLETED' AND t.stage_status<>'BLOCKED' AND NOT (` + waiting + `)`
-	case "COMPLETED":
-		where += ` AND t.stage='COMPLETED'`
-	}
 	if in.Sort == "INGESTED" {
 		where += ` AND k.ingest_completed_at IS NOT NULL`
 	}
@@ -225,17 +224,46 @@ func (s *RelationalTaskStore) TaskPage(ctx context.Context, input TaskPageInput)
 			}
 		}
 	}
+	scopeWhere := where
+	switch in.Status {
+	case "ATTENTION":
+		where += ` AND t.stage<>'COMPLETED' AND t.stage_status='BLOCKED'`
+	case "WAITING":
+		where += ` AND (` + waiting + `)`
+	case "ACTIVE":
+		where += ` AND t.stage<>'COMPLETED' AND t.stage_status<>'BLOCKED' AND NOT (` + waiting + `)`
+	case "COMPLETED":
+		where += ` AND t.stage='COMPLETED'`
+	}
 	result := TaskPage{Items: []*Task{}, Page: in.Page, PageSize: in.PageSize}
 	result.Stats, err = s.TaskStats(ctx)
 	if err != nil {
 		return result, err
+	}
+	result.FilterCounts = TaskFilterCounts{Total: result.Stats.Total, Completed: result.Stats.Completed, Attention: result.Stats.Attention, Waiting: result.Stats.Waiting}
+	result.FilterCounts.Active = result.FilterCounts.Total - result.FilterCounts.Completed - result.FilterCounts.Attention - result.FilterCounts.Waiting
+	if in.Search == "" && (in.CompletedWithin24Hours || in.IDs != nil || in.Sort == "INGESTED") {
+		// Only aggregates are needed here; keep ordinary SQL-paginated reads bounded.
+		countSQL := `SELECT COUNT(*) AS total,
+   COALESCE(SUM(CASE WHEN t.stage='COMPLETED' THEN 1 ELSE 0 END),0) AS completed,
+   COALESCE(SUM(CASE WHEN t.stage<>'COMPLETED' AND t.stage_status='BLOCKED' THEN 1 ELSE 0 END),0) AS attention,
+   COALESCE(SUM(CASE WHEN ` + waiting + ` THEN 1 ELSE 0 END),0) AS waiting
+   FROM tasks t LEFT JOIN task_checkpoints k ON k.task_id=t.id` + scopeWhere
+		if err = s.core.Reader.GetContext(ctx, &result.FilterCounts, countSQL, args...); err != nil {
+			return result, err
+		}
+		result.FilterCounts.Active = result.FilterCounts.Total - result.FilterCounts.Completed - result.FilterCounts.Attention - result.FilterCounts.Waiting
 	}
 	// Observation-driven search/sorts use only lightweight headers and the current
 	// in-memory observation overlay, never stale persisted progress or full tasks.
 	dynamic := in.Search != "" || in.Sort == "UPDATED" || in.Sort == "PROGRESS"
 	var rows []sqliteTaskRow
 	if dynamic {
-		err = s.core.Reader.SelectContext(ctx, &rows, taskSummarySelect+where, args...)
+		queryWhere := where
+		if in.Search != "" {
+			queryWhere = scopeWhere
+		}
+		err = s.core.Reader.SelectContext(ctx, &rows, taskSummarySelect+queryWhere, args...)
 	} else {
 		err = s.core.Reader.GetContext(ctx, &result.TotalCount, `SELECT count(*) FROM tasks t LEFT JOIN task_checkpoints k ON k.task_id=t.id`+where, args...)
 		if err != nil {
@@ -266,9 +294,27 @@ func (s *RelationalTaskStore) TaskPage(ctx context.Context, input TaskPageInput)
 		result.Items = append(result.Items, task)
 	}
 	if dynamic {
-		return paginateTaskHeaders(result.Items, in, result.Stats), nil
+		page := paginateTaskHeaders(result.Items, in, result.Stats)
+		if in.Search == "" {
+			page.FilterCounts = result.FilterCounts
+		}
+		return page, nil
 	}
 	return result, nil
+}
+
+// Scope predicates are shared by the result list and the counts, excluding only status.
+func taskMatchesPageScope(task *Task, in TaskPageInput, ids map[string]bool, now time.Time) bool {
+	if in.Sort == "INGESTED" && task.IngestCompletedAt == nil {
+		return false
+	}
+	if in.IDs != nil && !ids[task.ID] {
+		return false
+	}
+	if in.CompletedWithin24Hours && (task.Stage != TaskStageCompleted || task.IngestCompletedAt == nil || task.IngestCompletedAt.Before(now.Add(-24*time.Hour)) || task.IngestCompletedAt.After(now)) {
+		return false
+	}
+	return in.Search == "" || strings.Contains(strings.ToLower(strings.Join([]string{task.ID, task.Code, task.TorrentName, string(task.Stage), string(task.StageStatus), task.StageLabel, task.StageStatusLabel, task.StageErrorCode, task.StageErrorMessage, task.QBittorrentState, task.TorrentHash, task.ContentPath, task.TorrentURL, task.StashScanJobID}, " ")), in.Search)
 }
 
 func paginateTaskHeaders(tasks []*Task, in TaskPageInput, stats TaskStats) TaskPage {
@@ -278,24 +324,27 @@ func paginateTaskHeaders(tasks []*Task, in TaskPageInput, stats TaskStats) TaskP
 		ids[id] = true
 	}
 	now := time.Now()
+	counts := TaskFilterCounts{}
 	for _, task := range tasks {
-		if in.Sort == "INGESTED" && task.IngestCompletedAt == nil {
+		if !taskMatchesPageScope(task, in, ids, now) {
 			continue
 		}
-		if in.Status != "ALL" && taskWorkspaceGroup(task) != in.Status {
-			continue
+		counts.Total++
+		switch taskWorkspaceGroup(task) {
+		case "ACTIVE":
+			counts.Active++
+		case "WAITING":
+			counts.Waiting++
+		case "COMPLETED":
+			counts.Completed++
+		case "ATTENTION":
+			counts.Attention++
 		}
-		if in.IDs != nil && !ids[task.ID] {
-			continue
+		if in.Status == "ALL" || taskWorkspaceGroup(task) == in.Status {
+			items = append(items, task)
 		}
-		if in.CompletedWithin24Hours && (task.Stage != TaskStageCompleted || task.IngestCompletedAt == nil || task.IngestCompletedAt.Before(now.Add(-24*time.Hour)) || task.IngestCompletedAt.After(now)) {
-			continue
-		}
-		if in.Search != "" && !strings.Contains(strings.ToLower(strings.Join([]string{task.ID, task.Code, task.TorrentName, string(task.Stage), string(task.StageStatus), task.StageLabel, task.StageStatusLabel, task.StageErrorCode, task.StageErrorMessage, task.QBittorrentState, task.TorrentHash, task.ContentPath, task.TorrentURL, task.StashScanJobID}, " ")), in.Search) {
-			continue
-		}
-		items = append(items, task)
 	}
+
 	sort.SliceStable(items, func(i, j int) bool {
 		a, b := items[i], items[j]
 		switch in.Sort {
@@ -324,7 +373,7 @@ func paginateTaskHeaders(tasks []*Task, in TaskPageInput, stats TaskStats) TaskP
 	pages := max(1, (total+in.PageSize-1)/in.PageSize)
 	page := min(in.Page, pages)
 	start := (page - 1) * in.PageSize
-	return TaskPage{Items: items[start:min(total, start+in.PageSize)], TotalCount: total, Page: page, PageSize: in.PageSize, TotalPages: pages, Stats: stats}
+	return TaskPage{Items: items[start:min(total, start+in.PageSize)], TotalCount: total, Page: page, PageSize: in.PageSize, TotalPages: pages, Stats: stats, FilterCounts: counts}
 }
 
 func readTaskPage(ctx context.Context, store TaskStore, in TaskPageInput) (TaskPage, error) {

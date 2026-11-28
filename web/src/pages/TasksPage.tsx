@@ -1,8 +1,8 @@
 import { workspaceToolbarIcons } from "../components/common/workspace-toolbar/icons";
 import { WorkspaceToolbar } from "../components/common/workspace-toolbar/WorkspaceToolbar";
 import { Pagination } from "../components/common/pagination/Pagination";
-import { ResponsivePageHeading } from "../components/layout/ResponsivePageHeading";
-import { faBarsProgress, faHourglassHalf, faCheckDouble, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { FilterCountHeading } from "../components/layout/FilterCountHeading";
+import { faBarsProgress, faHourglassHalf, faCheckDouble, faTriangleExclamation, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
 import { useAppTimezone } from "../hooks/useAppTimezone";
 import { TaskGroupSection } from "../components/tasks";
 import {
@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import { qbittorrentStateLabel } from "../utils/qbittorrentState";
 
 interface TasksPageProps {
-  serverPage?: { page: number; pageSize: number; totalPages: number; totalCount: number; stats: { total: number; active: number; completed: number; attention: number; waiting: number } };
+  serverPage?: { filterCounts?: { total: number; active: number; waiting: number; completed: number; attention: number } | null; page: number; pageSize: number; totalPages: number; totalCount: number; stats: { total: number; active: number; completed: number; attention: number; waiting: number } } | null;
   selectedTasks?: DashboardTask[];
   selectionLoading?: boolean;
   updatesPending?: boolean;
@@ -91,7 +91,7 @@ export function TasksPage({
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
   const [selectionMode, setSelectionMode] = useState(false);
 
-  const visibleTasks = useMemo(() => {
+  const scopeTasks = useMemo(() => {
     if (serverPage) return tasks;
     const search = deferredTaskSearch;
     let next = tasks.filter((task) => {
@@ -116,6 +116,15 @@ export function TasksPage({
       return haystack.includes(search);
     });
 
+    if (completedWithin24Hours) {
+      const now = Date.now();
+      next = next.filter(task => task.stage === "COMPLETED" && task.ingestCompletedAt && Date.parse(task.ingestCompletedAt) >= now - 86400000 && Date.parse(task.ingestCompletedAt) <= now);
+    }
+    return next;
+  }, [deferredTaskSearch, tasks, completedWithin24Hours, t, serverPage]);
+  const visibleTasks = useMemo(() => {
+    if (serverPage) return tasks;
+    let next = scopeTasks;
     const groupByFilter = { running: "active", completed: "completed", failed: "attention", waiting: "waiting" } as const;
     if (taskStatus !== "all") next = next.filter(task => taskGroup(task) === groupByFilter[taskStatus]);
 
@@ -125,12 +134,8 @@ export function TasksPage({
       progress: (a, b) => b.progress - a.progress
     };
 
-    if (completedWithin24Hours) {
-      const now = Date.now();
-      next = next.filter(task => task.stage === "COMPLETED" && task.ingestCompletedAt && Date.parse(task.ingestCompletedAt) >= now - 86400000 && Date.parse(task.ingestCompletedAt) <= now);
-    }
     return [...next].sort(sorters[taskSort]);
-  }, [deferredTaskSearch, taskSort, taskStatus, tasks, completedWithin24Hours, t, serverPage]);
+  }, [scopeTasks, serverPage, tasks, taskStatus, taskSort]);
 
   const taskGroups = useMemo(() => {
     const order: TaskGroupKey[] = ["attention", "waiting", "active", "completed"];
@@ -150,18 +155,29 @@ export function TasksPage({
     }
     return counts;
   }, [tasks, serverPage]);
+  const filterCounts = useMemo(() => {
+    if (serverPage !== undefined) return serverPage?.filterCounts;
+    const counts = { total: scopeTasks.length, active: 0, waiting: 0, completed: 0, attention: 0 };
+    for (const task of scopeTasks) {
+      const group = taskGroup(task);
+      counts[group === "attention" ? "attention" : group]++;
+    }
+    return counts;
+  }, [serverPage, scopeTasks]);
   const selectedTasks = selectedSnapshots ?? tasks.filter((task) => selectedTaskIds.includes(task.id));
   const { retryIds: retryableIds } = taskBatchEligibility(selectedTasks);
   const hiddenSelectedCount = selectedTaskIds.filter((id) => !visibleTasks.some((task) => task.id === id)).length;
 
   return (
     <section className="section-band section-band--tasks">
-      <ResponsivePageHeading title={t("tasks.title")} variant="metrics" items={[
-        { id: "active", label: t("tasks.filters.running"), icon: faBarsProgress, count: metrics.active },
-        { id: "waiting", label: t("tasks.filters.waiting"), icon: faHourglassHalf, count: metrics.waiting },
-        { id: "completed", label: t("tasks.filters.completed"), icon: faCheckDouble, count: metrics.completed },
-        { id: "attention", label: t("tasks.filters.failed"), icon: faTriangleExclamation, count: metrics.failed },
-      ]} />
+      <FilterCountHeading title={t("tasks.title")} kind="tasks" value={taskStatus} loading={refreshing}
+        onChange={value => onStatusChange(value as TaskStatusFilter)} items={[
+          { id: "all", label: t("tasks.filters.all"), icon: faLayerGroup, count: filterCounts?.total },
+          { id: "running", label: t("tasks.filters.running"), icon: faBarsProgress, count: filterCounts?.active },
+          { id: "waiting", label: t("tasks.filters.waiting"), icon: faHourglassHalf, count: filterCounts?.waiting },
+          { id: "completed", label: t("tasks.filters.completed"), icon: faCheckDouble, count: filterCounts?.completed },
+          { id: "failed", label: t("tasks.filters.failed"), icon: faTriangleExclamation, count: filterCounts?.attention },
+        ]} />
 
       {completedWithin24Hours ? <p className="home-muted">{t("workbench.recentFilter")} · <button type="button" className="ghost-button" onClick={onClearCompletedWindow}>{t("workbench.clearRecentFilter")}</button></p> : null}
       <WorkspaceToolbar selecting={selectionMode} toggleLabel={t(selectionMode ? "taskBatch.exitMultiSelect" : "taskBatch.multiSelect")}
@@ -169,7 +185,6 @@ export function TasksPage({
         selectionLabel={t("taskBatch.selectionActions")}
         normal={{
           search: { label: t("tasks.searchPlaceholder"), value: taskSearch, onChange: onSearchChange }, filters: [
-            { id: "status", label: t("tasks.statusLabel"), value: taskStatus, onChange: value => onStatusChange(value as TaskStatusFilter), options: (["all", "failed", "waiting", "running", "completed"] as const).map(value => ({ value, label: t(`tasks.filters.${value}`) })) },
             { id: "sort", label: t("tasks.sortLabel"), value: taskSort, onChange: value => onSortChange(value as TaskSortKey), options: (["createdAt", "updatedAt", "progress"] as const).map(value => ({ value, label: t(`tasks.sorts.${value}`) })) },
           ], actions: [
             { id: "refresh", label: t("common.refresh"), icon: workspaceToolbarIcons.refresh, onClick: onRefresh, disabled: refreshing, busy: refreshing, spinning: refreshing },

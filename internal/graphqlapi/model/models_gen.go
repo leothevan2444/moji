@@ -844,6 +844,15 @@ type PerformerCheckActivity struct {
 	Status      SubscriptionCheckStatus `json:"status"`
 }
 
+type PerformerFilterCounts struct {
+	Total      int `json:"total"`
+	Subscribed int `json:"subscribed"`
+	Favorite   int `json:"favorite"`
+	// Actors with pending reviews; null when review counts could not be read.
+	Review *int `json:"review,omitempty"`
+	Error  int  `json:"error"`
+}
+
 type PerformerLatestRelease struct {
 	Code  string `json:"code"`
 	Title string `json:"title"`
@@ -882,6 +891,7 @@ type PerformerSubscriptionEvent struct {
 }
 
 type PerformerWorkspaceSnapshot struct {
+	FilterCounts *PerformerFilterCounts `json:"filterCounts,omitempty"`
 	// Saved activity for visible page actors only; never reads StashBox
 	Activities           []*PerformerActivity      `json:"activities"`
 	Performers           *StashPerformerConnection `json:"performers"`
@@ -1749,15 +1759,25 @@ type TaskFilmSource struct {
 	Endpoint string `json:"endpoint"`
 }
 
+type TaskFilterCounts struct {
+	Total     int `json:"total"`
+	Active    int `json:"active"`
+	Waiting   int `json:"waiting"`
+	Completed int `json:"completed"`
+	Attention int `json:"attention"`
+}
+
 type TaskPage struct {
-	Items      []*TaskSummary  `json:"items"`
-	TotalCount int             `json:"totalCount"`
-	Page       int             `json:"page"`
-	PageSize   int             `json:"pageSize"`
-	TotalPages int             `json:"totalPages"`
-	Sequence   int             `json:"sequence"`
-	StreamID   string          `json:"streamId"`
-	Stats      *DashboardStats `json:"stats"`
+	Items      []*TaskSummary `json:"items"`
+	TotalCount int            `json:"totalCount"`
+	Page       int            `json:"page"`
+	PageSize   int            `json:"pageSize"`
+	TotalPages int            `json:"totalPages"`
+	Sequence   int            `json:"sequence"`
+	StreamID   string         `json:"streamId"`
+	// Counts within the search/time scope, before the status filter and pagination.
+	FilterCounts *TaskFilterCounts `json:"filterCounts,omitempty"`
+	Stats        *DashboardStats   `json:"stats"`
 }
 
 type TaskPageInput struct {

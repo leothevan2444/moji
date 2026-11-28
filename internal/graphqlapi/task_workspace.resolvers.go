@@ -38,7 +38,7 @@ func (r *queryResolver) TaskPage(ctx context.Context, input model.TaskPageInput)
 	if err != nil {
 		return nil, err
 	}
-	result := &model.TaskPage{Items: []*model.TaskSummary{}, Page: 1, PageSize: 24, TotalPages: 1, Stats: &model.DashboardStats{}}
+	result := &model.TaskPage{Items: []*model.TaskSummary{}, Page: 1, PageSize: 24, TotalPages: 1, Stats: &model.DashboardStats{}, FilterCounts: &model.TaskFilterCounts{}}
 	if source == nil {
 		return result, nil
 	}
@@ -65,7 +65,7 @@ func (r *queryResolver) TaskPage(ctx context.Context, input model.TaskPageInput)
 	if err != nil {
 		return nil, err
 	}
-	return &model.TaskPage{Items: taskSummaryModels(page.Items), TotalCount: page.TotalCount, Page: page.Page, PageSize: page.PageSize, TotalPages: page.TotalPages, Sequence: page.Sequence, StreamID: page.StreamID, Stats: workspaceStatsToModel(page.Stats)}, nil
+	return &model.TaskPage{Items: taskSummaryModels(page.Items), TotalCount: page.TotalCount, Page: page.Page, PageSize: page.PageSize, TotalPages: page.TotalPages, Sequence: page.Sequence, StreamID: page.StreamID, Stats: workspaceStatsToModel(page.Stats), FilterCounts: &model.TaskFilterCounts{Total: page.FilterCounts.Total, Active: page.FilterCounts.Active, Waiting: page.FilterCounts.Waiting, Completed: page.FilterCounts.Completed, Attention: page.FilterCounts.Attention}}, nil
 }
 
 // TaskSummaries is the resolver for the taskSummaries field.

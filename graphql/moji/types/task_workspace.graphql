@@ -36,6 +36,13 @@ type TaskSummary {
   createdAt: String!
   updatedAt: String!
 }
+type TaskFilterCounts {
+  total: Int!
+  active: Int!
+  waiting: Int!
+  completed: Int!
+  attention: Int!
+}
 type TaskPage {
   items: [TaskSummary!]!
   totalCount: Int!
@@ -44,6 +51,8 @@ type TaskPage {
   totalPages: Int!
   sequence: Int!
   streamId: String!
+  "Counts within the search/time scope, before the status filter and pagination."
+  filterCounts: TaskFilterCounts
   stats: DashboardStats!
 }
 type TaskAttentionQueue {

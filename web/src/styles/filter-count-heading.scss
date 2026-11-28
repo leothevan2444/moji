@@ -1,0 +1,105 @@
+@use "tokens" as *;
+
+.filter-count-heading.band-head {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  position: relative;
+  gap: 8px;
+  h2 { font-size: 24px; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  > .filter-count__items { justify-self: end; }
+  &.is-wrapped {
+    grid-template-columns: minmax(0, 1fr);
+    > .filter-count__items { grid-column: 1; flex-wrap: wrap; max-width: 100%; }
+  }
+}
+.filter-count__items {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: max-content;
+  min-width: 0;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--muted) 4%, var(--surface));
+}
+.filter-count__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  gap: 6px;
+  min-width: 38px;
+  min-height: 32px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: $radius-md;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: pointer;
+  &:hover { color: var(--text); background: var(--surface-strong); transform: none; }
+  &.is-active { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  &:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .filter-count__identity > svg { flex: 0 0 auto; width: 14px; }
+}
+.filter-count__identity { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; max-width: 100%; }
+.filter-count__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.filter-count__number { flex: 0 0 auto; min-width: 2ch; padding: 0 5px; border-radius: 5px; background: color-mix(in srgb, currentColor 8%, transparent); font-variant-numeric: tabular-nums; text-align: center; }
+// Identical real/probe styles keep density decisions based on rendered content.
+.filter-count__items:is(.is-stacked, .is-selected, .is-icons) {
+  gap: 2px;
+  padding: 2px;
+  .filter-count__item {
+    flex-direction: column;
+    gap: 2px;
+    min-width: 38px;
+    min-height: 40px;
+    padding: 4px;
+    line-height: 14px;
+  }
+  .filter-count__number { padding: 0 3px; font-size: 11px; line-height: 14px; }
+}
+.filter-count__items.is-selected .filter-count__item:not(.is-active) .filter-count__label,
+.filter-count__items.is-icons .filter-count__label { display: none; }
+.filter-count__measurement {
+  position: absolute; width: 0; height: 0; overflow: hidden; visibility: hidden; pointer-events: none;
+  > h2, > .filter-count__items { width: max-content; max-width: none; }
+}
+@media (pointer: coarse) {
+  .filter-count__item,
+  .filter-count__items:is(.is-stacked, .is-selected, .is-icons) .filter-count__item { min-height: 44px; min-width: 44px; }
+}
+
+// A single decorative window follows the selected button; contents stay in place.
+.filter-count__items[data-window-ready] {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    box-sizing: border-box;
+    width: var(--selection-width);
+    height: var(--selection-height);
+    transform: translate(var(--selection-x), var(--selection-y));
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+    border-radius: $radius-md;
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    pointer-events: none;
+    // Geometry is written per frame; a second transition would introduce lag.
+    z-index: -1;
+  }
+  .filter-count__item.is-active { border-color: transparent; background: transparent; }
+}
+.filter-count__item { transition: width $transition-base, color $transition-base; }
+@media (prefers-reduced-motion: reduce) {
+  .filter-count__items[data-window-ready]::before,
+  .filter-count__item { transition: none; }
+}

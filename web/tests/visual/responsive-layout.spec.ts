@@ -114,58 +114,63 @@ for(const locale of ["zh-CN","en","qps-ploc","ar-XB"] as const) {
 
 // Exercise every stage with large text as well as the normal translated headings.
 // Widths come from rendered content so this guards the order, not fixed breakpoints.
-for (const variant of ["metrics", "filters"] as const) {
+for (const variant of ["tasks", "performers"] as const) {
  test.describe(`responsive ${variant}`, () => {
   test.use({graphqlOverrides:{...catalog,settings:{...settingsSnapshot,system:{...settingsSnapshot.system,language:"zh-CN"}}}});
   test("icons precede wrapping and wrapped labels return when they fit",async({page},info)=>{
     await page.setViewportSize({width:2000,height:1000});
-    await page.goto(variant==="metrics"?"/tasks":"/performers");
-    const heading=page.locator(`.responsive-heading--${variant}`);
+    await page.goto(variant==="tasks"?"/tasks":"/performers");
+    const heading=page.locator(`.filter-count-heading--${variant}`);
     await expect(heading).toBeVisible();
-    const largeText=await page.addStyleTag({content:".responsive-heading h2 {font-size:128px}"});
+    const largeText=await page.addStyleTag({content:".filter-count-heading h2 {font-size:128px!important}"});
     const widths=await heading.evaluate(node=>{
-      const probes=node.querySelector(".responsive-heading__measurement")!;
+      const probes=node.querySelector(".filter-count__measurement")!;
       const title=probes.querySelector("h2")!.scrollWidth;
-      const [full,icons]=[...probes.querySelectorAll(".responsive-heading__items")].map(item=>item.scrollWidth);
+      const groups=[...probes.querySelectorAll(".filter-count__items")].map(item=>item.scrollWidth);
       const gap=parseFloat(getComputedStyle(node).columnGap);
-      return {full,icons,title,gap};
+      return {groups,title,gap};
     });
-    const labels=Math.ceil(widths.title+widths.gap+widths.full+2);
-    const icons=Math.ceil(widths.title+widths.gap+widths.icons+2);
-    const wrapped=Math.ceil(widths.full+2);
-    expect(icons).toBeGreaterThan(wrapped+4);
+    const modes=["inline","stacked","selected","icons"];
+    const thresholds=widths.groups.map(width=>Math.ceil(widths.title+widths.gap+width+2));
+    expect(thresholds[3]).toBeGreaterThan(widths.groups[0]+4);
     const stages=[
-      {width:labels+2,compact:false,wrap:false},
-      {width:labels-3,compact:true,wrap:false},
-      {width:icons+2,compact:true,wrap:false},
-      {width:icons-3,compact:false,wrap:true},
-      {width:wrapped+2,compact:false,wrap:true},
-      {width:wrapped-3,compact:true,wrap:true},
+      {width:thresholds[0]+2,density:"inline",wrap:false},
+      ...thresholds.slice(0,3).map((width,index)=>({width:width-3,density:modes[index+1],wrap:false})),
+      {width:thresholds[3]-3,density:"inline",wrap:true},
+      ...widths.groups.slice(0,3).map((width,index)=>({width:width-1,density:modes[index+1],wrap:true})),
     ];
-    const group=heading.locator(":scope > .responsive-heading__items");
+    const group=heading.locator(":scope > .filter-count__items");
     const names=await group.locator(":scope > *").evaluateAll(items=>items.map(item=>item.getAttribute("aria-label")));
-    if(variant==="filters") await group.getByRole("button").first().focus();
+    if(variant==="performers") await group.getByRole("button").first().focus();
     for(const [index,stage] of [...stages,...stages.slice().reverse()].entries()) {
       await heading.evaluate((node,width)=>{(node as HTMLElement).style.width=`${width}px`;},stage.width);
-      await expect.poll(()=>heading.evaluate(node=>({compact:node.classList.contains("is-compact"),wrap:node.classList.contains("is-wrapped")}))).toEqual({compact:stage.compact,wrap:stage.wrap});
+      await expect.poll(()=>heading.evaluate(node=>({density:node.querySelector("[role=toolbar]")!.getAttribute("data-density"),wrap:node.classList.contains("is-wrapped")}))).toEqual({density:stage.density,wrap:stage.wrap});
       await contained(heading);
-      await expect(group.locator("svg")).toHaveCount(stage.compact?(variant==="metrics"?4:5):0);
-      expect(await group.locator(":scope > *").evaluateAll(items=>items.map(item=>item.getAttribute("aria-label")))).toEqual(names);
-      if(variant==="metrics") {
-        await expect(group.locator(".responsive-heading__count")).toHaveCount(4);
-        await expect(group.getByRole("img")).toHaveCount(4);
+      await expect(group.locator("svg")).toHaveCount(5);
+      if(stage.density==="icons") await expect(group.locator(".is-active .filter-count__label")).toBeHidden();
+      else await expect(group.locator(".is-active .filter-count__label")).toBeVisible();
+      for(const label of await group.locator(".filter-count__item:not(.is-active) .filter-count__label").all()) {
+        if(["selected","icons"].includes(stage.density)) await expect(label).toBeHidden();
+        else await expect(label).toBeVisible();
       }
-      else {
-        await expect(group.getByRole("button").first()).toBeFocused();
-        // Native tooltips must identify all filters when their text is hidden.
-        for (const [index, name] of names.entries()) {
-          await expect(group.getByRole("button").nth(index)).toHaveAttribute("title", name!);
-        }
+      const geometry=await group.getByRole("button").first().evaluate(node=>{
+        const identity=node.querySelector(".filter-count__identity")!,number=node.querySelector(".filter-count__number")!;
+        const a=identity.getBoundingClientRect(),b=number.getBoundingClientRect();
+        return {below:b.top>=a.bottom-1,right:b.left>=a.right-1,font:parseFloat(getComputedStyle(number).fontSize)};
+      });
+      expect(geometry.below).toBe(stage.density!=="inline");
+      if(stage.density==="inline") expect(geometry.right).toBe(true);
+      expect(geometry.font).toBe(stage.density==="inline"?12:11);
+      await expect(group.locator(".filter-count__number")).toHaveCount(5);
+      expect(await group.locator(":scope > *").evaluateAll(items=>items.map(item=>item.getAttribute("aria-label")))).toEqual(names);
+      for (const [index, name] of names.entries()) {
+        await expect(group.getByRole("button").nth(index)).toHaveAttribute("title", new RegExp(name!.split(" ")[0]));
       }
       if(index<stages.length) await capture(heading,info,`${variant}-stage-${index}`);
     }
     await largeText.evaluate(node=>{node.parentNode?.removeChild(node);});
     await heading.evaluate(node=>{(node as HTMLElement).style.removeProperty("width");});
+    await expect(heading.locator(":scope > h2")).toHaveCSS("font-size","24px");
     for(const zoom of [0.8,1,1.25]) {
       await page.evaluate(value=>{document.documentElement.style.zoom=String(value);},zoom);
       for(const width of [1200,800,600,400,320,800,1200]) {
@@ -174,9 +179,9 @@ for (const variant of ["metrics", "filters"] as const) {
         await contained(heading);
       }
     }
-    if(variant==="filters") {
-      await group.getByRole("button",{name:"Stash 收藏",exact:true}).click();
-      await expect(group.getByRole("button",{name:"Stash 收藏",exact:true})).toHaveAttribute("aria-pressed","true");
+    if(variant==="performers") {
+      await group.getByRole("button",{name:/^Stash 收藏 /}).click();
+      await expect(group.getByRole("button",{name:/^Stash 收藏 /})).toHaveAttribute("aria-pressed","true");
     }
   });
  });

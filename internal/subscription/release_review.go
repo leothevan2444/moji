@@ -187,6 +187,34 @@ func (s *Service) SynchronizeReleaseReviewTasks(ctx context.Context) error {
 	return nil
 }
 
+// PendingReviewPerformerCounts summarizes local review state without fetching
+// actor names or a second Stash snapshot. Unsubscribed actors remain included.
+func (s *Service) PendingReviewPerformerCounts(ctx context.Context) (map[string]int, error) {
+	s.reviewMu.Lock()
+	defer s.reviewMu.Unlock()
+	records, err := s.reviewRecordsLocked(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.reconcileReviewTasksLocked(ctx, records); err != nil {
+		return nil, err
+	}
+	counts := map[string]int{}
+	for _, record := range records {
+		if record.Status != ReviewPending {
+			continue
+		}
+		seen := map[string]bool{}
+		for _, actor := range record.Performers {
+			if !seen[actor.ID] {
+				counts[actor.ID]++
+				seen[actor.ID] = true
+			}
+		}
+	}
+	return counts, nil
+}
+
 func (s *Service) ListReleaseReviews(ctx context.Context, query ReleaseReviewQuery) (ReleaseReviewPage, error) {
 	s.reviewMu.Lock()
 	defer s.reviewMu.Unlock()

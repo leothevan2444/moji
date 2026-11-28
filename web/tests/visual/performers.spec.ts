@@ -18,13 +18,14 @@ const scenes = Array.from({ length: 30 }, (_, index) => ({
 
 const graphqlOverrides = {
   performerWorkspace: ({ search = "", page = 1, pageSize = 24, options }: { search?: string | null; page?: number; pageSize?: number; options?: { filter: string; sort: string; }; }) => {
-    let items = actors.filter(actor => actor.name.toLowerCase().includes((search ?? "").toLowerCase()));
+    let items = actors.filter(actor => [actor.name,...actor.aliasList].some(text=>text.toLowerCase().includes((search ?? "").toLowerCase())));
+    const filterCounts={total:items.length,subscribed:items.filter(a=>a.subscribed).length,favorite:items.filter(a=>a.favorite).length,review:items.filter(a=>a.id==="actor-24").length,error:items.filter(a=>a.id==="actor-1").length};
     if (options?.filter === "SUBSCRIBED") items = items.filter(actor => actor.subscribed);
     if (options?.filter === "FAVORITE") items = items.filter(actor => actor.favorite);
     if (options?.filter === "REVIEW") items = items.filter(actor => actor.id === "actor-24");
     if (options?.filter === "ERROR") items = items.filter(actor => actor.id === "actor-1");
     if (options?.sort === "NAME") items.sort((a, b) => a.name.localeCompare(b.name));
-    return { activities: items.slice((page - 1) * pageSize, page * pageSize).map(actor=>{const rank=actor.id==="actor-0"?4:actor.id==="actor-2"?1:actor.id==="actor-3"?5:null;return {id:actor.id,value:rank===4?3.25:rank===1?0:rank===5?9:null,rank,lowerBound:false,evaluationStatus:rank?"READY":"NOT_CHECKED",observedAt:rank?"2026-01-15T12:00:00Z":null};}), performers: { items: items.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: items.length, totalPages: Math.ceil(items.length / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < items.length }, subscribedPerformers: states };
+    return { filterCounts, activities: items.slice((page - 1) * pageSize, page * pageSize).map(actor=>{const rank=actor.id==="actor-0"?4:actor.id==="actor-2"?1:actor.id==="actor-3"?5:null;return {id:actor.id,value:rank===4?3.25:rank===1?0:rank===5?9:null,rank,lowerBound:false,evaluationStatus:rank?"READY":"NOT_CHECKED",observedAt:rank?"2026-01-15T12:00:00Z":null};}), performers: { items: items.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: items.length, totalPages: Math.ceil(items.length / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < items.length }, subscribedPerformers: states };
   },
   stashPerformerDetail: { latestRelease: {code:"NEW-001",title:"Latest source release, independent of check history",date:"2026-01-14"}, performer: actors[0], disambiguation: "Profile information remains readable on small screens.", birthdate: "2000-01-01", ethnicity: null, country: "JP", eyeColor: null, heightCm: 165, rating100: null, urls: [], matchedStashBox: { name: "Example StashBox", endpoint: "https://example.com/graphql", performerId: "remote-0", performerName: actors[0].name }, totalSceneCount: 30, stashSceneCount: 10, stashBoxSceneCount: 30, dedupedSceneCount: 30, activeTaskCount: 2, sceneStatsComplete: true, sceneStatsStale: false },
   stashPerformerScenes: ({ input }: { input: { page?: number; pageSize?: number; }; }) => { const page = input.page ?? 1, pageSize = input.pageSize ?? 24; return { items: scenes.slice((page - 1) * pageSize, page * pageSize), page, pageSize, totalCount: 30, totalPages: Math.ceil(30 / pageSize), hasPrevPage: page > 1, hasNextPage: page * pageSize < 30, stashSceneCount: 10, stashBoxCount: 30, dedupedCount: 30, totalCountExact: true, stashBoxRemoteCount: 30, stashBoxLoadedCount: 30, cacheComplete: true, cacheUpdatedAt: "2026-01-15T11:30:00Z", cacheStale: false }; },
@@ -124,7 +125,7 @@ test("performer selection survives pagination and filters", async ({ page }) => 
   await expect(page.locator(".profile-card")).toHaveCount(1);
   await page.locator(".profile-card input[type=checkbox]").check();
   await expect(page.getByRole("region", { name: "Selected performer actions" })).toContainText("2 performers selected");
-  await page.getByRole("button", { name: "Awaiting review", exact: true }).click();
+  await page.getByRole("button", { name: /^Awaiting review / }).click();
   await expect(page).toHaveURL(/filter=review/);
   await expect(page.locator(".profile-card input[type=checkbox]")).toBeChecked();
   await expect(page.getByRole("region", { name: "Selected performer actions" })).toContainText("2 performers selected");

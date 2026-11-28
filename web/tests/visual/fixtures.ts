@@ -190,6 +190,7 @@ const rootValue = {
   subscriptionCheckHistory: [],
   performerActivity: ({id}:{id:string}) => ({id,evaluationStatus:"READY",value:3.25,rank:4,lowerBound:false,observedAt:now,lastSuccessAt:now,nextCheckAt:"2026-01-18T12:00:00Z"}),
   performerWorkspace: {
+    filterCounts: {total:0,subscribed:0,favorite:0,review:0,error:0},
     activities: [],
     performers: {
       items: [], page: 1, pageSize: 24, totalCount: 0, totalPages: 1,
@@ -222,12 +223,14 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
     effective.taskAttentionQueue ??= () => ({...cursor(),items:taskArray().filter(task=>group(task)==="ATTENTION").sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).map(taskDefaults)});
     effective.taskPage ??= ({input}:{input:{page:number;pageSize:number;status:string;sort:string;search?:string;completedWithin24Hours?:boolean;ids?:string[]}}) => {
       input=Object.assign({page:1,pageSize:24,status:"ALL",sort:"CREATED"},input);
-      const all=taskArray(); let items=all.filter(task=>(input.status==="ALL"||group(task)===input.status)&&(!input.ids||input.ids.includes(task.id))&&(!input.search||`${task.code} ${task.torrentName??""}`.toLowerCase().includes(input.search.toLowerCase())));
-      if(input.completedWithin24Hours)items=items.filter(task=>task.stage==="COMPLETED"&&Date.parse(task.ingestCompletedAt)>=Date.parse(now)-86400000);
+      const all=taskArray(); let scope=all.filter(task=>(!input.ids||input.ids.includes(task.id))&&(!input.search||`${task.code} ${task.torrentName??""}`.toLowerCase().includes(input.search.toLowerCase())));
+      if(input.completedWithin24Hours)scope=scope.filter(task=>task.stage==="COMPLETED"&&Date.parse(task.ingestCompletedAt)>=Date.parse(now)-86400000&&Date.parse(task.ingestCompletedAt)<=Date.parse(now));
+      const filterCounts={total:scope.length,active:scope.filter(t=>group(t)==="ACTIVE").length,waiting:scope.filter(t=>group(t)==="WAITING").length,completed:scope.filter(t=>group(t)==="COMPLETED").length,attention:scope.filter(t=>group(t)==="ATTENTION").length};
+      const items=scope.filter(task=>input.status==="ALL"||group(task)===input.status);
       items.sort((a,b)=> input.sort==="PROGRESS"?(b.progress-a.progress||a.id.localeCompare(b.id)):input.sort==="UPDATED"?b.updatedAt.localeCompare(a.updatedAt)||a.id.localeCompare(b.id):b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id));
       const totalPages=Math.max(1,Math.ceil(items.length/input.pageSize)); const page=Math.min(input.page,totalPages);
       const completed=all.filter(t=>group(t)==="COMPLETED").length,attention=all.filter(t=>group(t)==="ATTENTION").length,waiting=all.filter(t=>group(t)==="WAITING").length;
-      return {items:items.slice((page-1)*input.pageSize,page*input.pageSize).map(taskDefaults),page,pageSize:input.pageSize,totalPages,totalCount:items.length,...cursor(),stats:{total:all.length,active:all.length-completed,completed,attention,waiting,downloading:0,pendingScans:0,failed:attention}};
+      return {filterCounts,items:items.slice((page-1)*input.pageSize,page*input.pageSize).map(taskDefaults),page,pageSize:input.pageSize,totalPages,totalCount:items.length,...cursor(),stats:{total:all.length,active:all.length-completed,completed,attention,waiting,downloading:0,pendingScans:0,failed:attention}};
     };
     await page.addInitScript(() => {
       const originalFetch = window.fetch.bind(window);

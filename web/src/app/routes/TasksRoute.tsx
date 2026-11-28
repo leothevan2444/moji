@@ -59,7 +59,7 @@ export function Component() {
   const input = useMemo(() => ({ search, page: filter.page ?? 1, pageSize: filter.pageSize ?? 24,
     status: ({ all: TaskListStatus.All, running: TaskListStatus.Active, failed: TaskListStatus.Attention, waiting: TaskListStatus.Waiting, completed: TaskListStatus.Completed })[filter.status],
     sort: ({ createdAt: TaskListSort.Created, updatedAt: TaskListSort.Updated, progress: TaskListSort.Progress })[filter.sort],
-    completedWithin24Hours: searchParams.get("completedWithin") === "24h" && filter.status === "completed"
+    completedWithin24Hours: searchParams.get("completedWithin") === "24h"
   }), [search, filter.page, filter.pageSize, filter.status, filter.sort, searchParams]);
   const [{ data, fetching, error }, refresh] = useQuery({ query: TasksWorkspaceDocument, variables: { input }, requestPolicy: "cache-and-network" });
   const [{ data: detailData, fetching: detailFetching, error: detailError }] = useTaskDetail(taskId);
@@ -131,7 +131,7 @@ export function Component() {
   };
   const updateFilter = (patch: Partial<{ q: string; status: TaskStatusFilter; sort: TaskSortKey }>) => {
     const next = serializeTaskSearchParams({ ...filter, ...patch, page: 1 });
-    if (searchParams.get("completedWithin") === "24h" && (!patch.status || patch.status === "completed")) next.set("completedWithin", "24h");
+    if (searchParams.get("completedWithin") === "24h") next.set("completedWithin", "24h");
     setSearchParams(next);
   };
 
@@ -198,10 +198,10 @@ export function Component() {
 
   if (error && !data) return <div className="empty-card"><h3>{t("taskRoute.loadFailed")}</h3><p>{describeQueryError(error)}</p><button type="button" onClick={requery}>{t("common.retry")}</button></div>;
   return <>
-    <TasksPage tasks={tasks} serverPage={data?.taskPage ? { ...data.taskPage, stats: data.taskPage.stats } : undefined}
+    <TasksPage tasks={tasks} serverPage={data?.taskPage ? { ...data.taskPage, stats: data.taskPage.stats } : null}
       selectedTasks={selectedTasks} selectionLoading={selectionFetching} updatesPending={updatesPending}
       onPageChange={page => { const next = serializeTaskSearchParams({ ...filter, page }); if (input.completedWithin24Hours) next.set("completedWithin", "24h"); setSearchParams(next); }}
-      onPageSizeChange={pageSize => { const next = serializeTaskSearchParams({ ...filter, pageSize, page: 1 }); if (input.completedWithin24Hours) next.set("completedWithin", "24h"); setSearchParams(next); }} completedWithin24Hours={searchParams.get("completedWithin") === "24h" && filter.status === "completed"}
+      onPageSizeChange={pageSize => { const next = serializeTaskSearchParams({ ...filter, pageSize, page: 1 }); if (input.completedWithin24Hours) next.set("completedWithin", "24h"); setSearchParams(next); }} completedWithin24Hours={searchParams.get("completedWithin") === "24h"}
       onClearCompletedWindow={() => { const next = new URLSearchParams(searchParams); next.delete("completedWithin"); setSearchParams(next); }}
       taskSearch={filter.q} taskStatus={filter.status} taskSort={filter.sort} taskGroupOpen={groups}
       pendingTaskRetryId={pendingRetry} pendingTaskDeleteId={pendingDelete} selectedTaskIds={selectedTaskIds}

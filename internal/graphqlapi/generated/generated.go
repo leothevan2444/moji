@@ -782,6 +782,14 @@ type ComplexityRoot struct {
 		Status      func(childComplexity int) int
 	}
 
+	PerformerFilterCounts struct {
+		Error      func(childComplexity int) int
+		Favorite   func(childComplexity int) int
+		Review     func(childComplexity int) int
+		Subscribed func(childComplexity int) int
+		Total      func(childComplexity int) int
+	}
+
 	PerformerLatestRelease struct {
 		Code  func(childComplexity int) int
 		Date  func(childComplexity int) int
@@ -816,6 +824,7 @@ type ComplexityRoot struct {
 
 	PerformerWorkspaceSnapshot struct {
 		Activities           func(childComplexity int) int
+		FilterCounts         func(childComplexity int) int
 		Performers           func(childComplexity int) int
 		SubscribedPerformers func(childComplexity int) int
 	}
@@ -1503,15 +1512,24 @@ type ComplexityRoot struct {
 		Name     func(childComplexity int) int
 	}
 
+	TaskFilterCounts struct {
+		Active    func(childComplexity int) int
+		Attention func(childComplexity int) int
+		Completed func(childComplexity int) int
+		Total     func(childComplexity int) int
+		Waiting   func(childComplexity int) int
+	}
+
 	TaskPage struct {
-		Items      func(childComplexity int) int
-		Page       func(childComplexity int) int
-		PageSize   func(childComplexity int) int
-		Sequence   func(childComplexity int) int
-		Stats      func(childComplexity int) int
-		StreamID   func(childComplexity int) int
-		TotalCount func(childComplexity int) int
-		TotalPages func(childComplexity int) int
+		FilterCounts func(childComplexity int) int
+		Items        func(childComplexity int) int
+		Page         func(childComplexity int) int
+		PageSize     func(childComplexity int) int
+		Sequence     func(childComplexity int) int
+		Stats        func(childComplexity int) int
+		StreamID     func(childComplexity int) int
+		TotalCount   func(childComplexity int) int
+		TotalPages   func(childComplexity int) int
 	}
 
 	TaskStashScene struct {
@@ -5860,6 +5878,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.PerformerCheckActivity.Status(childComplexity), true
 
+	case "PerformerFilterCounts.error":
+		if e.complexity.PerformerFilterCounts.Error == nil {
+			break
+		}
+
+		return e.complexity.PerformerFilterCounts.Error(childComplexity), true
+
+	case "PerformerFilterCounts.favorite":
+		if e.complexity.PerformerFilterCounts.Favorite == nil {
+			break
+		}
+
+		return e.complexity.PerformerFilterCounts.Favorite(childComplexity), true
+
+	case "PerformerFilterCounts.review":
+		if e.complexity.PerformerFilterCounts.Review == nil {
+			break
+		}
+
+		return e.complexity.PerformerFilterCounts.Review(childComplexity), true
+
+	case "PerformerFilterCounts.subscribed":
+		if e.complexity.PerformerFilterCounts.Subscribed == nil {
+			break
+		}
+
+		return e.complexity.PerformerFilterCounts.Subscribed(childComplexity), true
+
+	case "PerformerFilterCounts.total":
+		if e.complexity.PerformerFilterCounts.Total == nil {
+			break
+		}
+
+		return e.complexity.PerformerFilterCounts.Total(childComplexity), true
+
 	case "PerformerLatestRelease.code":
 		if e.complexity.PerformerLatestRelease.Code == nil {
 			break
@@ -5985,6 +6038,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PerformerWorkspaceSnapshot.Activities(childComplexity), true
+
+	case "PerformerWorkspaceSnapshot.filterCounts":
+		if e.complexity.PerformerWorkspaceSnapshot.FilterCounts == nil {
+			break
+		}
+
+		return e.complexity.PerformerWorkspaceSnapshot.FilterCounts(childComplexity), true
 
 	case "PerformerWorkspaceSnapshot.performers":
 		if e.complexity.PerformerWorkspaceSnapshot.Performers == nil {
@@ -9655,6 +9715,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TaskFilmSource.Name(childComplexity), true
 
+	case "TaskFilterCounts.active":
+		if e.complexity.TaskFilterCounts.Active == nil {
+			break
+		}
+
+		return e.complexity.TaskFilterCounts.Active(childComplexity), true
+
+	case "TaskFilterCounts.attention":
+		if e.complexity.TaskFilterCounts.Attention == nil {
+			break
+		}
+
+		return e.complexity.TaskFilterCounts.Attention(childComplexity), true
+
+	case "TaskFilterCounts.completed":
+		if e.complexity.TaskFilterCounts.Completed == nil {
+			break
+		}
+
+		return e.complexity.TaskFilterCounts.Completed(childComplexity), true
+
+	case "TaskFilterCounts.total":
+		if e.complexity.TaskFilterCounts.Total == nil {
+			break
+		}
+
+		return e.complexity.TaskFilterCounts.Total(childComplexity), true
+
+	case "TaskFilterCounts.waiting":
+		if e.complexity.TaskFilterCounts.Waiting == nil {
+			break
+		}
+
+		return e.complexity.TaskFilterCounts.Waiting(childComplexity), true
+
+	case "TaskPage.filterCounts":
+		if e.complexity.TaskPage.FilterCounts == nil {
+			break
+		}
+
+		return e.complexity.TaskPage.FilterCounts(childComplexity), true
+
 	case "TaskPage.items":
 		if e.complexity.TaskPage.Items == nil {
 			break
@@ -12414,7 +12516,17 @@ type StashPerformerConnection {
   hasNextPage: Boolean!
 }
 
+type PerformerFilterCounts {
+  total: Int!
+  subscribed: Int!
+  favorite: Int!
+  "Actors with pending reviews; null when review counts could not be read."
+  review: Int
+  error: Int!
+}
+
 type PerformerWorkspaceSnapshot {
+  filterCounts: PerformerFilterCounts
  "Saved activity for visible page actors only; never reads StashBox"
  activities: [PerformerActivity!]!
   performers: StashPerformerConnection!
@@ -13029,6 +13141,13 @@ type TaskSummary {
   createdAt: String!
   updatedAt: String!
 }
+type TaskFilterCounts {
+  total: Int!
+  active: Int!
+  waiting: Int!
+  completed: Int!
+  attention: Int!
+}
 type TaskPage {
   items: [TaskSummary!]!
   totalCount: Int!
@@ -13037,6 +13156,8 @@ type TaskPage {
   totalPages: Int!
   sequence: Int!
   streamId: String!
+  "Counts within the search/time scope, before the status filter and pagination."
+  filterCounts: TaskFilterCounts
   stats: DashboardStats!
 }
 type TaskAttentionQueue {
@@ -43805,6 +43926,223 @@ func (ec *executionContext) fieldContext_PerformerCheckActivity_status(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _PerformerFilterCounts_total(ctx context.Context, field graphql.CollectedField, obj *model.PerformerFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerFilterCounts_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerFilterCounts_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerFilterCounts_subscribed(ctx context.Context, field graphql.CollectedField, obj *model.PerformerFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerFilterCounts_subscribed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subscribed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerFilterCounts_subscribed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerFilterCounts_favorite(ctx context.Context, field graphql.CollectedField, obj *model.PerformerFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerFilterCounts_favorite(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Favorite, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerFilterCounts_favorite(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerFilterCounts_review(ctx context.Context, field graphql.CollectedField, obj *model.PerformerFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerFilterCounts_review(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Review, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerFilterCounts_review(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerFilterCounts_error(ctx context.Context, field graphql.CollectedField, obj *model.PerformerFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerFilterCounts_error(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Error, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerFilterCounts_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PerformerLatestRelease_code(ctx context.Context, field graphql.CollectedField, obj *model.PerformerLatestRelease) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PerformerLatestRelease_code(ctx, field)
 	if err != nil {
@@ -44563,6 +44901,59 @@ func (ec *executionContext) fieldContext_PerformerSubscriptionEvent_state(_ cont
 				return ec.fieldContext_SubscribedPerformer_recentReleases(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SubscribedPerformer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PerformerWorkspaceSnapshot_filterCounts(ctx context.Context, field graphql.CollectedField, obj *model.PerformerWorkspaceSnapshot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformerWorkspaceSnapshot_filterCounts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FilterCounts, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PerformerFilterCounts)
+	fc.Result = res
+	return ec.marshalOPerformerFilterCounts2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerFilterCounts(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PerformerWorkspaceSnapshot_filterCounts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PerformerWorkspaceSnapshot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_PerformerFilterCounts_total(ctx, field)
+			case "subscribed":
+				return ec.fieldContext_PerformerFilterCounts_subscribed(ctx, field)
+			case "favorite":
+				return ec.fieldContext_PerformerFilterCounts_favorite(ctx, field)
+			case "review":
+				return ec.fieldContext_PerformerFilterCounts_review(ctx, field)
+			case "error":
+				return ec.fieldContext_PerformerFilterCounts_error(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PerformerFilterCounts", field.Name)
 		},
 	}
 	return fc, nil
@@ -48021,6 +48412,8 @@ func (ec *executionContext) fieldContext_Query_performerWorkspace(ctx context.Co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "filterCounts":
+				return ec.fieldContext_PerformerWorkspaceSnapshot_filterCounts(ctx, field)
 			case "activities":
 				return ec.fieldContext_PerformerWorkspaceSnapshot_activities(ctx, field)
 			case "performers":
@@ -49202,6 +49595,8 @@ func (ec *executionContext) fieldContext_Query_taskPage(ctx context.Context, fie
 				return ec.fieldContext_TaskPage_sequence(ctx, field)
 			case "streamId":
 				return ec.fieldContext_TaskPage_streamId(ctx, field)
+			case "filterCounts":
+				return ec.fieldContext_TaskPage_filterCounts(ctx, field)
 			case "stats":
 				return ec.fieldContext_TaskPage_stats(ctx, field)
 			}
@@ -69567,6 +69962,226 @@ func (ec *executionContext) fieldContext_TaskFilmSource_endpoint(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _TaskFilterCounts_total(ctx context.Context, field graphql.CollectedField, obj *model.TaskFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFilterCounts_total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFilterCounts_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFilterCounts_active(ctx context.Context, field graphql.CollectedField, obj *model.TaskFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFilterCounts_active(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Active, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFilterCounts_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFilterCounts_waiting(ctx context.Context, field graphql.CollectedField, obj *model.TaskFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFilterCounts_waiting(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Waiting, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFilterCounts_waiting(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFilterCounts_completed(ctx context.Context, field graphql.CollectedField, obj *model.TaskFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFilterCounts_completed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Completed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFilterCounts_completed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskFilterCounts_attention(ctx context.Context, field graphql.CollectedField, obj *model.TaskFilterCounts) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskFilterCounts_attention(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Attention, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskFilterCounts_attention(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskFilterCounts",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TaskPage_items(ctx context.Context, field graphql.CollectedField, obj *model.TaskPage) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TaskPage_items(ctx, field)
 	if err != nil {
@@ -69920,6 +70535,59 @@ func (ec *executionContext) fieldContext_TaskPage_streamId(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskPage_filterCounts(ctx context.Context, field graphql.CollectedField, obj *model.TaskPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskPage_filterCounts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FilterCounts, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.TaskFilterCounts)
+	fc.Result = res
+	return ec.marshalOTaskFilterCounts2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskFilterCounts(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskPage_filterCounts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "total":
+				return ec.fieldContext_TaskFilterCounts_total(ctx, field)
+			case "active":
+				return ec.fieldContext_TaskFilterCounts_active(ctx, field)
+			case "waiting":
+				return ec.fieldContext_TaskFilterCounts_waiting(ctx, field)
+			case "completed":
+				return ec.fieldContext_TaskFilterCounts_completed(ctx, field)
+			case "attention":
+				return ec.fieldContext_TaskFilterCounts_attention(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TaskFilterCounts", field.Name)
 		},
 	}
 	return fc, nil
@@ -86143,6 +86811,62 @@ func (ec *executionContext) _PerformerCheckActivity(ctx context.Context, sel ast
 	return out
 }
 
+var performerFilterCountsImplementors = []string{"PerformerFilterCounts"}
+
+func (ec *executionContext) _PerformerFilterCounts(ctx context.Context, sel ast.SelectionSet, obj *model.PerformerFilterCounts) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, performerFilterCountsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PerformerFilterCounts")
+		case "total":
+			out.Values[i] = ec._PerformerFilterCounts_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subscribed":
+			out.Values[i] = ec._PerformerFilterCounts_subscribed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "favorite":
+			out.Values[i] = ec._PerformerFilterCounts_favorite(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "review":
+			out.Values[i] = ec._PerformerFilterCounts_review(ctx, field, obj)
+		case "error":
+			out.Values[i] = ec._PerformerFilterCounts_error(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var performerLatestReleaseImplementors = []string{"PerformerLatestRelease"}
 
 func (ec *executionContext) _PerformerLatestRelease(ctx context.Context, sel ast.SelectionSet, obj *model.PerformerLatestRelease) graphql.Marshaler {
@@ -86406,6 +87130,8 @@ func (ec *executionContext) _PerformerWorkspaceSnapshot(ctx context.Context, sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PerformerWorkspaceSnapshot")
+		case "filterCounts":
+			out.Values[i] = ec._PerformerWorkspaceSnapshot_filterCounts(ctx, field, obj)
 		case "activities":
 			out.Values[i] = ec._PerformerWorkspaceSnapshot_activities(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -91479,6 +92205,65 @@ func (ec *executionContext) _TaskFilmSource(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var taskFilterCountsImplementors = []string{"TaskFilterCounts"}
+
+func (ec *executionContext) _TaskFilterCounts(ctx context.Context, sel ast.SelectionSet, obj *model.TaskFilterCounts) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, taskFilterCountsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TaskFilterCounts")
+		case "total":
+			out.Values[i] = ec._TaskFilterCounts_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "active":
+			out.Values[i] = ec._TaskFilterCounts_active(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "waiting":
+			out.Values[i] = ec._TaskFilterCounts_waiting(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completed":
+			out.Values[i] = ec._TaskFilterCounts_completed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "attention":
+			out.Values[i] = ec._TaskFilterCounts_attention(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var taskPageImplementors = []string{"TaskPage"}
 
 func (ec *executionContext) _TaskPage(ctx context.Context, sel ast.SelectionSet, obj *model.TaskPage) graphql.Marshaler {
@@ -91525,6 +92310,8 @@ func (ec *executionContext) _TaskPage(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "filterCounts":
+			out.Values[i] = ec._TaskPage_filterCounts(ctx, field, obj)
 		case "stats":
 			out.Values[i] = ec._TaskPage_stats(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -98453,6 +99240,13 @@ func (ec *executionContext) marshalOMatchedStashBox2ᚖgithubᚗcomᚋleothevan2
 	return ec._MatchedStashBox(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOPerformerFilterCounts2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerFilterCounts(ctx context.Context, sel ast.SelectionSet, v *model.PerformerFilterCounts) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PerformerFilterCounts(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOPerformerLatestRelease2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐPerformerLatestRelease(ctx context.Context, sel ast.SelectionSet, v *model.PerformerLatestRelease) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -98811,6 +99605,13 @@ func (ec *executionContext) marshalOTaskDeletePolicy2ᚖgithubᚗcomᚋleothevan
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOTaskFilterCounts2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskFilterCounts(ctx context.Context, sel ast.SelectionSet, v *model.TaskFilterCounts) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TaskFilterCounts(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOTaskListSort2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐTaskListSort(ctx context.Context, v any) (*model.TaskListSort, error) {

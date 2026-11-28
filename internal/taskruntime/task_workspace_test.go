@@ -155,3 +155,55 @@ func TestFirstProgressEventAfterRestartDoesNotChangeMembership(t *testing.T) {
 		t.Fatal("a restarted publisher treated an ordinary progress update as membership change")
 	}
 }
+
+func TestTaskFilterCountsFollowSearchAndTimeScopeBeforeStatusAndPaging(t *testing.T) {
+	store, observations := relationalStore(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	old := now.Add(-25 * time.Hour)
+	tasks := []*Task{
+		{ID: "scope-active", Code: "MATCH-1", Stage: TaskStageDownloading, StageStatus: TaskStageStatusRunning},
+		{ID: "scope-waiting", Code: "MATCH-2", Stage: TaskStageSourcing, StageStatus: TaskStageStatusPending, SourcingNextCheckAt: &now},
+		{ID: "scope-attention", Code: "MATCH-3", Stage: TaskStageDownloading, StageStatus: TaskStageStatusBlocked},
+		{ID: "scope-done", Code: "MATCH-4", Stage: TaskStageCompleted, StageStatus: TaskStageStatusDone, IngestCompletedAt: &now},
+		{ID: "scope-old", Code: "MATCH-5", Stage: TaskStageCompleted, StageStatus: TaskStageStatusDone, IngestCompletedAt: &old},
+		{ID: "other", Code: "OTHER", Stage: TaskStageDownloading, StageStatus: TaskStageStatusRunning},
+	}
+	for _, task := range tasks {
+		task.Source, task.CreatedAt, task.UpdatedAt = TaskSourceManual, now, now
+		if err := store.Create(ctx, task); err != nil {
+			t.Fatal(err)
+		}
+	}
+	observations.Observations.Put(storage.TaskObservation{TaskID: "other", TorrentName: "Live MATCH source", ObservedAt: now.Format(time.RFC3339Nano)})
+	for _, sort := range []string{"CREATED", "UPDATED", "PROGRESS"} {
+		for _, status := range []string{"ALL", "ACTIVE", "WAITING", "COMPLETED", "ATTENTION"} {
+			page, err := store.TaskPage(ctx, TaskPageInput{Search: "match", Status: status, Sort: sort, Page: 2, PageSize: 1})
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := TaskFilterCounts{Total: 6, Active: 2, Waiting: 1, Completed: 2, Attention: 1}
+			if page.FilterCounts != want || len(page.Items) != 1 || page.Stats.Total != 6 {
+				t.Fatalf("%s/%s counts are page/category scoped: %+v", sort, status, page)
+			}
+		}
+	}
+	for _, search := range []string{"", "match"} {
+		page, err := store.TaskPage(ctx, TaskPageInput{Search: search, Status: "ACTIVE", CompletedWithin24Hours: true})
+		if err != nil || page.TotalCount != 0 || page.FilterCounts != (TaskFilterCounts{Total: 1, Completed: 1}) || page.Stats.Total != 6 {
+			t.Fatalf("time scope lost: %+v %v", page, err)
+		}
+		page, err = store.TaskPage(ctx, TaskPageInput{Search: search, Status: "ATTENTION", IDs: []string{"scope-active", "scope-done"}})
+		if err != nil || page.TotalCount != 0 || page.FilterCounts != (TaskFilterCounts{Total: 2, Active: 1, Completed: 1}) {
+			t.Fatalf("ID scope lost: %+v %v", page, err)
+		}
+		page, err = store.TaskPage(ctx, TaskPageInput{Search: search, Sort: "INGESTED", Status: "ACTIVE"})
+		if err != nil || page.TotalCount != 0 || page.FilterCounts != (TaskFilterCounts{Total: 2, Completed: 2}) {
+			t.Fatalf("ingested scope lost: %+v %v", page, err)
+		}
+	}
+	page, err := store.TaskPage(ctx, TaskPageInput{Search: "no-match-at-all", Status: "COMPLETED"})
+	if err != nil || page.FilterCounts != (TaskFilterCounts{}) || page.Stats.Total != 6 {
+		t.Fatalf("empty search must show real zeroes without changing global stats: %+v %v", page, err)
+	}
+}

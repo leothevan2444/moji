@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n/i18n";
@@ -99,8 +99,10 @@ describe("TasksPage task controls", () => {
   it("keeps waiting resources out of in-progress results and offers a dedicated category", () => {
     renderPage({ taskStatus: "running", tasks: [{ ...task, stage: TaskStage.Sourcing, stageStatus: TaskStageStatus.Pending, sourcingNextCheckAt: "2026-10-23T00:00:00Z" }] });
     expect(screen.queryByRole("button", { name: /TASK-1.*Open details/i })).toBeNull();
-    const options = Array.from((screen.getByRole("combobox", { name: "Task category" }) as HTMLSelectElement).options).map(option => option.textContent);
-    expect(options).toEqual(["All", "Needs attention", "Waiting for resources", "In progress", "Completed"]);
+    const filters = within(screen.getByRole("toolbar", { name: "Filter tasks by status" }));
+    expect(filters.getByRole("button", { name: "Waiting for resources 1" })).toBeTruthy();
+    expect(filters.getByRole("button", { name: "In progress 0" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByRole("combobox", { name: "Task category" })).toBeNull();
   });
 
   it("opens a queue for all attention tasks even when the list uses another category", async () => {
@@ -113,6 +115,40 @@ describe("TasksPage task controls", () => {
     renderPage({ taskSearch: "Release title", tasks: [{ ...task, torrentName: "Release title 1080p" }] });
     expect(screen.getByRole("button", { name: /TASK-1.*Open details/i })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Release title 1080p" })).toBeNull();
+  });
+
+  it("keeps counted filters independent of the selected category and the global workbench", async () => {
+    const callbacks = renderPage({ taskStatus: "completed", taskSearch: "match", tasks: [
+      {...task, id:"active", code:"MATCH-1"},
+      {...task, id:"done", code:"MATCH-2", stage:TaskStage.Completed, stageStatus:TaskStageStatus.Done},
+      {...task, id:"attention", code:"OTHER", stageStatus:TaskStageStatus.Blocked},
+    ] });
+    const filters = within(screen.getByRole("toolbar", {name:"Filter tasks by status"}));
+    expect(filters.getByRole("button", {name:"All tasks 2"})).toBeTruthy();
+    expect(filters.getByRole("button", {name:"In progress 1"})).toBeTruthy();
+    const selected = filters.getByRole("button", {name:"Completed 1"});
+    expect(selected.getAttribute("aria-pressed")).toBe("true");
+    await userEvent.setup().click(selected);
+    expect(callbacks.onStatusChange).not.toHaveBeenCalled();
+    await userEvent.setup().click(filters.getByRole("button", {name:"Needs attention 0"}));
+    expect(callbacks.onStatusChange).toHaveBeenCalledWith("failed");
+    expect(screen.getByRole("button", {name:"Open task workbench (1 tasks)"})).toBeTruthy();
+  });
+
+  it("uses server counts across all pages instead of counting the visible cards", () => {
+    renderPage({serverPage:{page:2,pageSize:24,totalPages:5,totalCount:100,
+      stats:{total:100,active:100,completed:0,attention:2,waiting:0},
+      filterCounts:{total:100,active:98,completed:0,attention:2,waiting:0}}});
+    const filters = within(screen.getByRole("toolbar", {name:"Filter tasks by status"}));
+    expect(filters.getByRole("button", {name:"All tasks 100"})).toBeTruthy();
+    expect(filters.getByRole("button", {name:"In progress 98"})).toBeTruthy();
+  });
+
+  it("shows unknown counts until the first server response rather than fake zeroes", () => {
+    renderPage({tasks:[],serverPage:null,refreshing:true});
+    const group=within(screen.getByRole("toolbar",{name:"Filter tasks by status"}));
+    expect(group.getByRole("button",{name:"All tasks —"})).toBeTruthy();
+    expect(group.queryByRole("button",{name:"All tasks 0"})).toBeNull();
   });
 
 });

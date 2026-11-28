@@ -20,6 +20,7 @@ export interface PerformersPageProps {
   checksError?: string | null;
   checkStarting?: boolean;
   onRefreshChecks?: () => void;
+  performerFilterCounts?: { total: number; subscribed: number; favorite: number; review?: number | null; error: number } | null;
   listFilter?: PerformerSearchState["filter"];
   listSort?: PerformerSearchState["sort"];
   onListFilterChange?: (value: PerformerSearchState["filter"]) => void;

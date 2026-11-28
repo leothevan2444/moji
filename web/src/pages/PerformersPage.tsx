@@ -1,5 +1,5 @@
 import { workspaceToolbarIcons } from "../components/common/workspace-toolbar/icons";
-import { ResponsivePageHeading } from "../components/layout/ResponsivePageHeading";
+import { FilterCountHeading } from "../components/layout/FilterCountHeading";
 import { Pagination } from "../components/common/pagination/Pagination";
 import { faUsers, faHeart, faClipboardQuestion, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useAppTimezone } from "../hooks/useAppTimezone";
@@ -164,10 +164,10 @@ export function PerformersPage(props: PerformersPageProps) {
 
   return (
     <section className="section-band performer-workspace">
-      <ResponsivePageHeading title={t("performerUi.list")} variant="filters" itemsLabel={t("performerWorkspace.filter")} itemsClassName="performer-filter-group"
-        items={([["all", faUsers], ["subscribed", faBookmark], ["favorite", faHeart], ["review", faClipboardQuestion], ["error", faTriangleExclamation]] as const).map(([value, icon]) => ({
-          id: value, label: t(`performerWorkspace.filters.${value}`), icon,
-          selected: (props.listFilter ?? "all") === value, onSelect: () => props.onListFilterChange?.(value),
+      <FilterCountHeading title={t("performerUi.list")} kind="performers" value={props.listFilter ?? "all"} loading={fetchingStashPerformers}
+        onChange={value => props.onListFilterChange?.(value as NonNullable<PerformersPageProps["listFilter"]>)}
+        items={([["all", faUsers, "total"], ["subscribed", faBookmark, "subscribed"], ["favorite", faHeart, "favorite"], ["review", faClipboardQuestion, "review"], ["error", faTriangleExclamation, "error"]] as const).map(([id, icon, field]) => ({
+          id, label: t(`performerWorkspace.filters.${id}`), icon, count: props.performerFilterCounts?.[field],
         }))} />
 
       {checkStatusError}

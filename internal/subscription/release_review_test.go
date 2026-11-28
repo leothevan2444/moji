@@ -270,3 +270,27 @@ func TestReviewDoesNotCreateTaskForLibraryScene(t *testing.T) {
 		t.Fatalf("download created for library item: %+v calls=%d err=%v", result, tasks.calls, err)
 	}
 }
+
+type offlineReviewCountStash struct{ fakeStashClient }
+
+func (*offlineReviewCountStash) AllPerformers(context.Context) ([]*stashgraphql.PerformerFragment, error) {
+	return nil, errors.New("Stash must not be queried for local review counts")
+}
+func TestPendingReviewPerformerCountsIncludesUnsubscribedWithoutReadingStash(t *testing.T) {
+	ctx := context.Background()
+	store := NewMemoryStore()
+	pending := reviewTestRecord("pending", ReviewPending)
+	pending.Performers = []ReviewPerformer{{ID: "p1"}, {ID: "p2"}, {ID: "p2"}}
+	another := reviewTestRecord("another", ReviewPending)
+	another.Performers = []ReviewPerformer{{ID: "p2"}}
+	rejected := reviewTestRecord("rejected", ReviewRejected)
+	if err := store.PutReleaseReviews(ctx, []ReleaseReview{pending, another, rejected}); err != nil {
+		t.Fatal(err)
+	}
+	service := reviewTestService(t, store, &reviewTestTasks{})
+	service.stash = &offlineReviewCountStash{}
+	counts, err := service.PendingReviewPerformerCounts(ctx)
+	if err != nil || len(counts) != 2 || counts["p1"] != 1 || counts["p2"] != 2 {
+		t.Fatalf("local counts: %+v %v", counts, err)
+	}
+}

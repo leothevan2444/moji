@@ -214,7 +214,7 @@ describe("Performer workspace interactions", () => {
     const onListFilterChange = vi.fn();
     const onListSortChange = vi.fn();
     render(<PerformersPage {...props({ onListFilterChange, onListSortChange })} />);
-    fireEvent.click(screen.getByRole("button", { name: "Awaiting review" }));
+    fireEvent.click(screen.getByRole("button", { name: "Awaiting review —" }));
     expect(onListFilterChange).toHaveBeenCalledWith("review");
     fireEvent.change(screen.getByRole("combobox", { name: "Sort" }), { target: { value: "scene_count" } });
     expect(onListSortChange).toHaveBeenCalledWith("scene_count");

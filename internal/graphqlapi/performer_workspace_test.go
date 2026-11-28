@@ -2,6 +2,7 @@ package graphqlapi
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
@@ -207,5 +208,76 @@ func TestPerformerCastFilterReachesListAndRefresh(t *testing.T) {
 	}
 	if len(service.sceneQueries) != 2 || service.sceneQueries[0].Cast != performerdomain.SceneCastFilterSolo || service.sceneQueries[1].Cast != performerdomain.SceneCastFilterGroup {
 		t.Fatal("cast filter lost at API boundary", service.sceneQueries)
+	}
+}
+
+func TestPerformerFilterCountsMatchEachCategoryAndSearchBeforePagination(t *testing.T) {
+	items := []performerdomain.Performer{
+		{ID: "a", Name: "Alpha", Subscribed: true, Favorite: true},
+		{ID: "b", Name: "Beta", AliasList: []string{"ALPHA alias"}, Favorite: true},
+		{ID: "c", Name: "Gamma", Subscribed: true},
+	}
+	failure := "latest check failed"
+	states := []*model.SubscribedPerformer{
+		{Performer: &model.StashPerformer{ID: "a"}, LastError: &failure},
+		{Performer: &model.StashPerformer{ID: "b"}, LastError: &failure},
+	}
+	reviews := map[string]int{"a": 9, "b": 3}
+	for _, search := range []string{"", " ALPHA ", "unmatched"} {
+		counts := performerFilterCounts(items, states, reviews, search, true)
+		for _, category := range []struct {
+			filter model.PerformerListFilter
+			count  int
+		}{
+			{model.PerformerListFilterAll, counts.Total}, {model.PerformerListFilterSubscribed, counts.Subscribed},
+			{model.PerformerListFilterFavorite, counts.Favorite}, {model.PerformerListFilterReview, *counts.Review},
+			{model.PerformerListFilterError, counts.Error},
+		} {
+			page, size := 2, 1
+			result := buildStashPerformerPage(filterAndSortPerformers(items, states, reviews, &model.PerformerListOptions{Filter: &category.filter}), search, &page, &size)
+			if result.TotalCount != category.count {
+				t.Fatalf("%q/%s: list=%d badge=%d", search, category.filter, result.TotalCount, category.count)
+			}
+		}
+	}
+	counts := performerFilterCounts(items, states, reviews, "alpha", true)
+	if counts.Total != 2 || counts.Subscribed != 1 || counts.Favorite != 2 || *counts.Review != 2 || counts.Error != 1 {
+		t.Fatalf("overlapping actor categories counted incorrectly: %+v review=%d", counts, *counts.Review)
+	}
+	if unknown := performerFilterCounts(items, states, nil, "", false); unknown.Review != nil || unknown.Total != 3 {
+		t.Fatalf("unknown review count replaced with zero: %+v", unknown)
+	}
+}
+
+// One failed optional review summary must not turn all actor counts into zero.
+type filterReviewService struct {
+	reviewAPIService
+	unavailable bool
+	calls       int
+}
+
+func (s *filterReviewService) PendingReviewPerformerCounts(context.Context) (map[string]int, error) {
+	s.calls++
+	if s.unavailable {
+		return nil, errors.New("review storage unavailable")
+	}
+	return map[string]int{"p1": 12}, nil
+}
+func TestPerformerWorkspaceCountsAndOptionalReviewFailure(t *testing.T) {
+	service := &filterReviewService{}
+	resolver := &queryResolver{Resolver: &Resolver{Performer: &workspacePerformerService{items: []performerdomain.Performer{{ID: "p1", Name: "Alpha", Favorite: true}, {ID: "p2", Name: "Beta"}}}, PerformerSubscription: service}}
+	search := "Alpha"
+	result, err := resolver.PerformerWorkspace(context.Background(), &search, nil, nil, nil)
+	if err != nil || result.FilterCounts.Total != 1 || result.FilterCounts.Favorite != 1 || result.FilterCounts.Review == nil || *result.FilterCounts.Review != 1 || service.calls != 1 {
+		t.Fatalf("invalid counts or repeated summary: %+v %v", result, err)
+	}
+	service.unavailable = true
+	result, err = resolver.PerformerWorkspace(context.Background(), &search, nil, nil, nil)
+	if err != nil || result.FilterCounts.Review != nil || result.FilterCounts.Total != 1 {
+		t.Fatalf("optional summary failure invalidated list: %+v %v", result, err)
+	}
+	review := model.PerformerListFilterReview
+	if _, err = resolver.PerformerWorkspace(context.Background(), &search, nil, nil, &model.PerformerListOptions{Filter: &review}); err == nil {
+		t.Fatal("failed review query presented an empty review category")
 	}
 }

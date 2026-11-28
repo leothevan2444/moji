@@ -1,4 +1,12 @@
 {
+  "filterCount": {
+    "tasksLabel": "Filter tasks by status",
+    "performersLabel": "Filter performers by scope",
+    "showOnly": "Show only {{label}}",
+    "unknown": "Count unavailable",
+    "tasksCount": "{{count}} tasks",
+    "performersCount": "{{count}} performers"
+  },
   "workspaceToolbar": {
     "more": "More actions and filters"
   },
@@ -1786,7 +1794,7 @@
     "statusLabel": "Task category",
     "sortLabel": "Task sort order",
     "filters": {
-      "all": "All",
+      "all": "All tasks",
       "running": "In progress",
       "completed": "Completed",
       "failed": "Needs attention",

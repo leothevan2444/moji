@@ -8,6 +8,7 @@ query TasksWorkspace($input: TaskPageInput!) {
   taskPage(input: $input) {
     items { ...TaskListSummary }
     totalCount page pageSize totalPages sequence streamId
+    filterCounts { total active waiting completed attention }
     stats { total active completed downloading pendingScans failed attention waiting }
   }
   settings { system { taskDeletePolicy } }

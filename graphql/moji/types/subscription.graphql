@@ -137,7 +137,17 @@ type StashPerformerConnection {
   hasNextPage: Boolean!
 }
 
+type PerformerFilterCounts {
+  total: Int!
+  subscribed: Int!
+  favorite: Int!
+  "Actors with pending reviews; null when review counts could not be read."
+  review: Int
+  error: Int!
+}
+
 type PerformerWorkspaceSnapshot {
+  filterCounts: PerformerFilterCounts
  "Saved activity for visible page actors only; never reads StashBox"
  activities: [PerformerActivity!]!
   performers: StashPerformerConnection!

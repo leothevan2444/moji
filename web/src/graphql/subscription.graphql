@@ -21,6 +21,7 @@ query StashPerformers($search: String, $page: Int, $pageSize: Int) {
 query PerformerWorkspace($search: String, $page: Int, $pageSize: Int, $options: PerformerListOptions) {
   performerWorkspace(search: $search, page: $page, pageSize: $pageSize, options: $options) {
  activities { id value rank lowerBound evaluationStatus observedAt }
+    filterCounts { total subscribed favorite review error }
     performers {
       items {
         id

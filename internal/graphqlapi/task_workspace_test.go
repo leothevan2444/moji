@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/storage"
 	"github.com/leothevan2444/moji/internal/taskruntime"
 )
@@ -53,6 +54,7 @@ func TestTaskWorkspaceGraphQLSnapshots(t *testing.T) {
 					ID, Version string
 					Revision    int64
 				}
+				FilterCounts                     model.TaskFilterCounts
 				Sequence, TotalCount, TotalPages int
 				StreamID                         string
 			} `json:"taskPage"`
@@ -71,12 +73,12 @@ func TestTaskWorkspaceGraphQLSnapshots(t *testing.T) {
 		}
 		Errors []any
 	}
-	executeGraphQLInto(t, resolver, `{taskPage(input:{pageSize:1,page:2}){items{id version revision} totalCount totalPages sequence streamId} taskAttentionQueue{items{id} sequence} taskDetailSnapshot(id:"missing"){task{id} sequence} homeTaskSnapshot{total attention attentionTasks{id}}}`, &result)
+	executeGraphQLInto(t, resolver, `{taskPage(input:{pageSize:1,page:2}){items{id version revision} totalCount totalPages sequence streamId filterCounts{total active waiting completed attention}} taskAttentionQueue{items{id} sequence} taskDetailSnapshot(id:"missing"){task{id} sequence} homeTaskSnapshot{total attention attentionTasks{id}}}`, &result)
 	if len(result.Errors) > 0 {
 		t.Fatalf("GraphQL errors: %+v", result.Errors)
 	}
 	p := result.Data.Page
-	if p.TotalCount != 2 || p.TotalPages != 2 || p.Sequence != 2 || p.StreamID == "" || len(p.Items) != 1 || p.Items[0].ID != "two" || p.Items[0].Revision != 1 || p.Items[0].Version == "" {
+	if p.FilterCounts.Total != 2 || p.FilterCounts.Attention != 2 || p.TotalCount != 2 || p.TotalPages != 2 || p.Sequence != 2 || p.StreamID == "" || len(p.Items) != 1 || p.Items[0].ID != "two" || p.Items[0].Revision != 1 || p.Items[0].Version == "" {
 		t.Fatalf("page contract: %+v", p)
 	}
 	if len(result.Data.Queue.Items) != 2 || result.Data.Queue.Sequence != 2 || result.Data.Detail.Task != nil || result.Data.Detail.Sequence != 2 || result.Data.Home.Attention != 2 {
