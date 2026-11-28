@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures";
 
 const actors = Array.from({ length: 25 }, (_, index) => ({
-  id: `actor-${index}`, name: index === 0 ? "長い名前のテスト演员 · Example Performer" : `Performer ${String(index).padStart(2, "0")}`,
+  id: `actor-${index}`, name: index === 0 ? "Performer 00 · 長い名前のテスト演员 · Example Performer" : `Performer ${String(index).padStart(2, "0")}`,
   aliasList: ["Example alias"], favorite: index < 2, imagePath: null, sceneCount: 25 - index, subscribed: index < 2,
 }));
 const states = actors.slice(0, 2).map((performer, index) => ({
@@ -17,7 +17,7 @@ const scenes = Array.from({ length: 30 }, (_, index) => ({
 }));
 
 const graphqlOverrides = {
-  performerWorkspace: ({ search = "", page = 1, pageSize = 24, options }: { search?: string | null; page?: number; pageSize?: number; options?: { filter: string; sort: string; }; }) => {
+  performerWorkspace: ({ search = "", page = 1, pageSize = 24, options }: { search?: string | null; page?: number; pageSize?: number; options?: { filter: string; sort: string; direction?:string; }; }) => {
     let items = actors.filter(actor => [actor.name,...actor.aliasList].some(text=>text.toLowerCase().includes((search ?? "").toLowerCase())));
     const filterCounts={total:items.length,subscribed:items.filter(a=>a.subscribed).length,favorite:items.filter(a=>a.favorite).length,review:items.filter(a=>a.id==="actor-24").length,error:items.filter(a=>a.id==="actor-1").length};
     if (options?.filter === "SUBSCRIBED") items = items.filter(actor => actor.subscribed);

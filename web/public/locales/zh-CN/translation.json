@@ -1,4 +1,9 @@
 {
+  "sortControls": {
+    "asc": "升序",
+    "desc": "降序",
+    "direction": "{{field}}：{{current}}；点击切换为{{next}}"
+  },
   "filterCount": {
     "tasksLabel": "筛选任务状态",
     "performersLabel": "筛选演员范围",
@@ -1795,9 +1800,12 @@
       "failed": "需处理",
       "waiting": "等待资源"
     },
+    "enableGrouping": "开启任务分组",
+    "disableGrouping": "关闭任务分组",
     "sorts": {
-      "createdAt": "最新",
-      "updatedAt": "更新时间",
+      "title": "标题",
+      "createdAt": "创建时间",
+      "releaseDate": "影片发布时间",
       "progress": "进度"
     },
     "actions": {
@@ -2354,10 +2362,10 @@
       "error": "检查异常"
     },
     "sorts": {
-      "default": "默认顺序",
-      "name": "姓名 A–Z",
-      "scene_count": "作品数从多到少",
-      "last_checked": "最近检查优先"
+      "name": "名称",
+      "created": "创建时间",
+      "scene_count": "作品数（Stash 库中）",
+      "last_checked": "最近检查时间"
     },
     "sceneCount": "已入库作品 {{count}} 部",
     "stashLibrary": "前往 {{name}} 的 Stash 主页 · 已入库作品 {{count}} 部",

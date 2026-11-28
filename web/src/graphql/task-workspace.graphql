@@ -2,7 +2,7 @@ fragment TaskListSummary on TaskSummary {
   id version revision source code stage stageStatus stageLabel stageStatusLabel
   stageErrorCode stageErrorMessage torrentName progress qbittorrentState stashIngestPhase stashSceneId
   sourcingNextCheckAt sourcingLastCheckedAt sourcingCompletedAt downloadCompletedAt ingestCompletedAt
-  lastProgressAt createdAt updatedAt
+  lastProgressAt createdAt updatedAt releaseDate
 }
 query TasksWorkspace($input: TaskPageInput!) {
   taskPage(input: $input) {

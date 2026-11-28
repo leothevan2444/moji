@@ -8,12 +8,13 @@ export function ActionControl({ action, measuring = false, menu = false }: { act
   const data = { "data-kind": "action", "data-control": action.id, "data-priority": action.primary ? "1" : "0" };
   if (measuring) return <span className={className} {...data}>{content}</span>;
   if (action.href) return <Link className={className} {...data} to={action.href} aria-label={action.label} title={action.title ?? action.label}>{content}</Link>;
-  return <button type="button" className={className} {...data} onClick={action.onClick} disabled={action.disabled} aria-label={action.label} title={action.title ?? action.label} aria-busy={action.busy || undefined}>{content}</button>;
+  return <button type="button" className={className} {...data} onClick={action.onClick} aria-pressed={action.pressed} disabled={action.disabled} aria-label={action.label} title={action.title ?? action.label} aria-busy={action.busy || undefined}>{content}</button>;
 }
 
 export function FilterControl({ filter, measuring = false }: { filter: ToolbarFilter; measuring?: boolean }) {
-  return <select className="workspace-toolbar__filter" data-kind="filter" data-control={filter.id} aria-label={measuring ? undefined : filter.label}
+  const control = <select className="workspace-toolbar__filter" data-kind="filter" data-control={filter.id} aria-label={measuring ? undefined : filter.label}
     title={measuring ? undefined : filter.label} value={filter.value} disabled={measuring} onChange={measuring ? undefined : event => filter.onChange(event.target.value)}>
     {filter.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
   </select>;
+  return filter.accessory ? <span className="workspace-toolbar__sort" data-kind="filter" data-control={filter.id}>{control}<ActionControl action={filter.accessory} measuring={measuring} /></span> : control;
 }

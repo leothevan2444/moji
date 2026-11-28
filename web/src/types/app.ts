@@ -18,4 +18,5 @@ export type ToastItem = {
 export type SettingsTab = "indexers" | "stash" | "tasks" | "downloader" | "system" | "logs" | "about";
 
 export type TaskStatusFilter = "all" | "running" | "completed" | "failed" | "waiting";
-export type TaskSortKey = "createdAt" | "updatedAt" | "progress";
+export type SortDirection = "asc" | "desc";
+export type TaskSortKey = "title" | "createdAt" | "releaseDate" | "progress";

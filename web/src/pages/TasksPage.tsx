@@ -4,7 +4,8 @@ import { Pagination } from "../components/common/pagination/Pagination";
 import { FilterCountHeading } from "../components/layout/FilterCountHeading";
 import { faBarsProgress, faHourglassHalf, faCheckDouble, faTriangleExclamation, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
 import { useAppTimezone } from "../hooks/useAppTimezone";
-import { TaskGroupSection } from "../components/tasks";
+import {sortDirectionAction} from "../components/common/workspace-toolbar/sortDirection";
+import { TaskCard, TaskGroupSection } from "../components/tasks";
 import {
   formatTime,
   taskGroup,
@@ -32,6 +33,8 @@ interface TasksPageProps {
   taskSearch: string;
   taskStatus: TaskStatusFilter;
   taskSort: TaskSortKey;
+  taskDirection?:"asc"|"desc";
+  onDirectionChange?:(direction:"asc"|"desc")=>void;
   taskGroupOpen: Record<TaskGroupKey, boolean>;
   pendingTaskRetryId: string | null;
   pendingTaskDeleteId: string | null;
@@ -62,7 +65,7 @@ export function TasksPage({
   onClearCompletedWindow,
   taskSearch,
   taskStatus,
-  taskSort,
+  taskSort, taskDirection="desc", onDirectionChange,
   taskGroupOpen,
   pendingTaskRetryId,
   pendingTaskDeleteId,
@@ -90,6 +93,8 @@ export function TasksPage({
   const { t } = useTranslation();
   const deferredTaskSearch = useDeferredValue(taskSearch.trim().toLowerCase());
   const [selectionMode, setSelectionMode] = useState(false);
+  const [grouped,setGrouped]=useState(()=>{try{return localStorage.getItem("moji:tasks-grouped")==="true";}catch{return false;}});
+  const toggleGrouping=()=>{const next=!grouped;setGrouped(next);try{localStorage.setItem("moji:tasks-grouped",String(next));}catch{/* Keep this session's preference. */}};
 
   const scopeTasks = useMemo(() => {
     if (serverPage) return tasks;
@@ -128,14 +133,20 @@ export function TasksPage({
     const groupByFilter = { running: "active", completed: "completed", failed: "attention", waiting: "waiting" } as const;
     if (taskStatus !== "all") next = next.filter(task => taskGroup(task) === groupByFilter[taskStatus]);
 
-    const sorters: Record<TaskSortKey, (a: DashboardTask, b: DashboardTask) => number> = {
-      createdAt: (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-      updatedAt: (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
-      progress: (a, b) => b.progress - a.progress
-    };
-
-    return [...next].sort(sorters[taskSort]);
-  }, [scopeTasks, serverPage, tasks, taskStatus, taskSort]);
+    const collator=new Intl.Collator("en",{numeric:true,sensitivity:"base"});
+    return [...next].sort((a,b)=>{
+      let comparison=0;
+      if(taskSort==="title") comparison=collator.compare(taskSummary(a),taskSummary(b));
+      else if(taskSort==="progress") comparison=a.progress-b.progress;
+      else if(taskSort==="releaseDate") {
+        const left=a.releaseDate??a.film?.date??"",right=b.releaseDate??b.film?.date??"";
+        if(Boolean(left)!==Boolean(right)) return left?-1:1;
+        comparison=left.localeCompare(right);
+      } else comparison=Date.parse(a.createdAt)-Date.parse(b.createdAt);
+      if(comparison) return taskDirection==="asc"?comparison:-comparison;
+      return a.id.localeCompare(b.id);
+    });
+  }, [scopeTasks, serverPage, tasks, taskStatus, taskSort, taskDirection]);
 
   const taskGroups = useMemo(() => {
     const order: TaskGroupKey[] = ["attention", "waiting", "active", "completed"];
@@ -185,8 +196,9 @@ export function TasksPage({
         selectionLabel={t("taskBatch.selectionActions")}
         normal={{
           search: { label: t("tasks.searchPlaceholder"), value: taskSearch, onChange: onSearchChange }, filters: [
-            { id: "sort", label: t("tasks.sortLabel"), value: taskSort, onChange: value => onSortChange(value as TaskSortKey), options: (["createdAt", "updatedAt", "progress"] as const).map(value => ({ value, label: t(`tasks.sorts.${value}`) })) },
+            { id: "sort", label: t("tasks.sortLabel"), value: taskSort, onChange: value => onSortChange(value as TaskSortKey), accessory:sortDirectionAction(t,t(`tasks.sorts.${taskSort}`),taskDirection,direction=>onDirectionChange?.(direction)), options: (["title", "createdAt", "releaseDate", "progress"] as const).map(value => ({ value, label: t(`tasks.sorts.${value}`) })) },
           ], actions: [
+            {id:"group",label:t(grouped?"tasks.disableGrouping":"tasks.enableGrouping"),icon:workspaceToolbarIcons.group,pressed:grouped,onClick:toggleGrouping},
             { id: "refresh", label: t("common.refresh"), icon: workspaceToolbarIcons.refresh, onClick: onRefresh, disabled: refreshing, busy: refreshing, spinning: refreshing },
             { id: "queue", label: t("taskProcessingQueue.open", { count: metrics.failed }), title: t("taskProcessingQueue.entryHelp"), icon: workspaceToolbarIcons.queue, onClick: onOpenQueue, disabled: metrics.failed === 0, showLabel: true },
           ]
@@ -217,7 +229,9 @@ export function TasksPage({
         </div>
       ) : null}
 
-      {taskGroups
+      {!grouped && visibleTasks.length ? <div className="task-grid">{visibleTasks.map(task=><TaskCard key={task.id} task={task} pendingRetryId={pendingTaskRetryId} pendingDeleteId={pendingTaskDeleteId}
+        onOpen={onOpenTask} onRetry={onRetryTask} onResolve={onResolveTask} onDelete={onDeleteTask} selectionMode={selectionMode} selected={selectedTaskIds.includes(task.id)} onToggleSelection={onToggleTaskSelection} />)}</div>:null}
+      {grouped ? taskGroups
         .filter((item) => item.tasks.length > 0)
         .map((item) => (
           <TaskGroupSection
@@ -238,7 +252,7 @@ export function TasksPage({
             selectedTaskIds={selectedTaskIds}
             onToggleTaskSelection={onToggleTaskSelection}
           />
-        ))}
+        )) : null}
 
       {serverPage ? <Pagination label={t("tasks.title")} position="bottom" page={serverPage.page} pageSize={serverPage.pageSize}
         totalPages={serverPage.totalPages} totalCount={serverPage.totalCount} loading={refreshing}

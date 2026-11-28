@@ -1,4 +1,7 @@
 import {
+  faArrowUpWideShort,
+  faArrowDownWideShort,
+  faObjectGroup,
   faBinoculars,
   faClipboardList,
   faClipboardQuestion,
@@ -17,6 +20,9 @@ import {
 
 // Shared action meanings across the task, performer and scene toolbars.
 export const workspaceToolbarIcons = {
+  sortAsc: faArrowUpWideShort,
+  sortDesc: faArrowDownWideShort,
+  group: faObjectGroup,
   enterSelection: faListCheck,
   exitSelection: faXmark,
   selectPage: faSquareCheck,

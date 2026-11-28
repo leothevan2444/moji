@@ -68,6 +68,8 @@ const (
 )
 
 type Task struct {
+	// Header-only projection of the persisted film date; never a second stored value.
+	filmReleaseDate         string
 	SelectionReportJSON     string
 	Film                    *film.Snapshot
 	SourcingMode            string

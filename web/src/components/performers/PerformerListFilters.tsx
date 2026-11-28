@@ -1,3 +1,4 @@
+import {sortDirectionAction} from "../common/workspace-toolbar/sortDirection";
 import { workspaceToolbarIcons } from "../common/workspace-toolbar/icons";
 import { useTranslation } from "react-i18next";
 import { WorkspaceToolbar } from "../common/workspace-toolbar/WorkspaceToolbar";
@@ -12,7 +13,7 @@ export function PerformerListFilters({ page, selection }: { page: PerformersPage
     onToggleSelection={page.onTogglePerformerSelectionMode} selectionLabel={t("performerBatch.selectionActions")} selection={selection}
     normal={{
       search: { label: t("performerUi.search"), value: page.subscriptionSearch, onChange: page.onSearchChange }, filters: [
-        { id: "sort", label: t("performerWorkspace.sort"), value: page.listSort ?? "default", onChange: value => page.onListSortChange?.(value as NonNullable<PerformersPageProps["listSort"]>), options: (["default", "name", "scene_count", "last_checked"] as const).map(value => ({ value, label: t(`performerWorkspace.sorts.${value}`) })) }
+        { id: "sort", label: t("performerWorkspace.sort"), value: page.listSort ?? "name", onChange: value => page.onListSortChange?.(value as NonNullable<PerformersPageProps["listSort"]>), accessory:sortDirectionAction(t,t(`performerWorkspace.sorts.${page.listSort??"name"}`),page.listDirection??"asc",direction=>page.onListDirectionChange?.(direction)), options: (["name", "created", "scene_count", "last_checked"] as const).map(value => ({ value, label: t(`performerWorkspace.sorts.${value}`) })) }
       ], actions: [
         { id: "reload", label: t("performerUi.reloadFromStash"), icon: workspaceToolbarIcons.refresh, onClick: page.onReload, disabled: page.refreshingList, busy: page.refreshingList, spinning: page.refreshingList },
         { id: "check", label: t(checkingAll ? "performerUi.checking" : "performerUi.checkAllSubscribed"), title: t(checkingAll ? "performerUi.checking" : "performerUi.checkAllHelp"), icon: workspaceToolbarIcons.check, onClick: page.onRefreshAll, disabled: page.refreshingSubscriptionNow || !page.subscribedPerformers.length || Boolean(page.checkActivity?.activeCount || page.checkStarting || page.checksLoading || page.checksError), busy: checkingAll },

@@ -2,7 +2,7 @@ import { PAGE_SIZE_OPTIONS } from "../constants/pagination";
 import type { TaskSortKey, TaskStatusFilter } from "../types";
 
 export type TaskStatusParam = "all" | "active" | "completed" | "failed" | "waiting";
-export type TaskSortParam = "newest" | "updated" | "progress";
+export type TaskSortParam = "title" | "created" | "release_date" | "progress";
 
 const taskStatusFromParam: Record<TaskStatusParam, TaskStatusFilter> = {
   all: "all", active: "running", completed: "completed", failed: "failed", waiting: "waiting"
@@ -12,7 +12,7 @@ const taskStatusToParam = Object.fromEntries(
 ) as Record<TaskStatusFilter, TaskStatusParam>;
 
 const taskSortFromParam: Record<TaskSortParam, TaskSortKey> = {
-  newest: "createdAt", updated: "updatedAt", progress: "progress"
+  title: "title", created: "createdAt", release_date: "releaseDate", progress: "progress"
 };
 const taskSortToParam = Object.fromEntries(
   Object.entries(taskSortFromParam).map(([key, value]) => [value, key])
@@ -22,6 +22,7 @@ export interface TaskSearchState {
   q: string;
   status: TaskStatusFilter;
   sort: TaskSortKey;
+  direction: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
@@ -34,7 +35,8 @@ export function parseTaskSearchParams(params: URLSearchParams): TaskSearchState 
     pageSize: PAGE_SIZE_OPTIONS.some(size => size === positiveInt(params.get("pageSize"),24)) ? positiveInt(params.get("pageSize"),24) : 24,
     q: params.get("q")?.trim() ?? "",
     status: status === "pending-scan" ? "running" : status && taskStatusFromParam[status] ? taskStatusFromParam[status] : "all",
-    sort: sort && taskSortFromParam[sort] ? taskSortFromParam[sort] : "createdAt"
+    sort: sort && taskSortFromParam[sort] ? taskSortFromParam[sort] : "createdAt",
+    direction: params.get("direction") === "asc" ? "asc" : "desc"
   };
 }
 
@@ -45,12 +47,14 @@ export function serializeTaskSearchParams(state: TaskSearchState): URLSearchPara
   if (state.q.trim()) params.set("q", state.q.trim());
   if (state.status !== "all") params.set("status", taskStatusToParam[state.status]);
   if (state.sort !== "createdAt") params.set("sort", taskSortToParam[state.sort]);
+  if (state.direction === "asc") params.set("direction", "asc");
   return params;
 }
 
 export interface PerformerSearchState {
   filter: "all" | "subscribed" | "favorite" | "review" | "error";
-  sort: "default" | "name" | "scene_count" | "last_checked";
+  sort: "name" | "created" | "scene_count" | "last_checked";
+  direction: "asc" | "desc";
   q: string;
   page: number;
   pageSize: number;
@@ -76,7 +80,8 @@ export function parsePerformerSearchParams(params: URLSearchParams): PerformerSe
   const sort = params.get("sort");
   return {
     filter: filter === "subscribed" || filter === "favorite" || filter === "review" || filter === "error" ? filter : "all",
-    sort: sort === "name" || sort === "scene_count" || sort === "last_checked" ? sort : "default",
+    sort: sort === "created" || sort === "scene_count" || sort === "last_checked" ? sort : "name",
+    direction: params.get("direction") === "desc" ? "desc" : "asc",
     q: params.get("q")?.trim() ?? "",
     page: positiveInt(params.get("page"), 1),
     pageSize: PAGE_SIZE_OPTIONS.some(size => size === pageSize) ? pageSize : 24,
@@ -93,7 +98,8 @@ export function serializePerformerSearchParams(state: PerformerSearchState): URL
   const params = new URLSearchParams();
   if (state.q) params.set("q", state.q);
   if (state.filter !== "all") params.set("filter", state.filter);
-  if (state.sort !== "default") params.set("sort", state.sort);
+  if (state.sort !== "name") params.set("sort", state.sort);
+  if (state.direction === "desc") params.set("direction", "desc");
   if (state.page !== 1) params.set("page", String(state.page));
   if (state.pageSize !== 24) params.set("pageSize", String(state.pageSize));
   if (state.sceneQ) params.set("sceneQ", state.sceneQ);

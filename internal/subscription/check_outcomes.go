@@ -1,5 +1,10 @@
 package subscription
 
+import (
+	"context"
+	"time"
+)
+
 // applyLatestCheckOutcomes reconciles local outcomes with retained run results.
 // Both the Home count and actor workspace must include recovered interruptions.
 func (s *Service) applyLatestCheckOutcomes(states map[string]*PerformerState) {
@@ -35,4 +40,30 @@ func (s *Service) applyLatestCheckOutcomes(states map[string]*PerformerState) {
 		}
 		s.checks.mu.Unlock()
 	}
+}
+
+// PerformerCheckTimes includes retained history for actors no longer subscribed.
+func (s *Service) PerformerCheckTimes(ctx context.Context, ids []string) (map[string]time.Time, error) {
+	records, err := s.store.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	states := make(map[string]*PerformerState, len(ids))
+	for _, id := range ids {
+		states[id] = &PerformerState{PerformerID: id}
+	}
+	for _, record := range records {
+		if record != nil && states[record.PerformerID] != nil {
+			copy := *record
+			states[record.PerformerID] = &copy
+		}
+	}
+	s.applyLatestCheckOutcomes(states)
+	times := make(map[string]time.Time)
+	for id, state := range states {
+		if state.LastCheckedAt != nil {
+			times[id] = *state.LastCheckedAt
+		}
+	}
+	return times, nil
 }

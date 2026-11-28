@@ -23,6 +23,8 @@ export interface PerformersPageProps {
   performerFilterCounts?: { total: number; subscribed: number; favorite: number; review?: number | null; error: number } | null;
   listFilter?: PerformerSearchState["filter"];
   listSort?: PerformerSearchState["sort"];
+  listDirection?: PerformerSearchState["direction"];
+  onListDirectionChange?: (direction: PerformerSearchState["direction"]) => void;
   onListFilterChange?: (value: PerformerSearchState["filter"]) => void;
   onListSortChange?: (value: PerformerSearchState["sort"]) => void;
   onClearListFilters?: () => void;

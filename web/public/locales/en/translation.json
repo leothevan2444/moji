@@ -1,4 +1,9 @@
 {
+  "sortControls": {
+    "asc": "Ascending",
+    "desc": "Descending",
+    "direction": "{{field}}: {{current}}; switch to {{next}}"
+  },
   "filterCount": {
     "tasksLabel": "Filter tasks by status",
     "performersLabel": "Filter performers by scope",
@@ -1800,9 +1805,12 @@
       "failed": "Needs attention",
       "waiting": "Waiting for resources"
     },
+    "enableGrouping": "Enable task grouping",
+    "disableGrouping": "Disable task grouping",
     "sorts": {
-      "createdAt": "Newest",
-      "updatedAt": "Recently updated",
+      "title": "Title",
+      "createdAt": "Creation time",
+      "releaseDate": "Film release date",
       "progress": "Progress"
     },
     "actions": {
@@ -2360,10 +2368,10 @@
       "error": "Check failed"
     },
     "sorts": {
-      "default": "Default order",
-      "name": "Name A–Z",
-      "scene_count": "Most scenes first",
-      "last_checked": "Recently checked first"
+      "name": "Name",
+      "created": "Creation time",
+      "scene_count": "Scenes in Stash",
+      "last_checked": "Last check time"
     },
     "sceneCount": "Scenes in library: {{count}}",
     "stashLibrary": "Open {{name}} in Stash · Scenes in library: {{count}}",

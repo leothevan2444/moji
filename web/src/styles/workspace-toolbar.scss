@@ -61,3 +61,11 @@
 @media (prefers-reduced-motion: reduce) {
   .workspace-toolbar__body, .workspace-toolbar__panel, .workspace-toolbar__toggle, .workspace-toolbar__toggle-icon { transition: none; }
 }
+
+.workspace-toolbar__sort { display:inline-flex; align-items:center; gap:4px; min-width:0; max-width:100%; }
+.workspace-toolbar__sort > .workspace-toolbar__filter { min-width:0; flex:1 1 auto; }
+.workspace-toolbar__sort > .workspace-toolbar__action { flex:0 0 auto; }
+.workspace-toolbar__action[aria-pressed="true"] { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 45%,var(--line)); background:color-mix(in srgb,var(--accent) 10%,var(--surface)); }
+
+.workspace-toolbar-menu .workspace-toolbar__sort > .workspace-toolbar__action { width:34px; height:38px; }
+@media (pointer:coarse) { .workspace-toolbar-menu .workspace-toolbar__sort > .workspace-toolbar__action { width:44px; height:44px; } }

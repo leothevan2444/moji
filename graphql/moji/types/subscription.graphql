@@ -27,15 +27,16 @@ enum PerformerListFilter {
 }
 
 enum PerformerListSort {
-  DEFAULT
   NAME
+  CREATED
   SCENE_COUNT
   LAST_CHECKED
 }
 
 input PerformerListOptions {
   filter: PerformerListFilter = ALL
-  sort: PerformerListSort = DEFAULT
+  sort: PerformerListSort = NAME
+  direction: SortDirection = ASC
 }
 
 extend type Mutation {

@@ -264,6 +264,7 @@ SELECT
 FROM tasks`
 
 type sqliteTaskRow struct {
+	FilmReleaseDate         sql.NullString `db:"film_release_date"`
 	FilmJSON                sql.NullString `db:"film_json"`
 	SourcingMode            string         `db:"sourcing_mode"`
 	ResourceConfirmed       bool           `db:"resource_confirmed"`
@@ -341,7 +342,7 @@ func (r sqliteTaskRow) toTask() (*Task, error) {
 	if r.CheckpointVersion > 1 || r.FilePlanVersion > 1 {
 		return nil, fmt.Errorf("taskruntime: unsupported checkpoint version for task %q", r.ID)
 	}
-	task := &Task{Film: snapshot, SourcingMode: r.SourcingMode, ResourceConfirmed: r.ResourceConfirmed,
+	task := &Task{filmReleaseDate: nullableStringValue(r.FilmReleaseDate), Film: snapshot, SourcingMode: r.SourcingMode, ResourceConfirmed: r.ResourceConfirmed,
 		Revision:                r.Revision,
 		Generation:              r.Generation,
 		RestartStateJSON:        nullableStringValue(r.RestartStateJSON),

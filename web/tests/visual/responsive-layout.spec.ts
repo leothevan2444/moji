@@ -56,6 +56,7 @@ for(const locale of ["zh-CN","en","qps-ploc","ar-XB"] as const) {
 
   test("page headings group actions and preview help use available width",async({page},info)=>{
     await page.setViewportSize({width:800,height:1000});await page.goto(route("/tasks"));
+    await page.locator(".workspace-toolbar__panel.is-active button[data-control=group]").click();
     const heading=page.locator(".band-head").first(),group=page.locator(".task-group-section__head").first();
     await sameRow(heading);await sameRow(group);await capture(group,info,"task-group-800");
     await page.setViewportSize({width:320,height:1000});await contained(heading);await contained(group);

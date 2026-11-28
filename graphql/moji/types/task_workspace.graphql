@@ -1,10 +1,12 @@
 enum TaskListStatus { ALL ATTENTION ACTIVE WAITING COMPLETED }
-enum TaskListSort { CREATED UPDATED PROGRESS }
+enum SortDirection { ASC DESC }
+enum TaskListSort { TITLE CREATED RELEASE_DATE PROGRESS }
 input TaskPageInput {
   ids: [ID!]
   search: String
   status: TaskListStatus = ALL
   sort: TaskListSort = CREATED
+  direction: SortDirection = DESC
   page: Int = 1
   pageSize: Int = 24
   completedWithin24Hours: Boolean = false
@@ -23,6 +25,7 @@ type TaskSummary {
   stageErrorCode: String
   stageErrorMessage: String
   torrentName: String
+  releaseDate: String
   progress: Float!
   qbittorrentState: String
   stashSceneId: ID

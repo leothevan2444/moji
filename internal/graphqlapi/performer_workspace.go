@@ -2,6 +2,7 @@ package graphqlapi
 
 import (
 	"context"
+	"github.com/leothevan2444/moji/internal/ordering"
 	"math"
 	"sort"
 	"strings"
@@ -12,13 +13,17 @@ import (
 )
 
 // Apply list options before pagination, while retaining the complete subscription snapshot.
+type performerCheckTimes interface {
+	PerformerCheckTimes(context.Context, []string) (map[string]time.Time, error)
+}
+
 type performerReviewCounts interface {
 	PendingReviewPerformerCounts(context.Context) (map[string]int, error)
 }
 
-func filterAndSortPerformers(items []performer.Performer, subscribed []*model.SubscribedPerformer, reviews map[string]int, options *model.PerformerListOptions) []performer.Performer {
+func filterAndSortPerformers(items []performer.Performer, subscribed []*model.SubscribedPerformer, reviews map[string]int, options *model.PerformerListOptions, checks map[string]time.Time) []performer.Performer {
 	if options == nil {
-		return items
+		options = &model.PerformerListOptions{}
 	}
 	states := make(map[string]*model.SubscribedPerformer, len(subscribed))
 	for _, state := range subscribed {
@@ -36,10 +41,15 @@ func filterAndSortPerformers(items []performer.Performer, subscribed []*model.Su
 			filtered = append(filtered, item)
 		}
 	}
-	if options.Sort == nil || *options.Sort == model.PerformerListSortDefault {
-		return filtered
+	field := model.PerformerListSortName
+	if options.Sort != nil {
+		field = *options.Sort
 	}
+	descending := options.Direction != nil && *options.Direction == model.SortDirectionDesc
 	checkedAt := func(id string) time.Time {
+		if checks != nil {
+			return checks[id]
+		}
 		if state := states[id]; state != nil {
 			value, _ := time.Parse(time.RFC3339Nano, derefString(state.LastCheckedAt))
 			return value
@@ -48,19 +58,35 @@ func filterAndSortPerformers(items []performer.Performer, subscribed []*model.Su
 	}
 	sort.SliceStable(filtered, func(i, j int) bool {
 		a, b := filtered[i], filtered[j]
-		switch *options.Sort {
+		comparison := 0
+		switch field {
 		case model.PerformerListSortSceneCount:
-			if a.SceneCount != b.SceneCount {
-				return a.SceneCount > b.SceneCount
+			if a.SceneCount < b.SceneCount {
+				comparison = -1
+			} else if a.SceneCount > b.SceneCount {
+				comparison = 1
 			}
+		case model.PerformerListSortCreated:
+			if a.CreatedAt.IsZero() != b.CreatedAt.IsZero() {
+				return !a.CreatedAt.IsZero()
+			}
+			comparison = a.CreatedAt.Compare(b.CreatedAt)
 		case model.PerformerListSortLastChecked:
 			left, right := checkedAt(a.ID), checkedAt(b.ID)
-			if !left.Equal(right) {
-				return left.After(right)
+			if left.IsZero() != right.IsZero() {
+				return !left.IsZero()
 			}
+			comparison = left.Compare(right)
+		default:
+			comparison = ordering.Compare(a.Name, b.Name)
 		}
-		left, right := strings.ToLower(a.Name), strings.ToLower(b.Name)
-		if left != right {
+		if comparison != 0 {
+			if descending {
+				return comparison > 0
+			}
+			return comparison < 0
+		}
+		if left, right := strings.ToLower(a.Name), strings.ToLower(b.Name); left != right {
 			return left < right
 		}
 		return a.ID < b.ID

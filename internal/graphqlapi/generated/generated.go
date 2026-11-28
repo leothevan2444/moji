@@ -1552,6 +1552,7 @@ type ComplexityRoot struct {
 		LastProgressAt        func(childComplexity int) int
 		Progress              func(childComplexity int) int
 		QbittorrentState      func(childComplexity int) int
+		ReleaseDate           func(childComplexity int) int
 		Revision              func(childComplexity int) int
 		Source                func(childComplexity int) int
 		SourcingCompletedAt   func(childComplexity int) int
@@ -9925,6 +9926,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TaskSummary.QbittorrentState(childComplexity), true
 
+	case "TaskSummary.releaseDate":
+		if e.complexity.TaskSummary.ReleaseDate == nil {
+			break
+		}
+
+		return e.complexity.TaskSummary.ReleaseDate(childComplexity), true
+
 	case "TaskSummary.revision":
 		if e.complexity.TaskSummary.Revision == nil {
 			break
@@ -12406,15 +12414,16 @@ enum PerformerListFilter {
 }
 
 enum PerformerListSort {
-  DEFAULT
   NAME
+  CREATED
   SCENE_COUNT
   LAST_CHECKED
 }
 
 input PerformerListOptions {
   filter: PerformerListFilter = ALL
-  sort: PerformerListSort = DEFAULT
+  sort: PerformerListSort = NAME
+  direction: SortDirection = ASC
 }
 
 extend type Mutation {
@@ -13104,12 +13113,14 @@ type Subscription {
 }
 `, BuiltIn: false},
 	{Name: "../../../graphql/moji/types/task_workspace.graphql", Input: `enum TaskListStatus { ALL ATTENTION ACTIVE WAITING COMPLETED }
-enum TaskListSort { CREATED UPDATED PROGRESS }
+enum SortDirection { ASC DESC }
+enum TaskListSort { TITLE CREATED RELEASE_DATE PROGRESS }
 input TaskPageInput {
   ids: [ID!]
   search: String
   status: TaskListStatus = ALL
   sort: TaskListSort = CREATED
+  direction: SortDirection = DESC
   page: Int = 1
   pageSize: Int = 24
   completedWithin24Hours: Boolean = false
@@ -13128,6 +13139,7 @@ type TaskSummary {
   stageErrorCode: String
   stageErrorMessage: String
   torrentName: String
+  releaseDate: String
   progress: Float!
   qbittorrentState: String
   stashSceneId: ID
@@ -25130,6 +25142,8 @@ func (ec *executionContext) fieldContext_HomeTaskSnapshot_attentionTasks(_ conte
 				return ec.fieldContext_TaskSummary_stageErrorMessage(ctx, field)
 			case "torrentName":
 				return ec.fieldContext_TaskSummary_torrentName(ctx, field)
+			case "releaseDate":
+				return ec.fieldContext_TaskSummary_releaseDate(ctx, field)
 			case "progress":
 				return ec.fieldContext_TaskSummary_progress(ctx, field)
 			case "qbittorrentState":
@@ -25224,6 +25238,8 @@ func (ec *executionContext) fieldContext_HomeTaskSnapshot_activeTasks(_ context.
 				return ec.fieldContext_TaskSummary_stageErrorMessage(ctx, field)
 			case "torrentName":
 				return ec.fieldContext_TaskSummary_torrentName(ctx, field)
+			case "releaseDate":
+				return ec.fieldContext_TaskSummary_releaseDate(ctx, field)
 			case "progress":
 				return ec.fieldContext_TaskSummary_progress(ctx, field)
 			case "qbittorrentState":
@@ -25318,6 +25334,8 @@ func (ec *executionContext) fieldContext_HomeTaskSnapshot_recentTasks(_ context.
 				return ec.fieldContext_TaskSummary_stageErrorMessage(ctx, field)
 			case "torrentName":
 				return ec.fieldContext_TaskSummary_torrentName(ctx, field)
+			case "releaseDate":
+				return ec.fieldContext_TaskSummary_releaseDate(ctx, field)
 			case "progress":
 				return ec.fieldContext_TaskSummary_progress(ctx, field)
 			case "qbittorrentState":
@@ -49680,6 +49698,8 @@ func (ec *executionContext) fieldContext_Query_taskSummaries(ctx context.Context
 				return ec.fieldContext_TaskSummary_stageErrorMessage(ctx, field)
 			case "torrentName":
 				return ec.fieldContext_TaskSummary_torrentName(ctx, field)
+			case "releaseDate":
+				return ec.fieldContext_TaskSummary_releaseDate(ctx, field)
 			case "progress":
 				return ec.fieldContext_TaskSummary_progress(ctx, field)
 			case "qbittorrentState":
@@ -67643,6 +67663,8 @@ func (ec *executionContext) fieldContext_TaskAttentionQueue_items(_ context.Cont
 				return ec.fieldContext_TaskSummary_stageErrorMessage(ctx, field)
 			case "torrentName":
 				return ec.fieldContext_TaskSummary_torrentName(ctx, field)
+			case "releaseDate":
+				return ec.fieldContext_TaskSummary_releaseDate(ctx, field)
 			case "progress":
 				return ec.fieldContext_TaskSummary_progress(ctx, field)
 			case "qbittorrentState":
@@ -68728,6 +68750,8 @@ func (ec *executionContext) fieldContext_TaskEvent_summary(_ context.Context, fi
 				return ec.fieldContext_TaskSummary_stageErrorMessage(ctx, field)
 			case "torrentName":
 				return ec.fieldContext_TaskSummary_torrentName(ctx, field)
+			case "releaseDate":
+				return ec.fieldContext_TaskSummary_releaseDate(ctx, field)
 			case "progress":
 				return ec.fieldContext_TaskSummary_progress(ctx, field)
 			case "qbittorrentState":
@@ -70245,6 +70269,8 @@ func (ec *executionContext) fieldContext_TaskPage_items(_ context.Context, field
 				return ec.fieldContext_TaskSummary_stageErrorMessage(ctx, field)
 			case "torrentName":
 				return ec.fieldContext_TaskSummary_torrentName(ctx, field)
+			case "releaseDate":
+				return ec.fieldContext_TaskSummary_releaseDate(ctx, field)
 			case "progress":
 				return ec.fieldContext_TaskSummary_progress(ctx, field)
 			case "qbittorrentState":
@@ -71508,6 +71534,47 @@ func (ec *executionContext) _TaskSummary_torrentName(ctx context.Context, field 
 }
 
 func (ec *executionContext) fieldContext_TaskSummary_torrentName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskSummary_releaseDate(ctx context.Context, field graphql.CollectedField, obj *model.TaskSummary) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskSummary_releaseDate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReleaseDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskSummary_releaseDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "TaskSummary",
 		Field:      field,
@@ -79555,10 +79622,13 @@ func (ec *executionContext) unmarshalInputPerformerListOptions(ctx context.Conte
 		asMap["filter"] = "ALL"
 	}
 	if _, present := asMap["sort"]; !present {
-		asMap["sort"] = "DEFAULT"
+		asMap["sort"] = "NAME"
+	}
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "ASC"
 	}
 
-	fieldsInOrder := [...]string{"filter", "sort"}
+	fieldsInOrder := [...]string{"filter", "sort", "direction"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -79579,6 +79649,13 @@ func (ec *executionContext) unmarshalInputPerformerListOptions(ctx context.Conte
 				return it, err
 			}
 			it.Sort = data
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalOSortDirection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSortDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
 		}
 	}
 
@@ -81001,6 +81078,9 @@ func (ec *executionContext) unmarshalInputTaskPageInput(ctx context.Context, obj
 	if _, present := asMap["sort"]; !present {
 		asMap["sort"] = "CREATED"
 	}
+	if _, present := asMap["direction"]; !present {
+		asMap["direction"] = "DESC"
+	}
 	if _, present := asMap["page"]; !present {
 		asMap["page"] = 1
 	}
@@ -81011,7 +81091,7 @@ func (ec *executionContext) unmarshalInputTaskPageInput(ctx context.Context, obj
 		asMap["completedWithin24Hours"] = false
 	}
 
-	fieldsInOrder := [...]string{"ids", "search", "status", "sort", "page", "pageSize", "completedWithin24Hours"}
+	fieldsInOrder := [...]string{"ids", "search", "status", "sort", "direction", "page", "pageSize", "completedWithin24Hours"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -81046,6 +81126,13 @@ func (ec *executionContext) unmarshalInputTaskPageInput(ctx context.Context, obj
 				return it, err
 			}
 			it.Sort = data
+		case "direction":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			data, err := ec.unmarshalOSortDirection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSortDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Direction = data
 		case "page":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
 			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
@@ -92470,6 +92557,8 @@ func (ec *executionContext) _TaskSummary(ctx context.Context, sel ast.SelectionS
 			out.Values[i] = ec._TaskSummary_stageErrorMessage(ctx, field, obj)
 		case "torrentName":
 			out.Values[i] = ec._TaskSummary_torrentName(ctx, field, obj)
+		case "releaseDate":
+			out.Values[i] = ec._TaskSummary_releaseDate(ctx, field, obj)
 		case "progress":
 			out.Values[i] = ec._TaskSummary_progress(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -99417,6 +99506,22 @@ func (ec *executionContext) unmarshalOSceneSourceFilter2ᚖgithubᚗcomᚋleothe
 }
 
 func (ec *executionContext) marshalOSceneSourceFilter2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSceneSourceFilter(ctx context.Context, sel ast.SelectionSet, v *model.SceneSourceFilter) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOSortDirection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSortDirection(ctx context.Context, v any) (*model.SortDirection, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.SortDirection)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSortDirection2ᚖgithubᚗcomᚋleothevan2444ᚋmojiᚋinternalᚋgraphqlapiᚋmodelᚐSortDirection(ctx context.Context, sel ast.SelectionSet, v *model.SortDirection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

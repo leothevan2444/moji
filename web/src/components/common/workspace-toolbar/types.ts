@@ -7,6 +7,7 @@ export interface ToolbarAction {
   icon: IconDefinition;
   onClick?: () => void;
   href?: string;
+  pressed?: boolean;
   disabled?: boolean;
   busy?: boolean;
   spinning?: boolean;
@@ -15,6 +16,7 @@ export interface ToolbarAction {
   showLabel?: boolean;
 }
 export interface ToolbarFilter {
+  accessory?: ToolbarAction;
   id: string;
   label: string;
   value: string;

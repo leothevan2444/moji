@@ -40,9 +40,11 @@
 
 ## 分页、Home 与实时一致性
 
-TaskSummary 默认每页 24、可选 12/24/48，API 上限 100；完整文件、候选和检查点按需读，摘要与详情是不同缓存实体。默认创建时间走 SQL 分页；名称/搜索、进度和更新时间排序仍可能扫描轻量 headers，这不是常量成本。后台按 128 项 keyset 工作。
+TaskSummary 默认每页 24、可选 12/24/48/96，API 上限 100；完整文件、候选和检查点按需读，摘要与详情是不同缓存实体。默认创建时间走 SQL 分页；名称/搜索、进度和更新时间排序仍可能扫描轻量 headers，这不是常量成本。后台按 128 项 keyset 工作。
 
 `taskPage.filterCounts` 在搜索、ID 范围及额外完成时间条件内统计全部与四个互斥状态，先统计再应用当前状态和分页；`stats` 保留全局口径，不能用于关键词范围的筛选数字。普通列表沿用全局聚合，带范围条件时增加 SQL 聚合；搜索仍扫描轻量 headers 并叠加最新观测，列表与统计共用搜索谓词。
+
+排序字段与 ASC/DESC 方向独立，默认 CREATED/DESC；对外支持 TITLE/CREATED/RELEASE_DATE/PROGRESS。标题依据卡片显示的 code、torrent name 和 ID 回退并按数字自然顺序比较；发行日期从持久 film_json 提取到轻量摘要，不读取完整检查点。缺失或空白发行日期始终后置；标题/搜索/进度可能扫描轻量 headers，发行日期和创建时间沿用 SQL 分页。前端分组默认关闭，仅重排当前页展示，不参与后端查询。
 
 Home 使用聚合及有限样本；[HomeStats](../../internal/taskruntime/home_stats.go)由首页与 Widget 共用，Widget 只执行聚合，不加载详情或联网，不支持统计的 store 不回退全量 List。四项口径与界面见[主页](../../docs/home-workspace.md)。
 

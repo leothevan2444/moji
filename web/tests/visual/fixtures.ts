@@ -221,13 +221,23 @@ export const test = base.extend<{ graphqlOverrides: Record<string, unknown> }>({
     effective.taskSummaries ??= ({ids}:{ids:string[]}) => taskArray().filter(task=>ids.includes(task.id)).map(taskDefaults);
     const group=(task:any)=>task.stage==="COMPLETED"?"COMPLETED":task.stageStatus==="BLOCKED"?"ATTENTION":task.stage==="SOURCING"&&task.stageStatus==="PENDING"&&task.sourcingNextCheckAt?"WAITING":"ACTIVE";
     effective.taskAttentionQueue ??= () => ({...cursor(),items:taskArray().filter(task=>group(task)==="ATTENTION").sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).map(taskDefaults)});
-    effective.taskPage ??= ({input}:{input:{page:number;pageSize:number;status:string;sort:string;search?:string;completedWithin24Hours?:boolean;ids?:string[]}}) => {
-      input=Object.assign({page:1,pageSize:24,status:"ALL",sort:"CREATED"},input);
+    effective.taskPage ??= ({input}:{input:{page:number;pageSize:number;status:string;sort:string;direction?:string;search?:string;completedWithin24Hours?:boolean;ids?:string[]}}) => {
+      input=Object.assign({page:1,pageSize:24,status:"ALL",sort:"CREATED",direction:"DESC"},input);
       const all=taskArray(); let scope=all.filter(task=>(!input.ids||input.ids.includes(task.id))&&(!input.search||`${task.code} ${task.torrentName??""}`.toLowerCase().includes(input.search.toLowerCase())));
       if(input.completedWithin24Hours)scope=scope.filter(task=>task.stage==="COMPLETED"&&Date.parse(task.ingestCompletedAt)>=Date.parse(now)-86400000&&Date.parse(task.ingestCompletedAt)<=Date.parse(now));
       const filterCounts={total:scope.length,active:scope.filter(t=>group(t)==="ACTIVE").length,waiting:scope.filter(t=>group(t)==="WAITING").length,completed:scope.filter(t=>group(t)==="COMPLETED").length,attention:scope.filter(t=>group(t)==="ATTENTION").length};
       const items=scope.filter(task=>input.status==="ALL"||group(task)===input.status);
-      items.sort((a,b)=> input.sort==="PROGRESS"?(b.progress-a.progress||a.id.localeCompare(b.id)):input.sort==="UPDATED"?b.updatedAt.localeCompare(a.updatedAt)||a.id.localeCompare(b.id):b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id));
+      items.sort((a,b)=>{
+        let comparison=0;
+        if(input.sort==="TITLE") comparison=(a.code||a.torrentName||a.id).localeCompare(b.code||b.torrentName||b.id,"en",{numeric:true,sensitivity:"base"});
+        else if(input.sort==="PROGRESS") comparison=a.progress-b.progress;
+        else if(input.sort==="RELEASE_DATE") {
+          const left=a.releaseDate??"",right=b.releaseDate??"";
+          if(Boolean(left)!==Boolean(right))return left?-1:1;
+          comparison=left.localeCompare(right);
+        } else comparison=a.createdAt.localeCompare(b.createdAt);
+        return comparison?(input.direction==="ASC"?comparison:-comparison):b.createdAt.localeCompare(a.createdAt)||a.id.localeCompare(b.id);
+      });
       const totalPages=Math.max(1,Math.ceil(items.length/input.pageSize)); const page=Math.min(input.page,totalPages);
       const completed=all.filter(t=>group(t)==="COMPLETED").length,attention=all.filter(t=>group(t)==="ATTENTION").length,waiting=all.filter(t=>group(t)==="WAITING").length;
       return {filterCounts,items:items.slice((page-1)*input.pageSize,page*input.pageSize).map(taskDefaults),page,pageSize:input.pageSize,totalPages,totalCount:items.length,...cursor(),stats:{total:all.length,active:all.length-completed,completed,attention,waiting,downloading:0,pendingScans:0,failed:attention}};

@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	"github.com/leothevan2444/moji/internal/performer"
@@ -244,7 +245,20 @@ func (r *queryResolver) PerformerWorkspace(ctx context.Context, search *string, 
 		}
 	}
 	counts := performerFilterCounts(items, subscribed, reviews, needle, reviewsKnown)
-	items = filterAndSortPerformers(items, subscribed, reviews, options)
+	var checks map[string]time.Time
+	if options != nil && options.Sort != nil && *options.Sort == model.PerformerListSortLastChecked {
+		if service, ok := r.PerformerSubscription.(performerCheckTimes); ok {
+			ids := make([]string, 0, len(items))
+			for _, item := range items {
+				ids = append(ids, item.ID)
+			}
+			checks, err = service.PerformerCheckTimes(ctx, ids)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	items = filterAndSortPerformers(items, subscribed, reviews, options, checks)
 	visible := buildStashPerformerPage(items, needle, page, pageSize)
 	activities := make([]*model.PerformerActivity, 0, len(visible.Items))
 	ids := make([]string, 0, len(visible.Items))

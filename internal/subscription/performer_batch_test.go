@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/performer"
 	stashgraphql "github.com/leothevan2444/moji/pkg/stash/graphql"
@@ -74,5 +75,22 @@ func TestBuildSubscribedPerformersUsesProvidedSnapshot(t *testing.T) {
 	}
 	if len(items) != 1 || items[0].Performer.ID != "p1" {
 		t.Fatalf("unexpected subscribed performers: %#v", items)
+	}
+}
+
+func TestPerformerCheckTimesRetainsUnsubscribedActorsAndMissingValues(t *testing.T) {
+	ctx := context.Background()
+	store := NewMemoryStore()
+	now := time.Now().UTC()
+	if err := store.Put(ctx, &PerformerState{PerformerID: "unsubscribed", LastCheckedAt: &now}); err != nil {
+		t.Fatal(err)
+	}
+	service, err := newServiceForTest(&fakeStashClient{}, nil, nil, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	times, err := service.PerformerCheckTimes(ctx, []string{"unsubscribed", "unknown"})
+	if err != nil || !times["unsubscribed"].Equal(now) || !times["unknown"].IsZero() {
+		t.Fatalf("check times: %+v %v", times, err)
 	}
 }

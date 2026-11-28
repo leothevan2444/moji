@@ -4,7 +4,7 @@ import { parseDiscoverSearchParams, parsePerformerSearchParams, parseTaskSearchP
 describe("task search params", () => {
   it("uses stable defaults and omits them when serializing", () => {
     const state = parseTaskSearchParams(new URLSearchParams("status=unknown&sort=unknown"));
-    expect(state).toEqual({ q: "", status: "all", sort: "createdAt", page:1, pageSize:24 });
+    expect(state).toEqual({ q: "", status: "all", sort: "createdAt", direction:"desc", page:1, pageSize:24 });
     expect(serializeTaskSearchParams(state).toString()).toBe("");
   });
 
@@ -25,8 +25,8 @@ describe("task search params", () => {
   });
 
   it("round trips public URL values", () => {
-    const state = parseTaskSearchParams(new URLSearchParams("q=abc&status=failed&sort=updated"));
-    expect(serializeTaskSearchParams(state).toString()).toBe("q=abc&status=failed&sort=updated");
+    const state = parseTaskSearchParams(new URLSearchParams("q=abc&status=failed&sort=release_date&direction=asc"));
+    expect(serializeTaskSearchParams(state).toString()).toBe("q=abc&status=failed&sort=release_date&direction=asc");
   });
 });
 
@@ -37,7 +37,7 @@ describe("performer search params", () => {
     expect(state.pageSize).toBe(24);
     expect(state.source).toBe("all");
     expect(state.filter).toBe("all");
-    expect(state.sort).toBe("default");
+    expect(state.sort).toBe("name");
   });
 
   it("defaults invalid cast choices to all and omits the default from URLs", () => {

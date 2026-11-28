@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/leothevan2444/moji/internal/graphqlapi/model"
 	performerdomain "github.com/leothevan2444/moji/internal/performer"
@@ -138,7 +139,7 @@ func TestPerformerListOptionsApplyAcrossPagesAndKeepReviewOnlyActors(t *testing.
 		{model.PerformerListFilterError, "a"},
 	} {
 		t.Run(string(test.filter), func(t *testing.T) {
-			result := filterAndSortPerformers(items, states, map[string]int{"b": 2}, &model.PerformerListOptions{Filter: &test.filter})
+			result := filterAndSortPerformers(items, states, map[string]int{"b": 2}, &model.PerformerListOptions{Filter: &test.filter}, nil)
 			var ids string
 			for _, item := range result {
 				ids += item.ID
@@ -156,7 +157,11 @@ func TestPerformerListOptionsApplyAcrossPagesAndKeepReviewOnlyActors(t *testing.
 		{model.PerformerListSortSceneCount, "b"},
 		{model.PerformerListSortLastChecked, "c"},
 	} {
-		result := filterAndSortPerformers(items, states, nil, &model.PerformerListOptions{Sort: &test.sort})
+		direction := model.SortDirectionDesc
+		if test.sort == model.PerformerListSortName {
+			direction = model.SortDirectionAsc
+		}
+		result := filterAndSortPerformers(items, states, nil, &model.PerformerListOptions{Sort: &test.sort, Direction: &direction}, nil)
 		page, pageSize := 1, 1
 		paged := buildStashPerformerPage(result, "", &page, &pageSize)
 		if paged.Items[0].ID != test.want || paged.TotalCount != 3 {
@@ -234,7 +239,7 @@ func TestPerformerFilterCountsMatchEachCategoryAndSearchBeforePagination(t *test
 			{model.PerformerListFilterError, counts.Error},
 		} {
 			page, size := 2, 1
-			result := buildStashPerformerPage(filterAndSortPerformers(items, states, reviews, &model.PerformerListOptions{Filter: &category.filter}), search, &page, &size)
+			result := buildStashPerformerPage(filterAndSortPerformers(items, states, reviews, &model.PerformerListOptions{Filter: &category.filter}, nil), search, &page, &size)
 			if result.TotalCount != category.count {
 				t.Fatalf("%q/%s: list=%d badge=%d", search, category.filter, result.TotalCount, category.count)
 			}
@@ -279,5 +284,56 @@ func TestPerformerWorkspaceCountsAndOptionalReviewFailure(t *testing.T) {
 	review := model.PerformerListFilterReview
 	if _, err = resolver.PerformerWorkspace(context.Background(), &search, nil, nil, &model.PerformerListOptions{Filter: &review}); err == nil {
 		t.Fatal("failed review query presented an empty review category")
+	}
+}
+
+func TestPerformerSortingHasIndependentDirectionAndUnknownTimesLast(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	items := []performerdomain.Performer{{ID: "a", Name: "Actor 10", SceneCount: 10, CreatedAt: now.Add(time.Hour), Subscribed: true}, {ID: "b", Name: "actor 2", SceneCount: 2}, {ID: "c", Name: "Actor 1", CreatedAt: now}}
+	checks := map[string]time.Time{"a": now, "c": now.Add(time.Hour)}
+	for _, test := range []struct {
+		field     model.PerformerListSort
+		asc, desc string
+	}{{model.PerformerListSortName, "cba", "abc"}, {model.PerformerListSortCreated, "cab", "acb"}, {model.PerformerListSortSceneCount, "cba", "abc"}, {model.PerformerListSortLastChecked, "acb", "cab"}} {
+		for _, direction := range []model.SortDirection{model.SortDirectionAsc, model.SortDirectionDesc} {
+			result := filterAndSortPerformers(items, nil, nil, &model.PerformerListOptions{Sort: &test.field, Direction: &direction}, checks)
+			got := ""
+			for _, item := range result {
+				got += item.ID
+			}
+			want := test.asc
+			if direction == model.SortDirectionDesc {
+				want = test.desc
+			}
+			if got != want {
+				t.Fatalf("%s/%s: %s != %s", test.field, direction, got, want)
+			}
+		}
+	}
+	defaultOrder := filterAndSortPerformers(items, nil, nil, nil, nil)
+	if defaultOrder[0].ID != "c" {
+		t.Fatal("default still prioritizes subscriptions")
+	}
+}
+
+type workspaceCheckTimesService struct {
+	workspaceSubscriptionService
+	ids []string
+}
+
+func (s *workspaceCheckTimesService) PerformerCheckTimes(_ context.Context, ids []string) (map[string]time.Time, error) {
+	s.ids = append([]string(nil), ids...)
+	return map[string]time.Time{"unsubscribed": time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}, nil
+}
+func TestPerformerWorkspaceSortsRetainedChecksWithoutChangingSubscriptionMembership(t *testing.T) {
+	service := &workspaceCheckTimesService{}
+	resolver := &queryResolver{Resolver: &Resolver{Performer: &workspacePerformerService{items: []performerdomain.Performer{{ID: "subscribed", Name: "Alpha", Subscribed: true}, {ID: "unsubscribed", Name: "Beta"}}}, PerformerSubscription: service}}
+	field, direction := model.PerformerListSortLastChecked, model.SortDirectionDesc
+	page, err := resolver.PerformerWorkspace(context.Background(), nil, nil, nil, &model.PerformerListOptions{Sort: &field, Direction: &direction})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(service.ids) != 2 || page.Performers.Items[0].ID != "unsubscribed" || len(page.SubscribedPerformers) != 1 || page.FilterCounts.Subscribed != 1 {
+		t.Fatalf("check sorting changed membership or dropped history: %+v ids=%v", page, service.ids)
 	}
 }

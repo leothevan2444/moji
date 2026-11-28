@@ -11,7 +11,7 @@ import { parseTaskSearchParams, serializeTaskSearchParams } from "../searchParam
 import { mergeTaskSelection, taskSummary, type TaskGroupKey } from "../../utils/taskUtils";
 import {
   TaskDeletePolicy,
-  TasksWorkspaceDocument, TaskListStatus, TaskListSort, TaskSelectionSummariesDocument, TaskAttentionQueueDocument
+  TasksWorkspaceDocument, TaskListStatus, TaskListSort, SortDirection, TaskSelectionSummariesDocument, TaskAttentionQueueDocument
 } from "../../graphql/generated/graphql";
 import type { TaskSortKey, TaskStatusFilter } from "../../types";
 import type { AppOutletContext } from "../AppLayout";
@@ -58,9 +58,10 @@ export function Component() {
   const [updatesPending, setUpdatesPending] = useState(false);
   const input = useMemo(() => ({ search, page: filter.page ?? 1, pageSize: filter.pageSize ?? 24,
     status: ({ all: TaskListStatus.All, running: TaskListStatus.Active, failed: TaskListStatus.Attention, waiting: TaskListStatus.Waiting, completed: TaskListStatus.Completed })[filter.status],
-    sort: ({ createdAt: TaskListSort.Created, updatedAt: TaskListSort.Updated, progress: TaskListSort.Progress })[filter.sort],
+    sort: ({ title:TaskListSort.Title, createdAt: TaskListSort.Created, releaseDate:TaskListSort.ReleaseDate, progress: TaskListSort.Progress })[filter.sort],
+    direction:filter.direction==="asc"?SortDirection.Asc:SortDirection.Desc,
     completedWithin24Hours: searchParams.get("completedWithin") === "24h"
-  }), [search, filter.page, filter.pageSize, filter.status, filter.sort, searchParams]);
+  }), [search, filter.page, filter.pageSize, filter.status, filter.sort, filter.direction, searchParams]);
   const [{ data, fetching, error }, refresh] = useQuery({ query: TasksWorkspaceDocument, variables: { input }, requestPolicy: "cache-and-network" });
   const [{ data: detailData, fetching: detailFetching, error: detailError }] = useTaskDetail(taskId);
   const selectionKey = selectedTaskIds.slice().sort().join("\u0000");
@@ -92,11 +93,12 @@ export function Component() {
     const deleted = new Set(events.filter(e => e.type === "DELETED").map(e => e.taskId));
     if (deleted.size) { setSelectedTaskIds(ids => ids.filter(id => !deleted.has(id))); setDeleteGeneration(value => value+1); }
     const affectsMembership = events.some(event => event.listChanged);
-    if (!affectsMembership && state.input.sort === TaskListSort.Created) return;
+    const dynamicSort = state.input.sort === TaskListSort.Progress;
+    if (!affectsMembership && !dynamicSort) return;
     setUpdatesPending(true);
-    // Reordering a progress/updated sort is an explicit refresh; ordinary progress
+    // Reordering a progress sort is an explicit refresh; ordinary progress
     // never moves a card. Membership refreshes automatically when the list is idle.
-    if (state.input.sort !== TaskListSort.Created || state.taskId || state.queueOpen || state.selectedTaskIds.length || document.activeElement?.closest(".task-grid")) return;
+    if (dynamicSort || state.taskId || state.queueOpen || state.selectedTaskIds.length || document.activeElement?.closest(".task-grid")) return;
     deferredRefresh.current = true;
     if (!state.fetching && !refreshTimer.current) refreshTimer.current = setTimeout(() => {
       refreshTimer.current = null;
@@ -129,7 +131,7 @@ export function Component() {
   const closeTask = () => {
     navigate(taskCloseTarget(location.state, searchParams));
   };
-  const updateFilter = (patch: Partial<{ q: string; status: TaskStatusFilter; sort: TaskSortKey }>) => {
+  const updateFilter = (patch: Partial<{ q: string; status: TaskStatusFilter; sort: TaskSortKey; direction:"asc"|"desc" }>) => {
     const next = serializeTaskSearchParams({ ...filter, ...patch, page: 1 });
     if (searchParams.get("completedWithin") === "24h") next.set("completedWithin", "24h");
     setSearchParams(next);
@@ -203,7 +205,7 @@ export function Component() {
       onPageChange={page => { const next = serializeTaskSearchParams({ ...filter, page }); if (input.completedWithin24Hours) next.set("completedWithin", "24h"); setSearchParams(next); }}
       onPageSizeChange={pageSize => { const next = serializeTaskSearchParams({ ...filter, pageSize, page: 1 }); if (input.completedWithin24Hours) next.set("completedWithin", "24h"); setSearchParams(next); }} completedWithin24Hours={searchParams.get("completedWithin") === "24h"}
       onClearCompletedWindow={() => { const next = new URLSearchParams(searchParams); next.delete("completedWithin"); setSearchParams(next); }}
-      taskSearch={filter.q} taskStatus={filter.status} taskSort={filter.sort} taskGroupOpen={groups}
+      taskSearch={filter.q} taskStatus={filter.status} taskSort={filter.sort} taskDirection={filter.direction} onDirectionChange={direction=>updateFilter({direction})} taskGroupOpen={groups}
       pendingTaskRetryId={pendingRetry} pendingTaskDeleteId={pendingDelete} selectedTaskIds={selectedTaskIds}
       batchPending={retryingTasks || deletingTasks} refreshing={fetching}
       lastRefreshedAt={lastRefreshedAt}

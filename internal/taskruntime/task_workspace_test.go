@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/leothevan2444/moji/internal/film"
 	"github.com/leothevan2444/moji/internal/storage"
 )
 
@@ -205,5 +206,60 @@ func TestTaskFilterCountsFollowSearchAndTimeScopeBeforeStatusAndPaging(t *testin
 	page, err := store.TaskPage(ctx, TaskPageInput{Search: "no-match-at-all", Status: "COMPLETED"})
 	if err != nil || page.FilterCounts != (TaskFilterCounts{}) || page.Stats.Total != 6 {
 		t.Fatalf("empty search must show real zeroes without changing global stats: %+v %v", page, err)
+	}
+}
+
+func TestWorkspaceSortFieldsDirectionsAndUnknownDates(t *testing.T) {
+	store, _ := relationalStore(t)
+	ctx := context.Background()
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	tasks := []*Task{
+		{ID: "a", Code: "ABC-10", CreatedAt: base.Add(48 * time.Hour), Progress: .8, Film: &film.Snapshot{Date: "2020-01-02"}},
+		{ID: "b", Code: "abc-2", CreatedAt: base, Progress: .2, Film: &film.Snapshot{Date: "2025-06-01"}},
+		{ID: "c", Code: "ABC-01", CreatedAt: base.Add(24 * time.Hour), Progress: .5, Film: &film.Snapshot{Date: "   "}},
+		{ID: "d", TorrentName: "ABC-3", CreatedAt: base.Add(72 * time.Hour), Progress: .3},
+	}
+	for _, task := range tasks {
+		if task.Film != nil {
+			task.Film.Code = task.Code
+			task.Film.SceneID = task.ID
+			task.Film.Endpoint = "https://example.test/graphql"
+		}
+		task.Source = TaskSourceManual
+		task.Stage = TaskStageDownloading
+		task.StageStatus = TaskStageStatusRunning
+		task.UpdatedAt = task.CreatedAt
+		if err := store.Create(ctx, task); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, search := range []string{"", "abc"} {
+		for _, test := range []struct{ field, asc, desc string }{{"TITLE", "cbda", "adbc"}, {"CREATED", "bcad", "dacb"}, {"RELEASE_DATE", "abdc", "badc"}, {"PROGRESS", "bdca", "acdb"}} {
+			for _, direction := range []string{"ASC", "DESC"} {
+				want := test.asc
+				if direction == "DESC" {
+					want = test.desc
+				}
+				got := ""
+				for page := 1; page <= 2; page++ {
+					result, err := store.TaskPage(ctx, TaskPageInput{Search: search, Sort: test.field, Direction: direction, Page: page, PageSize: 2})
+					if err != nil {
+						t.Fatal(err)
+					}
+					for _, task := range result.Items {
+						got += task.ID
+						if task.ID == "a" && task.FilmReleaseDate() != "2020-01-02" {
+							t.Fatal("date projection lost")
+						}
+					}
+				}
+				if got != want {
+					t.Fatalf("search=%q %s/%s: got %s want %s", search, test.field, direction, got, want)
+				}
+			}
+		}
+	}
+	if _, err := store.TaskPage(ctx, TaskPageInput{Direction: "sideways"}); err == nil {
+		t.Fatal("invalid direction accepted")
 	}
 }

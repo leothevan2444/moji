@@ -860,8 +860,9 @@ type PerformerLatestRelease struct {
 }
 
 type PerformerListOptions struct {
-	Filter *PerformerListFilter `json:"filter,omitempty"`
-	Sort   *PerformerListSort   `json:"sort,omitempty"`
+	Filter    *PerformerListFilter `json:"filter,omitempty"`
+	Sort      *PerformerListSort   `json:"sort,omitempty"`
+	Direction *SortDirection       `json:"direction,omitempty"`
 }
 
 type PerformerScenePerson struct {
@@ -1785,6 +1786,7 @@ type TaskPageInput struct {
 	Search                 *string         `json:"search,omitempty"`
 	Status                 *TaskListStatus `json:"status,omitempty"`
 	Sort                   *TaskListSort   `json:"sort,omitempty"`
+	Direction              *SortDirection  `json:"direction,omitempty"`
 	Page                   *int            `json:"page,omitempty"`
 	PageSize               *int            `json:"pageSize,omitempty"`
 	CompletedWithin24Hours *bool           `json:"completedWithin24Hours,omitempty"`
@@ -1822,6 +1824,7 @@ type TaskSummary struct {
 	StageErrorCode        *string         `json:"stageErrorCode,omitempty"`
 	StageErrorMessage     *string         `json:"stageErrorMessage,omitempty"`
 	TorrentName           *string         `json:"torrentName,omitempty"`
+	ReleaseDate           *string         `json:"releaseDate,omitempty"`
 	Progress              float64         `json:"progress"`
 	QbittorrentState      *string         `json:"qbittorrentState,omitempty"`
 	StashSceneID          *string         `json:"stashSceneId,omitempty"`
@@ -3168,22 +3171,22 @@ func (e PerformerListFilter) MarshalJSON() ([]byte, error) {
 type PerformerListSort string
 
 const (
-	PerformerListSortDefault     PerformerListSort = "DEFAULT"
 	PerformerListSortName        PerformerListSort = "NAME"
+	PerformerListSortCreated     PerformerListSort = "CREATED"
 	PerformerListSortSceneCount  PerformerListSort = "SCENE_COUNT"
 	PerformerListSortLastChecked PerformerListSort = "LAST_CHECKED"
 )
 
 var AllPerformerListSort = []PerformerListSort{
-	PerformerListSortDefault,
 	PerformerListSortName,
+	PerformerListSortCreated,
 	PerformerListSortSceneCount,
 	PerformerListSortLastChecked,
 }
 
 func (e PerformerListSort) IsValid() bool {
 	switch e {
-	case PerformerListSortDefault, PerformerListSortName, PerformerListSortSceneCount, PerformerListSortLastChecked:
+	case PerformerListSortName, PerformerListSortCreated, PerformerListSortSceneCount, PerformerListSortLastChecked:
 		return true
 	}
 	return false
@@ -3863,6 +3866,61 @@ func (e SettingsSection) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type SortDirection string
+
+const (
+	SortDirectionAsc  SortDirection = "ASC"
+	SortDirectionDesc SortDirection = "DESC"
+)
+
+var AllSortDirection = []SortDirection{
+	SortDirectionAsc,
+	SortDirectionDesc,
+}
+
+func (e SortDirection) IsValid() bool {
+	switch e {
+	case SortDirectionAsc, SortDirectionDesc:
+		return true
+	}
+	return false
+}
+
+func (e SortDirection) String() string {
+	return string(e)
+}
+
+func (e *SortDirection) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SortDirection(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SortDirection", str)
+	}
+	return nil
+}
+
+func (e SortDirection) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SortDirection) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SortDirection) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type SubscriptionCheckScope string
 
 const (
@@ -4334,20 +4392,22 @@ func (e TaskEventType) MarshalJSON() ([]byte, error) {
 type TaskListSort string
 
 const (
-	TaskListSortCreated  TaskListSort = "CREATED"
-	TaskListSortUpdated  TaskListSort = "UPDATED"
-	TaskListSortProgress TaskListSort = "PROGRESS"
+	TaskListSortTitle       TaskListSort = "TITLE"
+	TaskListSortCreated     TaskListSort = "CREATED"
+	TaskListSortReleaseDate TaskListSort = "RELEASE_DATE"
+	TaskListSortProgress    TaskListSort = "PROGRESS"
 )
 
 var AllTaskListSort = []TaskListSort{
+	TaskListSortTitle,
 	TaskListSortCreated,
-	TaskListSortUpdated,
+	TaskListSortReleaseDate,
 	TaskListSortProgress,
 }
 
 func (e TaskListSort) IsValid() bool {
 	switch e {
-	case TaskListSortCreated, TaskListSortUpdated, TaskListSortProgress:
+	case TaskListSortTitle, TaskListSortCreated, TaskListSortReleaseDate, TaskListSortProgress:
 		return true
 	}
 	return false

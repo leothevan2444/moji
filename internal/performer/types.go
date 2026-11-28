@@ -10,6 +10,7 @@ import (
 const DefaultCustomFieldKey = "moji_subscribed"
 
 type Performer struct {
+	CreatedAt  time.Time
 	ID, Name   string
 	AliasList  []string
 	Favorite   bool

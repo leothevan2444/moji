@@ -98,7 +98,7 @@ func performerFromStash(item *stashgraphql.PerformerFragment, key string) Perfor
 			aliases = append(aliases, v)
 		}
 	}
-	return Performer{ID: item.ID, Name: item.Name, AliasList: aliases, Favorite: item.Favorite, ImagePath: stringValue(item.ImagePath), SceneCount: item.SceneCount, Subscribed: IsSubscribed(item.CustomFields, key)}
+	return Performer{CreatedAt: item.CreatedAt, ID: item.ID, Name: item.Name, AliasList: aliases, Favorite: item.Favorite, ImagePath: stringValue(item.ImagePath), SceneCount: item.SceneCount, Subscribed: IsSubscribed(item.CustomFields, key)}
 }
 func performerMatches(item Performer, needle string) bool {
 	if strings.Contains(normalize(item.Name), needle) {

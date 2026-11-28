@@ -23,7 +23,7 @@ const task = {
 
 function renderPage(overrides: Partial<React.ComponentProps<typeof TasksPage>> = {}) {
   const callbacks = {
-    onSearchChange: vi.fn(), onStatusChange: vi.fn(), onSortChange: vi.fn(), onToggleGroup: vi.fn(),
+    onSearchChange: vi.fn(), onStatusChange: vi.fn(), onSortChange: vi.fn(), onDirectionChange:vi.fn(), onToggleGroup: vi.fn(),
     onRefresh: vi.fn(), onOpenQueue: vi.fn(), onOpenTask: vi.fn(), onRetryTask: vi.fn(),
     onResolveTask: vi.fn(), onDeleteTask: vi.fn(), onToggleTaskSelection: vi.fn(), onSelectVisibleTasks: vi.fn(),
     onClearTaskSelection: vi.fn(), onBatchRetry: vi.fn(), onBatchDelete: vi.fn()
@@ -47,7 +47,7 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof TasksPage>> =
 }
 
 describe("TasksPage task controls", () => {
-  beforeEach(async () => i18n.changeLanguage("en"));
+  beforeEach(async () => { localStorage.removeItem("moji:tasks-grouped"); await i18n.changeLanguage("en"); });
   afterEach(cleanup);
 
   it("matches the homepage rolling completion count using verified completion time", () => {
@@ -90,7 +90,7 @@ describe("TasksPage task controls", () => {
   it("shows pending ingest with other active tasks without a manual ingest action", async () => {
     renderPage({ taskStatus: "running", tasks: [{ ...task, stage: TaskStage.PendingIngest, stageStatus: TaskStageStatus.Pending }] });
     expect(screen.getByRole("button", { name: /TASK-1.*Open details/i })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "In progress" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "In progress" })).toBeNull();
     expect(screen.queryByRole("button", { name: /Process ingest/ })).toBeNull();
     await userEvent.setup().click(screen.getByRole("button", { name: "Enter multi-select mode" }));
     expect(screen.getByRole("region", { name: "Selected task actions" }).textContent).not.toContain("Ingest");
@@ -149,6 +149,22 @@ describe("TasksPage task controls", () => {
     const group=within(screen.getByRole("toolbar",{name:"Filter tasks by status"}));
     expect(group.getByRole("button",{name:"All tasks —"})).toBeTruthy();
     expect(group.queryByRole("button",{name:"All tasks 0"})).toBeNull();
+  });
+
+  it("uses separate sort controls and keeps grouping as a persisted browser preference", async () => {
+    const callbacks=renderPage();const user=userEvent.setup();
+    expect(screen.queryByRole("heading",{name:"In progress"})).toBeNull();
+    await user.click(screen.getByRole("button",{name:"Creation time: Descending; switch to Ascending"}));
+    expect(callbacks.onDirectionChange).toHaveBeenCalledWith("asc");
+    await user.selectOptions(screen.getByRole("combobox",{name:"Task sort order"}),"releaseDate");
+    expect(callbacks.onSortChange).toHaveBeenCalledWith("releaseDate");
+    await user.click(screen.getByRole("button",{name:"Enable task grouping"}));
+    expect(screen.getByRole("heading",{name:"In progress"})).toBeTruthy();
+    expect(localStorage.getItem("moji:tasks-grouped")).toBe("true");
+    cleanup();renderPage();
+    expect(screen.getByRole("button",{name:"Disable task grouping"}).getAttribute("aria-pressed")).toBe("true");
+    await user.click(screen.getByRole("button",{name:"Disable task grouping"}));
+    expect(screen.queryByRole("heading",{name:"In progress"})).toBeNull();
   });
 
 });

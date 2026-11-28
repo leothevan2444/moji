@@ -26,7 +26,7 @@ test("actor filters retain search, count aliases and reset pagination while pres
   await expect(page.locator(".profile-card")).toHaveCount(1);
   await expect(page.locator(".profile-card")).toContainText("Beta");
   const url=new URL(page.url());
-  expect(url.searchParams.get("q")).toBe("Alpha");expect(url.searchParams.get("sort")).toBe("name");
+  expect(url.searchParams.get("q")).toBe("Alpha");expect((url.searchParams.get("sort")??"name")).toBe("name");
   expect(url.searchParams.get("filter")).toBe("review");expect(url.searchParams.get("page")??"1").toBe("1");
   await expect(group.getByRole("button",{name:"All performers 2"})).toBeVisible();
   await page.screenshot({path:info.outputPath("counted-actor-filters.png")});

@@ -5,6 +5,7 @@ fragment StashIdFragment on StashID {
 }
 
 fragment PerformerFragment on Performer {
+  created_at
   id
   name
   disambiguation

@@ -52,6 +52,9 @@ func (r *queryResolver) TaskPage(ctx context.Context, input model.TaskPageInput)
 	if input.Sort != nil {
 		in.Sort = string(*input.Sort)
 	}
+	if input.Direction != nil {
+		in.Direction = string(*input.Direction)
+	}
 	if input.Page != nil {
 		in.Page = *input.Page
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/leothevan2444/moji/internal/ordering"
 	"sort"
 	"strings"
 	"time"
@@ -14,10 +15,10 @@ import (
 var ErrTaskNotFound = errors.New("taskruntime: task not found")
 
 type TaskPageInput struct {
-	Search, Status, Sort   string
-	Page, PageSize         int
-	CompletedWithin24Hours bool
-	IDs                    []string
+	Search, Status, Sort, Direction string
+	Page, PageSize                  int
+	CompletedWithin24Hours          bool
+	IDs                             []string
 }
 type TaskFilterCounts struct {
 	Total     int `db:"total"`
@@ -156,9 +157,16 @@ func normalizeTaskPage(in TaskPageInput) (TaskPageInput, error) {
 		return in, fmt.Errorf("taskruntime: invalid task status")
 	}
 	switch in.Sort {
-	case "CREATED", "UPDATED", "PROGRESS", "OLDEST", "INGESTED":
+	case "TITLE", "RELEASE_DATE", "CREATED", "UPDATED", "PROGRESS", "OLDEST", "INGESTED":
 	default:
 		return in, fmt.Errorf("taskruntime: invalid task sort")
+	}
+	in.Direction = strings.ToUpper(in.Direction)
+	if in.Direction == "" {
+		in.Direction = "DESC"
+	}
+	if in.Direction != "ASC" && in.Direction != "DESC" {
+		return in, fmt.Errorf("taskruntime: invalid sort direction")
 	}
 	in.Search = strings.ToLower(strings.TrimSpace(in.Search))
 	return in, nil
@@ -179,7 +187,7 @@ func taskWorkspaceGroup(t *Task) string {
 
 // The production projection never reads attachments, file plans or checkpoint JSON.
 const taskSummarySelect = `SELECT t.id,t.source,t.code,t.stage,t.stage_status,t.stage_error_code,t.stage_error_message,
- t.revision,t.created_at,t.updated_at,k.sourcing_last_checked_at,k.sourcing_next_check_at,
+ json_extract(t.film_json,'$.Date') AS film_release_date,t.revision,t.created_at,t.updated_at,k.sourcing_last_checked_at,k.sourcing_next_check_at,
  k.sourcing_completed_at,k.download_completed_at,k.ingest_completed_at,i.stash_ingest_phase,CASE WHEN json_extract(i.stash_scene_ids_json,'$[0]') IS NOT NULL THEN json_array(json_extract(i.stash_scene_ids_json,'$[0]')) END AS stash_scene_ids_json,d.torrent_url,d.torrent_hash,d.content_path,i.stash_scan_job_id
  FROM tasks t LEFT JOIN task_checkpoints k ON k.task_id=t.id LEFT JOIN task_ingest i ON i.task_id=t.id LEFT JOIN task_downloads d ON d.task_id=t.id`
 
@@ -256,7 +264,7 @@ func (s *RelationalTaskStore) TaskPage(ctx context.Context, input TaskPageInput)
 	}
 	// Observation-driven search/sorts use only lightweight headers and the current
 	// in-memory observation overlay, never stale persisted progress or full tasks.
-	dynamic := in.Search != "" || in.Sort == "UPDATED" || in.Sort == "PROGRESS"
+	dynamic := in.Search != "" || in.Sort == "UPDATED" || in.Sort == "PROGRESS" || in.Sort == "TITLE"
 	var rows []sqliteTaskRow
 	if dynamic {
 		queryWhere := where
@@ -271,7 +279,11 @@ func (s *RelationalTaskStore) TaskPage(ctx context.Context, input TaskPageInput)
 		}
 		result.TotalPages = max(1, (result.TotalCount+in.PageSize-1)/in.PageSize)
 		result.Page = min(in.Page, result.TotalPages)
-		order := `t.created_at DESC,t.id ASC`
+		direction := in.Direction
+		order := `t.created_at ` + direction + `,t.id ASC`
+		if in.Sort == "RELEASE_DATE" {
+			order = `(NULLIF(TRIM(json_extract(t.film_json,'$.Date')),'') IS NULL) ASC,NULLIF(TRIM(json_extract(t.film_json,'$.Date')),'') ` + direction + `,t.created_at DESC,t.id ASC`
+		}
 		if in.Sort == "OLDEST" {
 			order = `t.created_at ASC,t.id ASC`
 		}
@@ -347,28 +359,43 @@ func paginateTaskHeaders(tasks []*Task, in TaskPageInput, stats TaskStats) TaskP
 
 	sort.SliceStable(items, func(i, j int) bool {
 		a, b := items[i], items[j]
+		comparison := 0
 		switch in.Sort {
+		case "TITLE":
+			comparison = ordering.Compare(taskSortTitle(a), taskSortTitle(b))
 		case "PROGRESS":
-			if a.Progress != b.Progress {
-				return a.Progress > b.Progress
+			if a.Progress < b.Progress {
+				comparison = -1
+			} else if a.Progress > b.Progress {
+				comparison = 1
 			}
 		case "UPDATED":
-			if !a.UpdatedAt.Equal(b.UpdatedAt) {
-				return a.UpdatedAt.After(b.UpdatedAt)
+			comparison = a.UpdatedAt.Compare(b.UpdatedAt)
+		case "RELEASE_DATE":
+			left, right := a.FilmReleaseDate(), b.FilmReleaseDate()
+			if (left == "") != (right == "") {
+				return left != ""
 			}
+			comparison = strings.Compare(left, right)
 		case "INGESTED":
-			if a.IngestCompletedAt != nil && b.IngestCompletedAt != nil && !a.IngestCompletedAt.Equal(*b.IngestCompletedAt) {
-				return a.IngestCompletedAt.After(*b.IngestCompletedAt)
+			if a.IngestCompletedAt != nil && b.IngestCompletedAt != nil {
+				comparison = a.IngestCompletedAt.Compare(*b.IngestCompletedAt)
 			}
+		default:
+			comparison = a.CreatedAt.Compare(b.CreatedAt)
+		}
+		if comparison != 0 {
+			if in.Direction == "ASC" || in.Sort == "OLDEST" {
+				return comparison < 0
+			}
+			return comparison > 0
 		}
 		if !a.CreatedAt.Equal(b.CreatedAt) {
-			if in.Sort == "OLDEST" {
-				return a.CreatedAt.Before(b.CreatedAt)
-			}
 			return a.CreatedAt.After(b.CreatedAt)
 		}
 		return a.ID < b.ID
 	})
+
 	total := len(items)
 	pages := max(1, (total+in.PageSize-1)/in.PageSize)
 	page := min(in.Page, pages)
@@ -450,4 +477,21 @@ func (s *Service) HomeTaskSnapshot(ctx context.Context) (HomeTaskSnapshot, error
 		return p.HomeTaskSnapshot(ctx)
 	}
 	return readHomeTaskSnapshot(ctx, s.store)
+}
+
+// FilmReleaseDate reads the persisted snapshot or its lightweight header projection.
+func (t *Task) FilmReleaseDate() string {
+	if t.Film != nil {
+		return strings.TrimSpace(t.Film.Date)
+	}
+	return strings.TrimSpace(t.filmReleaseDate)
+}
+func taskSortTitle(t *Task) string {
+	if title := strings.TrimSpace(t.Code); title != "" {
+		return title
+	}
+	if title := strings.TrimSpace(t.TorrentName); title != "" {
+		return title
+	}
+	return t.ID
 }

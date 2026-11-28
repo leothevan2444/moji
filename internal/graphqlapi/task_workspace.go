@@ -40,6 +40,7 @@ func taskSummaryToModel(t *taskruntime.Task) *model.TaskSummary {
 		StageErrorCode:        nilIfEmpty(t.StageErrorCode),
 		StageErrorMessage:     nilIfEmpty(string(message)),
 		TorrentName:           nilIfEmpty(t.TorrentName),
+		ReleaseDate:           nilIfEmpty(t.FilmReleaseDate()),
 		Progress:              t.Progress,
 		QbittorrentState:      nilIfEmpty(t.QBittorrentState),
 		StashIngestPhase:      nilIfEmpty(t.StashIngestPhase),

@@ -76,6 +76,7 @@ func (t *StashIDFragment) GetUpdatedAt() *time.Time {
 }
 
 type PerformerFragment struct {
+	CreatedAt      time.Time          "json:\"created_at\" graphql:\"created_at\""
 	ID             string             "json:\"id\" graphql:\"id\""
 	Name           string             "json:\"name\" graphql:\"name\""
 	Disambiguation *string            "json:\"disambiguation,omitempty\" graphql:\"disambiguation\""
@@ -95,6 +96,12 @@ type PerformerFragment struct {
 	CustomFields   map[string]any     "json:\"custom_fields\" graphql:\"custom_fields\""
 }
 
+func (t *PerformerFragment) GetCreatedAt() *time.Time {
+	if t == nil {
+		t = &PerformerFragment{}
+	}
+	return &t.CreatedAt
+}
 func (t *PerformerFragment) GetID() string {
 	if t == nil {
 		t = &PerformerFragment{}
@@ -2894,6 +2901,7 @@ const FindPerformerByIDDocument = `query FindPerformerByID ($id: ID!) {
 	}
 }
 fragment PerformerFragment on Performer {
+	created_at
 	id
 	name
 	disambiguation
@@ -2947,6 +2955,7 @@ const FindPerformersDocument = `query FindPerformers ($performer_filter: Perform
 	}
 }
 fragment PerformerFragment on Performer {
+	created_at
 	id
 	name
 	disambiguation
@@ -3000,6 +3009,7 @@ const AllPerformersDocument = `query allPerformers {
 	}
 }
 fragment PerformerFragment on Performer {
+	created_at
 	id
 	name
 	disambiguation
@@ -3109,6 +3119,7 @@ const UpdatePerformerCustomFieldsDocument = `mutation UpdatePerformerCustomField
 	}
 }
 fragment PerformerFragment on Performer {
+	created_at
 	id
 	name
 	disambiguation
